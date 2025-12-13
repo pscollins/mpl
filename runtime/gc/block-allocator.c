@@ -3,10 +3,26 @@
  * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  */
+#include <stdatomic.h>
+#include <stdint.h>
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
 #define INFO_BUFFER_LEN 256
+
+#ifdef ENABLE_TRACING
+static atomic_int_least64_t live_blocks = 0;
+
+// Track the live block count in a separate atomic so that we can easily export
+// it as a counter.
+static int64_t incLiveBlocks(int numBlocks) {
+  return atomic_fetch_add(&live_blocks, numBlocks);
+}
+
+static int64_t decLiveBlocks(int numBlocks) {
+  return atomic_fetch_sub(&live_blocks, numBlocks);
+}
+#endif // ENABLE_TRACING
 
 static inline size_t SUPERBLOCK_SIZE(GC_state s) {
   return (1 << s->controls->superblockThreshold);
@@ -519,6 +535,7 @@ static MegaBlock mmapNewMegaBlock(GC_state s, size_t numBlocks, enum BlockPurpos
 
 
 Blocks allocateBlocksWithPurpose(GC_state s, size_t numBlocks, enum BlockPurpose purpose) {
+  Trace1(EVENT_LIVE_BLOCK_COUNTER, incLiveBlocks(numBlocks));
   BlockAllocator local = s->blockAllocatorLocal;
   assertBlockAllocatorOkay(s, local);
 
@@ -585,6 +602,7 @@ void freeBlocks(GC_state s, Blocks bs, writeFreedBlockInfoFnClosure f) {
   SuperBlock sb = bs->container;
   enum BlockPurpose purpose = bs->purpose;
   pointer blockStart = (pointer)bs;
+  Trace1(EVENT_LIVE_BLOCK_COUNTER, decLiveBlocks(numBlocks));
 
 #if ASSERT
   if (!s->controls->debugKeepFreeBlocks) {

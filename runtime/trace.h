@@ -81,7 +81,9 @@ enum EventKind {
   EVENT_MANAGE_ENTANGLED_LEAVE = 47,
 
   EVENT_SCHED_SLEEP_ENTER     = 48,
-  EVENT_SCHED_SLEEP_LEAVE     = 49
+  EVENT_SCHED_SLEEP_LEAVE     = 49,
+
+  EVENT_LIVE_BLOCK_COUNTER = 50,
 };
 
 #define EventKindCount (sizeof EventKindStrings / sizeof *EventKindStrings)
