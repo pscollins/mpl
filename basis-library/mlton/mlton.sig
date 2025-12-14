@@ -60,4 +60,6 @@ signature MLTON =
       structure Word8Array: MLTON_MONO_ARRAY
       structure Word8Vector: MLTON_MONO_VECTOR
       structure World: MLTON_WORLD
+
+      structure Float32x8: MLTON_SIMD_TYPE
    end

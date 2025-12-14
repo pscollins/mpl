@@ -1,42 +1,4 @@
-signature SIMD_TYPE =
-sig
-    type scalar
-    type scalarVec
-    type t
-
-    val fromVec: (scalarVec * int) -> t
-    val toVec: t -> scalarVec
-    val add: t -> t -> t
-end
-
-structure Float32x8 :> SIMD_TYPE
-          where type scalarVec = Real32Vector.vector
-= struct
-structure Vec = Real32Vector
-structure Slice = Real32VectorSlice
-
-type scalar = Vec.elem
-type scalarVec = Vec.vector
-type t = scalarVec
-
-val numLanes = 8
-
-fun fromVec (vec, idx) =
-    (Slice.vector o Slice.slice) (vec, idx, SOME numLanes)
-
-fun toVec xs = xs
-
-fun add (xs: t) (ys: t): t = let
-    fun addElement (idx, x) = let 
-        val y = Vec.sub (ys, idx)
-    in
-        x + y
-    end
-in
-    Vec.mapi addElement xs
-end
-
-end
+structure Float32x8 = MLton.Float32x8
 
 val fromList = let
     fun doLoad vec = Float32x8.fromVec (vec, 0)
