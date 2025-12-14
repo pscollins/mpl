@@ -141,6 +141,8 @@ structure Word8Vector = struct
    type t = vector
 end
 
+structure Float32x8 = MLtonFloat32x8
+
 val _ =
    (Primitive.TopLevel.setHandler MLtonExn.defaultTopLevelHandler
     ; Primitive.TopLevel.setSuffix Exit.defaultTopLevelSuffix)
