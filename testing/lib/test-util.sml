@@ -6,13 +6,43 @@ type 'a asserter = {
 
 exception FailedTest of string
 
+(* prints a string, adding a newline *)
 fun printLn str = print (str ^ "\n")
+(* prints an array of strings *)
+val printArrLn = (printLn o String.concat)
 
+local
+    val testCount: int ref = ref 0
+in
+fun incTestCount() = testCount := (!testCount + 1)
+fun getTestCount() = !testCount
+end
+
+(* prints a summary of all tests run in this invocation *)
+fun summarizeRun() = let
+    val numRuns = (Int.toString o getTestCount)()
+    val marker = "===="
+    val msgParts = [
+        marker,
+        " ",
+        "Successfully completed ",
+        numRuns,
+        " tests.",
+        " ",
+        marker
+        ]
+in
+    printArrLn msgParts
+end
+
+(* compares `want` to `got` according to the contents of `asserter`, raising
+`FailedTest` on failure. *)
 fun assertMatchWith (asserter: 'a asserter)
                     (msgPfx: string)
                     (want: 'a)
                     (got: 'a) : unit =
     let
+        val _ = incTestCount ()
         val {matchFn, printFn, quiet} = asserter
         val success = matchFn (want, got)
         val statusMsg = if success then "Success!" else "FAIL!"
