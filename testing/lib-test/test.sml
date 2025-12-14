@@ -7,7 +7,10 @@ val _ = let
     in
         ()
     end
-            handle FailedTest (msg) => print (String.concat ["Saw expected failure message: ", msg, "\n"])
+            handle FailedTest (msg) =>
+                   print (String.concat ["Saw expected failure message: ", msg, "\n"])
 in
     ()
 end
+
+val _ = summarizeRun()
