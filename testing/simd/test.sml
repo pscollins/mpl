@@ -6,6 +6,7 @@ sig
 
     val fromVec: (scalarVec * int) -> t
     val toVec: t -> scalarVec
+    val add: t -> t -> t
 end
 
 structure Float32x8 :> SIMD_TYPE
@@ -25,6 +26,16 @@ fun fromVec (vec, idx) =
 
 fun toVec xs = xs
 
+fun add (xs: t) (ys: t): t = let
+    fun addElement (idx, x) = let 
+        val y = Vec.sub (ys, idx)
+    in
+        x + y
+    end
+in
+    Vec.mapi addElement xs
+end
+
 end
 
 val fromList = let
@@ -36,6 +47,8 @@ end
 val toList = (Real32Vector.foldr (op ::) []) o Float32x8.toVec
 
 val intsToReals = List.map Real32.fromInt
+
+val fromIntList = fromList o intsToReals
 
 fun listToString (f: 'a -> string) (xs: 'a list) =
     String.concat [
@@ -126,5 +139,27 @@ in
     List.app evalCase cases
 end
 
+val _ = let
+    fun evalCase (lhs, rhs, want) = let
+        val got = Float32x8.add
+                      (fromIntList lhs)
+                      (fromIntList rhs)
+    in
+        assertReal32ListEqual "test add"
+                              (toList got)
+                              (intsToReals want)
+    end
+    val cases = [
+        ([1, 2, 3, 4, 5, 6, 7, 8],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [1, 2, 3, 4, 5, 6, 7, 8]),
 
- val _ = summarizeRun()
+        ([1, 2, 3, 4, 5, 6, 7, 8],
+         [2, 3, 4, 5, 6, 7, 8, 9],
+         [3, 5, 7, 9, 11, 13, 15, 17])
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = summarizeRun()
