@@ -1268,6 +1268,8 @@ fun output {program as Machine.Program.T {chunks, frameInfos, main, ...},
                            (usesStack base)
                       | Operand.SequenceOffset {base, index, ...} =>
                            (usesStack base) orelse (usesStack index)
+                      | Operand.Address z =>
+                           (usesStack z)
                       | Operand.StackOffset _ => true
                       | _ => false
                in
