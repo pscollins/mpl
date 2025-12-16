@@ -16,12 +16,16 @@ fun fromVec (vec, idx) =
 fun toVec xs = xs
 
 fun add (xs: t) (ys: t): t = let
-    fun addElement (idx, x: scalar): scalar = let
-        val y: scalar = Vec.sub (ys, idx)
+    (* TODO(pscollins): Primitive.Array.unsafeAlloc *)
+    val arr = Real32Array.array (numLanes, 0.0)
+    (* TODO(pscollins): Float32x8_addArr (xs, ys, arr) *)
+    fun setElement (idx, unused): scalar = let
+        fun getIdx vec = Vec.sub (vec, idx)
     in
-        Real32.+ (x, y)
+        Real32.+ (getIdx xs, getIdx ys)
     end
+    val _ = Real32Array.modifyi setElement arr
 in
-    Vec.mapi addElement xs
+    Real32Array.vector arr
 end
 end
