@@ -215,6 +215,8 @@ fun implementsPrim (p: 'a Prim.t): bool =
        | Word_sub _ => true
        | Word_subCheckP _ => true
        | Word_xorb _ => true
+       (* HACK  ? *)
+       | Fload32x8_addArr => true
        | _ => Error.bug ("CCodegen.implementsPrim: " ^ Prim.toString p)
    end
 

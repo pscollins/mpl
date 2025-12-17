@@ -1950,6 +1950,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | Prim.World_save =>
                                     simpleCCallWithGCState
                                     (CFunction.worldSave ())
+                               | Prim.Float32x8_addArr => raise Fail "bad!"
                                | _ => simpleCodegenOrC prim
                            end
                       | S.Exp.Select {base, offset, readBarrier} =>
