@@ -191,6 +191,7 @@ signature PRIM =
        | WordVector_subWord of {seqSize: WordSize.t, eleSize: WordSize.t}  (* to rssa *)
        | Word8Vector_toString (* defunctorize *)
        | World_save (* to rssa (as runtime C fn) *)
+       | Float32x8_addArr
 
       structure ApplyArg:
          sig

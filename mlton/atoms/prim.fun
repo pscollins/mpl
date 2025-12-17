@@ -200,6 +200,7 @@ datatype 'a t =
  | WordVector_subWord of {seqSize: WordSize.t, eleSize: WordSize.t}  (* to rssa *)
  | Word8Vector_toString (* defunctorize *)
  | World_save (* to rssa (as runtime C fn) *)
+ | Float32x8_addArr
 
 (* The values of these strings are important since they are referred to
  * in the basis library code.  See basis-library/misc/primitive.sml.
@@ -387,6 +388,7 @@ fun toString (n: 'a t): string =
        | Word_toIntInf => "Word_toIntInf"
        | Word_xorb s => word (s, "xorb")
        | World_save => "World_save"
+       | Float32x8_addArr => "Float32x8_addArr"
    end
 
 fun layout p = Layout.str (toString p)
@@ -730,6 +732,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | WordVector_subWord z => WordVector_subWord z
     | Word8Vector_toString => Word8Vector_toString
     | World_save => World_save
+    | Float32x8_addArr => Float32x8_addArr
 
 val cast: 'a t -> 'b t = fn p => map (p, fn _ => Error.bug "Prim.cast")
 
@@ -946,6 +949,7 @@ val kind: 'a t -> Kind.t =
        | Word_toIntInf => Functional
        | Word_xorb _ => Functional
        | World_save => SideEffect
+       | Float32x8_addArr => SideEffect
    end
 
 fun isFunctional p = Kind.Functional = kind p
@@ -1339,6 +1343,7 @@ fun 'a checkApp (prim: 'a t,
       val word8Vector = vector word8
       fun wordVector seqSize = vector (word seqSize)
       val string = word8Vector
+      val real32Array = array (real RealSize.R32)
   in
       case prim of
          Array_alloc _ => oneTarg (fn targ => (oneArg seqIndex, array targ))
@@ -1537,6 +1542,8 @@ fun 'a checkApp (prim: 'a t,
        | Word_toIntInf => noTargs (fn () => (oneArg smallIntInfWord, intInf))
        | Word_xorb s => wordBinary s
        | World_save => noTargs (fn () => (oneArg string, unit))
+       | Float32x8_addArr => noTargs (fn () 
+           => (threeArgs (real32Array, real32Array, real32Array), unit))
    end
 
 val checkApp =
