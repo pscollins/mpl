@@ -4,6 +4,7 @@
  * See the file MLton-LICENSE for details.
  */
 
+#include <assert.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -83,6 +84,8 @@ static const char *EventKindStrings[] = {
 
   [EVENT_SCHED_SLEEP_ENTER] = "SCHED_SLEEP_ENTER",
   [EVENT_SCHED_SLEEP_LEAVE] = "SCHED_SLEEP_LEAVE",
+
+  [EVENT_LIVE_BLOCK_COUNTER] = "LIVE_BLOCKS",
 };
 
 void processFiles(size_t filecount, FILE **files, void (*func)(struct Event *));
@@ -247,8 +250,9 @@ void printEventKindStripEnterLeave(int kind) {
   buf[99] = '\0';
 
   const char *str = EventKindStrings[kind];
+  strncpy(buf, str, 99);
   size_t len = strlen(str);
-  strncpy(buf, str, len-6);
+  assert(len < 100);
   buf[len-6] = '\0';
 
   printf("%s", buf);
@@ -261,10 +265,20 @@ void printEventKindStripEnterLeave(int kind) {
   * see chrome-tracing-docs.txt
   */
 enum ChromeTracingPhaseType {
-  CT_Begin,    // "B"
-  CT_End,      // "E"
-  CT_Instant   // "i"
+  CT_Begin,     // "B"
+  CT_End,       // "E"
+  CT_Instant,   // "i"
+  CT_Counter    // "C"
 };
+
+bool isCounterEvent(int kind) {
+  switch (kind) {
+  case EVENT_LIVE_BLOCK_COUNTER:
+    return true;
+  default:
+    return false;
+  }
+}
 
 enum ChromeTracingPhaseType
 EventKindChromeTracingPhaseType(int kind)
@@ -272,6 +286,11 @@ EventKindChromeTracingPhaseType(int kind)
   // default to "instant" event; most general.
   if (!(kind > 0 && (size_t)kind < EventKindCount))
     return CT_Instant;
+
+  // we explicitly enumerate counter events here
+  if (isCounterEvent(kind)) {
+    return CT_Counter;
+  }
 
   // check for "_ENTER" or "_LEAVE", which is the mltrace convention
   const char *str = EventKindStrings[kind];
@@ -309,6 +328,18 @@ void printEventTimeNanoseconds(struct Event *event) {
   printf("%llu", ns);
 }
 
+void printEventArgs(struct Event *event) {
+  switch (event->kind) {
+  case EVENT_LIVE_BLOCK_COUNTER:
+    printf("\"args\": { \"count\": %lld } ", event->arg1);
+    break;
+  default:
+    printf("\"args\": { \"1\": %lld, \"2\": %lld, \"3\": %lld }",
+           event->arg1, event->arg2, event->arg3);
+    break;
+  }
+}
+
 void printEventChromeTracingJSON(struct Event *event) {
   printf("{ ");
 
@@ -328,6 +359,11 @@ void printEventChromeTracingJSON(struct Event *event) {
       printf("\"ph\": \"E\", ");
       break;
 
+  case CT_Counter:
+      printf("\"name\": \""); printEventKind(event->kind); printf("\", ");
+      printf("\"ph\": \"C\", ");
+      break;
+
     default:
       printf("\"name\": \""); printEventKind(event->kind); printf("\", ");
       printf("\"ph\": \"i\", ");
@@ -338,8 +374,7 @@ void printEventChromeTracingJSON(struct Event *event) {
   printf("\"pid\": 0, ");
   printf("\"tid\": %"PRIdPTR", ", event->argptr);
   printf("\"ts\": "); printEventTimeMicroseconds(event); printf(", ");
-  printf("\"args\": { \"1\": %lld, \"2\": %lld, \"3\": %lld }",
-    event->arg1, event->arg2, event->arg3);
+  printEventArgs(event);
 
   printf("}");
 }
@@ -434,6 +469,11 @@ void printEventText(struct Event *event) {
   case EVENT_COPY:
     printf("bytes = %lld, obj = %lld, stack = %lld",
            event->arg1, event->arg2, event->arg3);
+    break;
+
+  case EVENT_LIVE_BLOCK_COUNTER:
+    printf("live_blocks = %lld",
+           event->arg1);
     break;
 
   default:
