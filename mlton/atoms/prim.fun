@@ -580,6 +580,7 @@ val equals: 'a t * 'a t -> bool =
          andalso WordSize.equals (eleSize, eleSize')
     | (Word8Vector_toString, Word8Vector_toString) => true
     | (World_save, World_save) => true
+    | (Float32x8_addArr, Float32x8_addArr) => true
     | _ => false
 
 val map: 'a t * ('a -> 'b) -> 'b t =
@@ -1111,7 +1112,9 @@ in
        Word_toIntInf,
        WordVector_toIntInf,
        Word8Vector_toString,
-       World_save]
+       World_save,
+       Float32x8_addArr
+]
       @ List.map (CType.all, fn ctype => Ref_cas (SOME ctype))
       @ List.map (CType.all, fn ctype => Array_cas (SOME ctype))
       @ List.concat [List.concatMap (RealSize.all, reals),
