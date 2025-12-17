@@ -26,7 +26,7 @@ signature PRIM =
 
       datatype 'a t =
          Array_alloc of {raw: bool} (* to rssa (as runtime C fn) *)
-       | Array_array (* to ssa2 *)
+       | Array_array (* to ssa1 *)
        | Array_cas of CType.t option (* codegen *)
        | Array_copyArray (* to rssa (as runtime C fn) *)
        | Array_copyVector (* to rssa (as runtime C fn) *)

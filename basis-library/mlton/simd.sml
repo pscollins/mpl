@@ -16,8 +16,9 @@ fun fromVec (vec, idx) =
 fun toVec xs = xs
 
 structure Prim = Primitive.MLton.Simd
-val doAdd: (Real32Array.array * Real32Array.array * Real32Array.array) -> unit = 
-  Prim.Float32x8_addArr
+type arr = scalar array
+val doAdd: (arr * arr * arr) -> unit = 
+  Prim.float32x8_addArr
 
 fun add (xs: t) (ys: t): t = let
     (* TODO(pscollins): Primitive.Array.unsafeAlloc *)

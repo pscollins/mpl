@@ -473,13 +473,13 @@ structure World =
       val save = _prim "World_save": NullString8.t -> unit;
    end
 
-end
-
-structure GCState = MLton.GCState
 
 structure Simd =
   struct
     type arr = Real32.real array
     val float32x8_addArr = _prim "Float32x8_addArr": (arr * arr * arr) -> unit;
   end
+end
+
+structure GCState = MLton.GCState
 end
