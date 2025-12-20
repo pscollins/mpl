@@ -49,6 +49,7 @@
 #include "basis/cpointer.h"
 #include "basis/Real/Real-ops.h"
 #include "basis/Word/Word-ops.h"
+#include "basis/simd-ops.h"
 
 /* ------------------------------------------------- */
 /*                 References                        */

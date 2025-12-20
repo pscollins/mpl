@@ -841,6 +841,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_rndToWord (s, s', _) => done ([real s], SOME (word s'))
        | Prim.Real_round s => realUnary s
        | Prim.Real_sub s => realBinary s
+       | Prim.Simd_Float32x8_addArr => done ([objptr, objptr, objptr], NONE)
        | Prim.Thread_returnToC => done ([], NONE)
        | Prim.Word_add s => wordBinary s
        | Prim.Word_addCheckP (s, _) => wordBinaryP s

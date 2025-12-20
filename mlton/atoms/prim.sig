@@ -140,6 +140,7 @@ signature PRIM =
        | Ref_deref of {readBarrier: bool} (* to ssa2 *)
        | Ref_ref (* to ssa2 *)
        | String_toWord8Vector (* defunctorize *)
+       | Simd_Float32x8_addArr  (* codegen *)
        | Thread_atomicBegin (* to rssa *)
        | Thread_atomicEnd (* to rssa *)
        | Thread_atomicState (* to rssa *)

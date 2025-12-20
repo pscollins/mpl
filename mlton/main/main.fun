@@ -1501,6 +1501,9 @@ fun commandLine (_: string, args: string list): unit =
                              then ["-DENABLE_TRACING=1"] else [],
                              if !detectEntanglementRuntime
                              then ["-DDETECT_ENTANGLEMENT=1"] else [],
+                             (* For now, unconditionally enable AVX.
+                                TODO(pscollins): Make this controllable via flag. *)
+                             ["-mavx"],
                              [ "-I" ^ targetIncDir ],
                              ccOpts,
                              ["-o", output],

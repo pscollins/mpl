@@ -148,6 +148,9 @@ datatype 'a t =
  | Ref_cas of CType.t option (* codegen *)
  | Ref_deref of {readBarrier: bool} (* to ssa2 *)
  | Ref_ref (* to ssa2 *)
+ (* Begin SIMD operations *)
+ | Simd_Float32x8_addArr (* codegen *)
+ (* End SIMD operations *)
  | String_toWord8Vector (* defunctorize *)
  | Thread_atomicBegin (* to rssa *)
  | Thread_atomicEnd (* to rssa *)
@@ -336,6 +339,7 @@ fun toString (n: 'a t): string =
        | Ref_deref {readBarrier=true} => "Ref_deref"
        | Ref_deref {readBarrier=false} => "Ref_deref_noReadBarrier"
        | Ref_ref => "Ref_ref"
+       | Simd_Float32x8_addArr => "Simd_Float32x8_addArr"
        | String_toWord8Vector => "String_toWord8Vector"
        | Thread_atomicBegin => "Thread_atomicBegin"
        | Thread_atomicEnd => "Thread_atomicEnd"
@@ -504,6 +508,7 @@ val equals: 'a t * 'a t -> bool =
     | (Ref_cas (SOME ctype1), Ref_cas (SOME ctype2)) => CType.equals (ctype1, ctype2)
     | (Ref_deref {readBarrier=rb1}, Ref_deref {readBarrier=rb2}) => (rb1 = rb2)
     | (Ref_ref, Ref_ref) => true
+    | (Simd_Float32x8_addArr, Simd_Float32x8_addArr) => true
     | (String_toWord8Vector, String_toWord8Vector) => true
     | (Thread_atomicBegin, Thread_atomicBegin) => true
     | (Thread_atomicEnd, Thread_atomicEnd) => true
@@ -682,6 +687,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_cas ctyp => Ref_cas ctyp
     | Ref_deref rb => Ref_deref rb
     | Ref_ref => Ref_ref
+    | Simd_Float32x8_addArr => Simd_Float32x8_addArr
     | String_toWord8Vector => String_toWord8Vector
     | Thread_atomicBegin => Thread_atomicBegin
     | Thread_atomicEnd => Thread_atomicEnd
@@ -898,6 +904,7 @@ val kind: 'a t -> Kind.t =
        | Ref_cas _ => SideEffect
        | Ref_deref _ => DependsOnState
        | Ref_ref => Moveable
+       | Simd_Float32x8_addArr => SideEffect
        | String_toWord8Vector => Functional
        | Thread_atomicBegin => SideEffect
        | Thread_atomicEnd => SideEffect
@@ -1086,6 +1093,7 @@ in
        Ref_deref {readBarrier=true},
        Ref_deref {readBarrier=false},
        Ref_ref,
+       Simd_Float32x8_addArr,
        String_toWord8Vector,
        Thread_atomicBegin,
        Thread_atomicEnd,
@@ -1339,6 +1347,8 @@ fun 'a checkApp (prim: 'a t,
       val word8Vector = vector word8
       fun wordVector seqSize = vector (word seqSize)
       val string = word8Vector
+      val real32Array = array (real RealSize.R32)
+      val real32Vec = vector (real RealSize.R32)
   in
       case prim of
          Array_alloc _ => oneTarg (fn targ => (oneArg seqIndex, array targ))
@@ -1478,6 +1488,8 @@ fun 'a checkApp (prim: 'a t,
        | Ref_cas _ => oneTarg (fn t => (threeArgs (reff t, t, t), t))
        | Ref_deref _ => oneTarg (fn t => (oneArg (reff t), t))
        | Ref_ref => oneTarg (fn t => (oneArg t, reff t))
+       | Simd_Float32x8_addArr =>  noTargs (fn ()
+           => (threeArgs (real32Vec, real32Vec, real32Array), unit))
        | Thread_atomicBegin => noTargs (fn () => (noArgs, unit))
        | Thread_atomicEnd => noTargs (fn () => (noArgs, unit))
        | Thread_atomicState => noTargs (fn () => (noArgs, word32))
