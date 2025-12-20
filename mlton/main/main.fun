@@ -1503,6 +1503,7 @@ fun commandLine (_: string, args: string list): unit =
                              then ["-DDETECT_ENTANGLEMENT=1"] else [],
                              [ "-I" ^ targetIncDir ],
                              ccOpts,
+                             ["-mavx"],
                              ["-o", output],
                              [input]])
                      in

@@ -1,4 +1,4 @@
-/* MLton [mpl] 20251217.065918-g38ebfff53-dirty */
+/* MLton [mpl] 20251220.041724-g03c38bc66-dirty */
 /* control flags: */
 /*    align: 8 */
 /*    atMLtons: (@MLton, --) */
@@ -2945,7 +2945,7 @@ PRIVATE const ChunkFnPtr_t nextChunks[807] = {
 	/* 806: */ /* L_2291 */ &(Chunk_166),
 };
 
-MLtonMain (8, (Word32)(0x56B5669Eull), 424, FALSE, PROFILE_NONE, FALSE, /* initGlobals_0 */ 804)
+MLtonMain (8, (Word32)(0xD7B5669Eull), 424, FALSE, PROFILE_NONE, FALSE, /* initGlobals_0 */ 804)
 int main (int argc, char* argv[]) { return (MLton_main (argc, argv)); }
 
 MLtonCallFromC ()
