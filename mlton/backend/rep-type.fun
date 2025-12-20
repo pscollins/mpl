@@ -799,6 +799,7 @@ fun checkPrimApp {args, prim, result} =
       end
       fun realTernary s = done ([real s, real s, real s], SOME (real s))
       fun wordShift s = done ([wordOrBitsOrSeq s, shiftArg], SOME (wordOrBitsOrSeq s))
+      val word256 = word WordSize.word256
    in
       case prim of
          Prim.CFunction f => done (Vector.toListMap (CFunction.args f,
@@ -841,7 +842,8 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_rndToWord (s, s', _) => done ([real s], SOME (word s'))
        | Prim.Real_round s => realUnary s
        | Prim.Real_sub s => realBinary s
-       | Prim.Simd_Float32x8_addArr => done ([objptr, objptr, objptr], NONE)
+       (*| Prim.Simd_Float32x8_addArr => done ([objptr, objptr, objptr], NONE)*)
+       | Prim.Simd_Float32x8_addArr => done ([word256, word256, word256], NONE)
        | Prim.Thread_returnToC => done ([], NONE)
        | Prim.Word_add s => wordBinary s
        | Prim.Word_addCheckP (s, _) => wordBinaryP s
