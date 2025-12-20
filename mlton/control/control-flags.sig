@@ -298,6 +298,9 @@ signature CONTROL_FLAGS =
       (* Save the final XML to a file. *)
       val keepXML: bool ref
 
+      (* Directory prefix for `-keep` outputs *)
+      val keepFilesOutputDir: string ref
+
       (* For the codegen -- do labels for gcc and assembler need an extra leading
        * underscore.
        *)

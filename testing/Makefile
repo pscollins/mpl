@@ -12,12 +12,12 @@ KEEP_IRS = ssa \
 	rssa \
 	xml \
 	g
-KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS))
+KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
 
 # Full sets of flags for debug targets
 DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS)
 
-KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(KEEP_IR_FLAGS)
+KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) ${KEEP_IR_FLAGS}
 
 # Hook to run the test under some other program (e.g. lldb)
 RUN_UNDER =
@@ -46,7 +46,7 @@ $(DBG_TARGETS): %.dbg: phony
 # TODO(pscollins): Put -keep outputs in a different directory
 $(KEEP_TARGETS): %.keep: phony
 	@mkdir -p bin
-	$(MPL) $(DEBUG_FLAGS) -output bin/$*.bin $*/sources.mlb
+	$(MPL) $(KEEP_FLAGS) -output bin/$*.bin $*/sources.mlb
 	@echo "successfully built bin/$*.bin, executing..."
 	$(RUN_UNDER) bin/$*.bin
 

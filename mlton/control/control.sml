@@ -289,10 +289,14 @@ fun saveToFile {arg: 'a,
                 toFile = {display: 'a display, style: style, suffix: string},
                 verb: Verbosity.t}: unit =
    let
-      val name =
+      val baseName =
          case name of
             NONE => concat [!inputFile, ".", suffix]
           | SOME name => concat [!inputFile, ".", name, ".", suffix]
+      val name = 
+          case !keepFilesOutputDir of
+             "" => baseName
+           | dir => OS.Path.joinDirFile {dir = dir, file = baseName}
       fun doit f =
          trace (verb, concat ["save ", name])
          Ref.fluidLet
