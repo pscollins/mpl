@@ -1,7 +1,7 @@
 signature MLTON_SIMD_TYPE =
 sig
     type scalar
-    type scalarVec
+    type scalarVec = scalar Vector.vector
     type t
 
     val fromVec: (scalarVec * int) -> t

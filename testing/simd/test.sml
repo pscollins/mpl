@@ -3,10 +3,10 @@ structure Float32x8 = MLton.Float32x8
 val fromList = let
     fun doLoad vec = Float32x8.fromVec (vec, 0)
 in
-    doLoad o Real32Vector.fromList
+    doLoad o Vector.fromList
 end
 
-val toList = (Real32Vector.foldr (op ::) []) o Float32x8.toVec
+val toList = (Vector.foldr (op ::) []) o Float32x8.toVec
 
 val intsToReals = List.map Real32.fromInt
 
