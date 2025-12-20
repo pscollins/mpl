@@ -116,16 +116,22 @@ static inline Objptr GC_readBarrier(CPointer s, Objptr obj, CPointer field) {
 
 #include <assert.h>
 #include <stdio.h>
+#include <immintrin.h>
 // void Float32x8_addArr(Objptr in1, Objptr in2, Objptr out) {
 void Float32x8_addArr(Pointer in1, Pointer in2, Pointer out) {
   printf("test!\n");
   const float* in1f = (const float*)in1;
   const float* in2f = (const float*)in2;
   float* outf = (const float*)out;
+  // need to compile with -cc-opt '-march=native'
+  __m256 vec1 = _mm256_loadu_ps(in1f);
+  __m256 vec2 = _mm256_loadu_ps(in2f);
+  __m256 sum = _mm256_add_ps(vec1, vec2);
+  _mm256_storeu_ps(outf, sum);
   for (int i = 0; i < 8; ++i) {
     printf("in1[%d]=%f\n", i, in1f[i]);
     printf("in2[%d]=%f\n", i, in2f[i]);
-    outf[i] = in1f[i] + in2f[i];
+    //outf[i] = in1f[i] + in2f[i];
     printf("out[%d]=%f\n", i, outf[i]);
   }
   //assert(0);
