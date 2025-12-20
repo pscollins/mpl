@@ -114,4 +114,12 @@ static inline Objptr GC_readBarrier(CPointer s, Objptr obj, CPointer field) {
   return Assignable_readBarrier(s, obj, field);
 }
 
+#include <assert.h>
+#include <stdio.h>
+// void Float32x8_addArr(Objptr in1, Objptr in2, Objptr out) {
+void Float32x8_addArr(Pointer in1, Pointer in2, Pointer out) {
+  printf("test!");
+  //assert(0);
+}
+
 #endif /* #ifndef _C_CHUNK_H_ */

@@ -891,6 +891,7 @@ fun checkPrimApp {args, prim, result} =
                  NONE => NONE
                | _ => SOME isTy)
            end
+       | Prim.Float32x8_addArr => done ([objptr, objptr, objptr], NONE)
        | _ => Error.bug (concat ["RepType.checkPrimApp got strange prim: ",
                                  Prim.toString prim])
    end
