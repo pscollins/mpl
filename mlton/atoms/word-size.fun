@@ -58,6 +58,7 @@ val word8 = fromBits (Bits.fromInt 8)
 val word16 = fromBits (Bits.fromInt 16)
 val word32 = fromBits (Bits.fromInt 32)
 val word64 = fromBits (Bits.fromInt 64)
+val word256 = fromBits (Bits.fromInt 256)
 
 val allVector = Vector.tabulate (65, fn i =>
                                   if isValidSize i
@@ -119,7 +120,7 @@ fun isInRange (s, i, sg) =
       min <= i andalso i <= max
    end
 
-datatype prim = W8 | W16 | W32 | W64
+datatype prim = W8 | W16 | W32 | W64 | W256
 
 fun fromPrim p =
    case p of
@@ -127,6 +128,7 @@ fun fromPrim p =
     | W16 => word16
     | W32 => word32
     | W64 => word64
+    | W256 => word256
 
 fun primOpt (s: t): prim option =
    case Bits.toInt (bits s) of
@@ -134,6 +136,7 @@ fun primOpt (s: t): prim option =
     | 16 => SOME W16
     | 32 => SOME W32
     | 64 => SOME W64
+    | 256 => SOME W256
     | _ => NONE
 
 fun prim s =
