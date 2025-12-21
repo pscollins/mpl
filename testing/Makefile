@@ -23,7 +23,8 @@ KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) ${KEEP_IR_FLAGS}
 RUN_UNDER =
 
 TARGETS = lib-test \
-	simd
+	simd \
+	word-prim
 
 DBG_TARGETS := $(addsuffix .dbg,$(TARGETS))
 KEEP_TARGETS := $(addsuffix .keep,$(TARGETS))
