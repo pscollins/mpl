@@ -27,17 +27,17 @@
 //   _mm256_storeu_ps(outf, sum);
 // }
 
-__m256 Simd_Float32x8_add(_m256 in1, _m256 in2) {
-  return _mm256_add_ps(vec1, vec2);
+__m256 Simd_Float32x8_add(__m256 in1, __m256 in2) {
+  return _mm256_add_ps(in1, in2);
 }
 
-__m256 Simd_Float32x8_load(Pointer in1) {
-  const float* inf = (const float*)in1;
-  return _mm256_loadu_ps(in1f);
+__m256 Simd_Float32x8_load(Pointer in) {
+  const float* inf = (const float*)in;
+  return _mm256_loadu_ps(inf);
 }
 
 void Simd_Float32x8_store(__m256 in, Pointer out) {
-  const float* outf = (const float*)in1;
+  const float* outf = (const float*)out;
   _mm256_storeu_ps(outf, in);
 }
 
