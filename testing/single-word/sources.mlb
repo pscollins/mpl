@@ -1,0 +1,18 @@
+ann
+   "allowPrim true"
+   "deadCode true"
+   "nonexhaustiveBind warn" "nonexhaustiveMatch warn"
+   "redundantBind warn" "redundantMatch warn"
+   "sequenceNonUnit warn"
+   "warnUnused true"
+in
+   local
+      _prim
+   in
+     $(SML_LIB)/basis/basis.mlb
+     $(SML_LIB)/basis/mlton.mlb
+     test.sml
+   end
+end
+
+

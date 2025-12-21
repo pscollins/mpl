@@ -15,6 +15,7 @@ KEEP_IRS = ssa \
         core-ml \
         sxml \
 	g
+#KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-all true -keep-output-dir bin/
 #KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
 KEEP_IR_FLAGS=-keep-all true -keep-output-dir bin/
 
@@ -28,7 +29,8 @@ RUN_UNDER =
 
 TARGETS = lib-test \
 	simd \
-	word-prim
+	word-prim \
+	single-word
 
 DBG_TARGETS := $(addsuffix .dbg,$(TARGETS))
 KEEP_TARGETS := $(addsuffix .keep,$(TARGETS))
