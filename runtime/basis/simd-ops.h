@@ -11,22 +11,34 @@
 #error "Must compile with -mavx!"
 #endif
 
-void Simd_Float32x8_addArr(Pointer in1, Pointer in2, Pointer out) {
-  // The compiler passes us:
-  //   (real vec * real vec * real arr)
-  // which all "decay" to `unsigned char*`
-  const float* in1f = (const float*)in1;
-  const float* in2f = (const float*)in2;
-  float* outf = (const float*)out;
-  // Issue unaligned load/stores to be safe
-  //
-  // out[0:7] = in1[0:7] + in2[0:7]
-  __m256 vec1 = _mm256_loadu_ps(in1f);
-  __m256 vec2 = _mm256_loadu_ps(in2f);
-  __m256 sum = _mm256_add_ps(vec1, vec2);
-  _mm256_storeu_ps(outf, sum);
+// void Simd_Float32x8_addArr(Pointer in1, Pointer in2, Pointer out) {
+//   // The compiler passes us:
+//   //   (real vec * real vec * real arr)
+//   // which all "decay" to `unsigned char*`
+//   const float* in1f = (const float*)in1;
+//   const float* in2f = (const float*)in2;
+//   float* outf = (const float*)out;
+//   // Issue unaligned load/stores to be safe
+//   //
+//   // out[0:7] = in1[0:7] + in2[0:7]
+//   __m256 vec1 = _mm256_loadu_ps(in1f);
+//   __m256 vec2 = _mm256_loadu_ps(in2f);
+//   __m256 sum = _mm256_add_ps(vec1, vec2);
+//   _mm256_storeu_ps(outf, sum);
+// }
+
+__m256 Simd_Float32x8_add(_m256 in1, _m256 in2) {
+  return _mm256_add_ps(vec1, vec2);
 }
 
+__m256 Simd_Float32x8_load(Pointer in1) {
+  const float* inf = (const float*)in1;
+  return _mm256_loadu_ps(in1f);
+}
 
+void Simd_Float32x8_store(__m256 in, Pointer out) {
+  const float* outf = (const float*)in1;
+  _mm256_storeu_ps(outf, in);
+}
 
 #endif  // _SIMD_OPS_H

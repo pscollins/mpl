@@ -302,7 +302,7 @@ structure Pointer =
       val setWord8 = _prim "CPointer_setWord8": t * C_Ptrdiff.t * Word8.word -> unit;
       val setWord16 = _prim "CPointer_setWord16": t * C_Ptrdiff.t * Word16.word -> unit;
       val setWord32 = _prim "CPointer_setWord32": t * C_Ptrdiff.t * Word32.word -> unit;
-      val setWord64 = _prim "CPointer_setWord64": t * C_Ptrdiff.t * Word64.word -> unit;
+      val setWord63 = _prim "CPointer_setWord64": t * C_Ptrdiff.t * Word64.word -> unit;
    end
 
 structure Profile =
@@ -478,8 +478,12 @@ structure Simd =
    struct
       type floatArr = Real32.real array
       type floatVec = Real32.real Vector.vector
+      type reg = Word256.word
       (* *arg2 = *arg0 + *arg1 *)
-      val float32x8_addArr = _prim "Simd_Float32x8_addArr": (floatVec * floatVec * floatArr) -> unit;
+      (* val float32x8_addArr = _prim "Simd_Float32x8_addArr": (floatVec * floatVec * floatArr) -> unit; *)
+      val float32x8_add = _prim "Simd_Float32x8_add": (reg * reg) -> reg;
+      val float32x8_load = _prim "Simd_Float32x8_load": floatVec -> reg;
+      val float32x8_store = _prim "Simd_Float32x8_store": (reg * floatArr) -> unit;
    end
 
 end
