@@ -1,4 +1,4 @@
-structure W = Word32
+structure W = Word20
 val _ = let
   val a = W.fromInt 2 
   val b = W.fromInt 3
