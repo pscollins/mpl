@@ -418,4 +418,10 @@ structure Word64 : PRIM_WORD =
       end
    end
 
+structure Word256 =
+   struct
+      open Word256
+      val sizeInBits: Int32.int = 256
+   end
+
 end

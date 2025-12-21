@@ -38,7 +38,7 @@ fun fromBits (b: Bits.t): t =
    else Error.bug (concat ["WordSize.fromBits: strange word size: ", Bits.toString b])
 
 fun isValidSize (i: int) =
-   (1 <= i andalso i <= 32) orelse i = 64
+   (1 <= i andalso i <= 32) orelse i = 64 orelse i = 256
 
 val byte = fromBits (Bits.inByte)
 
@@ -60,7 +60,7 @@ val word32 = fromBits (Bits.fromInt 32)
 val word64 = fromBits (Bits.fromInt 64)
 val word256 = fromBits (Bits.fromInt 256)
 
-val allVector = Vector.tabulate (65, fn i =>
+val allVector = Vector.tabulate (257, fn i =>
                                   if isValidSize i
                                      then SOME (fromBits (Bits.fromInt i))
                                   else NONE)
@@ -91,6 +91,7 @@ fun roundUpToPrim s =
                       then 32
                    else if bits = 64
                            then 64
+                   else if bits = 256 then 256
                         else Error.bug "WordSize.roundUpToPrim"
    in
       fromBits (Bits.fromInt bits)

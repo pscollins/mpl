@@ -302,7 +302,7 @@ structure Pointer =
       val setWord8 = _prim "CPointer_setWord8": t * C_Ptrdiff.t * Word8.word -> unit;
       val setWord16 = _prim "CPointer_setWord16": t * C_Ptrdiff.t * Word16.word -> unit;
       val setWord32 = _prim "CPointer_setWord32": t * C_Ptrdiff.t * Word32.word -> unit;
-      val setWord63 = _prim "CPointer_setWord64": t * C_Ptrdiff.t * Word64.word -> unit;
+      val setWord64 = _prim "CPointer_setWord64": t * C_Ptrdiff.t * Word64.word -> unit;
    end
 
 structure Profile =
