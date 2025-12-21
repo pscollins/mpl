@@ -354,6 +354,7 @@ structure Type =
                    | 16 => Word16
                    | 32 => Word32
                    | 64 => Word64
+                   | 256 => Word256
                    | _ => Error.bug (concat ["RepType.Type.CType.fromBits: ",
                                              Bits.toString b])
             end
