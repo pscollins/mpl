@@ -38,7 +38,7 @@ fun fromBits (b: Bits.t): t =
    else Error.bug (concat ["WordSize.fromBits: strange word size: ", Bits.toString b])
 
 fun isValidSize (i: int) =
-   (1 <= i andalso i <= 32) orelse i = 64
+   (1 <= i andalso i <= 32) orelse i = 64 orelse i = 33
 
 val byte = fromBits (Bits.inByte)
 
@@ -88,7 +88,7 @@ fun roundUpToPrim s =
                  then 16
               else if bits <= 32
                       then 32
-                   else if bits = 64
+                   else if bits <= 64
                            then 64
                         else Error.bug "WordSize.roundUpToPrim"
    in

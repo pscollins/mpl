@@ -1,6 +1,5 @@
 structure MyWord = struct
-  type t = word20
+  type t = word33
   
-  (*val x: t = 4*)
 end
 
