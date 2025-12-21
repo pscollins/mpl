@@ -82,7 +82,8 @@ structure Type =
                check (Bits.inWord16, fn () =>
                check (Bits.inWord32, fn () =>
                check (Bits.inWord64, fn () =>
-               Error.bug "PackedRepresentation.Type.mkPadToPrim")))))
+               check (Bits.inWord256, fn () =>
+               Error.bug "PackedRepresentation.Type.mkPadToPrim"))))))
             end
          fun mkPadToWidth (t: t, b': Bits.t, mk): t =
             let

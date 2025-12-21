@@ -37,6 +37,7 @@ local
                val inWord16: t
                val inWord32: t
                val inWord64: t
+               val inWord256: t
                val isAligned: t * {alignment: t} -> bool
                val isByteAligned: t -> bool
                val isPrim: t -> bool
@@ -129,6 +130,7 @@ local
                val inWord16: bits = 16
                val inWord32: bits = 32
                val inWord64: bits = 64
+               val inWord256: bits = 256
 
                val prims = [inWord8, inWord16, inWord32, inWord64]
                fun isPrim b = List.contains (prims, b, equals)
