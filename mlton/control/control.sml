@@ -459,8 +459,9 @@ fun translatePass {arg: 'a,
          res
       end
       val res = trace (Pass, name) thunk ()
+      val keepIL' = keepIL orelse (!keepAll)
       val () =
-         if keepIL
+         if keepIL'
             then Option.app (tgtToFile, fn tgtToFile =>
                              saveToFile {arg = res, name = NONE,
                                          toFile = tgtToFile, verb = Pass})

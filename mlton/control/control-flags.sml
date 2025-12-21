@@ -1155,6 +1155,8 @@ val limitCheckExpect = control {name = "limit check expect",
 
 (* Directory prefix for `-keep` outputs *)
 val keepFilesOutputDir = ref ""
+val keepAll = ref false
+
 
 structure LLVMAliasAnalysisMetaData =
    struct

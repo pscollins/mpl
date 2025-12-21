@@ -301,6 +301,8 @@ signature CONTROL_FLAGS =
       (* Directory prefix for `-keep` outputs *)
       val keepFilesOutputDir: string ref
 
+      val keepAll: bool ref
+
       (* For the codegen -- do labels for gcc and assembler need an extra leading
        * underscore.
        *)
