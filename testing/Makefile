@@ -11,6 +11,9 @@ KEEP_IRS = ssa \
 	ssa2 \
 	rssa \
 	xml \
+        ast \
+        core-ml \
+        sxml \
 	g
 KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
 

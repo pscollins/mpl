@@ -284,15 +284,26 @@ fun diagnostics f =
 
 fun diagnostic f = diagnostics (fn disp => disp (f ()))
 
+val outIdx = ref 0
+
+fun getIdx () = let
+  val curr = !outIdx 
+  val _ = outIdx := (curr + 1)
+in
+  Int.toString  curr
+end
+
+
 fun saveToFile {arg: 'a,
                 name: string option,
                 toFile = {display: 'a display, style: style, suffix: string},
                 verb: Verbosity.t}: unit =
    let
+      val idx = getIdx()
       val baseName =
          case name of
-            NONE => concat [!inputFile, ".", suffix]
-          | SOME name => concat [!inputFile, ".", name, ".", suffix]
+            NONE => concat [!inputFile, ".", idx, ".", suffix]
+          | SOME name => concat [!inputFile, ".", name, ".", idx, ".", suffix]
       val name = 
           case !keepFilesOutputDir of
              "" => baseName
