@@ -559,6 +559,9 @@ fun makeOptions {usage} =
        (Expert, "keep-output-dir", "", "directory for -keep outputs",
         SpaceString (fn s =>
                      Control.keepFilesOutputDir := s)),
+       (Expert, "keep-all", " {false|true}",
+        "if `true`, unconditionally keep all pass outputs",
+        Bool (fn b => keepAll := b)),
        (Expert, "layout-width", " <n>", "target width for pretty printer",
         Int (fn n =>
              if n > 0

@@ -6,13 +6,9 @@ EXTRA_DEBUG_FLAGS = -debug true \
 	-const 'MLton.debug true' \
 	-verbose 3 \
 	-const 'Exn.keepHistory true'
-# List of IRs to keep
-KEEP_IRS = ssa \
-	ssa2 \
-	rssa \
-	xml \
-	g
-KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
+# List of IRs to keep (only for IRs not impacted by -keep-all)
+KEEP_IRS =
+KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-all true  -keep-output-dir bin/
 
 # Full sets of flags for debug targets
 DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS)

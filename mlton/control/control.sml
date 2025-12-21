@@ -284,15 +284,31 @@ fun diagnostics f =
 
 fun diagnostic f = diagnostics (fn disp => disp (f ()))
 
+local
+  val currIdx = ref 0
+  val kPadWidth = 3
+  fun padInt n =
+    StringCvt.padLeft #"0" kPadWidth (Int.toString n)
+in
+  (* emits "000.", "001.", ... *)
+  fun getIdxPrefix () = let
+    val curr = !currIdx 
+    val _ = (currIdx := curr + 1)
+  in
+    String.concat [padInt curr, "."]
+  end
+end
+
 fun saveToFile {arg: 'a,
                 name: string option,
                 toFile = {display: 'a display, style: style, suffix: string},
                 verb: Verbosity.t}: unit =
    let
+      val pfx = getIdxPrefix ()
       val baseName =
          case name of
-            NONE => concat [!inputFile, ".", suffix]
-          | SOME name => concat [!inputFile, ".", name, ".", suffix]
+            NONE => concat [pfx, !inputFile, ".", suffix]
+          | SOME name => concat [pfx, !inputFile, ".", name, ".", suffix]
       val name = 
           case !keepFilesOutputDir of
              "" => baseName
@@ -448,8 +464,10 @@ fun translatePass {arg: 'a,
          res
       end
       val res = trace (Pass, name) thunk ()
+      (* respect -keep-all=true override *)
+      val keepIL' = keepIL orelse (!keepAll)
       val () =
-         if keepIL
+         if keepIL'
             then Option.app (tgtToFile, fn tgtToFile =>
                              saveToFile {arg = res, name = NONE,
                                          toFile = tgtToFile, verb = Pass})
