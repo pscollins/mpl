@@ -15,7 +15,6 @@ fun fromVec (vec, idx) =
     Prim.float32x8_load vec
   else
     raise Fail "bad index"
-  end
     (*(VectorSlice.vector o VectorSlice.slice) (vec, idx, SOME numLanes)*)
 
 (*fun toVec xs = xs*)
@@ -23,10 +22,12 @@ fun toVec xs = let
   val arr = Array.array (numLanes, 0.0)
   val _ = Prim.float32x8_store (xs, arr)
 in
-  arr
+  Array.vector arr
 end
 
 fun add (xs: t) (ys: t): t = Prim.float32x8_add (xs, ys)
+
+end
 (*
 let
     (* TODO(pscollins): Primitive.Array.unsafeAlloc *)
