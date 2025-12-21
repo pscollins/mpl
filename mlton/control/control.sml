@@ -289,8 +289,11 @@ val outIdx = ref 0
 fun getIdx () = let
   val curr = !outIdx 
   val _ = outIdx := (curr + 1)
+  val kPadWidth = 3
+  fun padInt n = 
+    StringCvt.padLeft #"0" kPadWidth (Int.toString n)
 in
-  Int.toString  curr
+  padInt curr
 end
 
 
@@ -302,8 +305,8 @@ fun saveToFile {arg: 'a,
       val idx = getIdx()
       val baseName =
          case name of
-            NONE => concat [!inputFile, ".", idx, ".", suffix]
-          | SOME name => concat [!inputFile, ".", name, ".", idx, ".", suffix]
+            NONE => concat [idx, ".", !inputFile, ".", suffix]
+          | SOME name => concat [idx, ".", !inputFile, ".", name, ".", suffix]
       val name = 
           case !keepFilesOutputDir of
              "" => baseName
