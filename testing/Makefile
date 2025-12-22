@@ -1,5 +1,6 @@
 MPL=../build/bin/mpl
 FLAGS = -default-type int64 -default-type word64
+EXTRA_FLAGS =
 # Extra flags applied to .dbg targets
 EXTRA_DEBUG_FLAGS = -debug true \
 	-debug-runtime true \
@@ -11,13 +12,15 @@ KEEP_IRS = ssa \
 	ssa2 \
 	rssa \
 	xml \
+	machine \
+	o \
 	g
 KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
 
 # Full sets of flags for debug targets
-DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS)
+DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(EXTRA_FLAGS)
 
-KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) ${KEEP_IR_FLAGS}
+KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(KEEP_IR_FLAGS)
 
 # Hook to run the test under some other program (e.g. lldb)
 RUN_UNDER =

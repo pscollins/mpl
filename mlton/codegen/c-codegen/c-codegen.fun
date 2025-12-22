@@ -23,6 +23,8 @@ in
    structure GCField = GCField
 end
 
+fun defaultPrint ss = print (String.concat (ss @ ["\n"]))
+
 structure C =
    struct
       val truee = "TRUE"
@@ -1154,7 +1156,16 @@ fun output {program as Machine.Program.T {chunks, frameInfos, main, ...},
                               C.callNoSemi
                               (Prim.toString prim,
                                Vector.toListMap (args, fetchOperand))
-                           val _ = print "\t"
+			   val (destStr, destMem) = case dst of 
+				NONE => ("(NONE)", "(UNK)")
+				| SOME dst => (operandToString dst,
+					  Bool.toString (Operand.isMem dst))
+                           (*val _ = defaultPrint [ 
+				"CHECK PRIM! ",
+				Prim.toString prim, 
+				"dest=",
+				destStr,
+				" destMem? ", destMem]*)
                         in
                            case dst of
                               NONE => (print (call ())
