@@ -10,6 +10,9 @@
 #ifndef _C_CHUNK_H_
 #define _C_CHUNK_H_
 
+#include <immintrin.h>
+typedef __m256 Word256;
+
 /* `memcpy` is used by coercion `<ty>_castTo<ty>` functions (`basis/coerce.h`)
  * and by misaligned `<ty>_fetch`, `<ty>_store`, and `<ty>_move` functions
  * (`basis/Real/Real-ops.h` and `basis/Word/Word-ops.h`)
