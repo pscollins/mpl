@@ -67,7 +67,7 @@ fun getIntEqualAsserter(): int asserter = {
 val assertIntEqual: string -> int -> int -> unit
     = assertMatchWith (getIntEqualAsserter())
 
-(* Assertions+utilities for real *)
+(* Assertions+utilities for real list *)
 fun listToString (f: 'a -> string) (xs: 'a list) =
     String.concat [
         "[",
@@ -107,3 +107,21 @@ val real32ListNeAsserter = makeReal32listAsserter (not o real32ListEq)
 
 val assertReal32ListEqual = assertMatchWith real32ListEqAsserter
 val assertReal32ListNotEqual = assertMatchWith real32ListNeAsserter
+
+(* Assertions+utilities for real list list *)
+val real32ListListToString = listToString (listToString Real32.toString)
+
+fun makeReal32listAsserter matchFn = {
+    matchFn = matchFn,
+    printFn = real32ListListToString,
+    quiet = false
+}
+
+fun real32ListListEq (arg: Real32.real list list * Real32.real list list): bool =
+        listEq real32ListEq arg
+
+val real32ListListEqAsserter = makeReal32listAsserter real32ListListEq
+val real32ListListNeAsserter = makeReal32listAsserter (not o real32ListListEq)
+
+val assertReal32ListListEqual = assertMatchWith real32ListListEqAsserter
+val assertReal32ListListNotEqual = assertMatchWith real32ListListNeAsserter
