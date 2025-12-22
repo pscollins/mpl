@@ -428,6 +428,11 @@ structure Word64 =
       type t = word64
       type word = t
    end
+structure Word256 =
+   struct
+      type t = word256
+      type word = t
+   end
 
 (* Primitive Basis (MLton Extensions) *)
 structure Pointer =

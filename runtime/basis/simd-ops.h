@@ -11,22 +11,30 @@
 #error "Must compile with -mavx!"
 #endif
 
-void Simd_Float32x8_addArr(Pointer in1, Pointer in2, Pointer out) {
-  // The compiler passes us:
-  //   (real vec * real vec * real arr)
-  // which all "decay" to `unsigned char*`
-  const float* in1f = (const float*)in1;
-  const float* in2f = (const float*)in2;
-  float* outf = (const float*)out;
-  // Issue unaligned load/stores to be safe
-  //
-  // out[0:7] = in1[0:7] + in2[0:7]
-  __m256 vec1 = _mm256_loadu_ps(in1f);
-  __m256 vec2 = _mm256_loadu_ps(in2f);
-  __m256 sum = _mm256_add_ps(vec1, vec2);
-  _mm256_storeu_ps(outf, sum);
+// `mpl` doesn't guarantee alignment for `Word256`s allocated on the stack,
+// which causes confusing segfaults unless we mark the type as unaligned here.
+typedef __m256 Word256 __attribute__((aligned(1)));
+
+Word256 __attribute__((always_inline))
+Simd_Float32x8_add(Word256 in1, Word256 in2) {
+  return _mm256_add_ps(in1, in2);
 }
 
+// Mutable pointers correspond `real array`, const pointers correspond to `real
+// vector`
 
+Word256 __attribute__((always_inline))
+ Simd_Float32x8_load(Pointer in) {
+  const float* inf = (const float*)in;
+  // Issue unaligned loads to be safe
+  return _mm256_loadu_ps(inf);
+}
+
+void __attribute__((always_inline))
+Simd_Float32x8_store(Word256 in, Pointer out) {
+  const float* outf = (const float*)out;
+  // Issue unaligned stores to be safe
+  _mm256_storeu_ps(outf, in);
+}
 
 #endif  // _SIMD_OPS_H

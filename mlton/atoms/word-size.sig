@@ -15,7 +15,7 @@ signature WORD_SIZE =
       include WORD_SIZE_STRUCTS
 
       type t
-      datatype prim = W8 | W16 | W32 | W64
+      datatype prim = W8 | W16 | W32 | W64 | W256
 
       val all: t list
       val bits: t -> Bits.t
@@ -53,4 +53,5 @@ signature WORD_SIZE =
       val word16: t
       val word32: t
       val word64: t
+      val word256: t
    end

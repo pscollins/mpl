@@ -24,12 +24,13 @@ datatype t =
  | Word16
  | Word32
  | Word64
+ | Word256
 
 val all = [CPointer,
            Int8, Int16, Int32, Int64,
            Objptr,
            Real32, Real64,
-           Word8, Word16, Word32, Word64]
+           Word8, Word16, Word32, Word64, Word256]
 
 val cpointer = CPointer
 val objptr = Objptr
@@ -51,6 +52,7 @@ fun memo (f: t -> 'a): t -> 'a =
       val word16 = f Word16
       val word32 = f Word32
       val word64 = f Word64
+      val word256 = f Word256
    in
       fn CPointer => cpointer
        | Int8 => int8
@@ -64,6 +66,7 @@ fun memo (f: t -> 'a): t -> 'a =
        | Word16 => word16
        | Word32 => word32
        | Word64 => word64
+       | Word256 => word256
    end
 
 val toString =
@@ -79,6 +82,7 @@ val toString =
     | Word16 => "Word16"
     | Word32 => "Word32"
     | Word64 => "Word64"
+    | Word256 => "Word256"
 
 val layout = Layout.str o toString
 
@@ -107,6 +111,7 @@ fun size (t: t): Bytes.t =
     | Word16 => Bytes.fromInt 2
     | Word32 => Bytes.fromInt 4
     | Word64 => Bytes.fromInt 8
+    | Word256 => Bytes.fromInt 32
 
 fun name t =
    case t of
@@ -122,6 +127,7 @@ fun name t =
     | Word16 => "W16"
     | Word32 => "W32"
     | Word64 => "W64"
+    | Word256 => "W256"
 
 fun align (t: t, b: Bytes.t): Bytes.t =
    Bytes.align (b, {alignment = size t})

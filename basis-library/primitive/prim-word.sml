@@ -418,4 +418,12 @@ structure Word64 : PRIM_WORD =
       end
    end
 
+structure Word256 =
+   struct
+      open Word256
+      (* We intentionally do not support the regular set of word ops, which
+         don't make sense for vector registers *)
+      val sizeInBits: Int32.int = 256
+   end
+
 end

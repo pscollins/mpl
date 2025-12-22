@@ -6,20 +6,24 @@ structure Prim = Primitive.MLton.Simd
 type scalar = Real32.real
 type scalarVec = scalar Vector.vector
 type scalarArr = scalar Array.array
-type t = scalarVec
+type t = Prim.float8Reg
 
 val numLanes = 8
 
 fun fromVec (vec, idx) =
-    (VectorSlice.vector o VectorSlice.slice) (vec, idx, SOME numLanes)
+   (* TODO(pscollins): Support arbitrary indices *)
+   if idx = 0 then
+    Prim.float32x8_load vec
+  else
+    raise Fail "bad index"
 
-fun toVec xs = xs
-
-fun add (xs: t) (ys: t): t = let
-    (* TODO(pscollins): Primitive.Array.unsafeAlloc *)
-    val arr = Array.array (numLanes, 0.0)
-    val _ = Prim.float32x8_addArr (xs, ys, arr)
+fun toVec xs = let
+  (* TODO(pscollins): Primitive.Array.unsafeAlloc *)
+  val arr = Array.array (numLanes, 0.0)
+  val _ = Prim.float32x8_store (xs, arr)
 in
-    Array.vector arr
+  Array.vector arr
 end
+
+fun add (xs: t) (ys: t): t = Prim.float32x8_add (xs, ys)
 end

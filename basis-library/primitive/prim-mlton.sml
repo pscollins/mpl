@@ -478,8 +478,11 @@ structure Simd =
    struct
       type floatArr = Real32.real array
       type floatVec = Real32.real Vector.vector
-      (* *arg2 = *arg0 + *arg1 *)
-      val float32x8_addArr = _prim "Simd_Float32x8_addArr": (floatVec * floatVec * floatArr) -> unit;
+      type float8Reg = Word256.word
+      (* arg1 + arg2 *)
+      val float32x8_add = _prim "Simd_Float32x8_add": (float8Reg * float8Reg) -> float8Reg;
+      val float32x8_load = _prim "Simd_Float32x8_load": floatVec -> float8Reg;
+      val float32x8_store = _prim "Simd_Float32x8_store": (float8Reg * floatArr) -> unit;
    end
 
 end
