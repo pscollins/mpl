@@ -1,5 +1,7 @@
 MPL=../build/bin/mpl
-FLAGS = -default-type int64 -default-type word64
+# Hook to pass extra flags to `mpl` via `make`
+EXTRA_FLAGS =
+FLAGS = -default-type int64 -default-type word64 $(EXTRA_FLAGS)
 # Extra flags applied to .dbg targets
 EXTRA_DEBUG_FLAGS = -debug true \
 	-debug-runtime true \
@@ -13,13 +15,15 @@ KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-all true  -keep-output-dir b
 # Full sets of flags for debug targets
 DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS)
 
-KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) ${KEEP_IR_FLAGS}
+# Full sets of flags for `keep` targets
+KEEP_FLAGS = $(DEBUG_FLAGS) $(KEEP_IR_FLAGS)
 
 # Hook to run the test under some other program (e.g. lldb)
 RUN_UNDER =
 
 TARGETS = lib-test \
-	simd
+	simd \
+	tiny-simd
 
 DBG_TARGETS := $(addsuffix .dbg,$(TARGETS))
 KEEP_TARGETS := $(addsuffix .keep,$(TARGETS))
@@ -39,7 +43,6 @@ $(DBG_TARGETS): %.dbg: phony
 	@echo "successfully built bin/$*.bin, executing..."
 	$(RUN_UNDER) bin/$*.bin
 
-# TODO(pscollins): Put -keep outputs in a different directory
 $(KEEP_TARGETS): %.keep: phony
 	@mkdir -p bin
 	$(MPL) $(KEEP_FLAGS) -output bin/$*.bin $*/sources.mlb
