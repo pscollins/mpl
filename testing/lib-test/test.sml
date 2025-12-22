@@ -13,4 +13,39 @@ in
     ()
 end
 
+val _ = let
+    val idx = ref 0
+    fun evalCase (lhs, rhs) = let
+    in
+        assertReal32ListNotEqual "test negative assertions"
+                                 (intsToReals lhs)
+                                 (intsToReals rhs)
+    end
+    val cases = [
+        ([1, 2], [3, 4]),
+        ([1, 2], [1, 2, 3]),
+        ([1, 2, 3, 4], [1, 2, 3]),
+        ([], [1])
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = let
+    val idx = ref 0
+    fun evalCase (lhs, rhs) = let
+    in
+        assertReal32ListEqual "test positive assertions"
+                                 (intsToReals lhs)
+                                 (intsToReals rhs)
+    end
+    val cases = [
+        ([1, 2], [1, 2]),
+        ([1, 2, 3], [1, 2, 3]),
+        ([], [])
+    ]
+in
+    List.app evalCase cases
+end
+
 val _ = summarizeRun()
