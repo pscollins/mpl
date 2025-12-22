@@ -29,11 +29,16 @@
 
 #include <assert.h>
 
-__m256 Simd_Float32x8_add(__m256 in1, __m256 in2) {
+__m256
+__attribute__((always_inline))
+ Simd_Float32x8_add(__m256 in1, __m256 in2) {
   return _mm256_add_ps(in1, in2);
 }
 
-__m256 Simd_Float32x8_load(Pointer in) {
+__m256
+__attribute__((always_inline))
+
+ Simd_Float32x8_load(Pointer in) {
   assert(in != NULL);
   const float* inf = (const float*)in;
   return _mm256_loadu_ps(inf);

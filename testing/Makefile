@@ -5,8 +5,9 @@ EXTRA_FLAGS =
 EXTRA_DEBUG_FLAGS = -debug true \
 	-debug-runtime true \
 	-const 'MLton.debug true' \
-	-verbose 3 \
-	-const 'Exn.keepHistory true'
+	-verbose 3 
+	#-verbose 3 \
+	#-const 'Exn.keepHistory true'
 # List of IRs to keep
 KEEP_IRS = ssa \
 	ssa2 \
