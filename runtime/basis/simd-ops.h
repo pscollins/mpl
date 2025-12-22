@@ -27,16 +27,20 @@
 //   _mm256_storeu_ps(outf, sum);
 // }
 
+#include <assert.h>
+
 __m256 Simd_Float32x8_add(__m256 in1, __m256 in2) {
   return _mm256_add_ps(in1, in2);
 }
 
 __m256 Simd_Float32x8_load(Pointer in) {
+  assert(in != NULL);
   const float* inf = (const float*)in;
   return _mm256_loadu_ps(inf);
 }
 
 void Simd_Float32x8_store(__m256 in, Pointer out) {
+  assert(out != NULL);
   const float* outf = (const float*)out;
   _mm256_storeu_ps(outf, in);
 }
