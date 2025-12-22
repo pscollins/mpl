@@ -21,7 +21,7 @@ KEEP_IR_FLAGS=$(addprefix -keep ,$(KEEP_IRS)) -keep-output-dir bin/
 # Full sets of flags for debug targets
 DEBUG_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(EXTRA_FLAGS)
 
-KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(KEEP_IR_FLAGS)
+KEEP_FLAGS = $(FLAGS) $(EXTRA_DEBUG_FLAGS) $(KEEP_IR_FLAGS) $(EXTRA_FLAGS)
 
 # Hook to run the test under some other program (e.g. lldb)
 RUN_UNDER =
