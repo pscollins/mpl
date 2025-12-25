@@ -476,8 +476,9 @@ structure World =
 (* Raw SIMD operations *)
 structure Simd =
    struct
-      type floatArr = Real32.real array
-      type floatVec = Real32.real Vector.vector
+      type scalar = Real32.real
+      type floatArr = scalar array
+      type floatVec = scalar Vector.vector
       type float8Reg = Word256.word
       (* TODO(pscollins): Revisit -- for now, we just cast as needed in the basis *)
       type index = Word64.word
@@ -486,6 +487,8 @@ structure Simd =
       val float32x8_add = _prim "Simd_Float32x8_add": (float8Reg * float8Reg) -> float8Reg;
       (* arg1 * arg2 *)
       val float32x8_mul = _prim "Simd_Float32x8_mul": (float8Reg * float8Reg) -> float8Reg;
+
+      val float32x8_reduce_add = _prim "Simd_Float32x8_reduce_add": float8Reg -> scalar;
       (* TODO(pscollins): FMA? *)
 
       (* Load/store ops *)

@@ -142,6 +142,7 @@ signature PRIM =
        | String_toWord8Vector (* defunctorize *)
        | Simd_Float32x8_add  (* codegen *)
        | Simd_Float32x8_mul  (* codegen *)
+       | Simd_Float32x8_reduce_add  (* codegen *)
        | Simd_Float32x8_load  (* codegen *)
        | Simd_Float32x8_store  (* codegen *)
        | Thread_atomicBegin (* to rssa *)

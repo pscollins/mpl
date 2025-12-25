@@ -151,6 +151,7 @@ datatype 'a t =
  (* Begin SIMD operations *)
  | Simd_Float32x8_add (* codegen *)
  | Simd_Float32x8_mul (* codegen *)
+ | Simd_Float32x8_reduce_add (* codegen *)
  | Simd_Float32x8_load (* codegen *)
  | Simd_Float32x8_store (* codegen *)
  (* End SIMD operations *)
@@ -344,6 +345,7 @@ fun toString (n: 'a t): string =
        | Ref_ref => "Ref_ref"
        | Simd_Float32x8_add => "Simd_Float32x8_add"
        | Simd_Float32x8_mul => "Simd_Float32x8_mul"
+       | Simd_Float32x8_reduce_add => "Simd_Float32x8_reduce_add"
        | Simd_Float32x8_load => "Simd_Float32x8_load"
        | Simd_Float32x8_store => "Simd_Float32x8_store"
        | String_toWord8Vector => "String_toWord8Vector"
@@ -516,6 +518,7 @@ val equals: 'a t * 'a t -> bool =
     | (Ref_ref, Ref_ref) => true
     | (Simd_Float32x8_add, Simd_Float32x8_add) => true
     | (Simd_Float32x8_mul, Simd_Float32x8_mul) => true
+    | (Simd_Float32x8_reduce_add, Simd_Float32x8_reduce_add) => true
     | (Simd_Float32x8_load, Simd_Float32x8_load) => true
     | (Simd_Float32x8_store, Simd_Float32x8_store) => true
     | (String_toWord8Vector, String_toWord8Vector) => true
@@ -698,6 +701,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_ref => Ref_ref
     | Simd_Float32x8_add => Simd_Float32x8_add
     | Simd_Float32x8_mul => Simd_Float32x8_mul
+    | Simd_Float32x8_reduce_add => Simd_Float32x8_reduce_add
     | Simd_Float32x8_load => Simd_Float32x8_load
     | Simd_Float32x8_store => Simd_Float32x8_store
     | String_toWord8Vector => String_toWord8Vector
@@ -918,6 +922,7 @@ val kind: 'a t -> Kind.t =
        | Ref_ref => Moveable
        | Simd_Float32x8_add => Functional
        | Simd_Float32x8_mul => Functional
+       | Simd_Float32x8_reduce_add => Functional
        | Simd_Float32x8_load => Functional
        | Simd_Float32x8_store => SideEffect
        | String_toWord8Vector => Functional
@@ -1110,6 +1115,7 @@ in
        Ref_ref,
        Simd_Float32x8_add,
        Simd_Float32x8_mul,
+       Simd_Float32x8_reduce_add,
        Simd_Float32x8_load,
        Simd_Float32x8_store,
        String_toWord8Vector,
@@ -1365,6 +1371,7 @@ fun 'a checkApp (prim: 'a t,
       val word8Vector = vector word8
       fun wordVector seqSize = vector (word seqSize)
       val string = word8Vector
+      val real32 = real RealSize.R32
       val real32Array = array (real RealSize.R32)
       val real32Vec = vector (real RealSize.R32)
       val word64 = word WordSize.word64
@@ -1512,6 +1519,8 @@ fun 'a checkApp (prim: 'a t,
            => (twoArgs (word256, word256), word256))
        | Simd_Float32x8_mul =>  noTargs (fn ()
            => (twoArgs (word256, word256), word256))
+       | Simd_Float32x8_reduce_add =>  noTargs (fn ()
+           => (oneArg (word256), real32))
        | Simd_Float32x8_load =>  noTargs (fn ()
            => (twoArgs (real32Vec, word64), word256))
        | Simd_Float32x8_store =>  noTargs (fn ()

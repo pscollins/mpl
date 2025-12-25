@@ -125,4 +125,19 @@ in
     List.app evalCase cases
 end
 
+val _ = let
+    fun evalCase (vec, want) = let
+        val got = Float32x8.reduce_add (fromIntList vec)
+    in
+        assertRealEqual "test reduce add" got (Real32.fromInt want)
+    end
+    val cases = [
+        ([1, 1, 1, 1, 1, 1, 1, 1], 8),
+        ([0, 0, 0, 0, 1, 1, 1, 1], 4),
+        ([2, 2, 2, 2, 1, 1, 1, 1], 12)
+    ]
+in
+    List.app evalCase cases
+end
+
 val _ = summarizeRun()

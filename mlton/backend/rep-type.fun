@@ -800,6 +800,7 @@ fun checkPrimApp {args, prim, result} =
       end
       fun realTernary s = done ([real s, real s, real s], SOME (real s))
       fun wordShift s = done ([wordOrBitsOrSeq s, shiftArg], SOME (wordOrBitsOrSeq s))
+      val float32 = real RealSize.R32
       val word64 = word WordSize.word64
       val word256 = word WordSize.word256
    in
@@ -846,6 +847,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_sub s => realBinary s
        | Prim.Simd_Float32x8_add => done ([word256, word256], SOME (word256))
        | Prim.Simd_Float32x8_mul => done ([word256, word256], SOME (word256))
+       | Prim.Simd_Float32x8_reduce_add => done ([word256], SOME (float32))
        | Prim.Simd_Float32x8_load => done ([objptr, word64], SOME (word256))
        | Prim.Simd_Float32x8_store => done ([word256, objptr], NONE)
        | Prim.Thread_returnToC => done ([], NONE)
