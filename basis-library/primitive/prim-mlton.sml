@@ -479,9 +479,11 @@ structure Simd =
       type floatArr = Real32.real array
       type floatVec = Real32.real Vector.vector
       type float8Reg = Word256.word
+      (* TODO(pscollins): Revisit -- for now, we just cast as needed in the basis *)
+      type index = Word64.word
       (* arg1 + arg2 *)
       val float32x8_add = _prim "Simd_Float32x8_add": (float8Reg * float8Reg) -> float8Reg;
-      val float32x8_load = _prim "Simd_Float32x8_load": floatVec -> float8Reg;
+      val float32x8_load = _prim "Simd_Float32x8_load": (floatVec * index) -> float8Reg;
       val float32x8_store = _prim "Simd_Float32x8_store": (float8Reg * floatArr) -> unit;
    end
 

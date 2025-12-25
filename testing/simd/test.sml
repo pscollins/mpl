@@ -53,8 +53,23 @@ val _ = let
           (intsToReals expected) got
     end
     val cases = [
-      (0, iota 1 8)
+      (0, iota 1 8),
+      (1, iota 2 8)
       (* TODO(pscollins): Cases for non-0-start loads *)
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = let
+    val (wholeList: Real32.real list) = intsToReals (iota 1 20)
+    fun evalCase idx = let
+      fun f() = fromListWithStart idx wholeList
+    in
+      assertRaises "test load bounds check" f "BadLoadIndex"
+    end
+    val cases = [
+      ~1, 15, 20 
     ]
 in
     List.app evalCase cases

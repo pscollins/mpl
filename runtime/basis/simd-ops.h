@@ -24,10 +24,10 @@ Simd_Float32x8_add(Word256 in1, Word256 in2) {
 // vector`
 
 Word256 __attribute__((always_inline))
- Simd_Float32x8_load(Pointer in) {
+ Simd_Float32x8_load(Pointer in, int64_t offset) {
   const float* inf = (const float*)in;
   // Issue unaligned loads to be safe
-  return _mm256_loadu_ps(inf);
+  return _mm256_loadu_ps(inf + offset);
 }
 
 void __attribute__((always_inline))

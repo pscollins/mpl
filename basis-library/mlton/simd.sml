@@ -10,12 +10,17 @@ type t = Prim.float8Reg
 
 val numLanes = 8
 
-fun fromVec (vec, idx) =
-   (* TODO(pscollins): Support arbitrary indices *)
-   if idx = 0 then
-    Prim.float32x8_load vec
-  else
-    raise Fail "bad index"
+exception BadLoadIndex;
+
+fun fromVec (vec, idx) = let
+   val endIdx = idx + (numLanes - 1)
+   val len = Vector.length vec
+   val isOk = (idx >= 0) andalso (endIdx < len)
+  in
+    if isOk then
+      Prim.float32x8_load (vec, Word64.fromInt idx)
+    else raise BadLoadIndex 
+  end
 
 fun toVec xs = let
   (* TODO(pscollins): Primitive.Array.unsafeAlloc *)

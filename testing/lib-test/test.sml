@@ -106,4 +106,20 @@ in
     List.app evalCase cases
 end
 
+exception TestException
+val _ = let
+  fun f() = raise TestException
+  val _ = assertRaises "positive test" f "TestException"
+  val _ = assertRaises "catches mismatch" 
+    (fn () => assertRaises "positive test" f "DifferentException")
+    "FailedTest"
+  fun g () = ()
+  val _ = assertRaises "catches no exception" 
+    (fn () => assertRaises "positive test" g "TestException")
+    "FailedTest"
+in
+  () 
+end
+    
+
 val _ = summarizeRun()

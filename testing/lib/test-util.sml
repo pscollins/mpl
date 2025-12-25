@@ -157,3 +157,17 @@ val intListNeAsserter = makeIntListAsserter (not o equalityTypeListEq)
 
 val assertIntListEqual = assertMatchWith intListEqAsserter
 val assertIntListNotEqual = assertMatchWith intListNeAsserter
+
+(* Assertions for exception handling *)
+fun assertRaises (msgPrefix: string) (f: unit -> 'b) (wantName: string) = let
+  val failMsg = String.concat [msgPrefix, ": wanted ", wantName, " but nothing was raised"]
+in
+  (f(); printLn failMsg; raise FailedTest failMsg)
+end
+  handle e => let 
+    val gotName = exnName e
+    val msg = String.concat [msgPrefix, ": want raised ", wantName, " vs got ", gotName]
+    val () = if not kDefaultQuiet then printLn msg  else ()
+  in
+    if gotName <> wantName then raise FailedTest msg else ()
+  end

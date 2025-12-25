@@ -1361,6 +1361,7 @@ fun 'a checkApp (prim: 'a t,
       val string = word8Vector
       val real32Array = array (real RealSize.R32)
       val real32Vec = vector (real RealSize.R32)
+      val word64 = word WordSize.word64
       val word256 = word WordSize.word256
   in
       case prim of
@@ -1504,7 +1505,7 @@ fun 'a checkApp (prim: 'a t,
        | Simd_Float32x8_add =>  noTargs (fn ()
            => (twoArgs (word256, word256), word256))
        | Simd_Float32x8_load =>  noTargs (fn ()
-           => (oneArg (real32Vec), word256))
+           => (twoArgs (real32Vec, word64), word256))
        | Simd_Float32x8_store =>  noTargs (fn ()
            => (twoArgs (word256, real32Array), unit))
        | Thread_atomicBegin => noTargs (fn () => (noArgs, unit))
