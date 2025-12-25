@@ -845,6 +845,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_round s => realUnary s
        | Prim.Real_sub s => realBinary s
        | Prim.Simd_Float32x8_add => done ([word256, word256], SOME (word256))
+       | Prim.Simd_Float32x8_mul => done ([word256, word256], SOME (word256))
        | Prim.Simd_Float32x8_load => done ([objptr, word64], SOME (word256))
        | Prim.Simd_Float32x8_store => done ([word256, objptr], NONE)
        | Prim.Thread_returnToC => done ([], NONE)

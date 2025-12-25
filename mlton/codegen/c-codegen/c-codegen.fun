@@ -188,6 +188,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
        | Ref_cas _ => true
        | Array_cas _ => true
        | Simd_Float32x8_add => true
+       | Simd_Float32x8_mul => true
        | Simd_Float32x8_load => true
        | Simd_Float32x8_store => true
        | Thread_returnToC => false

@@ -150,6 +150,7 @@ datatype 'a t =
  | Ref_ref (* to ssa2 *)
  (* Begin SIMD operations *)
  | Simd_Float32x8_add (* codegen *)
+ | Simd_Float32x8_mul (* codegen *)
  | Simd_Float32x8_load (* codegen *)
  | Simd_Float32x8_store (* codegen *)
  (* End SIMD operations *)
@@ -342,6 +343,7 @@ fun toString (n: 'a t): string =
        | Ref_deref {readBarrier=false} => "Ref_deref_noReadBarrier"
        | Ref_ref => "Ref_ref"
        | Simd_Float32x8_add => "Simd_Float32x8_add"
+       | Simd_Float32x8_mul => "Simd_Float32x8_mul"
        | Simd_Float32x8_load => "Simd_Float32x8_load"
        | Simd_Float32x8_store => "Simd_Float32x8_store"
        | String_toWord8Vector => "String_toWord8Vector"
@@ -513,6 +515,7 @@ val equals: 'a t * 'a t -> bool =
     | (Ref_deref {readBarrier=rb1}, Ref_deref {readBarrier=rb2}) => (rb1 = rb2)
     | (Ref_ref, Ref_ref) => true
     | (Simd_Float32x8_add, Simd_Float32x8_add) => true
+    | (Simd_Float32x8_mul, Simd_Float32x8_mul) => true
     | (Simd_Float32x8_load, Simd_Float32x8_load) => true
     | (Simd_Float32x8_store, Simd_Float32x8_store) => true
     | (String_toWord8Vector, String_toWord8Vector) => true
@@ -694,6 +697,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_deref rb => Ref_deref rb
     | Ref_ref => Ref_ref
     | Simd_Float32x8_add => Simd_Float32x8_add
+    | Simd_Float32x8_mul => Simd_Float32x8_mul
     | Simd_Float32x8_load => Simd_Float32x8_load
     | Simd_Float32x8_store => Simd_Float32x8_store
     | String_toWord8Vector => String_toWord8Vector
@@ -913,6 +917,7 @@ val kind: 'a t -> Kind.t =
        | Ref_deref _ => DependsOnState
        | Ref_ref => Moveable
        | Simd_Float32x8_add => Functional
+       | Simd_Float32x8_mul => Functional
        | Simd_Float32x8_load => Functional
        | Simd_Float32x8_store => SideEffect
        | String_toWord8Vector => Functional
@@ -1104,6 +1109,7 @@ in
        Ref_deref {readBarrier=false},
        Ref_ref,
        Simd_Float32x8_add,
+       Simd_Float32x8_mul,
        Simd_Float32x8_load,
        Simd_Float32x8_store,
        String_toWord8Vector,
@@ -1503,6 +1509,8 @@ fun 'a checkApp (prim: 'a t,
        | Ref_deref _ => oneTarg (fn t => (oneArg (reff t), t))
        | Ref_ref => oneTarg (fn t => (oneArg t, reff t))
        | Simd_Float32x8_add =>  noTargs (fn ()
+           => (twoArgs (word256, word256), word256))
+       | Simd_Float32x8_mul =>  noTargs (fn ()
            => (twoArgs (word256, word256), word256))
        | Simd_Float32x8_load =>  noTargs (fn ()
            => (twoArgs (real32Vec, word64), word256))

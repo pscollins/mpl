@@ -20,6 +20,11 @@ Simd_Float32x8_add(Word256 in1, Word256 in2) {
   return _mm256_add_ps(in1, in2);
 }
 
+Word256 __attribute__((always_inline))
+Simd_Float32x8_mul(Word256 in1, Word256 in2) {
+  return _mm256_mul_ps(in1, in2);
+}
+
 // Mutable pointers correspond `real array`, const pointers correspond to `real
 // vector`
 

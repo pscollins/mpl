@@ -481,8 +481,14 @@ structure Simd =
       type float8Reg = Word256.word
       (* TODO(pscollins): Revisit -- for now, we just cast as needed in the basis *)
       type index = Word64.word
+      (* Arihmetic ops *)
       (* arg1 + arg2 *)
       val float32x8_add = _prim "Simd_Float32x8_add": (float8Reg * float8Reg) -> float8Reg;
+      (* arg1 * arg2 *)
+      val float32x8_mul = _prim "Simd_Float32x8_mul": (float8Reg * float8Reg) -> float8Reg;
+      (* TODO(pscollins): FMA? *)
+
+      (* Load/store ops *)
       val float32x8_load = _prim "Simd_Float32x8_load": (floatVec * index) -> float8Reg;
       val float32x8_store = _prim "Simd_Float32x8_store": (float8Reg * floatArr) -> unit;
    end

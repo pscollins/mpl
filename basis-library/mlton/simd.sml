@@ -31,4 +31,6 @@ in
 end
 
 fun add (xs: t) (ys: t): t = Prim.float32x8_add (xs, ys)
+fun mul (xs: t) (ys: t): t = Prim.float32x8_mul (xs, ys)
+
 end

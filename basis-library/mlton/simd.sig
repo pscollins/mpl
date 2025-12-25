@@ -7,4 +7,5 @@ sig
     val fromVec: (scalarVec * int) -> t
     val toVec: t -> scalarVec
     val add: t -> t -> t
+    val mul: t -> t -> t
 end
