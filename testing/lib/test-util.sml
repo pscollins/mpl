@@ -139,3 +139,21 @@ val real32ListListNeAsserter = makeReal32listAsserter (not o real32ListListEq)
 
 val assertReal32ListListEqual = assertMatchWith real32ListListEqAsserter
 val assertReal32ListListNotEqual = assertMatchWith real32ListListNeAsserter
+
+(* Assertions+utilities for int list *)
+val intListToString = (listToString Int.toString)
+
+fun makeIntListAsserter matchFn = {
+    matchFn = matchFn,
+    printFn = intListToString,
+    quiet = kDefaultQuiet
+}
+
+fun equalityTypeListEq (arg: ''a list * ''a list): bool =
+        listEq (fn (x, y) => x = y) arg
+
+val intListEqAsserter = makeIntListAsserter equalityTypeListEq
+val intListNeAsserter = makeIntListAsserter (not o equalityTypeListEq)
+
+val assertIntListEqual = assertMatchWith intListEqAsserter
+val assertIntListNotEqual = assertMatchWith intListNeAsserter

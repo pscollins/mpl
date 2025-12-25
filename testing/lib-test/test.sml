@@ -86,4 +86,24 @@ in
     List.app evalCase cases
 end
 
+
+val _ = let
+    val idx = ref 0
+    fun evalCase (lhs, rhs) = let
+      val _ = 
+        assertIntListEqual "test positive assertions for int list"
+        lhs lhs
+      val _ = 
+        assertIntListNotEqual "test negative assertions for int list"
+        lhs rhs
+    in
+      ()
+    end
+    val cases = [
+        ([1, 2], [3, 4])
+    ]
+in
+    List.app evalCase cases
+end
+
 val _ = summarizeRun()
