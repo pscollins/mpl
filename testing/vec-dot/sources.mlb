@@ -1,0 +1,4 @@
+../lib/sources.mlb
+$(SML_LIB)/basis/mlton.mlb
+
+test.sml

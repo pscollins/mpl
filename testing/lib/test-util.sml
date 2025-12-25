@@ -57,15 +57,29 @@ fun assertMatchWith (asserter: 'a asserter)
         else raise FailedTest fullMsg
     end
 
+val kDefaultQuiet = false
+
 (* Assertions+utilities for int *)
 fun getIntEqualAsserter(): int asserter = {
     matchFn = fn (a, b) => a = b,
     printFn = Int.toString,
-    quiet = false
+    quiet = kDefaultQuiet
 }
 
 val assertIntEqual: string -> int -> int -> unit
     = assertMatchWith (getIntEqualAsserter())
+
+(* Assertions+utilities for real32 *)
+fun getRealEqualAsserter(): Real32.real asserter = {
+    (* TODO(pscollins): Consider using a tolerance instead *)
+    matchFn = fn (a, b) => (Real32.compare (a, b) = EQUAL),
+    printFn = Real32.toString,
+    quiet = kDefaultQuiet
+}
+
+val assertRealEqual: string -> Real32.real -> Real32.real -> unit
+    = assertMatchWith (getRealEqualAsserter())
+
 
 (* Assertions+utilities for real list *)
 fun listToString (f: 'a -> string) (xs: 'a list) =
@@ -82,7 +96,7 @@ val real32ListToString = listToString Real32.toString
 fun makeReal32listAsserter matchFn = {
     matchFn = matchFn,
     printFn = real32ListToString,
-    quiet = false
+    quiet = kDefaultQuiet
 }
 
 fun listEq (pairEq: 'a * 'a -> bool) (xs: 'a list, ys: 'a list): bool =
@@ -114,7 +128,7 @@ val real32ListListToString = listToString (listToString Real32.toString)
 fun makeReal32listAsserter matchFn = {
     matchFn = matchFn,
     printFn = real32ListListToString,
-    quiet = false
+    quiet = kDefaultQuiet
 }
 
 fun real32ListListEq (arg: Real32.real list list * Real32.real list list): bool =

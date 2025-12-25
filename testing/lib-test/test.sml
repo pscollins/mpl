@@ -1,6 +1,6 @@
 val _ = let
-    val _ = assertIntEqual "foo" 1 1
-    val _ = assertIntEqual "foo2" 2 2
+    val _ = assertIntEqual "test int" 1 1
+    val _ = assertIntEqual "test int2" 2 2
     val _ = let
         val _ = assertIntEqual "foo3" 1 0
         val _ = raise Fail "Did not raise expected exception!"
@@ -11,6 +11,21 @@ val _ = let
                    print (String.concat ["Saw expected failure message: ", msg, "\n"])
 in
     ()
+end
+
+
+val _ = let
+  val _ = assertRealEqual "test real, true" 1.0 1.0
+  val success = ref false
+  val _ = let
+    val _ = assertRealEqual "test real, false" 1.0 2.0
+  in
+    ()
+  end
+    handle FailedTest (msg) => (success := true)
+  val _ = if not (!success) then raise Fail "negative test failed" else ()
+in
+  ()
 end
 
 val _ = let
