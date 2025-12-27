@@ -127,7 +127,7 @@ end
 
 val _ = let
     fun evalCase (vec, want) = let
-        val got = Float32x8.reduce_add (fromIntList vec)
+        val got = Float32x8.reduceAdd (fromIntList vec)
     in
         assertRealEqual "test reduce add" got (Real32.fromInt want)
     end
