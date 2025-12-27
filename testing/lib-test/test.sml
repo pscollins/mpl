@@ -66,10 +66,10 @@ end
 val _ = let
     val idx = ref 0
     fun evalCase (lhs, rhs) = let
-      val _ = 
+      val _ =
         assertReal32ListListEqual "test positive assertions for list list"
         lhs lhs
-      val _ = 
+      val _ =
         assertReal32ListListNotEqual "test negative assertions for list list"
         lhs rhs
     in
@@ -78,7 +78,7 @@ val _ = let
     val cases = [
         ([[1.0, 2.0],
           [3.0, 4.0]],
- 
+
           [[3.0, 2.0],
            [3.0, 4.0]])
     ]
@@ -90,10 +90,10 @@ end
 val _ = let
     val idx = ref 0
     fun evalCase (lhs, rhs) = let
-      val _ = 
+      val _ =
         assertIntListEqual "test positive assertions for int list"
         lhs lhs
-      val _ = 
+      val _ =
         assertIntListNotEqual "test negative assertions for int list"
         lhs rhs
     in
@@ -103,23 +103,54 @@ val _ = let
         ([1, 2], [3, 4])
     ]
 in
-    List.app evalCase cases
+  List.app evalCase cases
 end
 
 exception TestException
 val _ = let
   fun f() = raise TestException
   val _ = assertRaises "positive test" f "TestException"
-  val _ = assertRaises "catches mismatch" 
-    (fn () => assertRaises "positive test" f "DifferentException")
-    "FailedTest"
+  val _ = assertRaises "catches mismatch"
+                       (fn () => assertRaises "positive test" f "DifferentException")
+                       "FailedTest"
   fun g () = ()
-  val _ = assertRaises "catches no exception" 
-    (fn () => assertRaises "positive test" g "TestException")
-    "FailedTest"
+  val _ = assertRaises "catches no exception"
+                       (fn () => assertRaises "positive test" g "TestException")
+                       "FailedTest"
 in
-  () 
+  ()
 end
-    
+
+fun round (r: real) = Real32.fromLarge IEEEReal.TO_NEAREST r
+
+val _ = let
+  val asserter = assertRealNear 0.1
+  val kSmall = round 1.0
+  val kLarge = round 1.01
+  val _ = asserter "test close1" kSmall kLarge
+  val _ = asserter "test close2" kLarge kSmall
+  val _ = let
+    fun f() = asserter "test far" 1.0 2.0
+  in
+    assertRaises "assertNear negative test" f "FailedTest"
+  end
+in
+  ()
+end
+
+val _ = let
+  fun evalCase (start, n, expected) = let
+    val got = iota start n
+  in
+    assertIntListEqual "test iota" got expected
+  end
+  val cases = [
+    (0, 3, [0, 1, 2]),
+    (1, 3, [1, 2, 3]),
+    (4, 1, [4])
+  ]
+in
+  List.app evalCase cases
+end
 
 val _ = summarizeRun()

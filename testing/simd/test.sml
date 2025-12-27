@@ -26,24 +26,6 @@ in
     List.app evalCase cases
 end
 
-fun iota (start: int) (n: int): int list =
-  List.tabulate (n, fn i => i + start) 
-
-val _ = let
-  fun evalCase (start, n, expected) = let
-    val got = iota start n
-  in
-    assertIntListEqual "test iota" got expected
-  end
-  val cases = [
-    (0, 3, [0, 1, 2]),
-    (1, 3, [1, 2, 3]),
-    (4, 1, [4])
-  ]
-in
-  List.app evalCase cases
-end   
-
 val _ = let
     val (wholeList: Real32.real list) = intsToReals (iota 1 20)
     fun evalCase (idx, expected) = let

@@ -71,7 +71,6 @@ val assertIntEqual: string -> int -> int -> unit
 
 (* Assertions+utilities for real32 *)
 fun getRealEqualAsserter(): Real32.real asserter = {
-    (* TODO(pscollins): Consider using a tolerance instead *)
     matchFn = fn (a, b) => (Real32.compare (a, b) = EQUAL),
     printFn = Real32.toString,
     quiet = kDefaultQuiet
@@ -80,6 +79,23 @@ fun getRealEqualAsserter(): Real32.real asserter = {
 val assertRealEqual: string -> Real32.real -> Real32.real -> unit
     = assertMatchWith (getRealEqualAsserter())
 
+fun getRealNearAsserter (tol: real): Real32.real asserter = let
+  val tol' = Real32.fromLarge IEEEReal.TO_NEAREST tol
+  fun checkNear (a, b) = let
+    val diff = Real32.abs (Real32.- (a, b))
+  in
+    Real32.compare (diff, tol') = LESS
+  end
+in
+  {
+    matchFn = checkNear,
+    printFn = Real32.toString,
+    quiet = kDefaultQuiet
+  }
+end
+
+fun assertRealNear (tol: real): string -> Real32.real -> Real32.real -> unit
+    = assertMatchWith (getRealNearAsserter tol)
 
 (* Assertions+utilities for real list *)
 fun listToString (f: 'a -> string) (xs: 'a list) =
@@ -93,7 +109,7 @@ val intsToReals = List.map Real32.fromInt
 
 val real32ListToString = listToString Real32.toString
 
-fun makeReal32listAsserter matchFn = {
+fun makeReal32ListAsserter matchFn = {
     matchFn = matchFn,
     printFn = real32ListToString,
     quiet = kDefaultQuiet
@@ -116,8 +132,8 @@ fun real32ListEq (arg: Real32.real list * Real32.real list): bool =
         listEq pairEq arg
     end
 
-val real32ListEqAsserter = makeReal32listAsserter real32ListEq
-val real32ListNeAsserter = makeReal32listAsserter (not o real32ListEq)
+val real32ListEqAsserter = makeReal32ListAsserter real32ListEq
+val real32ListNeAsserter = makeReal32ListAsserter (not o real32ListEq)
 
 val assertReal32ListEqual = assertMatchWith real32ListEqAsserter
 val assertReal32ListNotEqual = assertMatchWith real32ListNeAsserter
@@ -125,7 +141,7 @@ val assertReal32ListNotEqual = assertMatchWith real32ListNeAsserter
 (* Assertions+utilities for real list list *)
 val real32ListListToString = listToString (listToString Real32.toString)
 
-fun makeReal32listAsserter matchFn = {
+fun makeReal32ListListAsserter matchFn = {
     matchFn = matchFn,
     printFn = real32ListListToString,
     quiet = kDefaultQuiet
@@ -134,8 +150,8 @@ fun makeReal32listAsserter matchFn = {
 fun real32ListListEq (arg: Real32.real list list * Real32.real list list): bool =
         listEq real32ListEq arg
 
-val real32ListListEqAsserter = makeReal32listAsserter real32ListListEq
-val real32ListListNeAsserter = makeReal32listAsserter (not o real32ListListEq)
+val real32ListListEqAsserter = makeReal32ListListAsserter real32ListListEq
+val real32ListListNeAsserter = makeReal32ListListAsserter (not o real32ListListEq)
 
 val assertReal32ListListEqual = assertMatchWith real32ListListEqAsserter
 val assertReal32ListListNotEqual = assertMatchWith real32ListListNeAsserter
@@ -164,10 +180,14 @@ fun assertRaises (msgPrefix: string) (f: unit -> 'b) (wantName: string) = let
 in
   (f(); printLn failMsg; raise FailedTest failMsg)
 end
-  handle e => let 
+  handle e => let
     val gotName = exnName e
     val msg = String.concat [msgPrefix, ": want raised ", wantName, " vs got ", gotName]
     val () = if not kDefaultQuiet then printLn msg  else ()
   in
     if gotName <> wantName then raise FailedTest msg else ()
   end
+
+(* General utilities  *)
+fun iota (start: int) (n: int): int list =
+  List.tabulate (n, fn i => i + start)

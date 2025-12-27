@@ -1,8 +1,9 @@
 structure Float32x8 = MLton.Float32x8
 
 structure Real = Real32
+structure Random = MLton.Random
 
-type vector = Real.real array
+type vec = Real.real array
 
 type testCase = {
   lhs: int list,
@@ -15,7 +16,7 @@ fun intListToVec (xs: int list) =
 
 fun arrToList (arr: 'a array): 'a list = Array.foldr (op ::) [] arr
 
-fun evalCaseWith (dotF: vector * vector -> Real.real) (pfx: string) (tc: testCase) = let
+fun evalCaseWith (dotF: vec * vec -> Real.real) (pfx: string) (tc: testCase) = let
   val actual: Real.real = dotF (intListToVec (#lhs tc), intListToVec (#rhs tc))
 in
   assertRealEqual pfx (Real.fromInt (#expected tc)) actual
@@ -25,14 +26,14 @@ fun assert (cond: bool) (msg: string) =
   if not cond then raise Fail ("Assertion failure: " ^ msg)
   else ()
 
-fun getLength (lhs: vector, rhs: vector): int = let
+fun getLength (lhs: vec, rhs: vec): int = let
   val lengthOk = (Array.length lhs) = (Array.length rhs)
   val _ = assert lengthOk "length mismatch"
 in
   Array.length lhs
 end
 
-fun scalarDot (lhs: vector, rhs: vector): Real32.real = let
+fun scalarDot (lhs: vec, rhs: vec): Real32.real = let
   val _ = getLength (lhs, rhs)
   (* sum += lhs[idx] * rhs[idx] *)
   fun add (idx: int, rhsEl: Real.real, sum: Real.real): Real.real = let
@@ -56,7 +57,7 @@ in
 end
 
 
-fun simdDot (lhs: vector, rhs: vector): Real32.real = let
+fun simdDot (lhs: vec, rhs: vec): Real32.real = let
   val len = getLength (lhs, rhs)
   val _ = assert ((len mod kNumLanes) = 0)
   fun doAdd (idx, acc: Float32x8.t): Float32x8.t = let
@@ -112,6 +113,55 @@ val _ = let
   ]
 in
   List.app evalCase cases
+end
+
+(* Generates an int in the range [0, max). We would ideally use the version from
+`lib/mlton/basic/random.{sig,sml}`, but I can't get the dependency to work *)
+fun genInt (max: int) = let
+  val max' = Word.fromInt max
+  val w = Random.rand()
+  val result = Word.mod (w, max')
+in
+  Word.toInt result
+end
+
+fun genRandomVecs (len: int, max: int) (seed: int): (vec * vec) = let
+  (* set a seed per call for reproducibility/debugging *)
+  val _ = Random.srand (Word.fromInt seed)
+  val kScale = Word.toInt (Word.<< (Word.fromInt 1, Word.fromInt 15))
+  fun applyScale (n: int) = (Real.fromInt n) / (Real.fromInt kScale)
+  fun genNum () = let
+    (* Can't generate floats directly, so generate in the range scaled up by
+      kScale and divide
+
+    There is some weirdness in the implementation of `rand()` such that we
+    deterministically swtich betwen all-negative and all-positive if we generate
+    this as (sign, magnitude), so instead we generate in the range (-max, +max)
+    and subtract *)
+    val scaledMax = max * kScale
+    val unscaled = (genInt (scaledMax * 2 + 1)) - scaledMax
+  in
+    applyScale unscaled
+  end
+  fun genVec() = Array.tabulate (len, (fn _ => genNum()))
+in
+  (genVec(), genVec())
+end
+
+val _ = let
+  val kLen = 512
+  val kMax = 4
+  val kTol: real = 0.001
+  fun evalCase (seed: int) = let
+    val inputs = genRandomVecs (kLen, kMax) seed
+    val want = scalarDot inputs
+    val got = simdDot inputs
+    val pfx = String.concat ["vec test vs reference (seed=", Int.toString seed, ")"]
+  in
+    assertRealNear kTol pfx want got
+  end
+in
+  List.app evalCase (iota 1000 1100)
 end
 
 val _ = summarizeRun()
