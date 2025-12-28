@@ -1,5 +1,4 @@
 ../lib/sources.mlb
 $(SML_LIB)/basis/mlton.mlb
-../vec-dot-lib/sources.mlb
 
-test.sml
+vec-dot.sml

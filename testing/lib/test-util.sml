@@ -278,4 +278,4 @@ fun printSummary (bs: benchmarkSummary): unit = let
     ["}\n"]
 in
   (print o String.concat) msgParts
-end 
+end
