@@ -4,8 +4,6 @@ structure Float32x8 = MLton.Float32x8
 structure Real = Real32
 structure Random = MLton.Random
 
-type vec = Real.real array
-
 val kIters = (Word.toInt (Word.<< (0w1, 0w5))) - 1
 val kMax = 1
 

@@ -6,30 +6,30 @@ structure Float32x8 = MLton.Float32x8
 structure Real = Real32
 structure Random = MLton.Random
 
-type vec = Real.real array
+type vec = Real.real vector
 
 fun assert (cond: bool) (msg: string) =
   if not cond then raise Fail ("Assertion failure: " ^ msg)
   else ()
 
 fun getLength (lhs: vec, rhs: vec): int = let
-  val lengthOk = (Array.length lhs) = (Array.length rhs)
+  val lengthOk = (Vector.length lhs) = (Vector.length rhs)
   val _ = assert lengthOk "length mismatch"
 in
-  Array.length lhs
+  Vector.length lhs
 end
 
 fun scalarDot (lhs: vec, rhs: vec): Real32.real = let
   val _ = getLength (lhs, rhs)
   (* sum += lhs[idx] * rhs[idx] *)
   fun add (idx: int, rhsEl: Real.real, sum: Real.real): Real.real = let
-    val lhsEl = Array.sub (lhs, idx)
+    val lhsEl = Vector.sub (lhs, idx)
   in
     Real.+ (sum, (Real.* (rhsEl, lhsEl)))
   end
   val init: Real.real = 0.0
 in
-  Array.foldli add init rhs
+  Vector.foldli add init rhs
 end
 
 val kNumLanes = 8
@@ -48,8 +48,8 @@ fun simdDot (lhs: vec, rhs: vec): Real32.real = let
   val _ = assert ((len mod kNumLanes) = 0)
   fun doAdd (idx, acc: Float32x8.t): Float32x8.t = let
     fun addToAcc () = let
-      val lhs' = Float32x8.fromVec (Array.vector lhs, idx)
-      val rhs' = Float32x8.fromVec (Array.vector rhs, idx)
+      val lhs' = Float32x8.fromVec (lhs, idx)
+      val rhs' = Float32x8.fromVec (rhs, idx)
       val sum = Float32x8.mul lhs' rhs'
     in
       doAdd (idx + kNumLanes, Float32x8.add acc sum)
@@ -89,7 +89,7 @@ fun genRandomVecs (len: int, max: int) (seed: int): (vec * vec) = let
   in
     applyScale unscaled
   end
-  fun genVec() = Array.tabulate (len, (fn _ => genNum()))
+  fun genVec() = Vector.tabulate (len, (fn _ => genNum()))
 in
   (genVec(), genVec())
 end

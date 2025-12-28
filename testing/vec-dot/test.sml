@@ -4,8 +4,6 @@ structure Float32x8 = MLton.Float32x8
 structure Real = Real32
 structure Random = MLton.Random
 
-type vec = Real.real array
-
 type testCase = {
   lhs: int list,
   rhs: int list,
@@ -13,7 +11,7 @@ type testCase = {
 }
 
 fun intListToVec (xs: int list) =
-  Array.fromList (List.map Real.fromInt xs)
+  Vector.fromList (List.map Real.fromInt xs)
 
 fun arrToList (arr: 'a array): 'a list = Array.foldr (op ::) [] arr
 
