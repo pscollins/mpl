@@ -191,3 +191,91 @@ end
 (* General utilities  *)
 fun iota (start: int) (n: int): int list =
   List.tabulate (n, fn i => i + start)
+
+(* Benchmark utilities *)
+type benchmarkResult = {
+  resultsHash: Word32.word,
+  times: real array
+}
+
+type benchmarkSummary = {
+  prefix: string,
+  resultsHash: Word32.word,
+  min: real,
+  max: real,
+  avg: real,
+  p50: real,
+  stddev: real
+}
+
+fun collectTiming (iters: int) (f: unit -> 'b) = let
+  (* Contains the xor of
+     (iteration number | result hash)
+   across all iterations. Mostly intended to prevent DCE.
+  *)
+  val resultsHash = ref (Word32.fromInt 0)
+  fun doIter n = let
+    val timer = Timer.startRealTimer()
+    val result = f()
+    val duration = Timer.checkRealTimer timer
+    val stepHash = Word32.orb ((Word32.fromInt n), (MLton.hash result))
+    val _ = resultsHash := (Word32.xorb (!resultsHash, stepHash))
+  in
+    duration
+  end
+in
+  {
+    resultsHash = !resultsHash,
+    times = Array.tabulate (iters, doIter)
+  }
+end
+
+
+fun calculateSummary (pfx: string, res: benchmarkResult): benchmarkSummary = let
+  val {resultsHash, times} = res
+  val _ = ArrayQSort.sort Real.compare times
+  val numTimes = Array.length times
+  val min = Array.sub (times, 0)
+  val max = Array.sub (times, numTimes -1)
+  val avg = (Array.foldl (op +) 0.0 times) / (Real.fromInt numTimes)
+  val p50 = let
+    val lower = Array.sub (times, (numTimes - 1) div 2)
+    val upper = Array.sub (times, numTimes div 2)
+  in
+    (lower + upper) / 2.0
+  end
+  val stddev = let
+    fun addDiff (time, acc) =
+        acc + Math.pow (time - avg, 2.0)
+    val sumSqDiff = Array.foldl addDiff 0.0 times
+  in
+    (* sample stddev, not population *)
+    Math.sqrt (sumSqDiff / (Real.fromInt (numTimes - 1)))
+  end
+in
+  {
+    prefix = pfx,
+    resultsHash = resultsHash,
+    min = min,
+    max = max,
+    avg = avg,
+    p50 = p50,
+    stddev = stddev
+  }
+end
+
+fun printSummary (bs: benchmarkSummary): unit = let
+  fun mkNamed (name: string) (field: benchmarkSummary -> real): string list
+      = ["\t", name, "=", Real.toString (field bs), "\n"]
+  val msgParts = [
+    "Result for benchmark (", #prefix bs, "): {\n"
+  ] @ (mkNamed "min" #min) @
+    (mkNamed "max" #max) @
+    (mkNamed "max" #max) @
+    (mkNamed "avg" #avg) @
+    (mkNamed "p50" #p50) @
+    (mkNamed "stddev" #stddev) @
+    ["}\n"]
+in
+  (print o String.concat) msgParts
+end 

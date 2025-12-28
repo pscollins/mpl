@@ -136,7 +136,7 @@ fun genRandomVecs (len: int, max: int) (seed: int): (vec * vec) = let
 
     There is some weirdness in the implementation of `rand()` such that we
     deterministically swtich betwen all-negative and all-positive if we generate
-    this as (sign, magnitude), so instead we generate in the range (-max, +max)
+    this as (sign, magnitude), so instead we generate in the range [0, +max]
     and subtract *)
     val scaledMax = max * kScale
     val unscaled = (genInt (scaledMax * 2 + 1)) - scaledMax

@@ -153,4 +153,47 @@ in
   List.app evalCase cases
 end
 
+val _ = let
+  val toInc = ref 0
+  fun f () = ((toInc := !toInc + 1); !toInc)
+  val kNumIters = 100
+  val {resultsHash, times} = collectTiming kNumIters f
+  val _ = assertIntEqual "test time count" kNumIters (Array.length times)
+  (* copy+pasted golden value *)
+  val kExpectHash = 0
+  val _ = assertIntEqual "test hash" (Word32.toInt resultsHash) kExpectHash
+in
+  ()
+end
+
+fun toR32 (r: real): Real32.real =
+    Real32.fromLarge IEEEReal.TO_NEAREST (Real.toLarge r)
+
+val _ = let
+  val times = Array.fromList [10.0, 1.0, 2.0, 3.0]
+  val kHash = Word32.fromInt 1234
+  val summary = calculateSummary ("test pfx", {resultsHash=kHash, times=times})
+  val {min, max, avg, p50, stddev, ...} = summary
+  val _ = assertRealEqual "test min" 1.0 (toR32 min)
+  val _ = assertRealEqual "test max" 10.0 (toR32 max)
+  val _ = assertRealEqual "test avg" 4.0 (toR32 avg)
+  val _ = assertRealNear 0.001 "test stddev" 4.082 (toR32 stddev)
+  (* p50: even length case *)
+  val _ = assertRealEqual "test p50" 2.5 (toR32 p50)
+  val _ = printSummary summary
+in
+  ()
+end
+
+val _ = let
+  val times = Array.fromList [1.0, 2.0, 3.0]
+  val kHash = Word32.fromInt 1234
+  val {p50, ...}: benchmarkSummary =
+      calculateSummary ("test pfx", {resultsHash=kHash, times=times})
+  (* p50: odd length case *)
+  val _ = assertRealEqual "test p50" 2.0 (toR32 p50)
+in
+  ()
+end
+
 val _ = summarizeRun()
