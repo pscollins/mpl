@@ -93,5 +93,3 @@ fun genRandomVecs (len: int, max: int) (seed: int): (vec * vec) = let
 in
   (genVec(), genVec())
 end
-
-val _ = summarizeRun()

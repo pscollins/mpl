@@ -24,7 +24,8 @@ RUN_UNDER =
 TARGETS = lib-test \
 	simd \
 	tiny-simd \
-  vec-dot
+  vec-dot \
+  vec-dot-benchmark
 
 DBG_TARGETS := $(addsuffix .dbg,$(TARGETS))
 KEEP_TARGETS := $(addsuffix .keep,$(TARGETS))

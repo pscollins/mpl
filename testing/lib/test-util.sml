@@ -195,6 +195,7 @@ fun iota (start: int) (n: int): int list =
 (* Benchmark utilities *)
 type benchmarkResult = {
   resultsHash: Word32.word,
+  (* times in milliseconds *)
   times: real array
 }
 
@@ -208,25 +209,33 @@ type benchmarkSummary = {
   stddev: real
 }
 
-fun collectTiming (iters: int) (f: unit -> 'b) = let
+fun collectTiming (iters: int) (f: unit -> 'b): benchmarkResult = let
   (* Contains the xor of
      (iteration number | result hash)
    across all iterations. Mostly intended to prevent DCE.
   *)
   val resultsHash = ref (Word32.fromInt 0)
+  val idRef = ref (fn x => x)
+  fun keep x = (!idRef) x
   fun doIter n = let
     val timer = Timer.startRealTimer()
-    val result = f()
+    (* TODO(pscollins): I think there's a risk that the compiler will hoist the
+    actual calculation out of the loop. Investigate. *)
+    val result = (keep f)()
     val duration = Timer.checkRealTimer timer
     val stepHash = Word32.orb ((Word32.fromInt n), (MLton.hash result))
     val _ = resultsHash := (Word32.xorb (!resultsHash, stepHash))
+    val timeUs = Time.toMicroseconds duration
+    val kUsPerMs = 1000.0
   in
-    duration
+    (Real.fromLargeInt timeUs) / kUsPerMs
   end
+  (* Order is important so that !resultsHash below gets the final value *)
+  val times = Array.tabulate (iters, doIter)
 in
   {
     resultsHash = !resultsHash,
-    times = Array.tabulate (iters, doIter)
+    times = times
   }
 end
 
@@ -266,15 +275,25 @@ end
 
 fun printSummary (bs: benchmarkSummary): unit = let
   fun mkNamed (name: string) (field: benchmarkSummary -> real): string list
-      = ["\t", name, "=", Real.toString (field bs), "\n"]
+      = [name, "=", Real.toString (field bs), " ms"]
+  fun mkRow (els: string list list): string list = let
+    fun join els =
+        case els of
+            [] => []
+          | [el] => el
+          | el::els' => el @ [", "] @ (join els')
+  in
+    ["\t"] @ (join els) @ ["\n"]
+  end
   val msgParts = [
     "Result for benchmark (", #prefix bs, "): {\n"
-  ] @ (mkNamed "min" #min) @
-    (mkNamed "max" #max) @
-    (mkNamed "max" #max) @
-    (mkNamed "avg" #avg) @
-    (mkNamed "p50" #p50) @
-    (mkNamed "stddev" #stddev) @
+  ] @ (mkRow [
+          mkNamed "min" #min,
+          mkNamed "max" #max,
+          mkNamed "avg" #avg
+      ]) @
+    (mkRow [mkNamed "p50" #p50, mkNamed "stddev" #stddev]) @
+    ["\thash=0x", Word32.toString (#resultsHash bs), "\n"] @
     ["}\n"]
 in
   (print o String.concat) msgParts

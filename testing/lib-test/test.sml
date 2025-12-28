@@ -160,7 +160,7 @@ val _ = let
   val {resultsHash, times} = collectTiming kNumIters f
   val _ = assertIntEqual "test time count" kNumIters (Array.length times)
   (* copy+pasted golden value *)
-  val kExpectHash = 0
+  val kExpectHash = 2619359574
   val _ = assertIntEqual "test hash" (Word32.toInt resultsHash) kExpectHash
 in
   ()
