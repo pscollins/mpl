@@ -4,7 +4,7 @@ structure Float32x8 = MLton.Float32x8
 structure Real = Real32
 structure Random = MLton.Random
 
-val kIters = (Word.toInt (Word.<< (0w1, 0w5))) - 1
+val kIters = (Word.toInt (Word.<< (0w1, 0w8))) - 1
 val kMax = 1
 
 fun keep x = x
@@ -34,10 +34,12 @@ end
 
 val _ = let
   val kSeed = 1234567
-  val lengths = [
-    1024,
-    2048,
-    4096
+  fun mkLength pow = Word.toInt (Word.<< (0w1, Word.fromInt pow))
+  val lengths = List.map mkLength [
+        18,
+        20,
+        22,
+        24
   ]
   fun evalCase (length: int) = evalBenchmarkPair (kSeed, length)
 in
