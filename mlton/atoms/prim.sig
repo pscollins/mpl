@@ -14,6 +14,7 @@ signature PRIM_STRUCTS =
       structure Con: CON
       structure Const: CONST
       structure RealSize: REAL_SIZE
+      structure SimdPrim: SIMD_PRIM
       structure Spid: SPID
       structure WordSize: WORD_SIZE
       sharing RealSize = Const.RealX.RealSize
@@ -140,8 +141,7 @@ signature PRIM =
        | Ref_deref of {readBarrier: bool} (* to ssa2 *)
        | Ref_ref (* to ssa2 *)
        | String_toWord8Vector (* defunctorize *)
-       | Simd_Float32x8_add  (* codegen *)
-       | Simd_Float32x8_mul  (* codegen *)
+       | Simd_Float32x8_binop of SimdPrim.binop  (* codegen *)
        | Simd_Float32x8_reduce_add  (* codegen *)
        | Simd_Float32x8_load  (* codegen *)
        | Simd_Float32x8_store  (* codegen *)

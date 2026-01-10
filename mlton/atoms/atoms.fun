@@ -83,6 +83,7 @@ structure Atoms =
                              structure Con = Con
                              structure Const = Const
                              structure RealSize = RealSize
+                             structure SimdPrim = SimdPrim
                              structure Spid = Spid
                              structure WordSize = WordSize)
 

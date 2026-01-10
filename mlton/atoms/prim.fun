@@ -149,8 +149,7 @@ datatype 'a t =
  | Ref_deref of {readBarrier: bool} (* to ssa2 *)
  | Ref_ref (* to ssa2 *)
  (* Begin SIMD operations *)
- | Simd_Float32x8_add (* codegen *)
- | Simd_Float32x8_mul (* codegen *)
+ | Simd_Float32x8_binop of SimdPrim.binop (* codegen *)
  | Simd_Float32x8_reduce_add (* codegen *)
  | Simd_Float32x8_load (* codegen *)
  | Simd_Float32x8_store (* codegen *)
@@ -343,8 +342,8 @@ fun toString (n: 'a t): string =
        | Ref_deref {readBarrier=true} => "Ref_deref"
        | Ref_deref {readBarrier=false} => "Ref_deref_noReadBarrier"
        | Ref_ref => "Ref_ref"
-       | Simd_Float32x8_add => "Simd_Float32x8_add"
-       | Simd_Float32x8_mul => "Simd_Float32x8_mul"
+       | Simd_Float32x8_binop SimdPrim.Add => "Simd_Float32x8_add"
+       | Simd_Float32x8_binop SimdPrim.Mul => "Simd_Float32x8_mul"
        | Simd_Float32x8_reduce_add => "Simd_Float32x8_reduce_add"
        | Simd_Float32x8_load => "Simd_Float32x8_load"
        | Simd_Float32x8_store => "Simd_Float32x8_store"
@@ -516,8 +515,7 @@ val equals: 'a t * 'a t -> bool =
     | (Ref_cas (SOME ctype1), Ref_cas (SOME ctype2)) => CType.equals (ctype1, ctype2)
     | (Ref_deref {readBarrier=rb1}, Ref_deref {readBarrier=rb2}) => (rb1 = rb2)
     | (Ref_ref, Ref_ref) => true
-    | (Simd_Float32x8_add, Simd_Float32x8_add) => true
-    | (Simd_Float32x8_mul, Simd_Float32x8_mul) => true
+    | (Simd_Float32x8_binop binop, Simd_Float32x8_binop binop') => binop = binop'
     | (Simd_Float32x8_reduce_add, Simd_Float32x8_reduce_add) => true
     | (Simd_Float32x8_load, Simd_Float32x8_load) => true
     | (Simd_Float32x8_store, Simd_Float32x8_store) => true
@@ -699,8 +697,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_cas ctyp => Ref_cas ctyp
     | Ref_deref rb => Ref_deref rb
     | Ref_ref => Ref_ref
-    | Simd_Float32x8_add => Simd_Float32x8_add
-    | Simd_Float32x8_mul => Simd_Float32x8_mul
+    | Simd_Float32x8_binop binop => Simd_Float32x8_binop binop
     | Simd_Float32x8_reduce_add => Simd_Float32x8_reduce_add
     | Simd_Float32x8_load => Simd_Float32x8_load
     | Simd_Float32x8_store => Simd_Float32x8_store
@@ -920,8 +917,7 @@ val kind: 'a t -> Kind.t =
        | Ref_cas _ => SideEffect
        | Ref_deref _ => DependsOnState
        | Ref_ref => Moveable
-       | Simd_Float32x8_add => Functional
-       | Simd_Float32x8_mul => Functional
+       | Simd_Float32x8_binop binop => Functional
        | Simd_Float32x8_reduce_add => Functional
        | Simd_Float32x8_load => Functional
        | Simd_Float32x8_store => SideEffect
@@ -1113,8 +1109,8 @@ in
        Ref_deref {readBarrier=true},
        Ref_deref {readBarrier=false},
        Ref_ref,
-       Simd_Float32x8_add,
-       Simd_Float32x8_mul,
+       Simd_Float32x8_binop SimdPrim.Add,
+       Simd_Float32x8_binop SimdPrim.Mul,
        Simd_Float32x8_reduce_add,
        Simd_Float32x8_load,
        Simd_Float32x8_store,
@@ -1515,9 +1511,7 @@ fun 'a checkApp (prim: 'a t,
        | Ref_cas _ => oneTarg (fn t => (threeArgs (reff t, t, t), t))
        | Ref_deref _ => oneTarg (fn t => (oneArg (reff t), t))
        | Ref_ref => oneTarg (fn t => (oneArg t, reff t))
-       | Simd_Float32x8_add =>  noTargs (fn ()
-           => (twoArgs (word256, word256), word256))
-       | Simd_Float32x8_mul =>  noTargs (fn ()
+       | Simd_Float32x8_binop _ =>  noTargs (fn ()
            => (twoArgs (word256, word256), word256))
        | Simd_Float32x8_reduce_add =>  noTargs (fn ()
            => (oneArg (word256), real32))
