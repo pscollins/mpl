@@ -19,7 +19,7 @@ fun fromVec (vec, idx) = let
   in
     if isOk then
       Prim.float32x8_load (vec, Word64.fromInt idx)
-    else raise BadLoadIndex 
+    else raise BadLoadIndex
   end
 
 fun toVec xs = let
@@ -32,6 +32,7 @@ end
 
 fun add (xs: t) (ys: t): t = Prim.float32x8_add (xs, ys)
 fun mul (xs: t) (ys: t): t = Prim.float32x8_mul (xs, ys)
+fun sub (xs: t) (ys: t): t = Prim.float32x8_sub (xs, ys)
 fun reduceAdd (xs: t): scalar = Prim.float32x8_reduce_add (xs)
 
 end

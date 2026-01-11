@@ -108,6 +108,29 @@ in
 end
 
 val _ = let
+    fun evalCase (lhs, rhs, want) = let
+        val got = Float32x8.sub
+                      (fromIntList lhs)
+                      (fromIntList rhs)
+    in
+        assertReal32ListEqual "test sub"
+                              (toList got)
+                              (intsToReals want)
+    end
+    val cases = [
+        ([1, 2, 3, 4, 5, 6, 7, 8],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [1, 2, 3, 4, 5, 6, 7, 8]),
+
+        ([2, 3, 4, 5, 6, 7, 8, 9],
+         [1, 2, 3, 4, 5, 6, 7, 8],
+         [1, 1, 1, 1, 1, 1, 1, 1])
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = let
     fun evalCase (vec, want) = let
         val got = Float32x8.reduceAdd (fromIntList vec)
     in

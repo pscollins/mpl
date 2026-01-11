@@ -342,8 +342,8 @@ fun toString (n: 'a t): string =
        | Ref_deref {readBarrier=true} => "Ref_deref"
        | Ref_deref {readBarrier=false} => "Ref_deref_noReadBarrier"
        | Ref_ref => "Ref_ref"
-       | Simd_Float32x8_binop SimdPrim.Add => "Simd_Float32x8_add"
-       | Simd_Float32x8_binop SimdPrim.Mul => "Simd_Float32x8_mul"
+       | Simd_Float32x8_binop binop => concat ["Simd_Float32x8_",
+                                               SimdPrim.binOpName binop]
        | Simd_Float32x8_reduce_add => "Simd_Float32x8_reduce_add"
        | Simd_Float32x8_load => "Simd_Float32x8_load"
        | Simd_Float32x8_store => "Simd_Float32x8_store"
@@ -1111,6 +1111,7 @@ in
        Ref_ref,
        Simd_Float32x8_binop SimdPrim.Add,
        Simd_Float32x8_binop SimdPrim.Mul,
+       Simd_Float32x8_binop SimdPrim.Sub,
        Simd_Float32x8_reduce_add,
        Simd_Float32x8_load,
        Simd_Float32x8_store,

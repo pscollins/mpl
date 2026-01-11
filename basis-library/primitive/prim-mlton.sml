@@ -487,6 +487,8 @@ structure Simd =
       val float32x8_add = _prim "Simd_Float32x8_add": (float8Reg * float8Reg) -> float8Reg;
       (* arg1 * arg2 *)
       val float32x8_mul = _prim "Simd_Float32x8_mul": (float8Reg * float8Reg) -> float8Reg;
+      (* arg1 - arg2 *)
+      val float32x8_sub = _prim "Simd_Float32x8_sub": (float8Reg * float8Reg) -> float8Reg;
 
       val float32x8_reduce_add = _prim "Simd_Float32x8_reduce_add": float8Reg -> scalar;
       (* TODO(pscollins): FMA? *)

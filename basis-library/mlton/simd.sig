@@ -8,5 +8,6 @@ sig
     val toVec: t -> scalarVec
     val add: t -> t -> t
     val mul: t -> t -> t
+    val sub: t -> t -> t
     val reduceAdd: t -> scalar
 end
