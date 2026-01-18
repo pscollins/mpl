@@ -150,6 +150,25 @@ in
 end
 
 val _ = let
+    fun evalCase (lhs, rhs, want) = let
+        val got = Float32x8.max
+                      (fromIntList lhs)
+                      (fromIntList rhs)
+    in
+        assertReal32ListEqual "test max"
+                              (toList got)
+                              (intsToReals want)
+    end
+    val cases = [
+        ([1, 2, 3,  4, 5, 6, 7, 8],
+         [3, 0, 4, ~1, 7, 9, 0, 3],
+         [3, 2, 4,  4, 7, 9, 7, 8])
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = let
     fun evalCase (vec, want) = let
         val got = Float32x8.reduceAdd (fromIntList vec)
     in
@@ -159,6 +178,20 @@ val _ = let
         ([1, 1, 1, 1, 1, 1, 1, 1], 8),
         ([0, 0, 0, 0, 1, 1, 1, 1], 4),
         ([2, 2, 2, 2, 1, 1, 1, 1], 12)
+    ]
+in
+    List.app evalCase cases
+end
+
+val _ = let
+    fun evalCase (vec, want) = let
+        val got = Float32x8.reduceMax (fromIntList vec)
+    in
+        assertRealEqual "test reduce max" got (Real32.fromInt want)
+    end
+    val cases = [
+        ([1, 2, 3, 4, 5, 6, 7, 8], 8),
+        ([~8, ~7, ~6, ~5, ~4, ~3, ~2, ~1], ~1)
     ]
 in
     List.app evalCase cases

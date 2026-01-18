@@ -490,10 +490,13 @@ structure Simd =
       (* arg1 - arg2 *)
       val float32x8_sub = _prim "Simd_Float32x8_sub": (float8Reg * float8Reg) -> float8Reg;
       (* Comparison ops *)
+      (* max(arg1, arg2) *)
+      val float32x8_max = _prim "Simd_Float32x8_max": (float8Reg * float8Reg) -> float8Reg;
       (* min(arg1, arg2) *)
       val float32x8_min = _prim "Simd_Float32x8_min": (float8Reg * float8Reg) -> float8Reg;
 
       val float32x8_reduce_add = _prim "Simd_Float32x8_reduce_add": float8Reg -> scalar;
+      val float32x8_reduce_max = _prim "Simd_Float32x8_reduce_max": float8Reg -> scalar;
       (* TODO(pscollins): FMA? *)
 
       (* Load/store ops *)

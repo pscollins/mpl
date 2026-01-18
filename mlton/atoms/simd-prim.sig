@@ -6,6 +6,7 @@ signature SIMD_PRIM = sig
              | Mul
              | Sub
              (* Comparison operators *)
+             | Max
              | Min
 
     (* String representation of each binop type: this determines the `prim` name *)
@@ -14,6 +15,7 @@ signature SIMD_PRIM = sig
     (* Reduction operations *)
     datatype reductionop =
              ReduceAdd
+             | ReduceMax
 
     (* String representation of each reductionop type: this determines the
     `prim` name *)

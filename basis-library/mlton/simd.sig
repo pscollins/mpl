@@ -9,6 +9,8 @@ sig
     val add: t -> t -> t
     val mul: t -> t -> t
     val sub: t -> t -> t
+    val max: t -> t -> t
     val min: t -> t -> t
     val reduceAdd: t -> scalar
+    val reduceMax: t -> scalar
 end
