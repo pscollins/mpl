@@ -1115,6 +1115,7 @@ in
        Simd_Float32x8_binop SimdPrim.Add,
        Simd_Float32x8_binop SimdPrim.Mul,
        Simd_Float32x8_binop SimdPrim.Sub,
+       Simd_Float32x8_binop SimdPrim.Min,
        Simd_Float32x8_reductionop SimdPrim.ReduceAdd,
        Simd_Float32x8_load,
        Simd_Float32x8_store,

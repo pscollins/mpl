@@ -30,6 +30,11 @@ Simd_Float32x8_sub(Word256 in1, Word256 in2) {
   return _mm256_sub_ps(in1, in2);
 }
 
+Word256 __attribute__((always_inline))
+Simd_Float32x8_min(Word256 in1, Word256 in2) {
+  return _mm256_min_ps(in1, in2);
+}
+
 float
 Simd_Float32x8_reduce_add(Word256 in1) {
   // https://stackoverflow.com/a/23190168

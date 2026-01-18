@@ -4,12 +4,14 @@ datatype binop =
          Add
        | Mul
        | Sub
+       | Min
 
 fun binOpName (binop: binop): string =
     case binop of
         Add => "add"
      |  Mul => "mul"
      |  Sub => "sub"
+     |  Min => "min"
 
 datatype reductionop = ReduceAdd
 

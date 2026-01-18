@@ -1,9 +1,12 @@
 signature SIMD_PRIM = sig
     (* Binary operations with codegen support *)
     datatype binop =
+             (* Arithmetic operators *)
              Add
              | Mul
              | Sub
+             (* Comparison operators *)
+             | Min
 
     (* String representation of each binop type: this determines the `prim` name *)
     val binOpName: binop -> string
