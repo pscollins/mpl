@@ -196,5 +196,19 @@ val _ = let
 in
     List.app evalCase cases
 end
+            
+val _ = let
+    fun evalCase (vec, want) = let
+        val got = Float32x8.reduceMin (fromIntList vec)
+    in
+        assertRealEqual "test reduce min" got (Real32.fromInt want)
+    end
+    val cases = [
+        ([1, 2, 3, 4, 5, 6, 7, 8], 1),
+        ([~8, ~7, ~6, ~5, ~4, ~3, ~2, ~1], ~8)
+    ]
+in
+    List.app evalCase cases
+end
 
 val _ = summarizeRun()

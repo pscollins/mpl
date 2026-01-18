@@ -17,10 +17,12 @@ fun binOpName (binop: binop): string =
 
 datatype reductionop = ReduceAdd
                      | ReduceMax
+                     | ReduceMin
 
 fun reductionOpName (reductionop: reductionop): string =
     case reductionop of
         ReduceAdd => "reduce_add"
      |  ReduceMax => "reduce_max"
+     |  ReduceMin => "reduce_min"
 
 end

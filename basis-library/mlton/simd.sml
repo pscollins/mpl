@@ -37,5 +37,6 @@ fun max (xs: t) (ys: t): t = Prim.float32x8_max (xs, ys)
 fun min (xs: t) (ys: t): t = Prim.float32x8_min (xs, ys)
 fun reduceAdd (xs: t): scalar = Prim.float32x8_reduce_add (xs)
 fun reduceMax (xs: t): scalar = Prim.float32x8_reduce_max (xs)
+fun reduceMin (xs: t): scalar = Prim.float32x8_reduce_min (xs)
 
 end

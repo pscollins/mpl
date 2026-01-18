@@ -1119,6 +1119,7 @@ in
        Simd_Float32x8_binop SimdPrim.Min,
        Simd_Float32x8_reductionop SimdPrim.ReduceAdd,
        Simd_Float32x8_reductionop SimdPrim.ReduceMax,
+       Simd_Float32x8_reductionop SimdPrim.ReduceMin,
        Simd_Float32x8_load,
        Simd_Float32x8_store,
        String_toWord8Vector,

@@ -13,4 +13,5 @@ sig
     val min: t -> t -> t
     val reduceAdd: t -> scalar
     val reduceMax: t -> scalar
+    val reduceMin: t -> scalar
 end

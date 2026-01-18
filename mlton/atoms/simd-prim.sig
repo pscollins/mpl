@@ -16,6 +16,7 @@ signature SIMD_PRIM = sig
     datatype reductionop =
              ReduceAdd
              | ReduceMax
+             | ReduceMin
 
     (* String representation of each reductionop type: this determines the
     `prim` name *)
