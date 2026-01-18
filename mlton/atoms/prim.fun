@@ -150,7 +150,7 @@ datatype 'a t =
  | Ref_ref (* to ssa2 *)
  (* Begin SIMD operations *)
  | Simd_Float32x8_binop of SimdPrim.binop (* codegen *)
- | Simd_Float32x8_reduce_add (* codegen *)
+ | Simd_Float32x8_reductionop of SimdPrim.reductionop (* codegen *)
  | Simd_Float32x8_load (* codegen *)
  | Simd_Float32x8_store (* codegen *)
  (* End SIMD operations *)
@@ -344,7 +344,8 @@ fun toString (n: 'a t): string =
        | Ref_ref => "Ref_ref"
        | Simd_Float32x8_binop binop => concat ["Simd_Float32x8_",
                                                SimdPrim.binOpName binop]
-       | Simd_Float32x8_reduce_add => "Simd_Float32x8_reduce_add"
+       | Simd_Float32x8_reductionop reductionop => concat ["Simd_Float32x8_",
+                                               SimdPrim.reductionOpName reductionop]
        | Simd_Float32x8_load => "Simd_Float32x8_load"
        | Simd_Float32x8_store => "Simd_Float32x8_store"
        | String_toWord8Vector => "String_toWord8Vector"
@@ -516,7 +517,8 @@ val equals: 'a t * 'a t -> bool =
     | (Ref_deref {readBarrier=rb1}, Ref_deref {readBarrier=rb2}) => (rb1 = rb2)
     | (Ref_ref, Ref_ref) => true
     | (Simd_Float32x8_binop binop, Simd_Float32x8_binop binop') => binop = binop'
-    | (Simd_Float32x8_reduce_add, Simd_Float32x8_reduce_add) => true
+    | (Simd_Float32x8_reductionop reductionop,
+       Simd_Float32x8_reductionop reductionop') => reductionop = reductionop'
     | (Simd_Float32x8_load, Simd_Float32x8_load) => true
     | (Simd_Float32x8_store, Simd_Float32x8_store) => true
     | (String_toWord8Vector, String_toWord8Vector) => true
@@ -698,7 +700,8 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_deref rb => Ref_deref rb
     | Ref_ref => Ref_ref
     | Simd_Float32x8_binop binop => Simd_Float32x8_binop binop
-    | Simd_Float32x8_reduce_add => Simd_Float32x8_reduce_add
+    | Simd_Float32x8_reductionop reductionop =>
+      Simd_Float32x8_reductionop reductionop
     | Simd_Float32x8_load => Simd_Float32x8_load
     | Simd_Float32x8_store => Simd_Float32x8_store
     | String_toWord8Vector => String_toWord8Vector
@@ -918,7 +921,7 @@ val kind: 'a t -> Kind.t =
        | Ref_deref _ => DependsOnState
        | Ref_ref => Moveable
        | Simd_Float32x8_binop binop => Functional
-       | Simd_Float32x8_reduce_add => Functional
+       | Simd_Float32x8_reductionop reductionop => Functional
        | Simd_Float32x8_load => Functional
        | Simd_Float32x8_store => SideEffect
        | String_toWord8Vector => Functional
@@ -1112,7 +1115,7 @@ in
        Simd_Float32x8_binop SimdPrim.Add,
        Simd_Float32x8_binop SimdPrim.Mul,
        Simd_Float32x8_binop SimdPrim.Sub,
-       Simd_Float32x8_reduce_add,
+       Simd_Float32x8_reductionop SimdPrim.ReduceAdd,
        Simd_Float32x8_load,
        Simd_Float32x8_store,
        String_toWord8Vector,
@@ -1514,7 +1517,7 @@ fun 'a checkApp (prim: 'a t,
        | Ref_ref => oneTarg (fn t => (oneArg t, reff t))
        | Simd_Float32x8_binop _ =>  noTargs (fn ()
            => (twoArgs (word256, word256), word256))
-       | Simd_Float32x8_reduce_add =>  noTargs (fn ()
+       | Simd_Float32x8_reductionop _ =>  noTargs (fn ()
            => (oneArg (word256), real32))
        | Simd_Float32x8_load =>  noTargs (fn ()
            => (twoArgs (real32Vec, word64), word256))

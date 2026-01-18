@@ -11,4 +11,10 @@ fun binOpName (binop: binop): string =
      |  Mul => "mul"
      |  Sub => "sub"
 
+datatype reductionop = ReduceAdd
+
+fun reductionOpName (reductionop: reductionop): string =
+    case reductionop of
+        ReduceAdd => "reduce_add"
+
 end

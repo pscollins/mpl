@@ -142,7 +142,7 @@ signature PRIM =
        | Ref_ref (* to ssa2 *)
        | String_toWord8Vector (* defunctorize *)
        | Simd_Float32x8_binop of SimdPrim.binop  (* codegen *)
-       | Simd_Float32x8_reduce_add  (* codegen *)
+       | Simd_Float32x8_reductionop of SimdPrim.reductionop  (* codegen *)
        | Simd_Float32x8_load  (* codegen *)
        | Simd_Float32x8_store  (* codegen *)
        | Thread_atomicBegin (* to rssa *)
