@@ -444,6 +444,10 @@ structure Thread =
         GCState.t * thread * thread * Word32.word * Word64.word * Word64.word -> unit;
    end
 
+structure Trace = struct
+  val sourceMark = _prim "Trace_SourceMark": unit -> unit
+end
+
 structure Weak =
    struct
       open Weak

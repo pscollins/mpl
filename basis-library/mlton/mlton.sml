@@ -104,6 +104,7 @@ structure Signal = MLtonSignal
 structure Syslog = MLtonSyslog
 structure TextIO = MLtonIO (TextIO)
 structure Thread = MLtonThread
+structure Trace = = MLtonTrace
 structure Vector = Vector
 structure Weak = MLtonWeak
 structure World = MLtonWorld

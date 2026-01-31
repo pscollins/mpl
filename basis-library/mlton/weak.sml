@@ -20,7 +20,7 @@ structure MLtonWeak =
              * canGet and the get.
              *)
             val x = Weak.get w
-         in
+        in
             if Weak.canGet w
                then SOME x
             else NONE
