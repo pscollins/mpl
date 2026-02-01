@@ -160,6 +160,7 @@ datatype 'a t =
   * on the stack.
   *)
  | Thread_switchTo (* to rssa (as runtime C fn) *)
+ | Trace_sourceMark  (* codegen *)
  | TopLevel_getHandler (* implement exceptions *)
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
@@ -344,6 +345,7 @@ fun toString (n: 'a t): string =
        | Thread_copyCurrent => "Thread_copyCurrent"
        | Thread_returnToC => "Thread_returnToC"
        | Thread_switchTo => "Thread_switchTo"
+       | Trace_sourceMark => "Trace_sourceMark"
        | TopLevel_getHandler => "TopLevel_getHandler"
        | TopLevel_getSuffix => "TopLevel_getSuffix"
        | TopLevel_setHandler => "TopLevel_setHandler"
@@ -512,6 +514,7 @@ val equals: 'a t * 'a t -> bool =
     | (Thread_copyCurrent, Thread_copyCurrent) => true
     | (Thread_returnToC, Thread_returnToC) => true
     | (Thread_switchTo, Thread_switchTo) => true
+    | (Trace_sourceMark, Trace_sourceMark) => true
     | (TopLevel_getHandler, TopLevel_getHandler) => true
     | (TopLevel_getSuffix, TopLevel_getSuffix) => true
     | (TopLevel_setHandler, TopLevel_setHandler) => true
@@ -690,6 +693,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Thread_copyCurrent => Thread_copyCurrent
     | Thread_returnToC => Thread_returnToC
     | Thread_switchTo => Thread_switchTo
+    | Trace_sourceMark => Trace_sourceMark
     | TopLevel_getHandler => TopLevel_getHandler
     | TopLevel_getSuffix => TopLevel_getSuffix
     | TopLevel_setHandler => TopLevel_setHandler
@@ -906,6 +910,7 @@ val kind: 'a t -> Kind.t =
        | Thread_copyCurrent => SideEffect
        | Thread_returnToC => SideEffect
        | Thread_switchTo => SideEffect
+       | Trace_sourceMark => SideEffect
        | TopLevel_getHandler => DependsOnState
        | TopLevel_getSuffix => DependsOnState
        | TopLevel_setHandler => SideEffect
@@ -1094,6 +1099,7 @@ in
        Thread_copyCurrent,
        Thread_returnToC,
        Thread_switchTo,
+       Trace_sourceMark,
        TopLevel_getHandler,
        TopLevel_getSuffix,
        TopLevel_setHandler,
@@ -1485,6 +1491,7 @@ fun 'a checkApp (prim: 'a t,
        | Thread_copyCurrent => noTargs (fn () => (noArgs, unit))
        | Thread_returnToC => noTargs (fn () => (noArgs, unit))
        | Thread_switchTo => noTargs (fn () => (oneArg thread, unit))
+       | Trace_sourceMark => noTargs (fn () => (oneArg string, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
        | TopLevel_setHandler =>

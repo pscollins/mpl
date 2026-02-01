@@ -151,6 +151,7 @@ signature PRIM =
         * on the stack.
         *)
        | Thread_switchTo (* to rssa (as runtime C fn) *)
+       | Trace_sourceMark  (* codegen *)
        | TopLevel_getHandler (* implement exceptions *)
        | TopLevel_getSuffix (* implement suffix *)
        | TopLevel_setHandler (* implement exceptions *)

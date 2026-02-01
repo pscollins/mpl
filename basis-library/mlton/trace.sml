@@ -1,3 +1,3 @@
 structure MLTonTrace : MLTON_TRACE = struct
-  open MLton.Trace
+  open Primitive.MLton.Trace
 end

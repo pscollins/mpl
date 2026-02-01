@@ -1,3 +1,3 @@
 signature MLTON_TRACE = sig
-    val: sourceMark: unit -> unit
+    val sourceMark: string -> unit
 end

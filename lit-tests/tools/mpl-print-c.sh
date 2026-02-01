@@ -14,4 +14,3 @@ trap cleanup EXIT
 OUTFILE=${OUTDIR}/out.bin
 ${MPL} -output ${OUTFILE} -keep g $@
 cat ${OUTFILE}.*.c
-# ./${OUTFILE}

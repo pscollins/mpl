@@ -312,6 +312,8 @@ in
 
    ../mlton/thread.sig
    ../mlton/thread.sml
+   ../mlton/trace.sig
+   ../mlton/trace.sml
    ../mlton/signal.sig
    ../mlton/signal.sml
    ../mlton/process.sig
