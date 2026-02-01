@@ -2,3 +2,4 @@
 /build/
 /install/
 mlton-*.tgz
+node_modules
