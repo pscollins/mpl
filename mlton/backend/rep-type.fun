@@ -842,6 +842,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_round s => realUnary s
        | Prim.Real_sub s => realBinary s
        | Prim.Thread_returnToC => done ([], NONE)
+       (* | Prim.Trace_sourceMark => done ([], NONE) *)
        | Prim.Word_add s => wordBinary s
        | Prim.Word_addCheckP (s, _) => wordBinaryP s
        | Prim.Word_andb s => wordBinary s

@@ -187,6 +187,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
        | Real_sub _ => true
        | Ref_cas _ => true
        | Array_cas _ => true
+       | Trace_sourceMark =>  true
        | Thread_returnToC => false
        | Word_add _ => true
        | Word_addCheckP _ => true
