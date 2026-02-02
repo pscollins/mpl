@@ -424,6 +424,7 @@ structure Statement =
        | PrimApp of {args: Operand.t vector,
                      dst: Operand.t option,
                      prim: Type.t Prim.t}
+       | Diagnostic of string
 
       val layout =
          let

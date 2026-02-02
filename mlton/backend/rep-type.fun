@@ -844,6 +844,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Thread_returnToC => done ([], NONE)
        (* TODO(pscollins): Can we force a string literal here? *)
        | Prim.Trace_sourceMark => done ([objptr], NONE)
+       | Prim.Trace_staticSourceMark _ => done ([], NONE)
        | Prim.Word_add s => wordBinary s
        | Prim.Word_addCheckP (s, _) => wordBinaryP s
        | Prim.Word_andb s => wordBinary s

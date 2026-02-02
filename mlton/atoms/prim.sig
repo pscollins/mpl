@@ -152,6 +152,7 @@ signature PRIM =
         *)
        | Thread_switchTo (* to rssa (as runtime C fn) *)
        | Trace_sourceMark  (* codegen *)
+       | Trace_staticSourceMark of string  (* to machine *)
        | TopLevel_getHandler (* implement exceptions *)
        | TopLevel_getSuffix (* implement suffix *)
        | TopLevel_setHandler (* implement exceptions *)
