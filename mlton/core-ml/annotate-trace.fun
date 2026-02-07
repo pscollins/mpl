@@ -111,7 +111,9 @@ fun annotateTrace {prog} =
       and doPrimApp (primApp as {args: Exp.t vector, prim: Type.t Prim.t,
                                  targs: Type.t vector}) = let
          fun emitStaticSourceMark () = let
-            val _ = () (* TODO: PRINT ARGS *)
+            val _  = print "PRINTING PRIM APP ARGS!\n"
+            val _ = Layout.outputl (Layout.tuple (Vector.toListMap (args, Exp.layout)),
+                                    Outstream0.standard)
          in
             Prim.Trace_sourceMark
          end
