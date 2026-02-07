@@ -15,8 +15,9 @@ fun annotateTrace {prog} =
       val _ =
          Vector.foreachi (prog, fn (i, decs) =>
             (print (concat ["Vector entry: ", Int.toString i, "\n"]);
-             List.foreachi (decs, fn (j, _) =>
-                print (concat ["Statement #", Int.toString j, "\n"]))))
+             List.foreachi (decs, fn (j, dec) =>
+                (print (concat ["Statement #", Int.toString j, "\n"]);
+                 Layout.outputl (Dec.layout dec, Outstream0.standard)))))
    in
       {prog = prog}
    end
