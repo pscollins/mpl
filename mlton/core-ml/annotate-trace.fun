@@ -87,6 +87,11 @@ fun annotateTrace {prog} =
       in
          Vector.map (rvbs, doRvb)
       end
+      and doFun {decs, tyvars} = let
+         fun doFunDec {lambda, var} = {lambda = doLambda lambda, var = var} 
+      in
+         {decs = Vector.map (decs, doFunDec), tyvars = tyvars}
+      end
       and doDec (dec: Dec.t): Dec.t = let
           val currIdx =  !currStmt
           val _ = currStmt := (currIdx + 1)
@@ -99,7 +104,9 @@ fun annotateTrace {prog} =
                       rvbs = doRvbs rvbs,
                       tyvars = tyvars,
                       vbs = doVbs vbs}
-          | _ => dec
+           | Dec.Fun funDec => Dec.Fun (doFun funDec)
+           | Dec.Datatype _ => dec  (* no PrimApps *)
+           | Dec.Exception _ => dec (* no PrimApps *)
       end
       and doPrimApp {args: Exp.t vector, prim: Type.t Prim.t, targs: Type.t vector} =
           {args = args, prim = prim, targs = targs}
