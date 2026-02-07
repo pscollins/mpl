@@ -59,6 +59,7 @@ structure MLBFrontEnd = MLBFrontEnd (structure Ast = Ast
                                      structure FrontEnd = FrontEnd)
 structure DeadCode = DeadCode (structure CoreML = CoreML)
 structure AnnotateTrace = AnnotateTrace (structure CoreML = CoreML)
+structure InlineTrace = InlineTrace (structure CoreML = CoreML)
 structure Defunctorize = Defunctorize (structure CoreML = CoreML
                                        structure Xml = Xml)
 structure Elaborate = Elaborate (structure Ast = Ast
@@ -367,6 +368,27 @@ fun mkCompile {outputC, outputLL, outputS} =
          in
             coreML
          end
+      fun inlineTrace coreML =
+         let
+            fun doit (CoreML.Program.T {decs}) =
+               let
+                  val decs = Vector.map (decs, fn d => [d])
+                  val {prog = decs} = InlineTrace.inlineTrace {prog = decs}
+                  val decs = Vector.concatV (Vector.map (decs, Vector.fromList))
+               in
+                  CoreML.Program.T {decs = decs}
+               end
+         in
+            Control.translatePass
+            {arg = coreML,
+             doit = doit,
+             keepIL = false,
+             name = "inlineTrace",
+             srcToFile = SOME CoreML.Program.toFile,
+             tgtStats = SOME CoreML.Program.layoutStats,
+             tgtToFile = SOME CoreML.Program.toFile,
+             tgtTypeCheck = NONE}
+         end
       fun annotateTrace coreML =
          let
             fun doit (CoreML.Program.T {decs}) =
@@ -403,7 +425,7 @@ fun mkCompile {outputC, outputLL, outputS} =
       fun frontend input =
          Control.translatePass
          {arg = input,
-          doit = defunctorize o annotateTrace o deadCode o parseAndElaborateMLB,
+          doit = defunctorize o annotateTrace o inlineTrace o deadCode o parseAndElaborateMLB,
           keepIL = false,
           name = "frontend",
           srcToFile = NONE,

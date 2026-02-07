@@ -15,11 +15,14 @@ local
    core-ml.fun
    annotate-trace.sig
    annotate-trace.fun
+   inline-trace.sig
+   inline-trace.fun
    dead-code.sig
    dead-code.fun
 in
    signature CORE_ML
    functor CoreML
    functor AnnotateTrace
+   functor InlineTrace
    functor DeadCode
 end
