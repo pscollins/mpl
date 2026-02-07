@@ -13,6 +13,23 @@ open CoreML
 fun inlineTrace {prog} =
    let
       val currStmt = ref 0
+      fun expToTypeString (exp: Exp.t) =
+         case Exp.node exp of
+            Exp.App _ => "App"
+          | Exp.Case _ => "Case"
+          | Exp.Con _ => "Con"
+          | Exp.Const _ => "Const"
+          | Exp.EnterLeave _ => "EnterLeave"
+          | Exp.Handle _ => "Handle"
+          | Exp.Lambda _ => "Lambda"
+          | Exp.Let _ => "Let"
+          | Exp.List _ => "List"
+          | Exp.PrimApp _ => "PrimApp"
+          | Exp.Raise _ => "Raise"
+          | Exp.Record _ => "Record"
+          | Exp.Seq _ => "Seq"
+          | Exp.Var _ => "Var"
+          | Exp.Vector _ => "Vector"
       fun doExp (exp: Exp.t) = let
          val (node: Exp.node, ty: Type.t) = Exp.dest exp
          fun doCaseRules rules = let
@@ -27,9 +44,16 @@ fun inlineTrace {prog} =
          fun doExpNode (expNode: Exp.node): Exp.node =
              case expNode of
                  Exp.App {func, arg, inline} =>
-                 Exp.App {func = doExp func,
-                          arg = doExp arg,
-                          inline = inline}
+                 let
+                    val _ = print (concat ["FUNC(", expToTypeString func, ")="])
+                    val _ = Layout.outputl (Exp.layout func, Outstream0.standard)
+                    val _ = print (concat ["ARG(", expToTypeString arg, ")="])
+                    val _ = Layout.outputl (Exp.layout arg, Outstream0.standard)
+                 in
+                    Exp.App {func = doExp func,
+                             arg = doExp arg,
+                             inline = inline}
+                 end
                | Exp.Case {
                     ctxt, kind, nest, matchDiags,
                     noMatch, region, rules, test} =>
