@@ -13,14 +13,18 @@ open CoreML
 fun annotateTrace {prog} =
    let
       val currStmt = ref 0
-      fun doLambda (Exp.Lam {arg, argType, body, inline}) =
-          Exp.Lam {arg = arg, argType = argType, body = body, inline = inline}
+      fun doLambda l =
+         let
+            val {arg, argType, body, inline} = Lambda.dest l
+         in
+            Lambda.make {arg = arg, argType = argType, body = body, inline = inline}
+         end
       fun doVbs x = x
       fun doRvbs rvbs = let
-         fun doRvb {lambda: Lambda.t, var: Var.t} =
-             {lambda = lambda, var = var}
+         fun doRvb {lambda, var} =
+             {lambda = doLambda lambda, var = var}
       in
-         Vector.map (rvbs, doRvbs)
+         Vector.map (rvbs, doRvb)
       end
       fun doDec (dec: Dec.t): Dec.t = let
           val currIdx =  !currStmt
