@@ -12,12 +12,11 @@ open CoreML
 
 fun annotateTrace {prog} =
    let
-      val counter = ref 0
       val _ =
-         Vector.foreach (prog, fn decs =>
-            List.foreach (decs, fn _ =>
-               (print (concat ["Statement ", Int.toString (!counter), "\n"]);
-                counter := !counter + 1)))
+         Vector.foreachi (prog, fn (i, decs) =>
+            (print (concat ["Vector entry: ", Int.toString i, "\n"]);
+             List.foreachi (decs, fn (j, _) =>
+                print (concat ["Statement #", Int.toString j, "\n"]))))
    in
       {prog = prog}
    end
