@@ -108,8 +108,19 @@ fun annotateTrace {prog} =
            | Dec.Datatype _ => dec  (* no PrimApps *)
            | Dec.Exception _ => dec (* no PrimApps *)
       end
-      and doPrimApp {args: Exp.t vector, prim: Type.t Prim.t, targs: Type.t vector} =
-          {args = args, prim = prim, targs = targs}
+      and doPrimApp (primApp as {args: Exp.t vector, prim: Type.t Prim.t,
+                                 targs: Type.t vector}) = let
+         fun emitStaticSourceMark () = let
+            val _ = () (* TODO: PRINT ARGS *)
+         in
+            Prim.Trace_sourceMark
+         end
+      in
+         case prim of
+             Prim.Trace_sourceMark => {args = args, prim = emitStaticSourceMark(),
+                                       targs = targs}
+           |  _ => primApp
+      end
       fun doDecs (decs: Dec.t list): Dec.t list =
           List.map (decs, doDec)
    in
