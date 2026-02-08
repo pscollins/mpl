@@ -16,7 +16,7 @@ fun inlineTrace {prog} =
    let
       fun isTargetLambda {body, ...} =
           case Exp.node body of
-              Exp.PrimApp {prim, ...} => prim = Prim.Trace_sourceMark
+              Exp.PrimApp {prim, ...} => Prim.equals (prim, Prim.Trace_sourceMark)
             | _ => false
       fun isTargetExp (exp: Exp.t) =
           case Exp.node exp of
