@@ -319,6 +319,7 @@ in
       structure OS
       structure Option
       structure Out
+      structure Outstream0
       structure Parse
       structure ParseSexp
       structure Pervasive

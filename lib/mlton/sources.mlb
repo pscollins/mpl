@@ -100,6 +100,7 @@ ann "forceUsed" in
       structure OS
       structure Option
       structure Out
+      structure Outstream0
       structure Parse
       structure ParseSexp
       structure Pervasive
@@ -132,6 +133,7 @@ ann "forceUsed" in
       structure Vector
       structure Word
       structure Word8
+      structure Word32
 
       functor Control
       functor Env
