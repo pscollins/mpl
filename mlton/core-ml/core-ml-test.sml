@@ -335,4 +335,66 @@ val _ =
       ()
    end
 
+val _ = print "Testing convertSourceMarkToStatic...\n"
+
+val _ =
+   let
+      open Atoms
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+
+      fun mkPrimApp (prim, args) =
+         CoreML.Exp.PrimApp {
+            args = Vector.fromList args,
+            prim = prim,
+            targs = Vector.new0 ()
+         }
+
+      (* Test 1: Trace_sourceMark with string constant *)
+      val s = "test_mark"
+      val constExp = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string s), stringTy)
+      val node1 = mkPrimApp (Prim.Trace_sourceMark, [constExp])
+      val res1 = convertSourceMarkToStatic node1
+      val _ = case res1 of
+                 SOME (CoreML.Exp.PrimApp {prim, args, ...}) =>
+                    (case prim of
+                        Prim.Trace_staticSourceMark s' =>
+                           if s = s' andalso Vector.length args = 0 then ()
+                           else Error.bug "Test 1 failed: wrong static mark or has args"
+                      | _ => Error.bug "Test 1 failed: not Trace_staticSourceMark")
+               | _ => Error.bug "Test 1 failed: should have converted"
+
+      (* Test 2: Trace_sourceMark with non-constant argument *)
+      val varExp = CoreML.Exp.var (Var.newString "v", stringTy)
+      val node2 = mkPrimApp (Prim.Trace_sourceMark, [varExp])
+      val res2 = convertSourceMarkToStatic node2
+      val _ = case res2 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 2 failed: should NOT have converted (non-constant)"
+
+      (* Test 3: Not Trace_sourceMark *)
+      val node3 = mkPrimApp (Prim.Array_length, [varExp])
+      val res3 = convertSourceMarkToStatic node3
+      val _ = case res3 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 3 failed: should NOT have converted (wrong prim)"
+
+      (* Test 4: Trace_sourceMark with multiple arguments *)
+      val node4 = mkPrimApp (Prim.Trace_sourceMark, [constExp, constExp])
+      val res4 = convertSourceMarkToStatic node4
+      val _ = case res4 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 4 failed: should NOT have converted (multiple args)"
+
+      (* Test 5: Trace_sourceMark with non-string constant *)
+      val intConstExp = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.intInf 42), CoreML.Type.unit)
+      val node5 = mkPrimApp (Prim.Trace_sourceMark, [intConstExp])
+      val res5 = convertSourceMarkToStatic node5
+      val _ = case res5 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 5 failed: should NOT have converted (non-string constant)"
+   in
+      ()
+   end
+
 val _ = print "Tests Passed\n"
