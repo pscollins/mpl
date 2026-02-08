@@ -17,12 +17,16 @@ local
    annotate-trace.fun
    inline-trace.sig
    inline-trace.fun
+   core-ml-util.sig
+   core-ml-util.fun
    dead-code.sig
    dead-code.fun
 in
    signature CORE_ML
+   signature CORE_ML_UTIL
    functor CoreML
    functor AnnotateTrace
    functor InlineTrace
+   functor CoreMLUtil
    functor DeadCode
 end
