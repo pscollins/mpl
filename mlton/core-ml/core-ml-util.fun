@@ -10,6 +10,33 @@ struct
 open S
 open CoreML
 
+structure VarSet =
+   UniqueSet (structure Element = Var
+              val cacheSize = 1024
+              val bits = 10)
+
+
+fun collectVarsBoundToPred (decss: Dec.t list vector, pred) = let
+   fun extractUniqueVb  {exp, pat, ....}: (Var.t * Exp.t) option =
+       case pat of
+         | Pat.Var v => SOME (v, exp)
+         |  _ => NONE
+   fun extractUniqueDecBinding (dec: Dec.t): (Var.t * Exp.t) option =
+       case dec of
+           Dec.Val {vbs, ...} => extractUniqueVb vbs
+         | _ => NONE
+   fun collectVarsInDec (dec: Dec.t, vs: VarSet.t): VarSet.t =
+       case (extractUniqueBinding dec) of
+           NONE => vs
+         | SOME (var, bind) =>
+           if (pred bind) then VarSet.+ (vs, VarSet.singleton var)
+           else vs
+   fun collectVarsInDecs (decs: Dec.t list, vs: VarSet.t): VarSet.t =
+       List.fold (decs, vs, collectVarsInDec)
+in
+   Vector.fold (decss, VarSet.emtpy, collectVarsInDecs)
+end
+
 fun decId (decs: Dec.t list): Dec.t list = decs
 
 end

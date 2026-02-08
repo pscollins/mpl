@@ -13,5 +13,13 @@ signature CORE_ML_UTIL =
    sig
       include CORE_ML_UTIL_STRUCTS
 
+      structure VarSet: UNIQUE_SET where type Element.t = CoreML.Var.t
+
+      (* Given a predicate and a snippet of top-level CoreML IR, find all
+      `Var.t`s appearing in a `Val` binding (for now, only the non-recursive
+      single-element `vbs` case is supported, `Fun` is not supported) bound to
+      an expression satisfiying the predicate *)
+      val collectVarsBoundToPred: (Dec.t list vector * Exp.t -> bool) -> VarSet.t
+
       val decId: CoreML.Dec.t list -> CoreML.Dec.t list
    end
