@@ -37,18 +37,18 @@ fun inlineTrace {prog} =
          concat (List.concat (Vector.toList (Vector.map (vbs, verbosePrintVb))))
       end
 
-      fun getUniqueLambdaFromVb {ctxt, exp, layPat, next, pat, regionPat} =
-          case exp of
-            |  Exp.Lambda l => SOME l
-            | _ => NONE
+      fun getUniqueLambdaFromVb {ctxt, exp, layPat, nest, pat, regionPat} =
+          case Exp.node exp of
+               Exp.Lambda l => SOME l
+             | _ => NONE
       fun getUniqueLambdaFromVbs vbs =
           if Vector.length vbs = 1 then 
              getUniqueLambdaFromVb (Vector.first vbs)
           else NONE
       fun printIsNone opt =
           case opt of
-            |  SOME _ => "SOME!"
-            |  _ => "NONE"
+               SOME _ => "SOME!"
+             | _ => "NONE"
       fun decTypeToString (dec: Dec.t) =
           case dec of
               Dec.Datatype _ => "Datatype"

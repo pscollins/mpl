@@ -56,9 +56,6 @@ fun annotateTrace {prog} =
                | Exp.Seq exps => Exp.Seq (Vector.map (exps, doExp))
                | Exp.Var _ => expNode (* no PrimApp *)
                | Exp.Vector exps => Exp.Vector (Vector.map (exps, doExp))
-               |  _ => expNode
-               (* | Case {ctxt, kind, nest, matchDiags, noMatch, region, rules, test}  => *)
-               (*   expNode  *)
       in
          Exp.make (doExpNode node, ty)
       end
