@@ -22,5 +22,13 @@ signature CORE_ML_UTIL =
       val collectVarsBoundToPred:
           (CoreML.Dec.t list vector * (CoreML.Exp.t -> bool)) -> VarSet.t
 
+      (* Given a (partial) transformation on `Exp.node`s and a snippet of
+      top-level CoreML IR, walk the tree and apply the transformation to each
+      `Exp.node`: when the transformation returns `SOME (node)`, replace the
+      current `Exp.node` with the result of the transformation: otherwise,
+      recurse.*)
+      val mapExps: (CoreML.Dec.t list vector * (CoreML.Exp.node -> CoreML.Exp.node option)) ->
+                   CoreML.Dec.t list vector
+
       val decId: CoreML.Dec.t list -> CoreML.Dec.t list
    end

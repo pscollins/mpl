@@ -41,6 +41,11 @@ in
    Vector.fold (decss, VarSet.empty, collectVarsInDecs)
 end
 
+fun mapExps (decss: Dec.t list vector, pred: Exp.node -> Exp.node option):
+    CoreML.Dec.t list vector =
+    decss
+
+
 fun decId (decs: Dec.t list): Dec.t list = decs
 
 end
