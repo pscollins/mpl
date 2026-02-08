@@ -45,6 +45,17 @@ fun inlineTrace {prog} =
           if Vector.length vbs = 1 then 
              getUniqueLambdaFromVb (Vector.first vbs)
           else NONE
+      fun getUniquePrimApp (lOpt: Lambda.t option) =
+          case lOpt of
+             NONE => NONE
+           | SOME l =>
+             let
+                val {body, ...} = Lambda.dest l
+             in
+                case Exp.node body of
+                   Exp.PrimApp p => SOME p
+                 | _ => NONE
+             end
       fun printIsNone opt =
           case opt of
                SOME _ => "SOME!"
@@ -62,7 +73,7 @@ fun inlineTrace {prog} =
                       ", #vbs=", Int.toString (Vector.length vbs), ")=",
                       verbosePrintVbs vbs,
                       " match? ",
-                      printIsNone (getUniqueLambdaFromVbs vbs)
+                      printIsNone (getUniquePrimApp (getUniqueLambdaFromVbs vbs))
                      ]
       fun doExp (exp: Exp.t) = let
          val (node: Exp.node, ty: Type.t) = Exp.dest exp
