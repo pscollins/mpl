@@ -74,12 +74,9 @@ val _ =
       val res = collectVarsBoundToPred (prog, isVarX)
       val _ = if List.length (VarSet.toList res) = 2 then () else Error.bug "Test failed: wrong size"
 
-      fun contains (s, v) =
-         not (VarSet.isEmpty (VarSet.intersect (s, VarSet.singleton v)))
-
-      val _ = if contains (res, y) then () else Error.bug "Test failed: missing y"
-      val _ = if contains (res, z) then () else Error.bug "Test failed: missing z"
-      val _ = if contains (res, x) then Error.bug "Test failed: contains x" else ()
+      val _ = if setContains res y then () else Error.bug "Test failed: missing y"
+      val _ = if setContains res z then () else Error.bug "Test failed: missing z"
+      val _ = if setContains res x then Error.bug "Test failed: contains x" else ()
 
       (* Test multiple bindings - should be ignored *)
       val decMultiple = CoreML.Dec.Val {
@@ -142,6 +139,22 @@ val _ =
       val _ = if VarSet.isEmpty res4 then () else Error.bug "Test failed: decRvbs should be ignored"
    in
       ()
+   end
+
+val _ = print "Testing setContains...\n"
+
+val _ =
+   let
+      open Atoms
+      val x = Var.newString "x"
+      val y = Var.newString "y"
+      val z = Var.newString "z"
+      val vs = VarSet.fromList [x, y]
+   in
+      if setContains vs x then () else Error.bug "setContains failed: should contain x"
+      ; if setContains vs y then () else Error.bug "setContains failed: should contain y"
+      ; if setContains vs z then Error.bug "setContains failed: should not contain z" else ()
+      ; if setContains (VarSet.empty) x then Error.bug "setContains failed: empty set should not contain x" else ()
    end
 
 val _ = print "Testing mapExps...\n"

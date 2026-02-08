@@ -41,5 +41,13 @@ signature CORE_ML_UTIL =
       val inlineSourceMarkCall:
           VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option
 
+      (* If the provided `Exp.node` is a `PrimApp` corresponding to a
+      `Trace_sourceMark` with an `Exp.Const` argument of type string, then
+      returns a `Trace_staticSourceMark` with a static `string` argument
+      corresponding to the `Const` value and no runtime arguments. Otherwise,
+      returns NONE. *)
+      val convertSourceMarkToStatic:
+          CoreML.Exp.node -> CoreML.Exp.node option
+
       val decId: CoreML.Dec.t list -> CoreML.Dec.t list
    end

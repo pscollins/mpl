@@ -168,6 +168,9 @@ in
     |  _ => NONE
 end
 
+fun convertSourceMarkToStatic (node: Exp.node): Exp.node option =
+    NONE
+
 fun decId (decs: Dec.t list): Dec.t list = decs
 
 end
