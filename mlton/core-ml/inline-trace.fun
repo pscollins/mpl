@@ -30,12 +30,40 @@ fun inlineTrace {prog} =
           | Exp.Seq _ => "Seq"
           | Exp.Var _ => "Var"
           | Exp.Vector _ => "Vector"
+      fun verbosePrintVbs vbs = let
+         fun verbosePrintVb {exp, ...} =
+             [expToTypeString exp, ","]
+      in
+         concat (List.concat (Vector.toList (Vector.map (vbs, verbosePrintVb))))
+      end
+
+      fun getUniqueLambdaFromVb {ctxt, exp, layPat, next, pat, regionPat} =
+          case exp of
+            |  Exp.Lambda l => SOME l
+            | _ => NONE
+      fun getUniqueLambdaFromVbs vbs =
+          if Vector.length vbs = 1 then 
+             getUniqueLambdaFromVb (Vector.first vbs)
+          else NONE
+      fun printIsNone opt =
+          case opt of
+            |  SOME _ => "SOME!"
+            |  _ => "NONE"
       fun decTypeToString (dec: Dec.t) =
           case dec of
               Dec.Datatype _ => "Datatype"
             | Dec.Exception _ => "Exception"
-            | Dec.Fun _ => "Fun"
-            | Dec.Val _ => "Val"
+            | Dec.Fun {decs, tyvars} =>
+              concat ["Fun(#decs=", Int.toString (Vector.length decs),
+                      ", #tyvars=", Int.toString (Vector.length (tyvars ())), ")"]
+            | Dec.Val {rvbs, tyvars, vbs, ...} =>
+              concat ["Val(#rvbs=", Int.toString (Vector.length rvbs),
+                      ", #tyvars=", Int.toString (Vector.length (tyvars ())),
+                      ", #vbs=", Int.toString (Vector.length vbs), ")=",
+                      verbosePrintVbs vbs,
+                      " match? ",
+                      printIsNone (getUniqueLambdaFromVbs vbs)
+                     ]
       fun doExp (exp: Exp.t) = let
          val (node: Exp.node, ty: Type.t) = Exp.dest exp
          fun doCaseRules rules = let
@@ -86,9 +114,6 @@ fun inlineTrace {prog} =
                | Exp.Seq exps => Exp.Seq (Vector.map (exps, doExp))
                | Exp.Var _ => expNode (* no PrimApp *)
                | Exp.Vector exps => Exp.Vector (Vector.map (exps, doExp))
-               |  _ => expNode
-               (* | Case {ctxt, kind, nest, matchDiags, noMatch, region, rules, test}  => *)
-               (*   expNode  *)
       in
          Exp.make (doExpNode node, ty)
       end
