@@ -401,4 +401,180 @@ val _ =
       ()
    end
 
+val _ = print "Testing InlineTrace.inlineTrace...\n"
+
+val _ =
+   let
+      open Atoms
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+
+      fun mkValDec (var, exp) =
+         CoreML.Dec.Val {
+            matchDiags = {nonexhaustiveExn = Control.Elaborate.DiagDI.Default,
+                          nonexhaustive = Control.Elaborate.DiagEIW.Ignore,
+                          redundant = Control.Elaborate.DiagEIW.Ignore},
+            rvbs = Vector.new0 (),
+            tyvars = fn () => Vector.new0 (),
+            vbs = Vector.new1 {
+               ctxt = fn () => Layout.empty,
+               exp = exp,
+               layPat = fn () => Layout.empty,
+               nest = [],
+               pat = CoreML.Pat.var (var, CoreML.Exp.ty exp),
+               regionPat = Region.bogus
+            }
+         }
+
+      fun mkApp (f, a) = CoreML.Exp.make (CoreML.Exp.App {func = f, arg = a, inline = InlineAttr.Auto}, ty)
+
+      fun mkPrimApp (prim, args) =
+         CoreML.Exp.make (CoreML.Exp.PrimApp {
+            args = Vector.fromList args,
+            prim = prim,
+            targs = Vector.new0 ()
+         }, ty)
+
+      fun isTraceSourceMarkExp e =
+         case CoreML.Exp.node e of
+            CoreML.Exp.PrimApp {prim, ...} => Prim.equals (prim, Prim.Trace_sourceMark)
+          | _ => false
+
+      val sourceMarkVar = Var.newString "sourceMark"
+      val xVar = Var.newString "x"
+      
+      (* val sourceMark = fn x => Trace_sourceMark x *)
+      val sourceMarkBody = mkPrimApp (Prim.Trace_sourceMark, [CoreML.Exp.var (xVar, stringTy)])
+      val sourceMarkLambda = CoreML.Lambda.make {
+         arg = xVar,
+         argType = stringTy,
+         body = sourceMarkBody,
+         inline = InlineAttr.Auto
+      }
+      val sourceMarkDec = mkValDec (sourceMarkVar, CoreML.Exp.lambda sourceMarkLambda)
+
+      (* Case 1: Simple Inline *)
+      val mark1Const = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string "mark1"), stringTy)
+      val callExp1 = mkApp (CoreML.Exp.var (sourceMarkVar, CoreML.Type.arrow (stringTy, ty)), mark1Const)
+      val unusedVar1 = Var.newString "u1"
+      val callDec1 = mkValDec (unusedVar1, callExp1)
+
+      val prog1 = Vector.fromList [[sourceMarkDec, callDec1]]
+      val {prog = resProg1} = InlineTrace.inlineTrace {prog = prog1}
+
+      val inlined1 = 
+         case Vector.sub (resProg1, 0) of
+            [_, CoreML.Dec.Val {vbs, ...}] => isTraceSourceMarkExp (#exp (Vector.sub (vbs, 0)))
+          | _ => false
+      val _ = if inlined1 then () else Error.bug "InlineTrace Case 1 failed: sourceMark call NOT inlined"
+
+      (* Case 2: Multiple usages *)
+      val mark2Const = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string "mark2"), stringTy)
+      val callExp2 = mkApp (CoreML.Exp.var (sourceMarkVar, CoreML.Type.arrow (stringTy, ty)), mark2Const)
+      val unusedVar2 = Var.newString "u2"
+      val callDec2 = mkValDec (unusedVar2, callExp2)
+
+      val prog2 = Vector.fromList [[sourceMarkDec, callDec1, callDec2]]
+      val {prog = resProg2} = InlineTrace.inlineTrace {prog = prog2}
+
+      val inlined2 = 
+         case Vector.sub (resProg2, 0) of
+            [_, CoreML.Dec.Val {vbs = vbs1, ...}, CoreML.Dec.Val {vbs = vbs2, ...}] => 
+               isTraceSourceMarkExp (#exp (Vector.sub (vbs1, 0))) andalso
+               isTraceSourceMarkExp (#exp (Vector.sub (vbs2, 0)))
+          | _ => false
+      val _ = if inlined2 then () else Error.bug "InlineTrace Case 2 failed: multiple sourceMark calls NOT inlined"
+
+      (* Case 3: Nested inline (in Let) *)
+      val letExp = CoreML.Exp.make (CoreML.Exp.Let (Vector.new1 callDec1, callExp2), ty)
+      val unusedVar3 = Var.newString "u3"
+      val letDec = mkValDec (unusedVar3, letExp)
+
+      val prog3 = Vector.fromList [[sourceMarkDec, letDec]]
+      val {prog = resProg3} = InlineTrace.inlineTrace {prog = prog3}
+
+      val inlined3 =
+         case Vector.sub (resProg3, 0) of
+            [_, CoreML.Dec.Val {vbs, ...}] =>
+               (case CoreML.Exp.node (#exp (Vector.sub (vbs, 0))) of
+                   CoreML.Exp.Let (decs, body) =>
+                      (case Vector.sub (decs, 0) of
+                          CoreML.Dec.Val {vbs = innerVbs, ...} => isTraceSourceMarkExp (#exp (Vector.sub (innerVbs, 0)))
+                        | _ => false)
+                      andalso isTraceSourceMarkExp body
+                 | _ => false)
+          | _ => false
+      val _ = if inlined3 then () else Error.bug "InlineTrace Case 3 failed: nested sourceMark calls NOT inlined"
+
+      (* Case 4: Non-matching Lambda (too complex) *)
+      (* val complexMark = fn x => (print x; Trace_sourceMark x) *)
+      val complexMarkVar = Var.newString "complexMark"
+      val complexMarkBody = CoreML.Exp.make (
+         CoreML.Exp.Seq (Vector.fromList [
+            mkApp (CoreML.Exp.var (Var.newString "print", CoreML.Type.arrow (stringTy, ty)), CoreML.Exp.var (xVar, stringTy)),
+            sourceMarkBody
+         ]), ty)
+      val complexMarkLambda = CoreML.Lambda.make {
+         arg = xVar,
+         argType = stringTy,
+         body = complexMarkBody,
+         inline = InlineAttr.Auto
+      }
+      val complexMarkDec = mkValDec (complexMarkVar, CoreML.Exp.lambda complexMarkLambda)
+      val complexCallExp = mkApp (CoreML.Exp.var (complexMarkVar, CoreML.Type.arrow (stringTy, ty)), mark1Const)
+      val complexCallDec = mkValDec (unusedVar1, complexCallExp)
+
+      val prog4 = Vector.fromList [[complexMarkDec, complexCallDec]]
+      val {prog = resProg4} = InlineTrace.inlineTrace {prog = prog4}
+
+      val notInlined4 =
+         case Vector.sub (resProg4, 0) of
+            [_, CoreML.Dec.Val {vbs, ...}] =>
+               (case CoreML.Exp.node (#exp (Vector.sub (vbs, 0))) of
+                   CoreML.Exp.App _ => true
+                 | _ => false)
+          | _ => false
+      val _ = if notInlined4 then () else Error.bug "InlineTrace Case 4 failed: complex mark should NOT be inlined"
+
+      (* Case 5: Non-matching call (different variable) *)
+      val otherVar = Var.newString "other"
+      val otherDec = mkValDec (otherVar, CoreML.Exp.lambda sourceMarkLambda)
+      val otherCallExp = mkApp (CoreML.Exp.var (otherVar, CoreML.Type.arrow (stringTy, ty)), mark1Const)
+      val otherCallDec = mkValDec (unusedVar1, otherCallExp)
+
+      (* Here we only provide sourceMarkDec as the source of inlining.
+         Wait, InlineTrace.inlineTrace should find ALL suitable bindings.
+         But if otherVar also matches the pattern, it should also be inlined.
+         The comment says: "Finds ANY instances of a pattern like..."
+         So otherVar should also be inlined if it matches the pattern.
+      *)
+
+      (* Let's test a call to something that DOES NOT match the pattern *)
+      val identityVar = Var.newString "identity"
+      val identityLambda = CoreML.Lambda.make {
+         arg = xVar,
+         argType = stringTy,
+         body = CoreML.Exp.var (xVar, stringTy),
+         inline = InlineAttr.Auto
+      }
+      val identityDec = mkValDec (identityVar, CoreML.Exp.lambda identityLambda)
+      val identityCallExp = mkApp (CoreML.Exp.var (identityVar, CoreML.Type.arrow (stringTy, stringTy)), mark1Const)
+      val identityCallDec = mkValDec (unusedVar1, identityCallExp)
+
+      val prog5 = Vector.fromList [[identityDec, identityCallDec]]
+      val {prog = resProg5} = InlineTrace.inlineTrace {prog = prog5}
+
+      val notInlined5 =
+         case Vector.sub (resProg5, 0) of
+            [_, CoreML.Dec.Val {vbs, ...}] =>
+               (case CoreML.Exp.node (#exp (Vector.sub (vbs, 0))) of
+                   CoreML.Exp.App _ => true
+                 | _ => false)
+          | _ => false
+      val _ = if notInlined5 then () else Error.bug "InlineTrace Case 5 failed: identity call should NOT be inlined"
+
+   in
+      ()
+   end
+
 val _ = print "Tests Passed\n"
