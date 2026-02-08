@@ -30,6 +30,12 @@ fun inlineTrace {prog} =
           | Exp.Seq _ => "Seq"
           | Exp.Var _ => "Var"
           | Exp.Vector _ => "Vector"
+      fun decTypeToString (dec: Dec.t) =
+          case dec of
+              Dec.Datatype _ => "Datatype"
+            | Dec.Exception _ => "Exception"
+            | Dec.Fun _ => "Fun"
+            | Dec.Val _ => "Val"
       fun doExp (exp: Exp.t) = let
          val (node: Exp.node, ty: Type.t) = Exp.dest exp
          fun doCaseRules rules = let
@@ -119,7 +125,10 @@ fun inlineTrace {prog} =
       and doDec (dec: Dec.t): Dec.t = let
           val currIdx =  !currStmt
           val _ = currStmt := (currIdx + 1)
-          val _ = print (concat ["Statement #", Int.toString currIdx, "\n"])
+          val _ = print (concat ["Statement #",
+                                 Int.toString currIdx,
+                                 " (", decTypeToString dec, ")",
+                                 "\n"])
           val _ = Layout.outputl (Dec.layout dec, Outstream0.standard)
       in
          case dec of
