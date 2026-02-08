@@ -26,8 +26,10 @@ fun inlineTrace {prog} =
       (* Find the LHSes of the `Val` bindings to `Lambda`s that wrap a single
       `Trace_sourceMark`. There may be bindings that we miss, but that's OK:
       this is just best-effort info for debugging. *)
-
       val targetVars = collectVarsBoundToPred (prog, isTargetExp)
+      (* val _ = print (concat ["MATCHED VAR COUNT: ", *)
+      (*                        Int.toString (List.size (VarSet.toList targetVars)), *)
+      (*                        "\n"]) *)
    in
 
       (* Inline the `Trace_sourceMark` application to all of the uses of the

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Wrapper script to compile a binary under `mpl` and print the output
+# Wrapper script to compile a binary under `mpl` and print the generated C
 #
 # Requires that it is called as:
 #   mpl-print-c.sh [OPTIONAL FLAGS] source_file.sml

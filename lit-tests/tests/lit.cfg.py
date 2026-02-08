@@ -28,6 +28,9 @@ config.substitutions.append(('mpl-run', MPL_RUN_TOOL))
 # Tool to print the generated C
 MPL_PRINT_C_TOOL = TOOLS_ROOT / 'mpl-print-c.sh'
 config.substitutions.append(('mpl-print-c', MPL_PRINT_C_TOOL))
+# Tool to compile under mpl and keep outputs in %t
+MPL_COMPILE_TOOL = TOOLS_ROOT / 'mpl-compile.sh'
+config.substitutions.append(('mpl-compile', MPL_COMPILE_TOOL))
 
 # Check if the user provided a custom build directory via --param
 user_build_dir = lit_config.params.get('build_dir', None)

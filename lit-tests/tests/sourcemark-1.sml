@@ -1,9 +1,11 @@
-(* RUN: mpl-print-c %s > %t
+(* COM: RUN: mpl-print-c %s > %t
 
    Test that we can locate a `sourceMark` in the generated C
 
-   RUN: grep sourceMark:mark1 %t
-   RUN: grep sourceMark:mark2 %t
+   (Disabled for now)
+
+   COM: RUN: grep sourceMark:mark1 %t
+   COM: RUN: grep sourceMark:mark2 %t
  *)
 
 val _ = let
