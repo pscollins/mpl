@@ -251,4 +251,75 @@ val _ =
       ()
    end
 
+val _ = print "Testing inlineSourceMarkCall...\n"
+
+val _ =
+   let
+      open Atoms
+      val x = Var.newString "x"
+      val y = Var.newString "y"
+      val z = Var.newString "z"
+      val ty = CoreML.Type.unit
+
+      val expX = CoreML.Exp.var (x, ty)
+      val expY = CoreML.Exp.var (y, ty)
+      val expZ = CoreML.Exp.var (z, ty)
+
+      val vset = VarSet.fromList [x, y]
+
+      fun mkApp (f, a) = CoreML.Exp.App {func = f, arg = a, inline = InlineAttr.Auto}
+
+      (* Test 1: x(z) where x is in vset *)
+      val node1 = mkApp (expX, expZ)
+      val res1 = inlineSourceMarkCall vset node1
+      val _ = case res1 of
+                 SOME (CoreML.Exp.PrimApp {args, prim, ...}) =>
+                    if Prim.equals (prim, Prim.Trace_sourceMark)
+                       andalso Vector.length args = 1
+                       andalso (case CoreML.Exp.node (Vector.sub (args, 0)) of
+                                   CoreML.Exp.Var (v, _) => Var.equals (v (), z)
+                                 | _ => false)
+                    then ()
+                    else Error.bug "Test 1 failed: wrong PrimApp"
+               | _ => Error.bug "Test 1 failed: should have inlined"
+
+      (* Test 2: y(z) where y is in vset *)
+      val node2 = mkApp (expY, expZ)
+      val res2 = inlineSourceMarkCall vset node2
+      val _ = case res2 of
+                 SOME (CoreML.Exp.PrimApp {args, ...}) => ()
+               | _ => Error.bug "Test 2 failed: should have inlined"
+
+      (* Test 3: z(x) where z is NOT in vset *)
+      val node3 = mkApp (expZ, expX)
+      val res3 = inlineSourceMarkCall vset node3
+      val _ = case res3 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 3 failed: should NOT have inlined"
+
+      (* Test 4: Not an App *)
+      val node4 = CoreML.Exp.node expX
+      val res4 = inlineSourceMarkCall vset node4
+      val _ = case res4 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 4 failed: should NOT have inlined"
+
+      (* Test 5: App where func is not a Var (e.g. nested App) *)
+      val node5 = mkApp (CoreML.Exp.make (node1, ty), expY)
+      val res5 = inlineSourceMarkCall vset node5
+      val _ = case res5 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 5 failed: should NOT have inlined (nested app)"
+
+      (* Test 6: App where func is a Lambda *)
+      val lam = CoreML.Lambda.make {arg = z, argType = ty, body = expZ, inline = InlineAttr.Auto}
+      val node6 = mkApp (CoreML.Exp.lambda lam, expX)
+      val res6 = inlineSourceMarkCall vset node6
+      val _ = case res6 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 6 failed: should NOT have inlined (lambda)"
+   in
+      ()
+   end
+
 val _ = print "Tests Passed\n"

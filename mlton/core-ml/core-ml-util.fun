@@ -15,6 +15,12 @@ structure VarSet =
               val cacheSize = 1024
               val bits = 10)
 
+fun setContains (vs: VarSet.t) (v: Var.t): bool = let
+   val single = VarSet.singleton v
+   val intersect = VarSet.intersect (vs, single)
+in
+   VarSet.isEmpty intersect
+end
 
 fun collectVarsBoundToPred (prog: Dec.t list vector, pred) = let
    fun extractVb {exp, pat, ...}: (Var.t * Exp.t) option =
@@ -145,8 +151,22 @@ fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
       Vector.map (prog, doDecs)
    end
 
-fun inlineSourceMarkCall (vs: VarSet.t) (node: Exp.node): Exp.node option =
-    NONE
+fun inlineSourceMarkCall (vs: VarSet.t) (node: Exp.node): Exp.node option = let
+   val wantVar = setContains vs
+   fun isTargetVar (exp: Exp.t) =
+       case Exp.node exp of
+           Exp.Var (getVar, getTypes) => wantVar (getVar())
+        |  _ => false
+in
+   case node of
+       Exp.App {func, arg, ...} =>
+       if isTargetVar func then
+          SOME (Exp.PrimApp {args = Vector.new1 (arg),
+                             prim = Prim.Trace_sourceMark,
+                             targs = Vector.new0 ()})
+       else NONE
+    |  _ => NONE
+end
 
 fun decId (decs: Dec.t list): Dec.t list = decs
 

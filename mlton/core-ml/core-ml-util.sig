@@ -5,15 +5,19 @@
  *)
 
 signature CORE_ML_UTIL_STRUCTS =
-   sig
-      structure CoreML: CORE_ML
-   end
+sig
+   structure CoreML: CORE_ML
+end
 
 signature CORE_ML_UTIL =
    sig
       include CORE_ML_UTIL_STRUCTS
 
       structure VarSet: UNIQUE_SET where type Element.t = CoreML.Var.t
+
+      (* Returns `true` if the provided `VarSet.t` contains the provided
+      `Var.t`, otherwise `false`. *)
+      val setContains: VarSet.t -> CoreML.Var.t -> bool
 
       (* Given a predicate and a snippet of top-level CoreML IR, find all
       `Var.t`s appearing in a `Val` binding (for now, only the non-recursive
