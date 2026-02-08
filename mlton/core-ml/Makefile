@@ -1,12 +1,16 @@
 MLTON := mlton
 
 .PHONY: unittest
-unittest: inline-trace-test core-ml-test
-	./inline-trace-test
-	./core-ml-test
+unittest: inline-trace-test.bin core-ml-test.bin
+	./inline-trace-test.bin
+	./core-ml-test.bin
 
-inline-trace-test: inline-trace-test.mlb inline-trace-test.sml
+inline-trace-test.bin: inline-trace-test.mlb inline-trace-test.sml
 	$(MLTON) -output $@ $<
 
-core-ml-test: core-ml-test.mlb core-ml-test.sml
+core-ml-test.bin: core-ml-test.mlb core-ml-test.sml
 	$(MLTON) -output $@ $<
+
+.PHONY: clean
+clean:
+	rm -f *.bin
