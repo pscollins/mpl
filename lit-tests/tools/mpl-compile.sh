@@ -10,12 +10,13 @@ set -e
 set -x
 SCRIPT_DIR=$(dirname $(realpath $0))
 MPL=${SCRIPT_DIR}/../../build/bin/mpl
-OUTDIR=# TODO: SET IT TO THE LAST ARGUMENT
-INFILE=# TODO: SET IT TO THE SECOND TO LAST ARGUMENT
-COMPILE_ARGS=# TODO: SET IT TO ALL THE OTHER EARLIER ARGUMENTS
+OUTDIR="${@: -1}"
+INFILE=$(realpath "${@: -2: 1}")
+COMPILE_ARGS=("${@: 1: $# - 2}")
 
 OUTFILE=${OUTDIR}/out.bin
 # -keep-pass doesn't respect -output, so we need to run in ${OUTDIR}.
+mkdir -p ${OUTDIR}
 cd ${OUTDIR}
 # Pass the earlier arguments as-is and use the absolute path for the last one
 ${MPL} -output ${OUTFILE} "${COMPILE_ARGS[@]}" "$INFILE"

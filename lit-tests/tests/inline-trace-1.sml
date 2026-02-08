@@ -15,8 +15,8 @@
    RUN: grep -v 'Trace_sourceMark "mark2"' %t/*inlineTrace.pre.core-ml
 
    Inlined version should appear in `.post`
-   RUN: grep 'Trace_sourceMark "mark1"' %t/*inlineTrace.post.core-ml
-   RUN: grep 'Trace_sourceMark "mark2"' %t/*inlineTrace.post.core-ml
+   RUN: grep 'Trace_sourceMark ("mark1")' %t/*inlineTrace.post.core-ml
+   RUN: grep 'Trace_sourceMark ("mark2")' %t/*inlineTrace.post.core-ml
  *)
 
 val _ = let
