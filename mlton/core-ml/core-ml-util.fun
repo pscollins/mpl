@@ -168,8 +168,29 @@ in
     |  _ => NONE
 end
 
-fun convertSourceMarkToStatic (node: Exp.node): Exp.node option =
-    NONE
+fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
+   fun getConstStr (exp: Exp.t) =
+       case Exp.node exp of
+           (* TODO(pscollins): Validate that the type is actually `string`. I
+           think at this point we have already type-checked so it doesn't really
+           matter. *)
+           Exp.Const getConst => SOME (Const.toString (getConst()))
+         | _ => NONE
+   fun maybeBuildStaticMark (arg: string option) =
+       case arg of
+           SOME str => SOME (Exp.PrimApp {args = Vector.new0(),
+                                          prim = Prim.Trace_staticSourceMark str,
+                                          targs = Vector.new0()})
+         | _ => NONE
+in
+   case node of
+       Exp.PrimApp {args = args, prim = Prim.Trace_sourceMark, targs = targs} =>
+       if Vector.length args = 1 andalso
+          Vector.length targs = 0 then
+          maybeBuildStaticMark (getConstStr (Vector.first args))
+       else NONE
+     | _ => NONE
+end
 
 fun decId (decs: Dec.t list): Dec.t list = decs
 
