@@ -15,10 +15,10 @@ local
    core-ml.fun
    annotate-trace.sig
    annotate-trace.fun
-   inline-trace.sig
-   inline-trace.fun
    core-ml-util.sig
    core-ml-util.fun
+   inline-trace.sig
+   inline-trace.fun
    dead-code.sig
    dead-code.fun
 in
