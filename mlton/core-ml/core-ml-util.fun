@@ -19,7 +19,7 @@ fun setContains (vs: VarSet.t) (v: Var.t): bool = let
    val single = VarSet.singleton v
    val intersect = VarSet.intersect (vs, single)
 in
-   VarSet.isEmpty intersect
+   not (VarSet.isEmpty intersect)
 end
 
 fun collectVarsBoundToPred (prog: Dec.t list vector, pred) = let
