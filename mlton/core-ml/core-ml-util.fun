@@ -169,12 +169,18 @@ in
 end
 
 fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
+   fun getCleanName getConst = let
+      val s = Const.toString (getConst())
+   in
+      (* The `Const` name shows up as `"name"` rather than `name`: drop it here. *)
+      String.substring (s, 1, String.length s - 2)
+   end
    fun getConstStr (exp: Exp.t) =
        case Exp.node exp of
            (* TODO(pscollins): Validate that the type is actually `string`. I
            think at this point we have already type-checked so it doesn't really
            matter. *)
-           Exp.Const getConst => SOME (Const.toString (getConst()))
+           Exp.Const getConst => SOME (getCleanName getConst)
          | _ => NONE
    fun maybeBuildStaticMark (arg: string option) =
        case arg of
