@@ -145,6 +145,8 @@ fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
       Vector.map (prog, doDecs)
    end
 
+fun inlineSourceMarkCall (vs: VarSet.t) (node: Exp.node): Exp.node option =
+    NONE
 
 fun decId (decs: Dec.t list): Dec.t list = decs
 

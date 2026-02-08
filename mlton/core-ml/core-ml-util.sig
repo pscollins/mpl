@@ -30,5 +30,12 @@ signature CORE_ML_UTIL =
       val mapExps: (CoreML.Dec.t list vector * (CoreML.Exp.node -> CoreML.Exp.node option)) ->
                    CoreML.Dec.t list vector
 
+      (* If the provided `Exp.node` is an `Exp.App` whose `func` is a singleton
+      `Var` that belongs to the provided `VarSet.t`, then returns a `PrimApp`
+      corresponding to a `Trace_sourceMark` applied to the same `arg` as the
+      original `Exp.App`. Otherwise, returns `NONE`. *)
+      val inlineSourceMarkCall:
+          VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option
+
       val decId: CoreML.Dec.t list -> CoreML.Dec.t list
    end
