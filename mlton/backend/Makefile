@@ -1,7 +1,13 @@
-.PHONY: unittest
-unittest: emit-diagnostics-test
-	./emit-diagnostics-test
+MLTON := mlton
 
-emit-diagnostics-test: emit-diagnostics-test.mlb emit-diagnostics-test.sml
-	mlton -stop tc emit-diagnostics-test.mlb
-	mlton emit-diagnostics-test.mlb
+.PHONY: unittest
+unittest: emit-diagnostics-test.bin
+	./emit-diagnostics-test.bin
+
+emit-diagnostics-test.bin: emit-diagnostics-test.mlb emit-diagnostics-test.sml
+	$(MLTON) -output $@ $<
+
+
+.PHONY: clean
+clean:
+	rm -f *.bin
