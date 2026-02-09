@@ -1,10 +1,8 @@
 (* RUN: mpl-print-c %s > %t
 
-   TODO(pscollins): Remove the ` || true` when codegen works
-
    Test that we can locate a `sourceMark` in the generated C
 
-   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark1)' %t
+   RUn: grep '// Diagnostic(Trace_staticSourceMark:mark1)' %t
    RUN: grep '// Diagnostic(Trace_staticSourceMark:mark2)' %t
  *)
 

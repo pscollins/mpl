@@ -1165,6 +1165,9 @@ fun output {program as Machine.Program.T {chunks, frameInfos, main, ...},
                                               srcIsMem = false,
                                               ty = Operand.ty dst})
                         end
+                   | Diagnostic _ => (prints ["\t// ",
+                                              Layout.toString (Statement.layout s),
+                                     "\n"])
                end
             local
                fun mk (dst, src) () =
