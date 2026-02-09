@@ -49,6 +49,10 @@ local
             raise Fail testMsg
          end
 
+   val _ = print "Running Statement.layout test...\n"
+   val _ = assert (Layout.toString (Statement.layout (Statement.Diagnostic "foo")) = "Diagnostic(foo)",
+                   "Statement.layout test failed")
+
    val label = Label.newNoname ()
    val chunkLabel = ChunkLabel.newNoname ()
    

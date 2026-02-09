@@ -447,6 +447,7 @@ structure Statement =
                            [seq [Operand.layout z, str " ="],
                             indent (rest, 2)]
                   end
+             | Diagnostic m => seq [str "Diagnostic(", str m, str ")"]
          end
 
       fun move (arg as {dst, src}) =
@@ -544,6 +545,8 @@ structure Statement =
             Move {dst, src} => f (dst, f (src, ac))
           | PrimApp {args, dst, ...} =>
                Vector.fold (args, Option.fold (dst, ac, f), f)
+          (* No operands *)
+          | Diagnostic _ => ac
 
       fun foldDefs (s, a, f) =
          case s of
@@ -551,6 +554,8 @@ structure Statement =
           | PrimApp {dst, ...} => (case dst of
                                       NONE => a
                                     | SOME z => f (z, a))
+          (* No defs *)
+          | Diagnostic _ => a
    end
 
 structure Live =
@@ -1561,6 +1566,8 @@ structure Program =
                               then alloc
                               else NONE
                         end
+                   (* No correctness constraints on `Diagnostic` *)
+                   | Diagnostic _ => SOME alloc
                end
             fun liveIsOk (live: Live.t vector,
                           a: Alloc.t): bool =
