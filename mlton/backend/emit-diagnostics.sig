@@ -15,5 +15,16 @@ signature EMIT_DIAGNOSTICS =
                           (Machine.Statement.t -> Machine.Statement.t option)) ->
                          Machine.Program.t
 
+      (* Finds instances `Trace_staticSourceMark` `Statement.PrimApp`'s like:
+
+      Trace_staticSourceMark:mark1 ()
+
+      and replaces them with `Statement.Diagnostic`s like:
+
+      Diagnostic "Trace_staticSourceMark:mark1"
+
+      i.e. a `Statement.Diagnostic` whose `string` payload is as described
+      above.
+       *)
       val emitDiagnostics: Machine.Program.t -> Machine.Program.t
    end
