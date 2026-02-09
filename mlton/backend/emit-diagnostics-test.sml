@@ -6,19 +6,48 @@ structure EmitDiagnostics = EmitDiagnostics (structure Machine = Machine)
 local
    open Machine
 
-   fun hasDiagnostic (Program.T {chunks, ...}, msg) =
-      List.exists (chunks, fn Chunk.T {blocks, ...} =>
-         Vector.exists (blocks, fn Block.T {statements, ...} =>
-            Vector.exists (statements, fn s =>
+   fun allDiagnostics (Program.T {chunks, ...}) =
+      List.fold (chunks, [], fn (Chunk.T {blocks, ...}, acc) =>
+         Vector.fold (blocks, acc, fn (Block.T {statements, ...}, acc) =>
+            Vector.fold (statements, acc, fn (s, acc) =>
                case s of
-                  Statement.Diagnostic m => m = msg
-                | _ => false
+                  Statement.Diagnostic m => m :: acc
+                | _ => acc
             )
          )
       )
 
+   fun hasDiagnostic (p, msg) =
+      List.exists (allDiagnostics p, fn m => m = msg)
+
    fun assert (cond, msg) =
       if cond then () else (print ("Assertion failed: " ^ msg ^ "\n"); raise Fail msg)
+
+   fun assertHasDiagnostic (p, msg, testMsg) =
+      if hasDiagnostic (p, msg)
+      then ()
+      else
+         let
+            val ds = allDiagnostics p
+            val _ = print ("Assertion failed: " ^ testMsg ^ "\n")
+            val _ = print ("Diagnostics found:\n")
+            val _ = List.foreach (ds, fn d => print ("  " ^ d ^ "\n"))
+         in
+            raise Fail testMsg
+         end
+
+   fun assertHasNoDiagnostic (p, msg, testMsg) =
+      if not (hasDiagnostic (p, msg))
+      then ()
+      else
+         let
+            val ds = allDiagnostics p
+            val _ = print ("Assertion failed: " ^ testMsg ^ "\n")
+            val _ = print ("Diagnostics found:\n")
+            val _ = List.foreach (ds, fn d => print ("  " ^ d ^ "\n"))
+         in
+            raise Fail testMsg
+         end
 
    val label = Label.newNoname ()
    val chunkLabel = ChunkLabel.newNoname ()
@@ -60,8 +89,8 @@ local
          Statement.Diagnostic "original" => SOME (Statement.Diagnostic "transformed")
        | _ => NONE)
 
-   val _ = assert (hasDiagnostic (p1', "transformed"), "Test 1: 'transformed' diagnostic not found")
-   val _ = assert (not (hasDiagnostic (p1', "original")), "Test 1: 'original' diagnostic still found")
+   val _ = assertHasDiagnostic (p1', "transformed", "Test 1: 'transformed' diagnostic not found")
+   val _ = assertHasNoDiagnostic (p1', "original", "Test 1: 'original' diagnostic still found")
 
    (* Test 2: multiple statements in one block *)
    val b2 = Block.T {
@@ -102,11 +131,11 @@ local
        | Statement.Diagnostic "c" => SOME (Statement.Diagnostic "C")
        | _ => NONE)
 
-   val _ = assert (hasDiagnostic (p2', "A"), "Test 2: 'A' not found")
-   val _ = assert (hasDiagnostic (p2', "b"), "Test 2: 'b' not found")
-   val _ = assert (hasDiagnostic (p2', "C"), "Test 2: 'C' not found")
-   val _ = assert (not (hasDiagnostic (p2', "a")), "Test 2: 'a' still found")
-   val _ = assert (not (hasDiagnostic (p2', "c")), "Test 2: 'c' still found")
+   val _ = assertHasDiagnostic (p2', "A", "Test 2: 'A' not found")
+   val _ = assertHasDiagnostic (p2', "b", "Test 2: 'b' not found")
+   val _ = assertHasDiagnostic (p2', "C", "Test 2: 'C' not found")
+   val _ = assertHasNoDiagnostic (p2', "a", "Test 2: 'a' still found")
+   val _ = assertHasNoDiagnostic (p2', "c", "Test 2: 'c' still found")
 
    (* Test 3: multiple chunks and blocks *)
    val b3a = Block.T {
@@ -159,10 +188,96 @@ local
        | Statement.Diagnostic "3b" => SOME (Statement.Diagnostic "3B")
        | _ => NONE)
 
-   val _ = assert (hasDiagnostic (p3', "3A"), "Test 3: '3A' not found")
-   val _ = assert (hasDiagnostic (p3', "3B"), "Test 3: '3B' not found")
-   val _ = assert (not (hasDiagnostic (p3', "3a")), "Test 3: '3a' still found")
-   val _ = assert (not (hasDiagnostic (p3', "3b")), "Test 3: '3b' still found")
+   val _ = assertHasDiagnostic (p3', "3A", "Test 3: '3A' not found")
+   val _ = assertHasDiagnostic (p3', "3B", "Test 3: '3B' not found")
+   val _ = assertHasNoDiagnostic (p3', "3a", "Test 3: '3a' still found")
+   val _ = assertHasNoDiagnostic (p3', "3b", "Test 3: '3b' still found")
+
+   (* emitDiagnostics tests *)
+
+   val _ = print "Running emitDiagnostics test 1...\n"
+   val b4 = Block.T {
+       kind = Kind.Jump,
+       label = Label.newNoname (),
+       live = Vector.new0 (),
+       raises = NONE,
+       returns = NONE,
+       statements = Vector.fromList [
+         Statement.PrimApp {
+            args = Vector.new0 (),
+            dst = NONE,
+            prim = Prim.Trace_staticSourceMark "mark1"
+         }
+       ],
+       transfer = Transfer.Goto label
+   }
+   val c4 = Chunk.T {
+       blocks = Vector.fromList [b4],
+       chunkLabel = ChunkLabel.newNoname (),
+       tempsMax = fn _ => 0
+   }
+   val p4 = Program.T {
+       chunks = [c4],
+       frameInfos = Vector.new0 (),
+       frameOffsets = Vector.new0 (),
+       globals = {objptrs = [], reals = []},
+       handlesSignals = false,
+       main = {chunkLabel = chunkLabel,
+               label = label},
+       maxFrameSize = Bytes.zero,
+       objectTypes = Vector.new0 (),
+       sporkInfos = Vector.new0 (),
+       sourceMaps = NONE,
+       staticHeaps = fn _ => Vector.new0 ()
+   }
+
+   val p4' = EmitDiagnostics.emitDiagnostics p4
+   val _ = assertHasDiagnostic (p4', "Trace_staticSourceMark:mark1", 
+                                "EmitDiagnostics test 1: 'Trace_staticSourceMark:mark1' diagnostic not found")
+
+   val _ = print "Running emitDiagnostics test 2...\n"
+   (* Test mixed statements *)
+   val b5 = Block.T {
+       kind = Kind.Jump,
+       label = Label.newNoname (),
+       live = Vector.new0 (),
+       raises = NONE,
+       returns = NONE,
+       statements = Vector.fromList [
+         Statement.Diagnostic "pre-existing",
+         Statement.PrimApp {
+            args = Vector.new0 (),
+            dst = NONE,
+            prim = Prim.Trace_staticSourceMark "mark2"
+         },
+         Statement.Move {dst = Operand.GCState, src = Operand.GCState} (* dummy move *)
+       ],
+       transfer = Transfer.Goto label
+   }
+   val c5 = Chunk.T {
+       blocks = Vector.fromList [b5],
+       chunkLabel = ChunkLabel.newNoname (),
+       tempsMax = fn _ => 0
+   }
+   val p5 = Program.T {
+       chunks = [c5],
+       frameInfos = Vector.new0 (),
+       frameOffsets = Vector.new0 (),
+       globals = {objptrs = [], reals = []},
+       handlesSignals = false,
+       main = {chunkLabel = chunkLabel,
+               label = label},
+       maxFrameSize = Bytes.zero,
+       objectTypes = Vector.new0 (),
+       sporkInfos = Vector.new0 (),
+       sourceMaps = NONE,
+       staticHeaps = fn _ => Vector.new0 ()
+   }
+
+   val p5' = EmitDiagnostics.emitDiagnostics p5
+   val _ = assertHasDiagnostic (p5', "pre-existing", "EmitDiagnostics test 2: 'pre-existing' lost")
+   val _ = assertHasDiagnostic (p5', "Trace_staticSourceMark:mark2", 
+                                "EmitDiagnostics test 2: 'Trace_staticSourceMark:mark2' diagnostic not found")
 
    val _ = print "EmitDiagnostics tests passed.\n"
 in

@@ -37,6 +37,20 @@ in
               staticHeaps = staticHeaps}
 end
 
-fun emitDiagnostics p = p
+fun emitDiagnostics (program: Program.t): Program.t = let
+   fun makeString (s: string): string =
+       concat ["Trace_staticSourceMark:", s]
+   fun maybeDiagnostic prim =
+       case prim of
+           Prim.Trace_staticSourceMark s =>
+           SOME (Statement.Diagnostic (makeString s))
+         | _ => NONE
+   fun rewrite (s: Statement.t): Statement.t option =
+       case s of
+           Statement.PrimApp {prim, ...} => maybeDiagnostic prim
+        | _ => NONE
+in
+   mapStatements (program, rewrite)
+end
 
 end
