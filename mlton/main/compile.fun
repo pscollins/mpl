@@ -81,6 +81,7 @@ structure Ssa2ToRssa = Ssa2ToRssa (structure Rssa = Rssa
 structure Backend = Backend (structure Machine = Machine
                              structure Rssa = Rssa
                              fun funcToLabel f = f)
+structure EmitDiagnostics = EmitDiagnostics (structure Machine = Machine)
 structure CCodegen = CCodegen (structure Machine = Machine)
 
 (* SAM_NOTE: removing unsupported codegens *)
@@ -652,6 +653,16 @@ fun mkCompile {outputC, outputLL, outputS} =
           stats = Machine.Program.layoutStats,
           toFile = Machine.Program.toFile,
           typeCheck = Machine.Program.typeCheck}
+      fun emitDiagnostics machine =
+         Control.translatePass
+         {arg = machine,
+          doit = EmitDiagnostics.emitDiagnostics,
+          keepIL = false,
+          name = "emitDiagnostics",
+          srcToFile = SOME Machine.Program.toFile,
+          tgtStats = SOME Machine.Program.layoutStats,
+          tgtToFile = SOME Machine.Program.toFile,
+          tgtTypeCheck = SOME (Machine.Program.typeCheck, SOME false)}
       fun codegen machine =
          let
             val _ = Machine.Program.clearLabelNames machine
@@ -690,7 +701,7 @@ fun mkCompile {outputC, outputLL, outputS} =
          end
 
       val goCodegen = codegen
-      val goMachineSimplify = goCodegen o machineSimplify
+      val goMachineSimplify = goCodegen o emitDiagnostics o machineSimplify
       val goToMachine = goMachineSimplify o toMachine
       val goRssaSimplify = goToMachine o rssaSimplify
       val goToRssa = goRssaSimplify o toRssa
