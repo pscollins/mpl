@@ -9,12 +9,10 @@ struct
 
 open S
 open CoreML
+structure CoreMLUtil = CoreMLUtil (structure CoreML = CoreML)
+open CoreMLUtil
 
 fun annotateTrace {prog} =
-   let
-      val x = 1
-   in
-      {prog = prog}
-   end
+    {prog = mapExps (prog, convertSourceMarkToStatic)}
 
 end

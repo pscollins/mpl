@@ -577,4 +577,118 @@ val _ =
       ()
    end
 
+val _ = print "Testing AnnotateTrace.annotateTrace...\n"
+
+val _ =
+   let
+      open Atoms
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+
+      fun mkValDec (var, exp) =
+         CoreML.Dec.Val {
+            matchDiags = {nonexhaustiveExn = Control.Elaborate.DiagDI.Default,
+                          nonexhaustive = Control.Elaborate.DiagEIW.Ignore,
+                          redundant = Control.Elaborate.DiagEIW.Ignore},
+            rvbs = Vector.new0 (),
+            tyvars = fn () => Vector.new0 (),
+            vbs = Vector.new1 {
+               ctxt = fn () => Layout.empty,
+               exp = exp,
+               layPat = fn () => Layout.empty,
+               nest = [],
+               pat = CoreML.Pat.var (var, CoreML.Exp.ty exp),
+               regionPat = Region.bogus
+            }
+         }
+
+      fun mkPrimApp (prim, args) =
+         CoreML.Exp.make (CoreML.Exp.PrimApp {
+            args = Vector.fromList args,
+            prim = prim,
+            targs = Vector.new0 ()
+         }, ty)
+
+      fun isTraceStaticSourceMarkExp (e, expectedName) =
+         case CoreML.Exp.node e of
+            CoreML.Exp.PrimApp {prim, args, ...} =>
+               (case prim of
+                   Prim.Trace_staticSourceMark s => 
+                      s = expectedName andalso Vector.length args = 0
+                 | _ => false)
+          | _ => false
+
+      (* Case 1: Simple replacement *)
+      val mark1Name = "mark1"
+      val mark1Const = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string mark1Name), stringTy)
+      val sourceMarkExp1 = mkPrimApp (Prim.Trace_sourceMark, [mark1Const])
+      val unusedVar1 = Var.newString "u1"
+      val dec1 = mkValDec (unusedVar1, sourceMarkExp1)
+
+      val prog1 = Vector.fromList [[dec1]]
+      val {prog = resProg1} = AnnotateTrace.annotateTrace {prog = prog1}
+
+      val annotated1 = 
+         case Vector.sub (resProg1, 0) of
+            [CoreML.Dec.Val {vbs, ...}] => isTraceStaticSourceMarkExp (#exp (Vector.sub (vbs, 0)), mark1Name)
+          | _ => false
+      val _ = if annotated1 then () else Error.bug "AnnotateTrace Case 1 failed: sourceMark NOT annotated"
+
+      (* Case 2: Nested replacement (in Let) *)
+      val mark2Name = "mark2"
+      val mark2Const = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string mark2Name), stringTy)
+      val sourceMarkExp2 = mkPrimApp (Prim.Trace_sourceMark, [mark2Const])
+      val letExp = CoreML.Exp.make (CoreML.Exp.Let (Vector.new1 dec1, sourceMarkExp2), ty)
+      val unusedVar2 = Var.newString "u2"
+      val letDec = mkValDec (unusedVar2, letExp)
+
+      val prog2 = Vector.fromList [[letDec]]
+      val {prog = resProg2} = AnnotateTrace.annotateTrace {prog = prog2}
+
+      val annotated2 =
+         case Vector.sub (resProg2, 0) of
+            [CoreML.Dec.Val {vbs, ...}] =>
+               (case CoreML.Exp.node (#exp (Vector.sub (vbs, 0))) of
+                   CoreML.Exp.Let (decs, body) =>
+                      (case Vector.sub (decs, 0) of
+                          CoreML.Dec.Val {vbs = innerVbs, ...} => isTraceStaticSourceMarkExp (#exp (Vector.sub (innerVbs, 0)), mark1Name)
+                        | _ => false)
+                      andalso isTraceStaticSourceMarkExp (body, mark2Name)
+                 | _ => false)
+          | _ => false
+      val _ = if annotated2 then () else Error.bug "AnnotateTrace Case 2 failed: nested sourceMark NOT annotated"
+
+      (* Case 3: Multiple replacements in one list *)
+      val prog3 = Vector.fromList [[dec1, mkValDec (unusedVar2, sourceMarkExp2)]]
+      val {prog = resProg3} = AnnotateTrace.annotateTrace {prog = prog3}
+
+      val annotated3 =
+         case Vector.sub (resProg3, 0) of
+            [CoreML.Dec.Val {vbs = vbs1, ...}, CoreML.Dec.Val {vbs = vbs2, ...}] =>
+               isTraceStaticSourceMarkExp (#exp (Vector.sub (vbs1, 0)), mark1Name) andalso
+               isTraceStaticSourceMarkExp (#exp (Vector.sub (vbs2, 0)), mark2Name)
+          | _ => false
+      val _ = if annotated3 then () else Error.bug "AnnotateTrace Case 3 failed: multiple sourceMarks NOT annotated"
+
+      (* Case 4: Non-constant Trace_sourceMark (should not be annotated) *)
+      val varExp = CoreML.Exp.var (Var.newString "v", stringTy)
+      val dynamicSourceMarkExp = mkPrimApp (Prim.Trace_sourceMark, [varExp])
+      val dynamicDec = mkValDec (unusedVar1, dynamicSourceMarkExp)
+
+      val prog4 = Vector.fromList [[dynamicDec]]
+      val {prog = resProg4} = AnnotateTrace.annotateTrace {prog = prog4}
+
+      val notAnnotated4 =
+         case Vector.sub (resProg4, 0) of
+            [CoreML.Dec.Val {vbs, ...}] =>
+               (case CoreML.Exp.node (#exp (Vector.sub (vbs, 0))) of
+                   CoreML.Exp.PrimApp {prim, ...} => Prim.equals (prim, Prim.Trace_sourceMark)
+                 | _ => false)
+          | _ => false
+      val _ = if notAnnotated4 then () else Error.bug "AnnotateTrace Case 4 failed: dynamic sourceMark SHOULD NOT be annotated"
+
+   in
+      ()
+   end
+
 val _ = print "Tests Passed\n"

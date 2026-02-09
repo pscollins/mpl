@@ -13,10 +13,10 @@ local
 
    core-ml.sig
    core-ml.fun
-   annotate-trace.sig
-   annotate-trace.fun
    core-ml-util.sig
    core-ml-util.fun
+   annotate-trace.sig
+   annotate-trace.fun
    inline-trace.sig
    inline-trace.fun
    dead-code.sig
