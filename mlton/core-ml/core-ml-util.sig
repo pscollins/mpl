@@ -75,6 +75,7 @@ signature CORE_ML_UTIL =
       leaf type is reached.
        *)
       val toVerboseStringDec: CoreML.Dec.t -> string
+      val toVerboseStringDecs: CoreML.Dec.t list -> string
       val toVerboseStringExp: CoreML.Exp.t -> string
       val toVerboseStringPat: CoreML.Pat.t -> string
       val toVerboseStringType: CoreML.Type.t -> string

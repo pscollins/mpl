@@ -730,6 +730,11 @@ val _ =
       val _ = if String.hasSubstring (s, {substring = "rvbs=[]"}) then () else Error.bug "toVerboseStringDec failed (rvbs)"
       val _ = if String.hasSubstring (s, {substring = "tyvars=[]"}) then () else Error.bug "toVerboseStringDec failed (tyvars)"
       val _ = if String.hasSubstring (s, {substring = "vbs=[{exp="}) then () else Error.bug "toVerboseStringDec failed (vbs)"
+
+      val decs = [dec]
+      val s = toVerboseStringDecs decs
+      val _ = print (s ^ "\n")
+      val _ = if String.hasSubstring (s, {substring = "[Dec.Val"}) then () else Error.bug "toVerboseStringDecs failed"
    in
       ()
    end

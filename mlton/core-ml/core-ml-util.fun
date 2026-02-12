@@ -295,6 +295,7 @@ and dec2s d =
          ", vbs=" ^ (v2s (vbs, fn {exp, pat, ...} => "{exp=" ^ (exp2s exp) ^ ", pat=" ^ (pat2s pat) ^ ", ...}")) ^ ", ...}"
 
 val toVerboseStringDec = dec2s
+fun toVerboseStringDecs decs = "[" ^ (String.concatWith (List.map (decs, dec2s), ", ")) ^ "]"
 val toVerboseStringExp = exp2s
 val toVerboseStringPat = pat2s
 val toVerboseStringType = ty2s
