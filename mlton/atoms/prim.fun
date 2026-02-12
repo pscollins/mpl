@@ -162,6 +162,8 @@ datatype 'a t =
  | Thread_switchTo (* to rssa (as runtime C fn) *)
  | Trace_sourceMark  (* codegen *)
  | Trace_staticSourceMark of string  (* machine *)
+ | Trace_sourceMarkValue  (* core-ml *)
+ | Trace_StaticSourceMarkValue of string  (* to machine *)
  | TopLevel_getHandler (* implement exceptions *)
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
@@ -348,6 +350,8 @@ fun toString (n: 'a t): string =
        | Thread_switchTo => "Thread_switchTo"
        | Trace_sourceMark => "Trace_sourceMark"
        | Trace_staticSourceMark s => "Trace_staticSourceMark:" ^ s
+       | Trace_sourceMarkValue => "Trace_sourceMarkValue"
+       | Trace_staticSourceMarkValue s => "Trace_staticSourceMarkValue:" ^ s
        | TopLevel_getHandler => "TopLevel_getHandler"
        | TopLevel_getSuffix => "TopLevel_getSuffix"
        | TopLevel_setHandler => "TopLevel_setHandler"
@@ -518,6 +522,8 @@ val equals: 'a t * 'a t -> bool =
     | (Thread_switchTo, Thread_switchTo) => true
     | (Trace_sourceMark, Trace_sourceMark) => true
     | (Trace_staticSourceMark s, Trace_staticSourceMark s') => s = s'
+    | (Trace_sourceMarkValue, Trace_sourceMarkValue) => true
+    | (Trace_staticSourceMarkValue s, Trace_staticSourceMarkValue s') => s = s'
     | (TopLevel_getHandler, TopLevel_getHandler) => true
     | (TopLevel_getSuffix, TopLevel_getSuffix) => true
     | (TopLevel_setHandler, TopLevel_setHandler) => true
@@ -698,6 +704,8 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Thread_switchTo => Thread_switchTo
     | Trace_sourceMark => Trace_sourceMark
     | Trace_staticSourceMark s => Trace_staticSourceMark s
+    | Trace_sourceMarkValue => Trace_sourceMarkValue
+    | Trace_staticSourceMarkValue s => Trace_staticSourceMarkValue s
     | TopLevel_getHandler => TopLevel_getHandler
     | TopLevel_getSuffix => TopLevel_getSuffix
     | TopLevel_setHandler => TopLevel_setHandler
@@ -916,6 +924,8 @@ val kind: 'a t -> Kind.t =
        | Thread_switchTo => SideEffect
        | Trace_sourceMark => SideEffect
        | Trace_staticSourceMark _ => SideEffect
+       | Trace_sourceMarkValue => SideEffect
+       | Trace_staticSourceMarkValue _ => SideEffect
        | TopLevel_getHandler => DependsOnState
        | TopLevel_getSuffix => DependsOnState
        | TopLevel_setHandler => SideEffect
@@ -1105,7 +1115,8 @@ in
        Thread_returnToC,
        Thread_switchTo,
        Trace_sourceMark,
-       (* Trace_staticSourceMark can't be written "manually" by a user, and so
+       Trace_sourceMarkValue,
+       (* Trace_staticSourceMark{,Value} can't be written "manually" by a user, and so
        doesn't appear here *)
        TopLevel_getHandler,
        TopLevel_getSuffix,
@@ -1500,6 +1511,8 @@ fun 'a checkApp (prim: 'a t,
        | Thread_switchTo => noTargs (fn () => (oneArg thread, unit))
        | Trace_sourceMark => noTargs (fn () => (oneArg string, unit))
        | Trace_staticSourceMark s => noTargs (fn () => (noArgs, unit))
+       | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
+       | Trace_StaticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
        | TopLevel_setHandler =>
