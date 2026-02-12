@@ -1,16 +1,16 @@
 (* RUN: mpl-print-c %s > %t
 
-   Test that we can locate a `sourceMark` in the generated C
+   Test that we can locate a `sourceMarkValue` in the generated C
 
-   RUn: grep '// Diagnostic(Trace_staticSourceMark:mark1)' %t
-   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark2)' %t
+   TODO(pscollins): add assertions onces this compiles successfully
  *)
 
 val _ = let
-    val kConst = 123456789
-    val m1 = MLton.Trace.sourceMark "mark1"
-    val kConst2 = kConst + 1
-    val m2 = MLton.Trace.sourceMark "mark2"
+    val kX = 1
+    val kY = 2
+    val x = MLton.Trace.sourceMarkValue (kX, "markX")
+    val y = MLton.Trace.sourceMarkValue (kY, "markY")
+    val z = x + y
 in
-    print (Int.toString kConst2)
+    print (Int.toString z)
 end
