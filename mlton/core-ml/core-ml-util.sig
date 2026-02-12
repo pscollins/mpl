@@ -57,5 +57,22 @@ signature CORE_ML_UTIL =
       val convertSourceMarkToStatic:
           CoreML.Exp.node -> CoreML.Exp.node option
 
-      val decId: CoreML.Dec.t list -> CoreML.Dec.t list
+      (* The following function prints the specified IR type with explicit tags
+      for the corresponding data type defined in `core-ml.fun`: this is intended
+      as a format that is simpler to work back to SML constructor calls than the
+      existing `layout` textual IR format.
+
+      For example, a CoreML snippet corresponding to an SML expression like:
+
+         datatype myT = MyConstructor of string
+
+      prints out a literal representation of the corresponding `Dec.Datatype`
+      record object, i.e.:
+
+        Dec.Datatype {cons=[{....},...], tycon=...., tyvars=....}
+
+      and so on, recursing down through each layer of CoreML datatype until a
+      leaf type is reached.
+       *)
+      val toVerboseStringDec: CoreML.Dec.t -> string
    end

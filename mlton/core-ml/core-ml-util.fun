@@ -203,6 +203,7 @@ in
      | _ => NONE
 end
 
-fun decId (decs: Dec.t list): Dec.t list = decs
+fun toVerboseStringDec (dec: CoreML.Dec.t): string =
+    raise Fail "TODO(gemini): Implement"
 
 end

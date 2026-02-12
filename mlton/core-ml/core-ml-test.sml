@@ -28,8 +28,6 @@ val emptyProg = Vector.fromList []
 val _ = InlineTrace.inlineTrace {prog = emptyProg}
 val _ = AnnotateTrace.annotateTrace {prog = emptyProg}
 
-val _ = decId []
-
 val _ = print "Testing collectVarsBoundToPred...\n"
 
 val _ =
