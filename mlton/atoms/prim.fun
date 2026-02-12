@@ -163,7 +163,7 @@ datatype 'a t =
  | Trace_sourceMark  (* codegen *)
  | Trace_staticSourceMark of string  (* machine *)
  | Trace_sourceMarkValue  (* core-ml *)
- | Trace_StaticSourceMarkValue of string  (* to machine *)
+ | Trace_staticSourceMarkValue of string  (* to machine *)
  | TopLevel_getHandler (* implement exceptions *)
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
@@ -1512,7 +1512,7 @@ fun 'a checkApp (prim: 'a t,
        | Trace_sourceMark => noTargs (fn () => (oneArg string, unit))
        | Trace_staticSourceMark s => noTargs (fn () => (noArgs, unit))
        | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
-       | Trace_StaticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
+       | Trace_staticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
        | TopLevel_setHandler =>
