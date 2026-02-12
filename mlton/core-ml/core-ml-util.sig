@@ -46,9 +46,8 @@ signature CORE_ML_UTIL =
        `VarSet.t`, then returns a `PrimApp` corresponding to a
        `Trace_sourceMarkValue` applied to the same (tuple) `arg` as the original
        `Exp.App`. Otherwise, returns `NONE` *)
-
-      (* TODO: FILL IN *)
       val inlineSourceMarkValueCall: unit
+          (* VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option *)
 
       (* If the provided `Exp.node` is a `PrimApp` corresponding to a
       `Trace_sourceMark` with an `Exp.Const` argument of type string, then
