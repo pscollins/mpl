@@ -300,4 +300,23 @@ val toVerboseStringExp = exp2s
 val toVerboseStringPat = pat2s
 val toVerboseStringType = ty2s
 
+fun verbosePrintDecs (decss: CoreML.Dec.t list vector) =  let
+   val idx = ref 0
+   fun decsToLayoutString (decs: CoreML.Dec.t list) =
+       Layout.toString
+           (Layout.align (List.map (decs, CoreML.Dec.layout)))
+   fun decsToString (decs: CoreML.Dec.t list) = let
+      val currIdx = !idx
+      val _ = idx := currIdx + 1
+      val idxStr = concat ["#", Int.toString currIdx]
+   in
+      (print o concat) ["Dec(", idxStr, ")=\n",
+                        "\tLayout(", idxStr, ")=", decsToLayoutString decs, "\n",
+                        "\tVerbose(", idxStr, ")=", toVerboseStringDecs decs, "\n",
+                        "\n"]
+   end
+in
+   Vector.foreach (decss, decsToString)
+end
+
 end

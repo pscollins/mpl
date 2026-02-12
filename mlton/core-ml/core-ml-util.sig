@@ -73,10 +73,16 @@ signature CORE_ML_UTIL =
 
       and so on, recursing down through each layer of CoreML datatype until a
       leaf type is reached.
+
+      (Gemin-generated)
        *)
-      val toVerboseStringDec: CoreML.Dec.t -> string
       val toVerboseStringDecs: CoreML.Dec.t list -> string
+      val toVerboseStringDec: CoreML.Dec.t -> string
       val toVerboseStringExp: CoreML.Exp.t -> string
       val toVerboseStringPat: CoreML.Pat.t -> string
       val toVerboseStringType: CoreML.Type.t -> string
+
+      (* For debugging: prints a verbose representation of each statement in
+      `decs` alongside their index and `Layout` representation *)
+      val verbosePrintDecs: CoreML.Dec.t list vector -> unit
    end
