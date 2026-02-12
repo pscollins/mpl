@@ -203,7 +203,100 @@ in
      | _ => NONE
 end
 
-fun toVerboseStringDec (dec: CoreML.Dec.t): string =
-    raise Fail "TODO(gemini): Implement"
+fun v2s (v, f) = "[" ^ (String.concatWith (Vector.toList (Vector.map (v, f)), ", ")) ^ "]"
+fun o2s (opt, f) = case opt of NONE => "NONE" | SOME x => "SOME (" ^ (f x) ^ ")"
+
+fun ty2s ty = Layout.toString (Type.layout ty)
+fun var2s v = Var.toString v
+fun con2s c = Con.toString c
+fun tycon2s t = Tycon.toString t
+fun tyvar2s t = Tyvar.toString t
+fun const2s c = Const.toString (c ())
+fun field2s f = Field.toString f
+
+fun record2s (r, f) =
+   let
+      val elts = Record.toVector r
+      fun elt2s (field, x) = "(" ^ (field2s field) ^ ", " ^ (f x) ^ ")"
+   in
+      v2s (elts, elt2s)
+   end
+
+fun pat2s p =
+   let val (node, ty) = Pat.dest p
+   in "Pat.make (" ^ (patNode2s node) ^ ", " ^ (ty2s ty) ^ ")"
+   end
+and patNode2s node =
+   case node of
+      Pat.Con {arg, con, targs} =>
+         "Pat.Con {arg=" ^ (o2s (arg, pat2s)) ^
+         ", con=" ^ (con2s con) ^
+         ", targs=" ^ (v2s (targs, ty2s)) ^ "}"
+    | Pat.Const c => "Pat.Const (" ^ (const2s c) ^ ")"
+    | Pat.Layered (v, p) => "Pat.Layered (" ^ (var2s v) ^ ", " ^ (pat2s p) ^ ")"
+    | Pat.List ps => "Pat.List " ^ (v2s (ps, pat2s))
+    | Pat.Or ps => "Pat.Or " ^ (v2s (ps, pat2s))
+    | Pat.Record r => "Pat.Record " ^ (record2s (r, pat2s))
+    | Pat.Var v => "Pat.Var " ^ (var2s v)
+    | Pat.Vector ps => "Pat.Vector " ^ (v2s (ps, pat2s))
+    | Pat.Wild => "Pat.Wild"
+
+and exp2s e =
+   let val (node, ty) = Exp.dest e
+   in "Exp.make (" ^ (expNode2s node) ^ ", " ^ (ty2s ty) ^ ")"
+   end
+and expNode2s node =
+   case node of
+      Exp.App {func, arg, ...} =>
+         "Exp.App {func=" ^ (exp2s func) ^ ", arg=" ^ (exp2s arg) ^ ", ...}"
+    | Exp.Case {rules, test, ...} =>
+         "Exp.Case {rules=" ^ (v2s (rules, rule2s)) ^ ", test=" ^ (exp2s test) ^ ", ...}"
+    | Exp.Con (con, targs) =>
+         "Exp.Con (" ^ (con2s con) ^ ", " ^ (v2s (targs, ty2s)) ^ ")"
+    | Exp.Const c => "Exp.Const (" ^ (const2s c) ^ ")"
+    | Exp.EnterLeave (e, _) => "Exp.EnterLeave (" ^ (exp2s e) ^ ", ...)"
+    | Exp.Handle {catch=(v, ty), handler, try} =>
+         "Exp.Handle {catch=(" ^ (var2s v) ^ ", " ^ (ty2s ty) ^ "), handler=" ^ (exp2s handler) ^ ", try=" ^ (exp2s try) ^ "}"
+    | Exp.Lambda l => "Exp.Lambda (" ^ (lambda2s l) ^ ")"
+    | Exp.Let (decs, e) =>
+         "Exp.Let (" ^ (v2s (decs, dec2s)) ^ ", " ^ (exp2s e) ^ ")"
+    | Exp.List es => "Exp.List " ^ (v2s (es, exp2s))
+    | Exp.PrimApp {args, prim, targs} =>
+         "Exp.PrimApp {args=" ^ (v2s (args, exp2s)) ^ ", prim=" ^ (Prim.toString prim) ^ ", targs=" ^ (v2s (targs, ty2s)) ^ "}"
+    | Exp.Raise e => "Exp.Raise (" ^ (exp2s e) ^ ")"
+    | Exp.Record r => "Exp.Record " ^ (record2s (r, exp2s))
+    | Exp.Seq es => "Exp.Seq " ^ (v2s (es, exp2s))
+    | Exp.Var (v, targs) => "Exp.Var (" ^ (var2s (v ())) ^ ", " ^ (v2s (targs (), ty2s)) ^ ")"
+    | Exp.Vector es => "Exp.Vector " ^ (v2s (es, exp2s))
+
+and rule2s {exp, pat, ...} =
+   "{exp=" ^ (exp2s exp) ^ ", pat=" ^ (pat2s pat) ^ ", ...}"
+
+and lambda2s l =
+   let val {arg, argType, body, ...} = Lambda.dest l
+   in "Lambda.make {arg=" ^ (var2s arg) ^ ", argType=" ^ (ty2s argType) ^ ", body=" ^ (exp2s body) ^ ", ...}"
+   end
+
+and dec2s d =
+   case d of
+      Dec.Datatype v =>
+         "Dec.Datatype " ^ (v2s (v, fn {cons, tycon, tyvars} =>
+            "{cons=" ^ (v2s (cons, fn {arg, con} => "{arg=" ^ (o2s (arg, ty2s)) ^ ", con=" ^ (con2s con) ^ "}")) ^
+            ", tycon=" ^ (tycon2s tycon) ^
+            ", tyvars=" ^ (v2s (tyvars, tyvar2s)) ^ "}"))
+    | Dec.Exception {arg, con, ...} =>
+         "Dec.Exception {arg=" ^ (o2s (arg, ty2s)) ^ ", con=" ^ (con2s con) ^ ", ...}"
+    | Dec.Fun {decs, tyvars} =>
+         "Dec.Fun {decs=" ^ (v2s (decs, fn {lambda, var} => "{lambda=" ^ (lambda2s lambda) ^ ", var=" ^ (var2s var) ^ "}")) ^ 
+         ", tyvars=" ^ (v2s (tyvars (), tyvar2s)) ^ "}"
+    | Dec.Val {rvbs, vbs, tyvars, ...} =>
+         "Dec.Val {rvbs=" ^ (v2s (rvbs, fn {lambda, var} => "{lambda=" ^ (lambda2s lambda) ^ ", var=" ^ (var2s var) ^ "}")) ^
+         ", tyvars=" ^ (v2s (tyvars (), tyvar2s)) ^
+         ", vbs=" ^ (v2s (vbs, fn {exp, pat, ...} => "{exp=" ^ (exp2s exp) ^ ", pat=" ^ (pat2s pat) ^ ", ...}")) ^ ", ...}"
+
+val toVerboseStringDec = dec2s
+val toVerboseStringExp = exp2s
+val toVerboseStringPat = pat2s
+val toVerboseStringType = ty2s
 
 end

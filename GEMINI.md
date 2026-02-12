@@ -18,6 +18,10 @@ codebase is a fork of MLton.
 build/bin/mpl -output build/tmp_out.bin $INFILE
 ```
 
+* For unit tests of a single library or pass within the compiler, there is no
+  need to rebuild the compiler or the basis as a whole (which is quite slow) --
+  just build and run the particular unit test target that you're working on.
+
 
 ## Tools
 Version control in this project is managed via `jj` wrapped around `git`.
