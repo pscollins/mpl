@@ -8,9 +8,9 @@
 val _ = let
     val kX = 1
     val kY = 2
-    val x = MLton.Trace.sourceMarkValue (kX, "markX")
-    val y = MLton.Trace.sourceMarkValue (kY, "markY")
-    val z = x + y
+    val _ = MLton.Trace.sourceMarkValue (kX, "markX")
+    val _ = MLton.Trace.sourceMarkValue (kY, "markY")
+    val z = kX + kY
 in
     print (Int.toString z)
 end
