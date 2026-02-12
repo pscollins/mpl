@@ -151,22 +151,27 @@ fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
       Vector.map (prog, doDecs)
    end
 
+(* Implementation detail of `inlineSourceMarkCall`: checks if `exp` is a `Var`
+node that blongs to the provided `VarSet`. *)
+fun isTargetVarExp (vs: VarSet.t) (exp: Exp.t): bool =
+    case Exp.node exp of 
+        Exp.Var (getVar, getTypes) => setContains vs (getVar())
+     |  _ => false
+
 fun inlineSourceMarkCall (vs: VarSet.t) (node: Exp.node): Exp.node option = let
-   val wantVar = setContains vs
-   fun isTargetVar (exp: Exp.t) =
-       case Exp.node exp of
-           Exp.Var (getVar, getTypes) => wantVar (getVar())
-        |  _ => false
+   val isTargetVarExp = isTargetVarExp vs
 in
    case node of
        Exp.App {func, arg, ...} =>
-       if isTargetVar func then
+       if isTargetVarExp func then
           SOME (Exp.PrimApp {args = Vector.new1 (arg),
                              prim = Prim.Trace_sourceMark,
                              targs = Vector.new0 ()})
        else NONE
     |  _ => NONE
 end
+
+val inlineSourceMarkValueCall = ()
 
 fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
    fun getCleanName getConst = let

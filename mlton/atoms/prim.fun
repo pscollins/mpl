@@ -1636,6 +1636,7 @@ fun ('a, 'b) extractTargs (prim: 'b t,
        | Weak_canGet => one (deWeak (arg 0))
        | Weak_get => one result
        | Weak_new => one (arg 0)
+       | Trace_sourceMarkValue => one (arg 0)
        | _ => Vector.new0 ()
    end
 
