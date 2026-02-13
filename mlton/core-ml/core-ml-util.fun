@@ -203,102 +203,124 @@ in
      | _ => NONE
 end
 
-fun v2s (v, f) = "[" ^ (String.concatWith (Vector.toList (Vector.map (v, f)), ", ")) ^ "]"
-fun o2s (opt, f) = case opt of NONE => "NONE" | SOME x => "SOME (" ^ (f x) ^ ")"
+fun v2l (v, f) = Layout.list (Vector.toList (Vector.map (v, f)))
+fun o2l (opt, f) =
+   case opt of
+      NONE => Layout.str "NONE"
+    | SOME x => Layout.seq [Layout.str "SOME ", Layout.paren (f x)]
 
-fun ty2s ty = Layout.toString (Type.layout ty)
-fun var2s v = Var.toString v
-fun con2s c = Con.toString c
-fun tycon2s t = Tycon.toString t
-fun tyvar2s t = Tyvar.toString t
-fun const2s c = Const.toString (c ())
-fun field2s f = Field.toString f
+fun ty2l ty = Type.layout ty
+fun var2l v = Layout.str (Var.toString v)
+fun con2l c = Layout.str (Con.toString c)
+fun tycon2l t = Layout.str (Tycon.toString t)
+fun tyvar2l t = Layout.str (Tyvar.toString t)
+fun const2l c = Layout.str (Const.toString (c ()))
+fun field2l f = Layout.str (Field.toString f)
 
-fun record2s (r, f) =
+fun record2l (r, f) =
    let
       val elts = Record.toVector r
-      fun elt2s (field, x) = "(" ^ (field2s field) ^ ", " ^ (f x) ^ ")"
+      fun elt2l (field, x) = Layout.tuple [field2l field, f x]
    in
-      v2s (elts, elt2s)
+      v2l (elts, elt2l)
    end
 
-fun pat2s p =
+fun pat2l p =
    let val (node, ty) = Pat.dest p
-   in "Pat.make (" ^ (patNode2s node) ^ ", " ^ (ty2s ty) ^ ")"
+   in Layout.seq [Layout.str "Pat.make ", Layout.tuple [patNode2l node, ty2l ty]]
    end
-and patNode2s node =
+and patNode2l node =
    case node of
       Pat.Con {arg, con, targs} =>
-         "Pat.Con {arg=" ^ (o2s (arg, pat2s)) ^
-         ", con=" ^ (con2s con) ^
-         ", targs=" ^ (v2s (targs, ty2s)) ^ "}"
-    | Pat.Const c => "Pat.Const (" ^ (const2s c) ^ ")"
-    | Pat.Layered (v, p) => "Pat.Layered (" ^ (var2s v) ^ ", " ^ (pat2s p) ^ ")"
-    | Pat.List ps => "Pat.List " ^ (v2s (ps, pat2s))
-    | Pat.Or ps => "Pat.Or " ^ (v2s (ps, pat2s))
-    | Pat.Record r => "Pat.Record " ^ (record2s (r, pat2s))
-    | Pat.Var v => "Pat.Var " ^ (var2s v)
-    | Pat.Vector ps => "Pat.Vector " ^ (v2s (ps, pat2s))
-    | Pat.Wild => "Pat.Wild"
+         Layout.namedRecord ("Pat.Con", [("arg", o2l (arg, pat2l)),
+                                         ("con", con2l con),
+                                         ("targs", v2l (targs, ty2l))])
+    | Pat.Const c => Layout.seq [Layout.str "Pat.Const ", Layout.paren (const2l c)]
+    | Pat.Layered (v, p) => Layout.seq [Layout.str "Pat.Layered ", Layout.tuple [var2l v, pat2l p]]
+    | Pat.List ps => Layout.seq [Layout.str "Pat.List ", v2l (ps, pat2l)]
+    | Pat.Or ps => Layout.seq [Layout.str "Pat.Or ", v2l (ps, pat2l)]
+    | Pat.Record r => Layout.seq [Layout.str "Pat.Record ", record2l (r, pat2l)]
+    | Pat.Var v => Layout.seq [Layout.str "Pat.Var ", var2l v]
+    | Pat.Vector ps => Layout.seq [Layout.str "Pat.Vector ", v2l (ps, pat2l)]
+    | Pat.Wild => Layout.str "Pat.Wild"
 
-and exp2s e =
+and exp2l e =
    let val (node, ty) = Exp.dest e
-   in "Exp.make (" ^ (expNode2s node) ^ ", " ^ (ty2s ty) ^ ")"
+   in Layout.seq [Layout.str "Exp.make ", Layout.tuple [expNode2l node, ty2l ty]]
    end
-and expNode2s node =
+and expNode2l node =
    case node of
       Exp.App {func, arg, ...} =>
-         "Exp.App {func=" ^ (exp2s func) ^ ", arg=" ^ (exp2s arg) ^ ", ...}"
+         Layout.namedRecord ("Exp.App", [("func", exp2l func), ("arg", exp2l arg)])
     | Exp.Case {rules, test, ...} =>
-         "Exp.Case {rules=" ^ (v2s (rules, rule2s)) ^ ", test=" ^ (exp2s test) ^ ", ...}"
+         Layout.namedRecord ("Exp.Case", [("rules", v2l (rules, rule2l)), ("test", exp2l test)])
     | Exp.Con (con, targs) =>
-         "Exp.Con (" ^ (con2s con) ^ ", " ^ (v2s (targs, ty2s)) ^ ")"
-    | Exp.Const c => "Exp.Const (" ^ (const2s c) ^ ")"
-    | Exp.EnterLeave (e, _) => "Exp.EnterLeave (" ^ (exp2s e) ^ ", ...)"
+         Layout.seq [Layout.str "Exp.Con ", Layout.tuple [con2l con, v2l (targs, ty2l)]]
+    | Exp.Const c => Layout.seq [Layout.str "Exp.Const ", Layout.paren (const2l c)]
+    | Exp.EnterLeave (e, _) => Layout.seq [Layout.str "Exp.EnterLeave ", Layout.tuple [exp2l e, Layout.str "..."]]
     | Exp.Handle {catch=(v, ty), handler, try} =>
-         "Exp.Handle {catch=(" ^ (var2s v) ^ ", " ^ (ty2s ty) ^ "), handler=" ^ (exp2s handler) ^ ", try=" ^ (exp2s try) ^ "}"
-    | Exp.Lambda l => "Exp.Lambda (" ^ (lambda2s l) ^ ")"
+         Layout.namedRecord ("Exp.Handle", [("catch", Layout.tuple [var2l v, ty2l ty]),
+                                            ("handler", exp2l handler),
+                                            ("try", exp2l try)])
+    | Exp.Lambda l => Layout.seq [Layout.str "Exp.Lambda ", Layout.paren (lambda2l l)]
     | Exp.Let (decs, e) =>
-         "Exp.Let (" ^ (v2s (decs, dec2s)) ^ ", " ^ (exp2s e) ^ ")"
-    | Exp.List es => "Exp.List " ^ (v2s (es, exp2s))
+         Layout.namedRecord ("Exp.Let", [("decs", v2l (decs, dec2l)), ("exp", exp2l e)])
+    | Exp.List es => Layout.seq [Layout.str "Exp.List ", v2l (es, exp2l)]
     | Exp.PrimApp {args, prim, targs} =>
-         "Exp.PrimApp {args=" ^ (v2s (args, exp2s)) ^ ", prim=" ^ (Prim.toString prim) ^ ", targs=" ^ (v2s (targs, ty2s)) ^ "}"
-    | Exp.Raise e => "Exp.Raise (" ^ (exp2s e) ^ ")"
-    | Exp.Record r => "Exp.Record " ^ (record2s (r, exp2s))
-    | Exp.Seq es => "Exp.Seq " ^ (v2s (es, exp2s))
-    | Exp.Var (v, targs) => "Exp.Var (" ^ (var2s (v ())) ^ ", " ^ (v2s (targs (), ty2s)) ^ ")"
-    | Exp.Vector es => "Exp.Vector " ^ (v2s (es, exp2s))
+         Layout.namedRecord ("Exp.PrimApp", [("args", v2l (args, exp2l)),
+                                             ("prim", Layout.str (Prim.toString prim)),
+                                             ("targs", v2l (targs, ty2l))])
+    | Exp.Raise e => Layout.seq [Layout.str "Exp.Raise ", Layout.paren (exp2l e)]
+    | Exp.Record r => Layout.seq [Layout.str "Exp.Record ", record2l (r, exp2l)]
+    | Exp.Seq es => Layout.seq [Layout.str "Exp.Seq ", v2l (es, exp2l)]
+    | Exp.Var (v, targs) => Layout.seq [Layout.str "Exp.Var ", Layout.tuple [var2l (v ()), v2l (targs (), ty2l)]]
+    | Exp.Vector es => Layout.seq [Layout.str "Exp.Vector ", v2l (es, exp2l)]
 
-and rule2s {exp, pat, ...} =
-   "{exp=" ^ (exp2s exp) ^ ", pat=" ^ (pat2s pat) ^ ", ...}"
+and rule2l {exp, pat, ...} =
+   Layout.record [("exp", exp2l exp), ("pat", pat2l pat)]
 
-and lambda2s l =
+and lambda2l l =
    let val {arg, argType, body, ...} = Lambda.dest l
-   in "Lambda.make {arg=" ^ (var2s arg) ^ ", argType=" ^ (ty2s argType) ^ ", body=" ^ (exp2s body) ^ ", ...}"
+   in Layout.namedRecord ("Lambda.make", [("arg", var2l arg), ("argType", ty2l argType), ("body", exp2l body)])
    end
 
-and dec2s d =
-   case d of
-      Dec.Datatype v =>
-         "Dec.Datatype " ^ (v2s (v, fn {cons, tycon, tyvars} =>
-            "{cons=" ^ (v2s (cons, fn {arg, con} => "{arg=" ^ (o2s (arg, ty2s)) ^ ", con=" ^ (con2s con) ^ "}")) ^
-            ", tycon=" ^ (tycon2s tycon) ^
-            ", tyvars=" ^ (v2s (tyvars, tyvar2s)) ^ "}"))
+and dec2l d =
+   let
+      fun doTyvars tvs = v2l (tvs, tyvar2l)
+      fun doCons cons =
+         v2l (cons, fn {arg, con} =>
+            Layout.record [("arg", o2l (arg, ty2l)),
+                           ("con", con2l con)])
+   in
+      case d of
+         Dec.Datatype v =>
+            Layout.seq [Layout.str "Dec.Datatype ",
+                        v2l (v, fn {cons, tycon, tyvars} =>
+                           Layout.record [("cons", doCons cons),
+                                          ("tycon", tycon2l tycon),
+                                          ("tyvars", doTyvars tyvars)])]
     | Dec.Exception {arg, con, ...} =>
-         "Dec.Exception {arg=" ^ (o2s (arg, ty2s)) ^ ", con=" ^ (con2s con) ^ ", ...}"
+         Layout.namedRecord ("Dec.Exception", [("arg", o2l (arg, ty2l)), ("con", con2l con)])
     | Dec.Fun {decs, tyvars} =>
-         "Dec.Fun {decs=" ^ (v2s (decs, fn {lambda, var} => "{lambda=" ^ (lambda2s lambda) ^ ", var=" ^ (var2s var) ^ "}")) ^ 
-         ", tyvars=" ^ (v2s (tyvars (), tyvar2s)) ^ "}"
+         Layout.namedRecord ("Dec.Fun", [("decs", v2l (decs, fn {lambda, var} =>
+                                                           Layout.record [("lambda", lambda2l lambda),
+                                                                          ("var", var2l var)])),
+                                         ("tyvars", v2l (tyvars (), tyvar2l))])
     | Dec.Val {rvbs, vbs, tyvars, ...} =>
-         "Dec.Val {rvbs=" ^ (v2s (rvbs, fn {lambda, var} => "{lambda=" ^ (lambda2s lambda) ^ ", var=" ^ (var2s var) ^ "}")) ^
-         ", tyvars=" ^ (v2s (tyvars (), tyvar2s)) ^
-         ", vbs=" ^ (v2s (vbs, fn {exp, pat, ...} => "{exp=" ^ (exp2s exp) ^ ", pat=" ^ (pat2s pat) ^ ", ...}")) ^ ", ...}"
+         Layout.namedRecord ("Dec.Val", [("rvbs", v2l (rvbs, fn {lambda, var} =>
+                                                           Layout.record [("lambda", lambda2l lambda),
+                                                                          ("var", var2l var)])),
+                                         ("tyvars", v2l (tyvars (), tyvar2l)),
+                                         ("vbs", v2l (vbs, fn {exp, pat, ...} =>
+                                                           Layout.record [("exp", exp2l exp),
+                                                                          ("pat", pat2l pat)]))])
+   end
 
-val toVerboseStringDec = dec2s
-fun toVerboseStringDecs decs = "[" ^ (String.concatWith (List.map (decs, dec2s), ", ")) ^ "]"
-val toVerboseStringExp = exp2s
-val toVerboseStringPat = pat2s
-val toVerboseStringType = ty2s
+val toVerboseStringDec = Layout.toString o dec2l
+fun toVerboseStringDecs decs = Layout.toString (Layout.align (List.map (decs, dec2l)))
+val toVerboseStringExp = Layout.toString o exp2l
+val toVerboseStringPat = Layout.toString o pat2l
+val toVerboseStringType = Layout.toString o ty2l
 
 fun verbosePrintDecs (decss: CoreML.Dec.t list vector) =  let
    val idx = ref 0
