@@ -1,0 +1,230 @@
+# Dumped outputs for sourcemark-2, formatted by Gemini
+
+        Layout(#383)=val 'a_51 sourceMarkValue_0: 'a_51 * string -> unit = (fn x_1048: 'a_51 * string => case x_1048 of (x_1050: 'a_51, x_1049: string) => Trace_sourceMarkValue['a_51] (x_105
+0, x_1049))
+    1 Verbose(#383) = Dec.Val {
+    2   rvbs = [],
+    3   tyvars = ['a_51],
+    4   vbs = [
+    5     {
+    6       exp = Exp.make (
+    7         Exp.Lambda (
+    8           Lambda.make {
+    9             arg = x_1048,
+   10             argType = 'a_51 * string,
+   11             body = Exp.make (
+   12               Exp.Case {
+   13                 rules = [
+   14                   {
+   15                     exp = Exp.make (
+   16                       Exp.PrimApp {
+   17                         args = [
+   18                           Exp.make (Exp.Var (x_1050, []), 'a_51),
+   19                           Exp.make (Exp.Var (x_1049, []), string)
+   20                         ],
+   21                         prim = Trace_sourceMarkValue,
+   22                         targs = ['a_51]
+   23                       },
+   24                       unit
+   25                     ),
+   26                     pat = Pat.make (
+   27                       Pat.Record {
+   28                         1 = Pat.make (Pat.Var x_1050, 'a_51),
+   29                         2 = Pat.make (Pat.Var x_1049, string)
+   30                       },
+   31                       'a_51 * string
+   32                     )
+   33                   }
+   34                 ],
+   35                 test = Exp.make (Exp.Var (x_1048, []), 'a_51 * string)
+   36               },
+   37               unit
+   38             )
+   39           }
+   40         ),
+   41         'a_51 * string -> unit
+   42       ),
+   43       pat = Pat.make (Pat.Var sourceMarkValue_0, 'a_51 * string -> unit)
+   44     }
+   45   ]
+   46 }
+
+        Layout(#7006)=val 'a_3341 sourceMarkValue_1: 'a_3341 * string -> unit = sourceMarkValue_0 ('a_3341)
+    1 Verbose(#7006) = Dec.Val {
+    2   rvbs = [],
+    3   tyvars = ['a_3341],
+    4   vbs = [
+    5     {
+    6       exp = Exp.make (
+    7         Exp.Var (sourceMarkValue_0, ['a_3341']),
+    8         'a_3341 * string -> unit
+    9       ),
+   10       pat = Pat.make (
+   11         Pat.Var sourceMarkValue_1,
+   12         'a_3341 * string -> unit
+   13       )
+   14     }
+   15   ]
+   16 }
+
+        Layout(#7085)=val 'a_3613 sourceMarkValue_2: 'a_3613 * string -> unit = sourceMarkValue_1 ('a_3613)
+    1 Verbose(#7085) = Dec.Val {
+    2   rvbs = [],
+    3   tyvars = ['a_3613],
+    4   vbs = [
+    5     {
+    6       exp = Exp.make (
+    7         Exp.Var (sourceMarkValue_1, ['a_3613']),
+    8         'a_3613 * string -> unit
+    9       ),
+   10       pat = Pat.make (
+   11         Pat.Var sourceMarkValue_2,
+   12         'a_3613 * string -> unit
+   13       )
+   14     }
+   15   ]
+   16 }
+
+        Layout(#7092)=val 'a_3999 sourceMarkValue_3: 'a_3999 * string -> unit = sourceMarkValue_2 ('a_3999)
+    1 Verbose(#7092) = Dec.Val {
+    2   rvbs = [],
+    3   tyvars = ['a_3999],
+    4   vbs = [
+    5     {
+    6       exp = Exp.make (
+    7         Exp.Var (sourceMarkValue_2, ['a_3999']),
+    8         'a_3999 * string -> unit
+    9       ),
+   10       pat = Pat.make (
+   11         Pat.Var sourceMarkValue_3,
+   12         'a_3999 * string -> unit
+   13       )
+   14     }
+   15   ]
+   16 }
+
+        Layout(#7093)=val _ = let val kX_0: int32 = 0x1:w32 val kY_0: int32 = 0x2:w32 val _ = (sourceMarkValue_3 (int32) (kX_0, "markX")) val _ = (sourceMarkValue_3 (int32) (kY_0, "markY")) val z_26: int32 = (+_6 (kX_0, kY_0)) in (print_1 (toString_4 z_26)) end
+     1 Verbose(#7093) = Dec.Val {
+     2   rvbs = [],
+     3   tyvars = [],
+     4   vbs = [
+     5     {
+     6       exp = Exp.make (
+     7         Exp.Let {
+     8           decs = [
+     9             Dec.Val {
+    10               rvbs = [],
+    11               tyvars = [],
+    12               vbs = [
+    13                 {
+    14                   exp = Exp.make (Exp.Const (0x1:w32), int32),
+    15                   pat = Pat.make (Pat.Var kX_0, int32)
+    16                 }
+    17               ]
+    18             },
+    19             Dec.Val {
+    20               rvbs = [],
+    21               tyvars = [],
+    22               vbs = [
+    23                 {
+    24                   exp = Exp.make (Exp.Const (0x2:w32), int32),
+    25                   pat = Pat.make (Pat.Var kY_0, int32)
+    26                 }
+    27               ]
+    28             },
+    29             Dec.Val {
+    30               rvbs = [],
+    31               tyvars = [],
+    32               vbs = [
+    33                 {
+    34                   exp = Exp.make (
+    35                     Exp.App {
+    36                       func = Exp.make (
+    37                         Exp.Var (sourceMarkValue_3, [int32]),
+    38                         int32 * string -> unit
+    39                       ),
+    40                       arg = Exp.make (
+    41                         Exp.Record {
+    42                           1 = Exp.make (Exp.Var (kX_0, []), int32),
+    43                           2 = Exp.make (Exp.Const ("markX"), string)
+    44                         },
+    45                         int32 * string
+    46                       )
+    47                     },
+    48                     unit
+    49                   ),
+    50                   pat = Pat.make (Pat.Wild, unit)
+    51                 }
+    52               ]
+    53             },
+    54             Dec.Val {
+    55               rvbs = [],
+    56               tyvars = [],
+    57               vbs = [
+    58                 {
+    59                   exp = Exp.make (
+    60                     Exp.App {
+    61                       func = Exp.make (
+    62                         Exp.Var (sourceMarkValue_3, [int32]),
+    63                         int32 * string -> unit
+    64                       ),
+    65                       arg = Exp.make (
+    66                         Exp.Record {
+    67                           1 = Exp.make (Exp.Var (kY_0, []), int32),
+    68                           2 = Exp.make (Exp.Const ("markY"), string)
+    69                         },
+    70                         int32 * string
+    71                       )
+    72                     },
+    73                     unit
+    74                   ),
+    75                   pat = Pat.make (Pat.Wild, unit)
+    76                 }
+    77               ]
+    78             },
+    79             Dec.Val {
+    80               rvbs = [],
+    81               tyvars = [],
+    82               vbs = [
+    83                 {
+    84                   exp = Exp.make (
+    85                     Exp.App {
+    86                       func = Exp.make (
+    87                         Exp.Var (+_6, []),
+    88                         int32 * int32 -> int32
+    89                       ),
+    90                       arg = Exp.make (
+    91                         Exp.Record {
+    92                           1 = Exp.make (Exp.Var (kX_0, []), int32),
+    93                           2 = Exp.make (Exp.Var (kY_0, []), int32)
+    94                         },
+    95                         int32 * int32
+    96                       )
+    97                     },
+    98                     int32
+    99                   ),
+   100                   pat = Pat.make (Pat.Var z_26, int32)
+   101                 }
+   102               ]
+   103             }
+   104           ],
+   105           exp = Exp.make (
+   106             Exp.App {
+   107               func = Exp.make (Exp.Var (print_1, []), string -> unit),
+   108               arg = Exp.make (
+   109                 Exp.App {
+   110                   func = Exp.make (Exp.Var (toString_4, []), int32 -> string),
+   111                   arg = Exp.make (Exp.Var (z_26, []), int32)
+   112                 },
+   113                 string
+   114               )
+   115             },
+   116             unit
+   117           )
+   118         },
+   119         unit
+   120       ),
+   121       pat = Pat.make (Pat.Wild, unit)
+   122     }
+   123   ]
+   124 }
