@@ -847,9 +847,13 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Trace_sourceMarkValue =>
          Error.bug "sourceMarkValue should have been eliminated in core-ml"
        | Prim.Trace_staticSourceMark _ => done ([], NONE)
-       (* TODO(pscollins): This objptr is intended to mean 'a -- does it work
-       for unboxed types? *)
-       | Prim.Trace_staticSourceMarkValue _ => done ([objptr], NONE)
+       | Prim.Trace_staticSourceMarkValue _ => let
+          val ty = Vector.first args
+          fun isTy t = equals (t, ty)
+       in
+          (* Assert that the input type matches the type argument *)
+          done ([isTy], NONE)
+       end
        | Prim.Word_add s => wordBinary s
        | Prim.Word_addCheckP (s, _) => wordBinaryP s
        | Prim.Word_andb s => wordBinary s
