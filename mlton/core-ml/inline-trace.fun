@@ -27,8 +27,6 @@ fun inlineTrace {prog} =
       `Trace_sourceMark`. There may be bindings that we miss, but that's OK:
       this is just best-effort info for debugging. *)
       val targetVars = collectVarsBoundToPred (prog, isTargetExp)
-      (* DEBUGGING HACK *)
-      val _ = verbosePrintDecs prog
    in
       (* Inline the `Trace_sourceMark` application to all of the uses of the
       `Var`s that we found above *)
