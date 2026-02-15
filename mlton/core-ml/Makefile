@@ -2,6 +2,7 @@ MLTON := mlton
 
 .PHONY: unittest
 unittest: core-ml-test.bin
+	clean
 	./core-ml-test.bin
 # unittest: inline-trace-test.bin core-ml-test.bin
 # 	./inline-trace-test.bin
