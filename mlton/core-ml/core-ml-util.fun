@@ -22,7 +22,11 @@ in
    not (VarSet.isEmpty intersect)
 end
 
-fun collectVarsBoundToPred (prog: Dec.t list vector, pred) = let
+(* Implementation detail of {,recursive}CollectVarsBoundToPred: `predWithVarSet`
+wraps a predicate and allows the user to check the existing `VarSet.t` as part
+of the decision. *)
+fun collectVarsBoundToPredImpl (prog: Dec.t list vector,
+                                predWithVarSet: VarSet.t * Exp.t -> bool) = let
    fun extractVb {exp, pat, ...}: (Var.t * Exp.t) option =
        case Pat.dest pat of
            (Pat.Var v, _) => SOME (v, exp)
@@ -39,7 +43,7 @@ fun collectVarsBoundToPred (prog: Dec.t list vector, pred) = let
        case (extractUniqueDecBinding dec) of
            NONE => vs
          | SOME (var, bind) =>
-           if (pred bind) then VarSet.+ (vs, VarSet.singleton var)
+           if (predWithVarSet (vs, bind)) then VarSet.+ (vs, VarSet.singleton var)
            else vs
    fun collectVarsInDecs (decs: Dec.t list, vs: VarSet.t): VarSet.t =
        List.fold (decs, vs, collectVarsInDec)
@@ -47,8 +51,35 @@ in
    Vector.fold (prog, VarSet.empty, collectVarsInDecs)
 end
 
-fun recursiveCollectVarsBoundToPred (prog, pred): VarSet.t =
-    VarSet.empty
+fun collectVarsBoundToPred (prog: Dec.t list vector, pred) = let
+   fun wrapPred (vs: VarSet.t, exp: Exp.t): bool =
+       (* ignore `vs` *)
+       pred exp
+in
+   collectVarsBoundToPredImpl (prog, wrapPred)
+end
+
+(* Implementation detail of `inlineSourceMarkCall`: checks if `exp` is a `Var`
+node that blongs to the provided `VarSet`. *)
+fun isTargetVarExp (vs: VarSet.t) (exp: Exp.t): bool =
+    case Exp.node exp of
+        Exp.Var (getVar, getTypes) => setContains vs (getVar())
+     |  _ => false
+
+fun recursiveCollectVarsBoundToPred (prog, pred): VarSet.t = let
+   fun wrapPred (vs: VarSet.t, exp: Exp.t): bool = let
+      val _ = print concat ["NUM VARS: ", Int.toString (List.length (VarSet.toList vs))]
+   in
+       if isTargetVarExp vs exp then
+          (* expand through aliases *)
+          true
+       else
+          (* otherwise use the regular `pred` *)
+          pred exp
+   end
+in
+   collectVarsBoundToPredImpl (prog, wrapPred)
+end
 
 fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
     CoreML.Dec.t list vector = let
@@ -153,13 +184,6 @@ fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
    in
       Vector.map (prog, doDecs)
    end
-
-(* Implementation detail of `inlineSourceMarkCall`: checks if `exp` is a `Var`
-node that blongs to the provided `VarSet`. *)
-fun isTargetVarExp (vs: VarSet.t) (exp: Exp.t): bool =
-    case Exp.node exp of 
-        Exp.Var (getVar, getTypes) => setContains vs (getVar())
-     |  _ => false
 
 fun inlineSourceMarkCall (vs: VarSet.t) (node: Exp.node): Exp.node option = let
    val isTargetVarExp = isTargetVarExp vs
