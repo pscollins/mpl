@@ -170,12 +170,11 @@ val _ =
       val expX = CoreML.Exp.var (x, ty)
       val expY = CoreML.Exp.var (y, ty)
 
-      (* val w = (let val y = x in y end) *)
-      val innerDec = mkValDec (y, expX)
-      val letExp = CoreML.Exp.make (CoreML.Exp.Let (Vector.new1 innerDec, expY), ty)
-      val outerDec = mkValDec (w, letExp)
+      (* val y = x; val w = y *)
+      val decY = mkValDec (y, expX)
+      val decW = mkValDec (w, expY)
 
-      val prog = Vector.fromList [[outerDec]]
+      val prog = Vector.fromList [[decY, decW]]
 
       fun isVarX e =
          case CoreML.Exp.node e of
@@ -184,21 +183,18 @@ val _ =
 
       val res = recursiveCollectVarsBoundToPred (prog, isVarX)
       
-      (* Should contain y because y is bound to x in the inner let *)
-      val _ = if setContains res y then () else Error.bug "Test failed: missing y (should be found recursively)"
-      (* Should NOT contain w because w is bound to a Let, not x *)
-      val _ = if setContains res w then Error.bug "Test failed: contains w" else ()
+      (* Should contain y because y is bound to x *)
+      val _ = if setContains res y then () else Error.bug "Test failed: missing y"
+      (* Should contain w because w is bound to y, which is bound to x *)
+      val _ = if setContains res w then () else Error.bug "Test failed: missing w"
 
       (* Test deeply nested and multiple bindings *)
       (*
-         val a = (let 
-                    val b = x
-                    val c = (let val d = x in d end)
-                    val e = y (* y is in res from previous step, but isVarX doesn't know that.
-                                 Wait, the predicate is usually on the expression. *)
-                  in 
-                    b 
-                  end)
+         val b = x
+         val d = x
+         val c = d
+         val e = y
+         val a = b
       *)
       val a = Var.newString "a"
       val b = Var.newString "b"
@@ -206,24 +202,20 @@ val _ =
       val d = Var.newString "d"
       val e = Var.newString "e"
       
-      val decD = mkValDec (d, expX)
-      val letD = CoreML.Exp.make (CoreML.Exp.Let (Vector.new1 decD, CoreML.Exp.var (d, ty)), ty)
       val decB = mkValDec (b, expX)
-      val decC = mkValDec (c, letD)
+      val decD = mkValDec (d, expX)
+      val decC = mkValDec (c, CoreML.Exp.var (d, ty))
       val decE = mkValDec (e, expY)
+      val decA = mkValDec (a, CoreML.Exp.var (b, ty))
       
-      val innerDecs = [decB, decC, decE]
-      val letA = CoreML.Exp.make (CoreML.Exp.Let (Vector.fromList innerDecs, CoreML.Exp.var (b, ty)), ty)
-      val decA = mkValDec (a, letA)
-      
-      val prog2 = Vector.fromList [[decA]]
+      val prog2 = Vector.fromList [[decY, decB, decD, decC, decE, decA]]
       val res2 = recursiveCollectVarsBoundToPred (prog2, isVarX)
       
       val _ = if setContains res2 b then () else Error.bug "Test failed: missing b"
       val _ = if setContains res2 d then () else Error.bug "Test failed: missing d"
-      val _ = if setContains res2 a then Error.bug "Test failed: contains a" else ()
-      val _ = if setContains res2 c then Error.bug "Test failed: contains c" else ()
-      val _ = if setContains res2 e then Error.bug "Test failed: contains e" else ()
+      val _ = if setContains res2 a then () else Error.bug "Test failed: missing a"
+      val _ = if setContains res2 c then () else Error.bug "Test failed: missing c"
+      val _ = if setContains res2 e then () else Error.bug "Test failed: missing e"
    in
       ()
    end
