@@ -2,7 +2,8 @@
 
    Test that we can locate a `sourceMarkValue` in the generated C
 
-   TODO(pscollins): add assertions onces this compiles successfully
+   RUN: grep '// Diagnostic(Trace_staticSourceMarkValue:markX (0x1:w32))' %t
+   RUN: grep '// Diagnostic(Trace_staticSourceMarkValue:markY (0x2:w32))' %t
  *)
 
 val _ = let

@@ -7,8 +7,8 @@
    RUN: grep 'Trace_staticSourceMark:mark2' %t/*emitDiagnostics.pre.machine
 
    Diagnostic in `post`
-   RUN: grep 'Diagnostic(Trace_staticSourceMark:mark1)' %t/*emitDiagnostics.post.machine
-   RUN: grep 'Diagnostic(Trace_staticSourceMark:mark2)' %t/*emitDiagnostics.post.machine
+   RUN: grep 'Diagnostic(Trace_staticSourceMark:mark1 ())' %t/*emitDiagnostics.post.machine
+   RUN: grep 'Diagnostic(Trace_staticSourceMark:mark2 ())' %t/*emitDiagnostics.post.machine
  *)
 
 val _ = let

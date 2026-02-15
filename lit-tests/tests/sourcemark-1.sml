@@ -4,8 +4,8 @@
 
    Test that we can locate a `sourceMark` in the generated C
 
-   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark1)' %t
-   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark2)' %t
+   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark1 ())' %t
+   RUN: grep '// Diagnostic(Trace_staticSourceMark:mark2 ())' %t
  *)
 
 val _ = let
