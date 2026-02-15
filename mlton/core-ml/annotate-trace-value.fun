@@ -9,7 +9,17 @@ struct
 
 open S
 open CoreML
+structure CoreMLUtil = CoreMLUtil (structure CoreML = CoreML)
+open CoreMLUtil
 
-fun annotateTraceValue {prog} = {prog = prog}
+fun annotateTraceValue {prog} = let
+   (* Find all of the `Var.t`s that correspond to a `Trace_sourceMarkValue`
+   call, recursing through aliases. *)
+   val targetVars = recursiveCollectVarsBoundToPred
+                        (prog, isSourceMarkValueExp)
+in
+   (* Rewrite all invocations of matching `Var.t`s into our target format *)
+   {prog = mapExps (prog, convertSourceMarkValueToStatic targetVars)}
+end
 
 end

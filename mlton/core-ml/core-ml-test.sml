@@ -18,6 +18,7 @@ structure CoreML = CoreML (open Atoms
                                              layoutPrettyTyvar = Tyvar.layout}))
                               end)
 structure InlineTrace = InlineTrace (structure CoreML = CoreML)
+structure AnnotateTraceValue = AnnotateTraceValue (structure CoreML = CoreML)
 structure AnnotateTrace = AnnotateTrace (structure CoreML = CoreML)
 structure CoreMLUtil = CoreMLUtil (structure CoreML = CoreML)
 open CoreMLUtil
@@ -853,6 +854,113 @@ val _ =
           | _ => false
       val _ = if notAnnotated4 then () else Error.bug "AnnotateTrace Case 4 failed: dynamic sourceMark SHOULD NOT be annotated"
 
+   in
+      ()
+   end
+
+val _ = print "Testing AnnotateTraceValue.annotateTraceValue...\n"
+
+val _ =
+   let
+      open Atoms
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+      val talpha = CoreML.Type.unit (* Placeholder for 'a *)
+
+      fun mkValDec (var, exp) =
+         CoreML.Dec.Val {
+            matchDiags = {nonexhaustiveExn = Control.Elaborate.DiagDI.Default,
+                          nonexhaustive = Control.Elaborate.DiagEIW.Ignore,
+                          redundant = Control.Elaborate.DiagEIW.Ignore},
+            rvbs = Vector.new0 (),
+            tyvars = fn () => Vector.new0 (),
+            vbs = Vector.new1 {
+               ctxt = fn () => Layout.empty,
+               exp = exp,
+               layPat = fn () => Layout.empty,
+               nest = [],
+               pat = CoreML.Pat.var (var, CoreML.Exp.ty exp),
+               regionPat = Region.bogus
+            }
+         }
+
+      fun mkPrimApp (prim, args, targs) =
+         CoreML.Exp.make (CoreML.Exp.PrimApp {
+            args = Vector.fromList args,
+            prim = prim,
+            targs = Vector.fromList targs
+         }, ty)
+
+      fun isTraceStaticSourceMarkValueExp (e, expectedName) =
+         case CoreML.Exp.node e of
+            CoreML.Exp.PrimApp {prim, args, ...} =>
+               (case prim of
+                   Prim.Trace_staticSourceMarkValue s => 
+                      s = expectedName andalso Vector.length args = 1
+                 | _ => false)
+          | _ => false
+
+      val sourceMarkValueVar = Var.newString "sourceMarkValue"
+      val x = Var.newString "x"
+      val xVal = Var.newString "x_val"
+      val xMark = Var.newString "x_mark"
+      val tupleTy = CoreML.Type.tuple (Vector.new2 (talpha, stringTy))
+      
+      (* Wrapper: fn x => case x of (xv, xm) => Trace_sourceMarkValue (xv, xm) *)
+      val primApp = mkPrimApp (Prim.Trace_sourceMarkValue, 
+                              [CoreML.Exp.var (xVal, talpha), CoreML.Exp.var (xMark, stringTy)],
+                              [talpha])
+      val rule = {
+         exp = primApp,
+         layPat = NONE,
+         pat = CoreML.Pat.tuple (Vector.new2 (CoreML.Pat.var (xVal, talpha), CoreML.Pat.var (xMark, stringTy))),
+         regionPat = Region.bogus
+      }
+      val caseExp = CoreML.Exp.make (
+         CoreML.Exp.Case {
+            ctxt = fn () => Layout.empty,
+            kind = ("sourceMarkValue", ""),
+            nest = [],
+            matchDiags = {nonexhaustiveExn = Control.Elaborate.DiagDI.Default,
+                          nonexhaustive = Control.Elaborate.DiagEIW.Ignore,
+                          redundant = Control.Elaborate.DiagEIW.Ignore},
+            noMatch = CoreML.Exp.Impossible,
+            region = Region.bogus,
+            rules = Vector.new1 rule,
+            test = CoreML.Exp.var (x, tupleTy)
+         }, ty)
+      val lam = CoreML.Lambda.make {
+         arg = x,
+         argType = tupleTy,
+         body = caseExp,
+         inline = InlineAttr.Auto
+      }
+      val sourceMarkValueDec = mkValDec (sourceMarkValueVar, CoreML.Exp.lambda lam)
+
+      (* Call: sourceMarkValue (val, "mark") *)
+      val markName = "test_mark"
+      val valVar = Var.newString "v"
+      val valExp = CoreML.Exp.var (valVar, talpha)
+      val markConst = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string markName), stringTy)
+      val tupleArg = CoreML.Exp.tuple (Vector.new2 (valExp, markConst))
+      val callExp = CoreML.Exp.make (
+         CoreML.Exp.App {
+            func = CoreML.Exp.make (
+               CoreML.Exp.Var (fn () => sourceMarkValueVar, fn () => Vector.new1 talpha),
+               CoreML.Type.arrow (tupleTy, ty)),
+            arg = tupleArg,
+            inline = InlineAttr.Auto
+         }, ty)
+      val callDec = mkValDec (Var.newString "u", callExp)
+
+      val prog = Vector.fromList [[sourceMarkValueDec, callDec]]
+      val {prog = resProg} = AnnotateTraceValue.annotateTraceValue {prog = prog}
+
+      val annotated = 
+         case Vector.sub (resProg, 0) of
+            [_, CoreML.Dec.Val {vbs, ...}] => isTraceStaticSourceMarkValueExp (#exp (Vector.sub (vbs, 0)), markName)
+          | _ => false
+      val _ = if annotated then () else Error.bug "AnnotateTraceValue failed: sourceMarkValue call NOT annotated"
    in
       ()
    end
