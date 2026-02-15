@@ -47,6 +47,9 @@ in
    Vector.fold (prog, VarSet.empty, collectVarsInDecs)
 end
 
+fun recursiveCollectVarsBoundToPred (prog, pred): VarSet.t =
+    VarSet.empty
+
 fun mapExps (prog: Dec.t list vector, rewrite: Exp.node -> Exp.node option):
     CoreML.Dec.t list vector = let
       val currStmt = ref 0
