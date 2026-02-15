@@ -203,6 +203,8 @@ in
      | _ => NONE
 end
 
+fun isSourceMarkValueExp (exp: Exp.t): bool = false
+
 fun v2l (v, f) = Layout.list (Vector.toList (Vector.map (v, f)))
 fun o2l (opt, f) =
    case opt of

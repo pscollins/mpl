@@ -57,6 +57,22 @@ signature CORE_ML_UTIL =
       val convertSourceMarkToStatic:
           CoreML.Exp.node -> CoreML.Exp.node option
 
+      (* Returns `true` if the provided `Exp.t` corresponds to the innermost
+      expression of a `Trace_sourceMarkValue`, e.g.:
+
+         (fn x_1048: 'a_51 * string =>
+           case x_1048 of
+             (x_1050: 'a_51, x_1049: string) =>
+             Trace_sourceMarkValue['a_51] (x_1050, x_1049))
+
+       i.e. a `Lambda` with a tuple argument whose `body` is a `Case` statement
+       with a single `rule`, and where the `rule` is, in turn a `PrimApp` with
+       two `args` and type `Trace_sourceMarkValue`. Additionally, the `PrimApp`
+       has a single type argument, and the type argument is plumbed
+       appropriately through the layers.
+       *)
+      val isSourceMarkValueExp: CoreML.Exp.t -> bool
+
       (* The following function prints the specified IR type with explicit tags
       for the corresponding data type defined in `core-ml.fun`: this is intended
       as a format that is simpler to work back to SML constructor calls than the
