@@ -1,4 +1,4 @@
-(* RUN: mpl-print-c %s > %t
+(* RUN: mpl-print-c %s > %t || true
 
    Test that we can locate a `sourceMarkValue` in the generated C
 

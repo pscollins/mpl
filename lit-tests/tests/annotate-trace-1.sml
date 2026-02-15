@@ -1,4 +1,4 @@
-(* RUN: mpl-compile -keep-pass annotateTrace %s %t || true
+(* RUN: mpl-compile -keep-pass annotateTrace %s %t
 
    Test sourceMark -> staticSourceMark conversion
 
@@ -6,7 +6,7 @@
    RUN: grep    'Trace_sourceMark ("mark1")' %t/*annotateTrace.pre.core-ml
    RUN: grep    'Trace_sourceMark ("mark2")' %t/*annotateTrace.pre.core-ml
 
-   Stati version in `.post`
+   Static version in `.post`
    RUN: grep 'Trace_staticSourceMark:mark1' %t/*annotateTrace.post.core-ml
    RUN: grep 'Trace_staticSourceMark:mark2' %t/*annotateTrace.post.core-ml
  *)
