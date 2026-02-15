@@ -17,11 +17,13 @@ signature EMIT_DIAGNOSTICS =
 
       (* Finds instances `Trace_staticSourceMark` `Statement.PrimApp`'s like:
 
-      Trace_staticSourceMark:mark1 ()
+      1. Trace_staticSourceMark:mark1 ()
+      2. Trace_staticSourceMarkValue:markX (0x1:w32)
 
       and replaces them with `Statement.Diagnostic`s like:
 
-      Diagnostic "Trace_staticSourceMark:mark1"
+      1. Diagnostic "Trace_staticSourceMark:mark1"
+      2. Diagnostic "Trace_staticSourceMarkValue:markX (0x1:w32)"
 
       i.e. a `Statement.Diagnostic` whose `string` payload is as described
       above.
