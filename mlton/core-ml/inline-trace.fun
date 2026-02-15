@@ -29,7 +29,7 @@ fun inlineTrace {prog} =
       val targetVars = collectVarsBoundToPred (prog, isTargetExp)
       (* DEBUGGING HACK *)
       val _ = verbosePrintDecs prog
-   in 
+   in
       (* Inline the `Trace_sourceMark` application to all of the uses of the
       `Var`s that we found above *)
       {prog = mapExps (prog, inlineSourceMarkCall targetVars)}

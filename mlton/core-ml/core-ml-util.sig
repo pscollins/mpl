@@ -52,13 +52,23 @@ signature CORE_ML_UTIL =
       val inlineSourceMarkCall:
           VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option
 
-      (* Like above, but for `sourceMarkValue`: if the provided `Exp.node` is an
-       `Exp.App` whose `func` is a singleton `Var` that belongs to the provided
-       `VarSet.t`, then returns a `PrimApp` corresponding to a
-       `Trace_sourceMarkValue` applied to the same (tuple) `arg` as the original
-       `Exp.App`. Otherwise, returns `NONE` *)
-      val inlineSourceMarkValueCall: unit
-          (* VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option *)
+      (* Like above, but for `sourceMarkValue`. Given IR corresponding to:
+
+       sourceMarkValueWrapper ['a] (value, "name")
+
+       i.e. an `Exp.App` whose `func` is a singleton `Var` that belongs to the
+       provided `VarSet.t`, returns:
+
+       Trace_staticSourceMarkValue:name ['a] value
+
+       i.e. an `Exp.PrimApp` whose `prim` is a `Trace_staticSourceMark` with the
+       same value argument (i.e. first tuple element) of the original `Exp.App`,
+       carrying the name argument (i.e. the second tuple element) as its payload.
+
+       For inputs that do not match these conditions, returns NONE.
+       *)
+      val inlineSourceMarkValueCall: 
+          VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option
 
       (* If the provided `Exp.node` is a `PrimApp` corresponding to a
       `Trace_sourceMark` with an `Exp.Const` argument of type string, then

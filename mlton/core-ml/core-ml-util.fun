@@ -195,7 +195,8 @@ in
     |  _ => NONE
 end
 
-val inlineSourceMarkValueCall = ()
+fun inlineSourceMarkValueCall (vs: VarSet.t) (exp: Exp.node): Exp.node option
+    = NONE
 
 fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
    fun getCleanName getConst = let
