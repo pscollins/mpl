@@ -189,6 +189,9 @@ fun implementsPrim (p: 'a Prim.t): bool =
        | Array_cas _ => true
        | Trace_sourceMark =>  true
        | Trace_staticSourceMark _ =>  true
+       (* Trace_sourceMarkValue isn't included because we don't support a
+       fallback "dynamic" path for it *)
+       | Trace_staticSourceMarkValue _ =>  true
        | Thread_returnToC => false
        | Word_add _ => true
        | Word_addCheckP _ => true
