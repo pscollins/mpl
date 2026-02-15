@@ -38,16 +38,20 @@ in
 end
 
 fun emitDiagnostics (program: Program.t): Program.t = let
-   fun makeString (s: string): string =
-       concat ["Trace_staticSourceMark:", s]
-   fun maybeDiagnostic prim =
+   fun toString (s: Statement.t) =
+       Layout.toString (Statement.layout s)
+   fun wantPrim prim =
        case prim of
-           Prim.Trace_staticSourceMark s =>
-           SOME (Statement.Diagnostic (makeString s))
-         | _ => NONE
+          Prim.Trace_staticSourceMark _ =>  true
+        |  Prim.Trace_staticSourceMarkValue _ =>  true
+        | _ => false
+   fun maybeDiagnostic (prim, s) =
+       if wantPrim prim then
+          SOME (Statement.Diagnostic (toString s))
+       else NONE
    fun rewrite (s: Statement.t): Statement.t option =
        case s of
-           Statement.PrimApp {prim, ...} => maybeDiagnostic prim
+           Statement.PrimApp {prim, ...} => maybeDiagnostic (prim, s)
         | _ => NONE
 in
    mapStatements (program, rewrite)

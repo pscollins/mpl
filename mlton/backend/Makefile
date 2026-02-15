@@ -4,7 +4,7 @@ MLTON := mlton
 unittest: emit-diagnostics-test.bin
 	./emit-diagnostics-test.bin
 
-emit-diagnostics-test.bin: emit-diagnostics-test.mlb emit-diagnostics-test.sml
+emit-diagnostics-test.bin: emit-diagnostics-test.mlb emit-diagnostics-test.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
 
 

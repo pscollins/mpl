@@ -236,7 +236,7 @@ local
    }
 
    val p4' = EmitDiagnostics.emitDiagnostics p4
-   val _ = assertHasDiagnostic (p4', "Trace_staticSourceMark:mark1", 
+   val _ = assertHasDiagnostic (p4', "Trace_staticSourceMark:mark1 ()", 
                                 "EmitDiagnostics test 1: 'Trace_staticSourceMark:mark1' diagnostic not found")
 
    val _ = print "Running emitDiagnostics test 2...\n"
@@ -280,8 +280,88 @@ local
 
    val p5' = EmitDiagnostics.emitDiagnostics p5
    val _ = assertHasDiagnostic (p5', "pre-existing", "EmitDiagnostics test 2: 'pre-existing' lost")
-   val _ = assertHasDiagnostic (p5', "Trace_staticSourceMark:mark2", 
+   val _ = assertHasDiagnostic (p5', "Trace_staticSourceMark:mark2 ()", 
                                 "EmitDiagnostics test 2: 'Trace_staticSourceMark:mark2' diagnostic not found")
+
+   val _ = print "Running emitDiagnostics test 3...\n"
+   val b6 = Block.T {
+       kind = Kind.Jump,
+       label = Label.newNoname (),
+       live = Vector.new0 (),
+       raises = NONE,
+       returns = NONE,
+       statements = Vector.fromList [
+         Statement.PrimApp {
+            args = Vector.fromList [Operand.word (WordX.fromInt (1, WordSize.word32))],
+            dst = NONE,
+            prim = Prim.Trace_staticSourceMarkValue "markX"
+         }
+       ],
+       transfer = Transfer.Goto label
+   }
+   val c6 = Chunk.T {
+       blocks = Vector.fromList [b6],
+       chunkLabel = ChunkLabel.newNoname (),
+       tempsMax = fn _ => 0
+   }
+   val p6 = Program.T {
+       chunks = [c6],
+       frameInfos = Vector.new0 (),
+       frameOffsets = Vector.new0 (),
+       globals = {objptrs = [], reals = []},
+       handlesSignals = false,
+       main = {chunkLabel = chunkLabel,
+               label = label},
+       maxFrameSize = Bytes.zero,
+       objectTypes = Vector.new0 (),
+       sporkInfos = Vector.new0 (),
+       sourceMaps = NONE,
+       staticHeaps = fn _ => Vector.new0 ()
+   }
+
+   val p6' = EmitDiagnostics.emitDiagnostics p6
+   val _ = assertHasDiagnostic (p6', "Trace_staticSourceMarkValue:markX (0x1:w32)", 
+                                "EmitDiagnostics test 3: 'Trace_staticSourceMarkValue:markX (0x1:w32)' diagnostic not found")
+
+   val _ = print "Running emitDiagnostics test 4...\n"
+   val b7 = Block.T {
+       kind = Kind.Jump,
+       label = Label.newNoname (),
+       live = Vector.new0 (),
+       raises = NONE,
+       returns = NONE,
+       statements = Vector.fromList [
+         Statement.PrimApp {
+            args = Vector.fromList [Operand.word (WordX.fromInt (123, WordSize.word32))],
+            dst = NONE,
+            prim = Prim.Trace_staticSourceMarkValue "markY"
+         }
+       ],
+       transfer = Transfer.Goto label
+   }
+   val c7 = Chunk.T {
+       blocks = Vector.fromList [b7],
+       chunkLabel = ChunkLabel.newNoname (),
+       tempsMax = fn _ => 0
+   }
+   val p7 = Program.T {
+       chunks = [c7],
+       frameInfos = Vector.new0 (),
+       frameOffsets = Vector.new0 (),
+       globals = {objptrs = [], reals = []},
+       handlesSignals = false,
+       main = {chunkLabel = chunkLabel,
+               label = label},
+       maxFrameSize = Bytes.zero,
+       objectTypes = Vector.new0 (),
+       sporkInfos = Vector.new0 (),
+       sourceMaps = NONE,
+       staticHeaps = fn _ => Vector.new0 ()
+   }
+
+   val p7' = EmitDiagnostics.emitDiagnostics p7
+   val _ = assertHasDiagnostic (p7', "Trace_staticSourceMarkValue:markY (0x7B:w32)", 
+                                "EmitDiagnostics test 4: 'Trace_staticSourceMarkValue:markY (0x7B:w32)' diagnostic not found")
 
    val _ = print "EmitDiagnostics tests passed.\n"
 in
