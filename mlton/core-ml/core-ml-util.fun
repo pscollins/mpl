@@ -210,13 +210,12 @@ in
            think at this point we have already type-checked so it doesn't really
            matter. *)
        Exp.Const getConst => SOME (getCleanName getConst)
-     | _ => NONE
-end
-
-fun inlineSourceMarkValueCall
-        (vs: VarSet.t) (exp: Exp.node): Exp.node option = let
-   fun unpackFieldPair (arg, maybeName) =
-       case getConstStr maybeName of
+           | _ => NONE
+     end
+     
+     fun convertSourceMarkValueToStatic
+             (vs: VarSet.t) (exp: Exp.node): Exp.node option = let
+        fun unpackFieldPair (arg, maybeName) =       case getConstStr maybeName of
            SOME name => SOME (arg, name)
          | _ => NONE
    fun unpackFields fields =

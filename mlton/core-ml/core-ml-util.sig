@@ -67,7 +67,7 @@ signature CORE_ML_UTIL =
 
        For inputs that do not match these conditions, returns NONE.
        *)
-      val inlineSourceMarkValueCall: 
+      val convertSourceMarkValueToStatic:
           VarSet.t -> CoreML.Exp.node -> CoreML.Exp.node option
 
       (* If the provided `Exp.node` is a `PrimApp` corresponding to a

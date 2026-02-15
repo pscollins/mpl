@@ -414,7 +414,7 @@ val _ =
       ()
    end
 
-val _ = print "Testing inlineSourceMarkValueCall...\n"
+val _ = print "Testing convertSourceMarkValueToStatic...\n"
 
 val _ =
    let
@@ -447,7 +447,7 @@ val _ =
 
       (* Test 1: Matching call *)
       val node1 = mkApp (funcWithTargs, tupleArg)
-      val res1 = inlineSourceMarkValueCall vset node1
+      val res1 = convertSourceMarkValueToStatic vset node1
       val _ = case res1 of
                  SOME (CoreML.Exp.PrimApp {args, prim, targs, ...}) =>
                     (case prim of
@@ -469,14 +469,14 @@ val _ =
          CoreML.Type.arrow (CoreML.Exp.ty tupleArg, ty)
       )
       val node2 = mkApp (funcNotMatch, tupleArg)
-      val res2 = inlineSourceMarkValueCall vset node2
+      val res2 = convertSourceMarkValueToStatic vset node2
       val _ = case res2 of
                  NONE => ()
                | SOME _ => Error.bug "Test 2 failed: should NOT have inlined (var not in vset)"
 
       (* Test 3: Arg is not a tuple *)
       val node3 = mkApp (funcWithTargs, expZ)
-      val res3 = inlineSourceMarkValueCall vset node3
+      val res3 = convertSourceMarkValueToStatic vset node3
       val _ = case res3 of
                  NONE => ()
                | SOME _ => Error.bug "Test 3 failed: should NOT have inlined (arg not a tuple)"
@@ -484,7 +484,7 @@ val _ =
       (* Test 4: Tuple arg has wrong size *)
       val tripleArg = CoreML.Exp.tuple (Vector.new3 (valueExp, nameExp, valueExp))
       val node4 = mkApp (funcWithTargs, tripleArg)
-      val res4 = inlineSourceMarkValueCall vset node4
+      val res4 = convertSourceMarkValueToStatic vset node4
       val _ = case res4 of
                  NONE => ()
                | SOME _ => Error.bug "Test 4 failed: should NOT have inlined (tuple size != 2)"
@@ -493,7 +493,7 @@ val _ =
       val dynamicNameExp = CoreML.Exp.var (Var.newString "v", stringTy)
       val dynamicTupleArg = CoreML.Exp.tuple (Vector.new2 (valueExp, dynamicNameExp))
       val node5 = mkApp (funcWithTargs, dynamicTupleArg)
-      val res5 = inlineSourceMarkValueCall vset node5
+      val res5 = convertSourceMarkValueToStatic vset node5
       val _ = case res5 of
                  NONE => ()
                | SOME _ => Error.bug "Test 5 failed: should NOT have inlined (non-constant name)"
