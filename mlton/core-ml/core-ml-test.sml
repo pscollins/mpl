@@ -689,6 +689,70 @@ val _ =
       ()
    end
 
+val _ = print "Testing isSourceMarkValueExp...\n"
+
+val _ =
+   let
+      open Atoms
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+      val talpha = CoreML.Type.unit (* Placeholder for 'a *)
+
+      val x = Var.newString "x"
+      val xVal = Var.newString "x_val"
+      val xMark = Var.newString "x_mark"
+
+      (* 
+         (fn x: 'a * string => 
+            case x of 
+               (x_val: 'a, x_mark: string) => 
+               Trace_sourceMarkValue['a] (x_val, x_mark))
+      *)
+
+      val tupleTy = CoreML.Type.tuple (Vector.new2 (talpha, stringTy))
+      
+      val primApp = CoreML.Exp.make (
+         CoreML.Exp.PrimApp {
+            args = Vector.new2 (CoreML.Exp.var (xVal, talpha), CoreML.Exp.var (xMark, stringTy)),
+            prim = Prim.Trace_sourceMarkValue,
+            targs = Vector.new1 talpha
+         }, ty)
+
+      val rule = {
+         exp = primApp,
+         layPat = NONE,
+         pat = CoreML.Pat.tuple (Vector.new2 (CoreML.Pat.var (xVal, talpha), CoreML.Pat.var (xMark, stringTy))),
+         regionPat = Region.bogus
+      }
+
+      val caseExp = CoreML.Exp.make (
+         CoreML.Exp.Case {
+            ctxt = fn () => Layout.empty,
+            kind = ("sourceMarkValue", ""),
+            nest = [],
+            matchDiags = {nonexhaustiveExn = Control.Elaborate.DiagDI.Default,
+                          nonexhaustive = Control.Elaborate.DiagEIW.Ignore,
+                          redundant = Control.Elaborate.DiagEIW.Ignore},
+            noMatch = CoreML.Exp.Impossible,
+            region = Region.bogus,
+            rules = Vector.new1 rule,
+            test = CoreML.Exp.var (x, tupleTy)
+         }, ty)
+
+      val lam = CoreML.Lambda.make {
+         arg = x,
+         argType = tupleTy,
+         body = caseExp,
+         inline = InlineAttr.Auto
+      }
+
+      val exp = CoreML.Exp.lambda lam
+
+      val _ = if isSourceMarkValueExp exp then () else Error.bug "isSourceMarkValueExp failed: should be true"
+   in
+      ()
+   end
+
 val _ = print "Testing toVerboseString...\n"
 
 val _ =

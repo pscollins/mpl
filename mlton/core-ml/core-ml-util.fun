@@ -203,7 +203,26 @@ in
      | _ => NONE
 end
 
-fun isSourceMarkValueExp (exp: Exp.t): bool = false
+fun isSourceMarkValueExp (exp: Exp.t): bool = let
+   fun matchRule {exp, ...} =
+       case Exp.node exp of
+           Exp.PrimApp {args = args,
+                        prim = Prim.Trace_sourceMarkValue, ...} =>
+           true
+        |  _ =>  false
+   fun matchRules rules =
+       if Vector.length rules = 1 then
+          matchRule (Vector.first rules)
+       else false
+   fun matchLambdaBody {body, ...} =
+       case Exp.node body of
+           Exp.Case {rules, ...} => matchRules rules
+         | _ => false
+in
+   case Exp.node exp of
+       Exp.Lambda lambda => matchLambdaBody (Lambda.dest lambda)
+    | _ => false
+end
 
 fun v2l (v, f) = Layout.list (Vector.toList (Vector.map (v, f)))
 fun o2l (opt, f) =
