@@ -58,6 +58,7 @@ structure FrontEnd = FrontEnd (structure Ast = Ast)
 structure MLBFrontEnd = MLBFrontEnd (structure Ast = Ast
                                      structure FrontEnd = FrontEnd)
 structure DeadCode = DeadCode (structure CoreML = CoreML)
+structure AnnotateTraceValue = AnnotateTraceValue (structure CoreML = CoreML)
 structure AnnotateTrace = AnnotateTrace (structure CoreML = CoreML)
 structure InlineTrace = InlineTrace (structure CoreML = CoreML)
 structure Defunctorize = Defunctorize (structure CoreML = CoreML
@@ -411,6 +412,27 @@ fun mkCompile {outputC, outputLL, outputS} =
              tgtToFile = SOME CoreML.Program.toFile,
              tgtTypeCheck = NONE}
          end
+      fun annotateTraceValue coreML =
+         let
+            fun doit (CoreML.Program.T {decs}) =
+               let
+                  val decs = Vector.map (decs, fn d => [d])
+                  val {prog = decs} = AnnotateTraceValue.annotateTraceValue {prog = decs}
+                  val decs = Vector.concatV (Vector.map (decs, Vector.fromList))
+               in
+                  CoreML.Program.T {decs = decs}
+               end
+         in
+            Control.translatePass
+            {arg = coreML,
+             doit = doit,
+             keepIL = false,
+             name = "annotateTraceValue",
+             srcToFile = SOME CoreML.Program.toFile,
+             tgtStats = SOME CoreML.Program.layoutStats,
+             tgtToFile = SOME CoreML.Program.toFile,
+             tgtTypeCheck = NONE}
+         end
       fun defunctorize coreML =
          Control.translatePass
          {arg = coreML,
@@ -426,7 +448,7 @@ fun mkCompile {outputC, outputLL, outputS} =
       fun frontend input =
          Control.translatePass
          {arg = input,
-          doit = defunctorize o annotateTrace o inlineTrace o deadCode o parseAndElaborateMLB,
+          doit = defunctorize o annotateTraceValue o annotateTrace o inlineTrace o deadCode o parseAndElaborateMLB,
           keepIL = false,
           name = "frontend",
           srcToFile = NONE,
