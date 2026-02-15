@@ -68,7 +68,7 @@ fun isTargetVarExp (vs: VarSet.t) (exp: Exp.t): bool =
 
 fun recursiveCollectVarsBoundToPred (prog, pred): VarSet.t = let
    fun wrapPred (vs: VarSet.t, exp: Exp.t): bool = let
-      val _ = print concat ["NUM VARS: ", Int.toString (List.length (VarSet.toList vs))]
+      val _ = print (concat ["NUM VARS: ", Int.toString (List.length (VarSet.toList vs))])
    in
        if isTargetVarExp vs exp then
           (* expand through aliases *)
