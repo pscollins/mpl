@@ -195,23 +195,61 @@ in
     |  _ => NONE
 end
 
-fun inlineSourceMarkValueCall (vs: VarSet.t) (exp: Exp.node): Exp.node option
-    = NONE
-
-fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
+(* If `exp` is a `Const`, returns the value of the `const` as a string, with
+leading/trailing `"` characters dropped. Otherwise, returns NONE *)
+fun getConstStr (exp: Exp.t) = let
    fun getCleanName getConst = let
       val s = Const.toString (getConst())
    in
       (* The `Const` name shows up as `"name"` rather than `name`: drop it here. *)
       String.substring (s, 1, String.length s - 2)
    end
-   fun getConstStr (exp: Exp.t) =
-       case Exp.node exp of
-           (* TODO(pscollins): Validate that the type is actually `string`. I
+in
+   case Exp.node exp of
+       (* TODO(pscollins): Validate that the type is actually `string`. I
            think at this point we have already type-checked so it doesn't really
            matter. *)
-           Exp.Const getConst => SOME (getCleanName getConst)
+       Exp.Const getConst => SOME (getCleanName getConst)
+     | _ => NONE
+end
+
+fun inlineSourceMarkValueCall
+        (vs: VarSet.t) (exp: Exp.node): Exp.node option = let
+   fun unpackFieldPair (arg, maybeName) =
+       case getConstStr maybeName of
+           SOME name => SOME (arg, name)
          | _ => NONE
+   fun unpackFields fields =
+       if Vector.length fields = 2 then
+       unpackFieldPair (Vector.first fields, Vector.last fields)
+       else NONE
+   fun unpackRecord record =
+       case Record.detupleOpt record of
+           SOME (fields) => unpackFields fields
+        |  _ => NONE
+   fun extractArgs (arg: Exp.t): (Exp.t * string) option =
+       case Exp.node arg of
+           Exp.Record record => unpackRecord record
+        |  _ =>  NONE
+   fun maybeBuildStaticValueMark arg =
+       case extractArgs arg of
+           SOME (dynArg, markName) =>
+           SOME (Exp.PrimApp {args = Vector.new1 dynArg,
+                              prim = Prim.Trace_staticSourceMarkValue markName,
+                              (* Type argument follows the type of the dynamic arg *)
+                              targs = Vector.new1 (Exp.ty dynArg)})
+           | _ => NONE
+in
+   case exp of
+       Exp.App {func, arg, ...} =>
+       if isTargetVarExp vs func then
+          maybeBuildStaticValueMark arg
+       else NONE
+    |  _ => NONE
+
+end
+
+fun convertSourceMarkToStatic (node: Exp.node): Exp.node option = let
    fun maybeBuildStaticMark (arg: string option) =
        case arg of
            SOME str => SOME (Exp.PrimApp {args = Vector.new0(),

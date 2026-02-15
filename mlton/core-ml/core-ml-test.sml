@@ -414,6 +414,93 @@ val _ =
       ()
    end
 
+val _ = print "Testing inlineSourceMarkValueCall...\n"
+
+val _ =
+   let
+      open Atoms
+      val x = Var.newString "x"
+      val y = Var.newString "y"
+      val z = Var.newString "z"
+      val ty = CoreML.Type.unit
+      val stringTy = TypeEnv.Type.unresolvedString ()
+      val talpha = CoreML.Type.unit (* Placeholder for 'a *)
+
+      val expX = CoreML.Exp.var (x, ty)
+      val expY = CoreML.Exp.var (y, ty)
+      val expZ = CoreML.Exp.var (z, ty)
+
+      val vset = VarSet.fromList [x, y]
+
+      fun mkApp (f, a) = CoreML.Exp.App {func = f, arg = a, inline = InlineAttr.Auto}
+
+      (* sourceMarkValueWrapper ['a] (value, "name") *)
+      val valueExp = expZ
+      val name = "test_mark"
+      val nameExp = CoreML.Exp.make (CoreML.Exp.Const (fn () => Const.string name), stringTy)
+      val tupleArg = CoreML.Exp.tuple (Vector.new2 (valueExp, nameExp))
+      
+      val funcWithTargs = CoreML.Exp.make (
+         CoreML.Exp.Var (fn () => x, fn () => Vector.new1 talpha),
+         CoreML.Type.arrow (CoreML.Exp.ty tupleArg, ty)
+      )
+
+      (* Test 1: Matching call *)
+      val node1 = mkApp (funcWithTargs, tupleArg)
+      val res1 = inlineSourceMarkValueCall vset node1
+      val _ = case res1 of
+                 SOME (CoreML.Exp.PrimApp {args, prim, targs, ...}) =>
+                    (case prim of
+                        Prim.Trace_staticSourceMarkValue s =>
+                           if s = name
+                              andalso Vector.length args = 1
+                              andalso (case CoreML.Exp.node (Vector.sub (args, 0)) of
+                                          CoreML.Exp.Var (v, _) => Var.equals (v (), z)
+                                        | _ => false)
+                              andalso Vector.length targs = 1
+                           then ()
+                           else Error.bug "Test 1 failed: wrong PrimApp content"
+                      | _ => Error.bug "Test 1 failed: wrong prim")
+               | _ => Error.bug "Test 1 failed: should have inlined"
+
+      (* Test 2: Var not in vset *)
+      val funcNotMatch = CoreML.Exp.make (
+         CoreML.Exp.Var (fn () => z, fn () => Vector.new1 talpha),
+         CoreML.Type.arrow (CoreML.Exp.ty tupleArg, ty)
+      )
+      val node2 = mkApp (funcNotMatch, tupleArg)
+      val res2 = inlineSourceMarkValueCall vset node2
+      val _ = case res2 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 2 failed: should NOT have inlined (var not in vset)"
+
+      (* Test 3: Arg is not a tuple *)
+      val node3 = mkApp (funcWithTargs, expZ)
+      val res3 = inlineSourceMarkValueCall vset node3
+      val _ = case res3 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 3 failed: should NOT have inlined (arg not a tuple)"
+
+      (* Test 4: Tuple arg has wrong size *)
+      val tripleArg = CoreML.Exp.tuple (Vector.new3 (valueExp, nameExp, valueExp))
+      val node4 = mkApp (funcWithTargs, tripleArg)
+      val res4 = inlineSourceMarkValueCall vset node4
+      val _ = case res4 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 4 failed: should NOT have inlined (tuple size != 2)"
+
+      (* Test 5: Second element of tuple is not a constant string *)
+      val dynamicNameExp = CoreML.Exp.var (Var.newString "v", stringTy)
+      val dynamicTupleArg = CoreML.Exp.tuple (Vector.new2 (valueExp, dynamicNameExp))
+      val node5 = mkApp (funcWithTargs, dynamicTupleArg)
+      val res5 = inlineSourceMarkValueCall vset node5
+      val _ = case res5 of
+                 NONE => ()
+               | SOME _ => Error.bug "Test 5 failed: should NOT have inlined (non-constant name)"
+   in
+      ()
+   end
+
 val _ = print "Testing convertSourceMarkToStatic...\n"
 
 val _ =
