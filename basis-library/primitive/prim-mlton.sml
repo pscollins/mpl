@@ -447,7 +447,7 @@ structure Thread =
 structure Trace = struct
   val sourceMark = _prim "Trace_sourceMark": String8.string -> unit;
   val sourceMarkValue = _prim "Trace_sourceMarkValue": 'a * String8.string -> unit;
-  val noHeap = _prim "Trace_noHeap": 'a -> unit;
+  val noHeap = _prim "Trace_noHeap": 'a -> 'a;
 end
 
 structure Weak =

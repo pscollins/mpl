@@ -10,5 +10,5 @@ signature MLTON_TRACE = sig
     val sourceMarkValue: 'a * string -> unit
 
     (* `noHeap  *)
-    val noHeap: 'a -> unit
+    val noHeap: 'a -> 'a
 end

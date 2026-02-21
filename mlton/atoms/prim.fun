@@ -1518,7 +1518,7 @@ fun 'a checkApp (prim: 'a t,
        | Trace_sourceMark => noTargs (fn () => (oneArg string, unit))
        | Trace_staticSourceMark s => noTargs (fn () => (noArgs, unit))
        | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
-       | Trace_noHeap => oneTarg (fn (t) => (oneArg t, unit))
+       | Trace_noHeap => oneTarg (fn (t) => (oneArg t, t))
        | Trace_staticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
@@ -1644,7 +1644,7 @@ fun ('a, 'b) extractTargs (prim: 'b t,
        | Weak_get => one result
        | Weak_new => one (arg 0)
        | Trace_sourceMarkValue => one (arg 0)
-       | Trace_noHeap => one (arg 0)
+       | Trace_noHeap => one result
        | Trace_staticSourceMarkValue _ => one (arg 0)
        | _ => Vector.new0 ()
    end
