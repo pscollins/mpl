@@ -164,6 +164,7 @@ datatype 'a t =
  | Trace_staticSourceMark of string  (* machine *)
  | Trace_sourceMarkValue  (* core-ml *)
  | Trace_staticSourceMarkValue of string  (* to machine *)
+ | Trace_noHeap  (* ssa *)
  | TopLevel_getHandler (* implement exceptions *)
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
@@ -352,6 +353,7 @@ fun toString (n: 'a t): string =
        | Trace_staticSourceMark s => "Trace_staticSourceMark:" ^ s
        | Trace_sourceMarkValue => "Trace_sourceMarkValue"
        | Trace_staticSourceMarkValue s => "Trace_staticSourceMarkValue:" ^ s
+       | Trace_noHeap => "Trace_noHeap"
        | TopLevel_getHandler => "TopLevel_getHandler"
        | TopLevel_getSuffix => "TopLevel_getSuffix"
        | TopLevel_setHandler => "TopLevel_setHandler"
@@ -524,6 +526,7 @@ val equals: 'a t * 'a t -> bool =
     | (Trace_staticSourceMark s, Trace_staticSourceMark s') => s = s'
     | (Trace_sourceMarkValue, Trace_sourceMarkValue) => true
     | (Trace_staticSourceMarkValue s, Trace_staticSourceMarkValue s') => s = s'
+    | (Trace_noHeap, Trace_noHeap) => true
     | (TopLevel_getHandler, TopLevel_getHandler) => true
     | (TopLevel_getSuffix, TopLevel_getSuffix) => true
     | (TopLevel_setHandler, TopLevel_setHandler) => true
@@ -706,6 +709,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Trace_staticSourceMark s => Trace_staticSourceMark s
     | Trace_sourceMarkValue => Trace_sourceMarkValue
     | Trace_staticSourceMarkValue s => Trace_staticSourceMarkValue s
+    | Trace_noHeap => Trace_noHeap
     | TopLevel_getHandler => TopLevel_getHandler
     | TopLevel_getSuffix => TopLevel_getSuffix
     | TopLevel_setHandler => TopLevel_setHandler
@@ -926,6 +930,7 @@ val kind: 'a t -> Kind.t =
        | Trace_staticSourceMark _ => SideEffect
        | Trace_sourceMarkValue => SideEffect
        | Trace_staticSourceMarkValue _ => SideEffect
+       | Trace_noHeap => SideEffect
        | TopLevel_getHandler => DependsOnState
        | TopLevel_getSuffix => DependsOnState
        | TopLevel_setHandler => SideEffect
@@ -1116,6 +1121,7 @@ in
        Thread_switchTo,
        Trace_sourceMark,
        Trace_sourceMarkValue,
+       Trace_noHeap,
        (* Trace_staticSourceMark{,Value} can't be written "manually" by a user, and so
        doesn't appear here *)
        TopLevel_getHandler,
@@ -1512,6 +1518,7 @@ fun 'a checkApp (prim: 'a t,
        | Trace_sourceMark => noTargs (fn () => (oneArg string, unit))
        | Trace_staticSourceMark s => noTargs (fn () => (noArgs, unit))
        | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
+       | Trace_noHeap => oneTarg (fn (t) => (oneArg t, unit))
        | Trace_staticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
@@ -1637,6 +1644,7 @@ fun ('a, 'b) extractTargs (prim: 'b t,
        | Weak_get => one result
        | Weak_new => one (arg 0)
        | Trace_sourceMarkValue => one (arg 0)
+       | Trace_noHeap => one (arg 0)
        | Trace_staticSourceMarkValue _ => one (arg 0)
        | _ => Vector.new0 ()
    end

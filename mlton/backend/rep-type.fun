@@ -843,6 +843,7 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Real_sub s => realBinary s
        | Prim.Thread_returnToC => done ([], NONE)
        | Prim.Trace_sourceMark => done ([objptr], NONE)
+       | Prim.Trace_noHeap => done ([objptr], NONE)
 
        | Prim.Trace_sourceMarkValue =>
          Error.bug "sourceMarkValue should have been eliminated in core-ml"
