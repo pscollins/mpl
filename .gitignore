@@ -3,3 +3,4 @@
 /install/
 mlton-*.tgz
 node_modules
+tmp-outs/
