@@ -16,8 +16,10 @@ structure DropSpork = DropSpork (S)
 structure ImplementHandlers = ImplementHandlers (S)
 structure ImplementProfiling = ImplementProfiling (S)
 structure InsertChecks = InsertChecks (S)
+structure TraceHeapOps = TraceHeapOps (S)
 
 val rssaPasses =
+   {name = "traceHeapOps", doit = TraceHeapOps.transform, execute = true} ::
    {name = "rssaShrink1", doit = S.shrink, execute = true} ::
    {name = "collectStatics.WordXVectorConsts",
     doit = CollectStatics.WordXVectorConsts.transform,
