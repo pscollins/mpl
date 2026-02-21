@@ -447,6 +447,7 @@ structure Thread =
 structure Trace = struct
   val sourceMark = _prim "Trace_sourceMark": String8.string -> unit;
   val sourceMarkValue = _prim "Trace_sourceMarkValue": 'a * String8.string -> unit;
+  val sourceMarkValueReturn = _prim "Trace_sourceMarkValueReturn": 'a * String8.string -> 'a;
 end
 
 structure Weak =

@@ -155,6 +155,8 @@ signature PRIM =
        | Trace_staticSourceMark of string  (* to machine *)
        | Trace_sourceMarkValue  (* core-ml *)
        | Trace_staticSourceMarkValue of string  (* to machine *)
+       | Trace_sourceMarkValueReturn (* core-ml *)
+       | Trace_staticSourceMarkValueReturn of string (* to machine *)
        | TopLevel_getHandler (* implement exceptions *)
        | TopLevel_getSuffix (* implement suffix *)
        | TopLevel_setHandler (* implement exceptions *)

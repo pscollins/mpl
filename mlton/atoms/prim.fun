@@ -164,6 +164,8 @@ datatype 'a t =
  | Trace_staticSourceMark of string  (* machine *)
  | Trace_sourceMarkValue  (* core-ml *)
  | Trace_staticSourceMarkValue of string  (* to machine *)
+ | Trace_sourceMarkValueReturn (* core-ml *)
+ | Trace_staticSourceMarkValueReturn of string (* to machine *)
  | TopLevel_getHandler (* implement exceptions *)
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
@@ -352,6 +354,8 @@ fun toString (n: 'a t): string =
        | Trace_staticSourceMark s => "Trace_staticSourceMark:" ^ s
        | Trace_sourceMarkValue => "Trace_sourceMarkValue"
        | Trace_staticSourceMarkValue s => "Trace_staticSourceMarkValue:" ^ s
+       | Trace_sourceMarkValueReturn => "Trace_sourceMarkValueReturn"
+       | Trace_staticSourceMarkValueReturn s => "Trace_staticSourceMarkValueReturn:" ^ s
        | TopLevel_getHandler => "TopLevel_getHandler"
        | TopLevel_getSuffix => "TopLevel_getSuffix"
        | TopLevel_setHandler => "TopLevel_setHandler"
@@ -524,6 +528,8 @@ val equals: 'a t * 'a t -> bool =
     | (Trace_staticSourceMark s, Trace_staticSourceMark s') => s = s'
     | (Trace_sourceMarkValue, Trace_sourceMarkValue) => true
     | (Trace_staticSourceMarkValue s, Trace_staticSourceMarkValue s') => s = s'
+    | (Trace_sourceMarkValueReturn, Trace_sourceMarkValueReturn) => true
+    | (Trace_staticSourceMarkValueReturn s, Trace_staticSourceMarkValueReturn s') => s = s'
     | (TopLevel_getHandler, TopLevel_getHandler) => true
     | (TopLevel_getSuffix, TopLevel_getSuffix) => true
     | (TopLevel_setHandler, TopLevel_setHandler) => true
@@ -706,6 +712,8 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Trace_staticSourceMark s => Trace_staticSourceMark s
     | Trace_sourceMarkValue => Trace_sourceMarkValue
     | Trace_staticSourceMarkValue s => Trace_staticSourceMarkValue s
+    | Trace_sourceMarkValueReturn => Trace_sourceMarkValueReturn
+    | Trace_staticSourceMarkValueReturn s => Trace_staticSourceMarkValueReturn s
     | TopLevel_getHandler => TopLevel_getHandler
     | TopLevel_getSuffix => TopLevel_getSuffix
     | TopLevel_setHandler => TopLevel_setHandler
@@ -925,8 +933,11 @@ val kind: 'a t -> Kind.t =
        | Trace_sourceMark => SideEffect
        | Trace_staticSourceMark _ => SideEffect
        | Trace_sourceMarkValue => SideEffect
-       | Trace_staticSourceMarkValue _ => SideEffect
-       | TopLevel_getHandler => DependsOnState
+                | Trace_staticSourceMarkValue _ => SideEffect
+                | Trace_sourceMarkValueReturn => SideEffect
+                | Trace_staticSourceMarkValueReturn _ => SideEffect
+                | TopLevel_getHandler => DependsOnState
+       
        | TopLevel_getSuffix => DependsOnState
        | TopLevel_setHandler => SideEffect
        | TopLevel_setSuffix => SideEffect
@@ -1116,6 +1127,7 @@ in
        Thread_switchTo,
        Trace_sourceMark,
        Trace_sourceMarkValue,
+       Trace_sourceMarkValueReturn,
        (* Trace_staticSourceMark{,Value} can't be written "manually" by a user, and so
        doesn't appear here *)
        TopLevel_getHandler,
@@ -1513,6 +1525,8 @@ fun 'a checkApp (prim: 'a t,
        | Trace_staticSourceMark s => noTargs (fn () => (noArgs, unit))
        | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
        | Trace_staticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
+       | Trace_sourceMarkValueReturn => oneTarg (fn (t) => (twoArgs (t, string), t))
+       | Trace_staticSourceMarkValueReturn s => oneTarg (fn (t) => (oneArg t, t))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
        | TopLevel_setHandler =>
@@ -1638,6 +1652,8 @@ fun ('a, 'b) extractTargs (prim: 'b t,
        | Weak_new => one (arg 0)
        | Trace_sourceMarkValue => one (arg 0)
        | Trace_staticSourceMarkValue _ => one (arg 0)
+       | Trace_sourceMarkValueReturn => one (arg 0)
+       | Trace_staticSourceMarkValueReturn _ => one (arg 0)
        | _ => Vector.new0 ()
    end
 
