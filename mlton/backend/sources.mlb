@@ -51,6 +51,7 @@ local
    implement-handlers.fun
    implement-profiling.fun
    insert-checks.fun
+   trace-heap-ops.sig
    trace-heap-ops.fun
    rssa-simplify.sig
    rssa-simplify.fun

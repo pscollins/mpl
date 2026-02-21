@@ -1,4 +1,4 @@
-functor TraceHeapOps (S: RSSA_TRANSFORM_STRUCTS): RSSA_TRANSFORM =
+functor TraceHeapOps (S: TRACE_HEAP_OPS_STRUCTS): TRACE_HEAP_OPS =
 struct
 
 open S
