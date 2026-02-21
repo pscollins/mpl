@@ -83,6 +83,7 @@ in
    signature MACHINE
    signature REP_TYPE
    signature RUNTIME
+   signature TRACE_HEAP_OPS
 
    functor Backend
    functor BackendAtoms
@@ -90,4 +91,5 @@ in
    functor Machine
    functor Rssa
    functor Ssa2ToRssa
+   functor TraceHeapOps
 end

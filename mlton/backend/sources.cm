@@ -12,12 +12,14 @@ Library
 signature MACHINE
 signature REP_TYPE
 signature RUNTIME
+signature TRACE_HEAP_OPS
 
 functor Backend
 functor BackendAtoms
 functor Machine
 functor Rssa
 functor Ssa2ToRssa
+functor TraceHeapOps
 
 is
 
