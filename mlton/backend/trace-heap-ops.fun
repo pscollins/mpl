@@ -3,6 +3,10 @@ struct
 
 open S
 
-fun transform (p: Program.t): Program.t = p
+fun transform (p: Program.t): Program.t = let
+   val _ = print "CALLED PASS!\n"
+in
+   p
+end
 
 end
