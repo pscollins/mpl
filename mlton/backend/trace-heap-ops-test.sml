@@ -25,6 +25,12 @@ local
       prim = Prim.Word_add WordSize.word32
    }
 
+   fun traceNoHeap (dst, arg) = Statement.PrimApp {
+      args = Vector.fromList [arg],
+      dst = SOME dst,
+      prim = Prim.Trace_noHeap
+   }
+
    fun profile () = Statement.Profile (ProfileExp.Enter SourceInfo.unknown)
 
    fun mkBlock (label, stmts, transfer) =
@@ -395,5 +401,92 @@ local
    in () end
 
    val _ = print "TraceHeapOps.mapStatements tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.isForbiddenHeapOp tests...\n"
+
+   (* Test 1: Non-PrimApp statements should return false *)
+   val _ = let
+      val _ = print "Test 1: Non-PrimApp statements\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = move (v1, v2)
+      val s2 = profile ()
+      val s3 = Statement.SetExnStackLocal
+      val s4 = Statement.Bind { dst = v1, pinned = false, src = Operand.Var {ty = #2 v2, var = #1 v2} }
+      val s5 = Statement.SetSlotExnStack
+      
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Move should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s2), "Profile should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s3), "SetExnStackLocal should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s4), "Bind should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s5), "SetSlotExnStack should not be forbidden")
+   in () end
+
+   (* Test 2: Non-Trace_noHeap PrimApps should return false *)
+   val _ = let
+      val _ = print "Test 2: Non-Trace_noHeap PrimApps\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = primAdd (v1, v2, v2)
+      
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Word_add should not be forbidden")
+   in () end
+
+   (* Test 3: Trace_noHeap with Var, Const, or Cast operand should return false *)
+   val _ = let
+      val _ = print "Test 3: Trace_noHeap with Var, Const, or Cast operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      (* Var operand *)
+      val s1 = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      (* Const operand *)
+      val s2 = traceNoHeap (v1, Operand.bool true)
+      
+      (* Cast(Var) operand *)
+      val castOp = Operand.Cast (Operand.Var {ty = #2 v2, var = #1 v2}, #2 v2)
+      val s3 = traceNoHeap (v1, castOp)
+
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Trace_noHeap with Var should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s2), "Trace_noHeap with Const should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s3), "Trace_noHeap with Cast should NOT be forbidden")
+   in () end
+
+   (* Test 4: Trace_noHeap with heap-accessing operands should return true *)
+   val _ = let
+      val _ = print "Test 4: Trace_noHeap with heap-accessing operands\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      (* Offset operand *)
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s1 = traceNoHeap (v1, offsetOp)
+
+      (* GCState operand *)
+      val s2 = traceNoHeap (v1, Operand.GCState)
+
+      (* SequenceOffset operand *)
+      val seqOffsetOp = Operand.SequenceOffset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         index = Operand.zero WordSize.word32,
+         offset = Bytes.fromInt 0,
+         scale = Scale.One,
+         ty = #2 v2
+      }
+      val s3 = traceNoHeap (v1, seqOffsetOp)
+
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp s1, "Trace_noHeap with Offset SHOULD be forbidden")
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp s2, "Trace_noHeap with GCState SHOULD be forbidden")
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp s3, "Trace_noHeap with SequenceOffset SHOULD be forbidden")
+   in () end
+
+   val _ = print "TraceHeapOps.isForbiddenHeapOp tests finished.\n"
 in
 end

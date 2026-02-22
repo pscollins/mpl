@@ -36,8 +36,8 @@ signature TRACE_HEAP_OPS =
 
      and for an `Operand` `o`, "heap-accessing" is defined as follows:
 
-        If `o` is a `Var`, then it is not "heap-accessing." All other `Operand`s
-        are "heap-accessing."
+        If `o` is a `Var`, `Const` or `Cast`, then it is not "heap-accessing."
+        All other `Operand`s are "heap-accessing."
 
       TODO(pscollins): Revisit these definitions.
       *)
