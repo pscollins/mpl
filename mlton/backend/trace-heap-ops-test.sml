@@ -651,5 +651,182 @@ local
    in () end
 
    val _ = print "TraceHeapOps.statementsToString tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.transform tests...\n"
+
+   (* Test 1: Empty program *)
+   val _ = let
+      val _ = print "Test 1: Empty program\n"
+      val mainLabel = Label.newNoname ()
+      val mainFunc = Func.newNoname ()
+      val mainBlock = mkBlock (mainLabel, [], Transfer.Return (Vector.new0 ()))
+      val mainFunction = mkFunction (mainFunc, mainLabel, [mainBlock])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = mainFunction,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val _ = TraceHeapOps.transform p
+   in () end
+
+   (* Test 2: Program with no Trace_noHeap *)
+   val _ = let
+      val _ = print "Test 2: Program with no Trace_noHeap\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = move (v1, v2)
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val _ = TraceHeapOps.transform p
+   in () end
+
+   (* Test 3: Program with valid Trace_noHeap (should be elided) *)
+   val _ = let
+      val _ = print "Test 3: Program with valid Trace_noHeap\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val p' = TraceHeapOps.transform p
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 1, "Should have 1 statement")
+      val isBind = case stmts of
+                      s :: _ => (case s of Statement.Bind _ => true | _ => false)
+                    | _ => false
+      val _ = assert (isBind, "Trace_noHeap should have been elided to Bind")
+   in () end
+
+   (* Test 4: Program with forbidden Trace_noHeap (should raise error) *)
+   val _ = let
+      val _ = print "Test 4: Program with forbidden Trace_noHeap\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s1 = traceNoHeap (v1, offsetOp)
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val raised = (TraceHeapOps.transform p; false) handle _ => true
+      val _ = assert (raised, "Forbidden heap op should have raised an error")
+   in () end
+
+   (* Test 5: Complex program with mixed constructs *)
+   val _ = let
+      val _ = print "Test 5: Complex program with mixed constructs\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = move (v1, v2)
+      val s2 = traceNoHeap (v2, Operand.Var {ty = #2 v1, var = #1 v1})
+      val s3 = profile ()
+      val s4 = Statement.SetExnStackLocal
+      val s_slot = Statement.SetExnStackSlot
+      val l_handler = Label.newNoname ()
+      val s5 = Statement.SetHandler l_handler
+      val s6 = Statement.Bind { dst = v1, pinned = false, src = Operand.bool true }
+      val s7 = Statement.SetSlotExnStack
+      val s8 = Statement.Object {
+         dst = v2,
+         obj = Object.Normal {
+            init = Vector.new0 (),
+            tycon = ObjptrTycon.fill0Normal
+         }
+      }
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2, s3, s4, s_slot, s5, s6, s7, s8], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val p' = TraceHeapOps.transform p
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 9, "Should have 9 statements")
+      
+      val hasBindFromNoHeap = List.exists (stmts, fn s => 
+         case s of 
+            Statement.Bind {dst, ...} => Var.equals (#1 dst, #1 v2)
+          | _ => false)
+      val hasNoHeap = List.exists (stmts, fn s => 
+         case s of Statement.PrimApp {prim = Prim.Trace_noHeap, ...} => true | _ => false)
+      
+      val _ = assert (hasBindFromNoHeap, "Should have a Bind (elided Trace_noHeap) for v2")
+      val _ = assert (not hasNoHeap, "Should NOT have any Trace_noHeap left")
+   in () end
+
+   (* Test 6: Multiple functions and valid Trace_noHeap *)
+   val _ = let
+      val _ = print "Test 6: Multiple functions and valid Trace_noHeap\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+
+      val s2 = traceNoHeap (v2, Operand.Var {ty = #2 v1, var = #1 v1})
+      val l2 = Label.newNoname ()
+      val b2 = mkBlock (l2, [s2], Transfer.Return (Vector.new0 ()))
+      val f2 = mkFunction (Func.newNoname (), l2, [b2])
+      
+      val p = Program.T {
+          functions = [f1],
+          handlesSignals = false,
+          main = f2,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val p' = TraceHeapOps.transform p
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 2, "Should have 2 statements across functions")
+      val allBinds = List.forall (stmts, fn s => case s of Statement.Bind _ => true | _ => false)
+      val _ = assert (allBinds, "All Trace_noHeap should have been elided to Bind")
+   in () end
+
+   val _ = print "TraceHeapOps.transform tests finished.\n"
 in
 end

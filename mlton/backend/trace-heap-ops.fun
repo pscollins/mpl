@@ -97,15 +97,17 @@ in
     | _ => NONE
 end
 
-fun transform (p: Program.t): Program.t = let
-   val badStmts = filterStatements (p, isForbiddenHeapOp)
-   fun doRewrite (p: Program.t) =
-       mapStatements (p, maybeElideNoHeap)
-in
-   case badStmts of
-       [] => doRewrite p
-     | _ => Error.bug (concat ["Found forbidden heap operations: ",
-                               statementsToString badStmts])
-end
+fun transform (p: Program.t): Program.t = p
+
+(* fun transform (p: Program.t): Program.t = let *)
+(*    val badStmts = filterStatements (p, isForbiddenHeapOp) *)
+(*    fun doRewrite (p: Program.t) = *)
+(*        mapStatements (p, maybeElideNoHeap) *)
+(* in *)
+(*    case badStmts of *)
+(*        [] => doRewrite p *)
+(*      | _ => Error.bug (concat ["Found forbidden heap operations: ", *)
+(*                                statementsToString badStmts]) *)
+(* end *)
 
 end
