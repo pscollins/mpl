@@ -170,5 +170,230 @@ local
    in () end
 
    val _ = print "TraceHeapOps.filterStatements tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.mapStatements tests...\n"
+
+   (* Test 1: Identity mapping (all NONE) *)
+   val _ = let
+      val _ = print "Test 1: Identity mapping (all NONE)\n"
+      val v1 = newVar ()
+      val s1 = move (v1, v1)
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val p' = TraceHeapOps.mapStatements (p, fn _ => NONE)
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 1, "Should still have 1 statement")
+   in () end
+
+   (* Test 2: Replace all statements *)
+   val _ = let
+      val _ = print "Test 2: Replace all statements\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = move (v1, v1)
+      val s2 = profile ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val sReplacement = move (v2, v2)
+      val p' = TraceHeapOps.mapStatements (p, fn _ => SOME sReplacement)
+      
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 2, "Should have 2 statements")
+      val allReplaced = List.forall (stmts, fn s => 
+         case s of 
+            Statement.Move {dst, src} => 
+               (case (dst, src) of
+                  (Operand.Var {var = v2_dst, ...}, Operand.Var {var = v2_src, ...}) => 
+                     Var.equals (v2_dst, #1 v2) andalso Var.equals (v2_src, #1 v2)
+                | _ => false)
+          | _ => false)
+      val _ = assert (allReplaced, "All statements should have been replaced by the move")
+   in () end
+
+   (* Test 3: Partial mapping (selective replacement) *)
+   val _ = let
+      val _ = print "Test 3: Partial mapping (selective replacement)\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = move (v1, v1)
+      val s2 = profile ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val sReplacement = move (v2, v2)
+      val p' = TraceHeapOps.mapStatements (p, fn s => 
+         case s of 
+            Statement.Profile _ => SOME sReplacement
+          | _ => NONE)
+      
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 2, "Should have 2 statements")
+      
+      val hasMove1 = List.exists (stmts, fn s => 
+         case s of 
+            Statement.Move {dst, ...} => 
+               (case dst of Operand.Var {var, ...} => Var.equals (var, #1 v1) | _ => false)
+          | _ => false)
+      val hasMove2 = List.exists (stmts, fn s => 
+         case s of 
+            Statement.Move {dst, ...} => 
+               (case dst of Operand.Var {var, ...} => Var.equals (var, #1 v2) | _ => false)
+          | _ => false)
+      val hasProfile = List.exists (stmts, fn s => 
+         case s of Statement.Profile _ => true | _ => false)
+      
+      val _ = assert (hasMove1, "Should still have the first move")
+      val _ = assert (hasMove2, "Should have the replacement move")
+      val _ = assert (not hasProfile, "Should NOT have the profile statement")
+   in () end
+
+   (* Test 4: Multiple functions and blocks *)
+   val _ = let
+      val _ = print "Test 4: Multiple functions and blocks\n"
+      val v1 = newVar ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [profile ()], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+
+      val l2 = Label.newNoname ()
+      val b2 = mkBlock (l2, [profile ()], Transfer.Return (Vector.new0 ()))
+      val f2 = mkFunction (Func.newNoname (), l2, [b2])
+      
+      val p = Program.T {
+          functions = [f1],
+          handlesSignals = false,
+          main = f2,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val sReplacement = move (v1, v1)
+      val p' = TraceHeapOps.mapStatements (p, fn _ => SOME sReplacement)
+      
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 2, "Should have 2 statements across functions")
+      val allMoves = List.forall (stmts, fn s => 
+         case s of Statement.Move _ => true | _ => false)
+      val _ = assert (allMoves, "All statements should be moves now")
+   in () end
+
+   (* Test 5: Variety of IR constructs *)
+   val _ = let
+      val _ = print "Test 5: Variety of IR constructs\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = move (v1, v1)
+      val s2 = primAdd (v1, v1, v1)
+      val s3 = Statement.SetExnStackLocal
+      val s4 = Statement.SetExnStackSlot
+      val s5 = profile ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2, s3, s4, s5], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      (* Replace all except Move *)
+      val p' = TraceHeapOps.mapStatements (p, fn s => 
+         case s of 
+            Statement.Move _ => NONE
+          | _ => SOME (move (v2, v2)))
+          
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 5, "Should have 5 statements")
+      
+      val numMovesV1 = List.length (List.keepAll (stmts, fn s => 
+         case s of 
+            Statement.Move {dst = Operand.Var {var, ...}, ...} => Var.equals (var, #1 v1)
+          | _ => false))
+      val numMovesV2 = List.length (List.keepAll (stmts, fn s => 
+         case s of 
+            Statement.Move {dst = Operand.Var {var, ...}, ...} => Var.equals (var, #1 v2)
+          | _ => false))
+          
+      val _ = assert (numMovesV1 = 1, "Should have 1 move to v1 (the original)")
+      val _ = assert (numMovesV2 = 4, "Should have 4 moves to v2 (the replacements)")
+   in () end
+
+   (* Test 6: Bind and SetSlotExnStack constructs *)
+   val _ = let
+      val _ = print "Test 6: Bind and SetSlotExnStack constructs\n"
+      val v1 = newVar ()
+      
+      val s1 = Statement.Bind {
+         dst = v1,
+         pinned = false,
+         src = Operand.bool true
+      }
+      val s2 = Statement.SetSlotExnStack
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val p' = TraceHeapOps.mapStatements (p, fn s => 
+         case s of 
+            Statement.Bind _ => SOME (profile ())
+          | Statement.SetSlotExnStack => SOME (profile ())
+          | _ => NONE)
+          
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 2, "Should have 2 statements")
+      val allProfiles = List.forall (stmts, fn s => 
+         case s of Statement.Profile _ => true | _ => false)
+      val _ = assert (allProfiles, "All statements should be profile statements now")
+   in () end
+
+   val _ = print "TraceHeapOps.mapStatements tests finished.\n"
 in
 end

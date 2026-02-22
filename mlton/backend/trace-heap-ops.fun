@@ -20,8 +20,11 @@ in
 end
 
 fun mapStatements
-        (p: Program.t, rewrite: Statement.t -> Statement.t option): Program.t =
-    p
+        (p: Program.t, rewrite: Statement.t -> Statement.t option): Program.t = let
+   val _ = 1
+in
+   p
+end
 
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
