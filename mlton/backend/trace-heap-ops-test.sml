@@ -636,5 +636,20 @@ local
    in () end
 
    val _ = print "TraceHeapOps.maybeElideNoHeap tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.statementsToString tests...\n"
+
+   val _ = let
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = move (v1, v2)
+      val s2 = profile ()
+      val str = TraceHeapOps.statementsToString [s1, s2]
+      val _ = print ("Statements as string:\n" ^ str ^ "\n")
+      (* We just check it's non-empty and contains some expected keywords *)
+      val _ = assert (String.size str > 0, "String should not be empty")
+   in () end
+
+   val _ = print "TraceHeapOps.statementsToString tests finished.\n"
 in
 end

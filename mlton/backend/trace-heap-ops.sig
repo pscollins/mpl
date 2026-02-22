@@ -29,6 +29,9 @@ signature TRACE_HEAP_OPS =
           (Program.t * (Statement.t -> Statement.t option)) ->
           Program.t
 
+      (* Converts a list of statements into a string representation. *)
+      val statementsToString: Statement.t list -> string
+
       (* Returns `true` if the supplied `Statement.t`, `s` is a "heap operation"
       that is forbidden by a `noHeap` statement.
 
@@ -58,6 +61,10 @@ signature TRACE_HEAP_OPS =
        *)
       val maybeElideNoHeap: Statement.t -> Statement.t option
 
-      (* TODO(pscollins): Fill in *)
+      (* If the provided `Program.t` contains any statements satisfying
+      `isForbiddenHeapOp`, raise an error.
+
+      Otherwise, rewrite any `Trace_noHeap` `Statement.t`s according to the
+      rules of `maybeElideNoHeap`.*)
       val transform: Program.t -> Program.t
    end

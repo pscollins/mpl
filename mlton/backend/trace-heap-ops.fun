@@ -59,6 +59,9 @@ in
               statics = statics}
 end
 
+fun statementsToString (stmts: Statement.t list): string =
+    Layout.toString (Layout.align (List.map (stmts, Statement.layout)))
+
 fun getUniqueArg (args: Operand.t vector): Operand.t =
     if Vector.length args = 1
     then Vector.first args
@@ -95,9 +98,14 @@ in
 end
 
 fun transform (p: Program.t): Program.t = let
-   val _ = print "CALLED PASS!\n"
+   val badStmts = filterStatements (p, isForbiddenHeapOp)
+   fun doRewrite (p: Program.t) =
+       mapStatements (p, maybeElideNoHeap)
 in
-   p
+   case badStmts of
+       [] => doRewrite p
+     | _ => Error.bug (concat ["Found forbidden heap operations: ",
+                               statementsToString badStmts])
 end
 
 end
