@@ -67,19 +67,18 @@ fun getUniqueArg (args: Operand.t vector): Operand.t =
     then Vector.first args
     else Error.bug "Bad argument count for Trace_noHeap"
 
-fun isForbiddenHeapOp (s: Statement.t): bool = let
-   fun isForbiddenHeapArg (arg: Operand.t): bool =
-       case arg of
+fun isForbiddenHeapOperand (arg: Operand.t): bool =
+    case arg of
            Operand.Cast _ => false
          | Operand.Const _ => false
          | Operand.Var _ => false
          | _ => true
-in
-   case s of
-       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
-       isForbiddenHeapArg (getUniqueArg args)
-     | _ => false
-end
+
+fun isForbiddenHeapOp (s: Statement.t): bool =
+    case s of
+        Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
+        isForbiddenHeapOperand (getUniqueArg args)
+      | _ => false
 
 local
    fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =

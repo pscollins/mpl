@@ -58,6 +58,71 @@ local
          start = start
       }
 
+   val _ = print "Running TraceHeapOps.isForbiddenHeapOperand tests...\n"
+
+   (* Test 1: Non-heap-accessing operands *)
+   val _ = let
+      val _ = print "Test 1: Non-heap-accessing operands\n"
+      val v1 = newVar ()
+      
+      (* Var *)
+      val opVar = Operand.Var {ty = #2 v1, var = #1 v1}
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOperand opVar), "Var should NOT be forbidden")
+      
+      (* Const *)
+      val opConst = Operand.bool true
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOperand opConst), "Const should NOT be forbidden")
+      
+      (* Cast *)
+      val opCast = Operand.Cast (opVar, #2 v1)
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOperand opCast), "Cast should NOT be forbidden")
+
+      (* null *)
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOperand Operand.null), "null should NOT be forbidden")
+
+      (* Nested Cast *)
+      val opNestedCast = Operand.Cast (Operand.Offset {base = opVar, offset = Bytes.fromInt 0, ty = #2 v1}, #2 v1)
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOperand opNestedCast), "Nested Cast should NOT be forbidden (shallow check)")
+   in () end
+
+   (* Test 2: Heap-accessing operands *)
+   val _ = let
+      val _ = print "Test 2: Heap-accessing operands\n"
+      val v1 = newVar ()
+      val opVar = Operand.Var {ty = #2 v1, var = #1 v1}
+      
+      (* GCState *)
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand Operand.GCState, "GCState SHOULD be forbidden")
+      
+      (* Offset *)
+      val opOffset = Operand.Offset {base = opVar, offset = Bytes.fromInt 0, ty = #2 v1}
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand opOffset, "Offset SHOULD be forbidden")
+      
+      (* ObjptrTycon *)
+      val opObjptrTycon = Operand.ObjptrTycon ObjptrTycon.fill0Normal
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand opObjptrTycon, "ObjptrTycon SHOULD be forbidden")
+      
+      (* Runtime *)
+      val opRuntime = Operand.Runtime Runtime.GCField.ExnStack
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand opRuntime, "Runtime SHOULD be forbidden")
+
+      (* SequenceOffset *)
+      val opSeqOffset = Operand.SequenceOffset {
+         base = opVar,
+         index = Operand.zero WordSize.word32,
+         offset = Bytes.fromInt 0,
+         scale = Scale.One,
+         ty = #2 v1
+      }
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand opSeqOffset, "SequenceOffset SHOULD be forbidden")
+
+      (* Address *)
+      val opAddress = Operand.Address opOffset
+      val _ = assert (TraceHeapOps.isForbiddenHeapOperand opAddress, "Address SHOULD be forbidden")
+   in () end
+
+   val _ = print "TraceHeapOps.isForbiddenHeapOperand tests finished.\n"
+
    val _ = print "Running TraceHeapOps.filterStatements tests...\n"
 
    (* Test 1: Empty program *)

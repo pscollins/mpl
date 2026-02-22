@@ -32,6 +32,16 @@ signature TRACE_HEAP_OPS =
       (* Converts a list of statements into a string representation. *)
       val statementsToString: Statement.t list -> string
 
+
+      (* Returns `true` if the provided `Operand.t` is "heap-accessing."
+
+       For an `Operand` `o`, "heap-accessing" is defined as follows:
+
+        If `o` is a `Var`, `Const` or `Cast`, then it is not "heap-accessing."
+        All other `Operand`s are "heap-accessing."
+      *)
+      val isForbiddenHeapOperand: Operand.t -> bool
+
       (* Returns `true` if the supplied `Statement.t`, `s` is a "heap operation"
       that is forbidden by a `noHeap` statement.
 
@@ -40,12 +50,9 @@ signature TRACE_HEAP_OPS =
         If `s` is a `Trace_noHeap` `PrimApp` whose `Operand` is "heap-accessing"
         (defined below) -> `true`. Otherwise, `false`.
 
-     and for an `Operand` `o`, "heap-accessing" is defined as follows:
+     and for an `Operand` "heap-accessing" is defined as above.
 
-        If `o` is a `Var`, `Const` or `Cast`, then it is not "heap-accessing."
-        All other `Operand`s are "heap-accessing."
-
-      TODO(pscollins): Revisit these definitions.
+     TODO(pscollins): Revisit these definitions.
       *)
       val isForbiddenHeapOp: Statement.t -> bool
 
