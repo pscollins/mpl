@@ -488,5 +488,153 @@ local
    in () end
 
    val _ = print "TraceHeapOps.isForbiddenHeapOp tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.maybeElideNoHeap tests...\n"
+
+   (* Test 1: Trace_noHeap with Var operand *)
+   val _ = let
+      val _ = print "Test 1: Trace_noHeap with Var operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, pinned}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match Trace_noHeap dst")
+               val _ = assert (not pinned, "Bind should not be pinned")
+               val _ = case src of
+                  Operand.Var {var, ...} => assert (Var.equals (var, #1 v2), "Bind src should match Trace_noHeap arg")
+                | _ => assert (false, "Bind src should be a Var")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 2: Trace_noHeap with Const operand *)
+   val _ = let
+      val _ = print "Test 2: Trace_noHeap with Const operand\n"
+      val v1 = newVar ()
+      val s = traceNoHeap (v1, Operand.bool true)
+      
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, ...}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match Trace_noHeap dst")
+               val _ = case src of
+                  Operand.Const _ => () (* Should check value but Const.t is abstract-ish here *)
+                | _ => assert (false, "Bind src should be a Const")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 3: Trace_noHeap with Offset operand *)
+   val _ = let
+      val _ = print "Test 3: Trace_noHeap with Offset operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s = traceNoHeap (v1, offsetOp)
+      
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, ...}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match")
+               val _ = case src of
+                  Operand.Offset _ => ()
+                | _ => assert (false, "Bind src should be an Offset")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 4: Other PrimApp (not Trace_noHeap) *)
+   val _ = let
+      val _ = print "Test 4: Other PrimApp\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = primAdd (v1, v2, v2)
+      
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isNone res, "Should NOT elide non-Trace_noHeap PrimApp")
+   in () end
+
+   (* Test 5: Move statement *)
+   val _ = let
+      val _ = print "Test 5: Move statement\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = move (v1, v2)
+      
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isNone res, "Should NOT elide Move statement")
+   in () end
+
+   (* Test 6: Profile statement *)
+   val _ = let
+      val _ = print "Test 6: Profile statement\n"
+      val s = profile ()
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
+   in () end
+
+   (* Test 7: Trace_noHeap without destination *)
+   val _ = let
+      val _ = print "Test 7: Trace_noHeap without destination\n"
+      val v2 = newVar ()
+      val s = Statement.PrimApp {
+         args = Vector.fromList [Operand.Var {ty = #2 v2, var = #1 v2}],
+         dst = NONE,
+         prim = Prim.Trace_noHeap
+      }
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isNone res, "Should NOT elide Trace_noHeap without destination")
+   in () end
+
+   (* Test 8: Variety of IR constructs (SetExnStackLocal, etc.) *)
+   val _ = let
+      val _ = print "Test 8: Variety of IR constructs\n"
+      val v1 = newVar ()
+      
+      val s1 = Statement.SetExnStackLocal
+      val s2 = Statement.SetExnStackSlot
+      val s3 = Statement.SetSlotExnStack
+      val s4 = Statement.Object {
+         dst = v1,
+         obj = Object.Normal {
+            init = Vector.new0 (),
+            tycon = ObjptrTycon.fill0Normal
+         }
+      }
+      (* SetHandler requires a label *)
+      val l = Label.newNoname ()
+      val s5 = Statement.SetHandler l
+      
+      val _ = assert (Option.isNone (TraceHeapOps.maybeElideNoHeap s1), "Should NOT elide SetExnStackLocal")
+      val _ = assert (Option.isNone (TraceHeapOps.maybeElideNoHeap s2), "Should NOT elide SetExnStackSlot")
+      val _ = assert (Option.isNone (TraceHeapOps.maybeElideNoHeap s3), "Should NOT elide SetSlotExnStack")
+      val _ = assert (Option.isNone (TraceHeapOps.maybeElideNoHeap s4), "Should NOT elide Object")
+      val _ = assert (Option.isNone (TraceHeapOps.maybeElideNoHeap s5), "Should NOT elide SetHandler")
+   in () end
+
+   (* Test 9: Bind statement as input *)
+   val _ = let
+      val _ = print "Test 9: Bind statement as input\n"
+      val v1 = newVar ()
+      val s = Statement.Bind {
+         dst = v1,
+         pinned = false,
+         src = Operand.bool true
+      }
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isNone res, "Should NOT elide Bind statement")
+   in () end
+
+   val _ = print "TraceHeapOps.maybeElideNoHeap tests finished.\n"
 in
 end
