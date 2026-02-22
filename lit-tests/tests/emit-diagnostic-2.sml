@@ -2,7 +2,7 @@
 
    Test `Trace_staticSourceMarkValue` -> `Diagnostic` conversion
 
-   Diagnostic in `post`
+   Diagnostic in `post`:
    RUN: grep 'Diagnostic(Trace_staticSourceMarkValue:markX (0x1:w32))' %t/*emitDiagnostics.post.machine
    RUN: grep 'Diagnostic(Trace_staticSourceMarkValue:markY (0x2:w32))' %t/*emitDiagnostics.post.machine
  *)

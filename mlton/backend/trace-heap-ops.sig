@@ -19,6 +19,13 @@ signature TRACE_HEAP_OPS =
           (Program.t * (Statement.t -> bool)) ->
           Statement.t list
 
+      (* Given a `Program.t` and a (partial) transformation on `Statement.t`s,
+      returns a `Program.t` resulting from applying the transformation on every
+      `Statement.t` in the `Program.t` and replacing for the non-`NONE` results. *)
+      val mapStatements:
+          (Program.t * (Statement.t -> Statement.t option)) ->
+          Program.t
+
       (* TODO(pscollins): Fill in *)
       val transform: Program.t -> Program.t
    end

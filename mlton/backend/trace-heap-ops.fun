@@ -19,6 +19,10 @@ in
    List.concatMap (allFuncs, filterFunc)
 end
 
+fun mapStatements
+        (p: Program.t, rewrite: Statement.t -> Statement.t option): Program.t =
+    p
+
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
 in
