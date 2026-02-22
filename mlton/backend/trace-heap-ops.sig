@@ -61,10 +61,18 @@ signature TRACE_HEAP_OPS =
        *)
       val maybeElideNoHeap: Statement.t -> Statement.t option
 
+      (* Like above, but for `Trace_heapOK
+
+        PrimApp (args=[arg], dst=(SOME d), prim=Trace_HeapOk)
+          -->
+        Bind (dst=d, src=arg, pinned=false)
+       *)
+      val maybeElideHeapOk: Statement.t -> Statement.t option
+
       (* If the provided `Program.t` contains any statements satisfying
       `isForbiddenHeapOp`, raise an error.
 
       Otherwise, rewrite any `Trace_noHeap` `Statement.t`s according to the
-      rules of `maybeElideNoHeap`.*)
+      rules of `maybeElideNoHeap` + `maybeElideHeapOk`.*)
       val transform: Program.t -> Program.t
    end

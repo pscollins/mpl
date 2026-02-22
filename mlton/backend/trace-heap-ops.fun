@@ -81,26 +81,40 @@ in
      | _ => false
 end
 
-fun maybeElideNoHeap (s: Statement.t): Statement.t option = let
+local
    fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =
        case dst of
            SOME dst' => dst'
-         | _ => Error.bug "Missing `dst` for Trace_noHeap"
+         | _ => Error.bug "Missing `dst` for Trace_{noHeap,heapOk}"
    fun buildBind (arg: Operand.t, dst: (Var.t * Type.t) option) =
        Statement.Bind {dst = getDst dst,
                        pinned = false,
                        src = arg}
-in
-   case s of
-       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
+   fun buildBindFromStmt (Statement.PrimApp {args, dst, ...}) =
        SOME (buildBind (getUniqueArg args, dst))
+     | buildBindFromStmt _ = Error.bug "unreachable"
+in
+fun maybeElideNoHeap (s: Statement.t): Statement.t option =
+   case s of
+       Statement.PrimApp {prim = Prim.Trace_noHeap, ...} =>
+       buildBindFromStmt s
+    | _ => NONE
+
+fun maybeElideHeapOk (s: Statement.t): Statement.t option =
+   case s of
+       Statement.PrimApp {prim = Prim.Trace_heapOK, ...} =>
+       buildBindFromStmt s
     | _ => NONE
 end
 
 fun transform (p: Program.t): Program.t = let
    val badStmts = filterStatements (p, isForbiddenHeapOp)
+   fun maybeElide s =
+       case maybeElideNoHeap s of
+           NONE => maybeElideHeapOk s
+         | res => res
    fun doRewrite (p: Program.t) =
-       mapStatements (p, maybeElideNoHeap)
+       mapStatements (p, maybeElide)
 in
    case badStmts of
        [] => doRewrite p
