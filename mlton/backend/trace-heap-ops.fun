@@ -59,7 +59,23 @@ in
               statics = statics}
 end
 
-fun isForbiddenHeapOp (s: Statement.t): bool = false
+fun isForbiddenHeapOp (s: Statement.t): bool = let
+   fun isForbiddenHeapArg (arg: Operand.t): bool =
+       case arg of
+           Operand.Cast _ => false
+         | Operand.Const _ => false
+         | Operand.Var _ => false
+         | _ =>
+           true
+   fun isForbiddenHeapArgs (args: Operand.t vector): bool =
+       if Vector.length args = 1
+       then isForbiddenHeapArg (Vector.first args)
+       else Error.bug "Bad argument count for Trace_noHeap"
+in
+   case s of
+       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} => isForbiddenHeapArgs args
+    | _ => false
+end
 
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
