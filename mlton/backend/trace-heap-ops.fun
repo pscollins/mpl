@@ -77,6 +77,9 @@ in
     | _ => false
 end
 
+fun maybeElideNoHeap (s: Statement.t): Statement.t option =
+    NONE
+
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
 in

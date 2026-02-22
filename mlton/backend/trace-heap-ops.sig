@@ -13,6 +13,9 @@ signature TRACE_HEAP_OPS =
    sig
       include TRACE_HEAP_OPS_STRUCTS
 
+      (* The functions below (except for `transform`) are implementation details
+      of this pass, exposed here for testing. *)
+
       (* Given a `Program.t` and a predicate on `Statement.t`s, returns all of
       the statements that match the predicate. *)
       val filterStatements:
@@ -41,8 +44,19 @@ signature TRACE_HEAP_OPS =
 
       TODO(pscollins): Revisit these definitions.
       *)
-
       val isForbiddenHeapOp: Statement.t -> bool
+
+      (* If the provided `Statement.t` `s` is a `Trace_noHeap` `PrimApp`,
+      returns `SOME s'`, where `s'` is a `Bind` that performs a 'copy'
+      equivalent to the  original `PrimApp`, i.e.:
+
+        PrimApp (args=[arg], dst=(SOME d), prim=Trace_noHeap)
+          -->
+        Bind (dst=d, src=arg, pinned=false)
+
+      Otherwise, `NONE`.
+       *)
+      val maybeElideNoHeap: Statement.t -> Statement.t option
 
       (* TODO(pscollins): Fill in *)
       val transform: Program.t -> Program.t
