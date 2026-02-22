@@ -16,7 +16,7 @@ signature TRACE_HEAP_OPS =
       (* Given a `Program.t` and a predicate on `Statement.t`s, returns all of
       the statements that match the predicate. *)
       val filterStatements:
-          Program.t -> (Statement.t -> bool) ->
+          (Program.t * (Statement.t -> bool)) ->
           Statement.t list
 
       (* TODO(pscollins): Fill in *)

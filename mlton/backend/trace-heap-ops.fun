@@ -3,7 +3,7 @@ struct
 
 open S
 
-fun (p: Program.t, pred: Statement.t -> bool): Statement.t list = []
+fun filterStatements (p: Program.t, pred: Statement.t -> bool): Statement.t list = []
 
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
