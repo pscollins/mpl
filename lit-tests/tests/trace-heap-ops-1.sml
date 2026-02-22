@@ -1,21 +1,17 @@
-(* RUN: mpl-compile -keep-pass traceHeapOps %s %t || true
+(* RUN: mpl-compile -keep-pass traceHeapOps %s %t
 
-   Test `noHeap` validation+elimination
+   Test `Trace_noHeap` success + elimination for `Const`
 
-   TODO(pscollins): add assertions
+   PrimApp in `pre`, pure assign in `post`. We're careful not to match the
+   generated identifiers, which are not deterministic
 
-   PrimApp in `pre`
-   COM: grep 'Trace_staticSourceMark:mark1' %t/*emitDiagnostics.pre.machine
-   COM: grep 'Trace_staticSourceMark:mark2' %t/*emitDiagnostics.pre.machine
-
-   Diagnostic in `post`
-   COM: grep 'Diagnostic(Trace_staticSourceMark:mark1 ())' %t/*emitDiagnostics.post.machine
-   COM: grep 'Diagnostic(Trace_staticSourceMark:mark2 ())' %t/*emitDiagnostics.post.machine
+   RUN: egrep 'x_.*: Word32 = Trace_noHeap \(global_' %t/*traceHeapOps.pre.rssa
+   RUN: egrep 'x_.*: Word32 = global_' %t/*traceHeapOps.post.rssa
  *)
 
 val _ = let
     val kConst = 123456789
-    val kConst' = MLton.Trace.noHeap (kConst)
+    val const = MLton.Trace.noHeap kConst
 in
-    print (Int.toString kConst')
+    print (Int.toString const)
 end
