@@ -21,9 +21,42 @@ end
 
 fun mapStatements
         (p: Program.t, rewrite: Statement.t -> Statement.t option): Program.t = let
-   val _ = 1
+   (* TODO(pscollins): Can we avoid the copies here? *)
+   val Program.T {functions, handlesSignals, main, objectTypes, profileInfo,
+                  statics} = p
+   fun rewriteStatement (s: Statement.t) =
+       case rewrite s of
+           SOME s' => s'
+         | NONE => s
+   fun rewriteStatements (stmts: Statement.t vector) =
+       Vector.map (stmts, rewriteStatement) 
+   fun rewriteBlock (b: Block.t) = let
+      val Block.T {args, kind, label, statements, transfer} = b
+   in
+      Block.T {args = args,
+               kind = kind,
+               label = label,
+               statements = rewriteStatements statements,
+               transfer = transfer}
+   end
+   fun rewriteBlocks (bs: Block.t vector) = Vector.map (bs, rewriteBlock)
+   fun rewriteFunc (f: Function.t) = let
+      val {args, blocks, name, raises, returns, start} = Function.dest f
+   in
+      Function.new {args = args,
+                    blocks = rewriteBlocks blocks,
+                    name = name,
+                    raises = raises,
+                    returns = returns,
+                    start = start}
+   end
 in
-   p
+   Program.T {functions = List.map (functions, rewriteFunc),
+              handlesSignals = handlesSignals,
+              main = rewriteFunc main,
+              objectTypes = objectTypes,
+              profileInfo = profileInfo,
+              statics = statics}
 end
 
 fun transform (p: Program.t): Program.t = let
