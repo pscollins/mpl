@@ -2,8 +2,7 @@
 
    Test that we can locate a `sourceMarkValue` in the generated C
 
-   RUN: grep '// Diagnostic(Trace_staticSourceMarkValue:markX (0x1:w32))' %t
-   RUN: grep '// Diagnostic(Trace_staticSourceMarkValue:markY (0x2:w32))' %t
+   RUN: grep '// Diagnostic(Trace_staticSourceMarkValue:markZ (GP(121): Objptr (opt_25)))' %t
  *)
 
 val _ = let
