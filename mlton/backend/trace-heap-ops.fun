@@ -59,26 +59,40 @@ in
               statics = statics}
 end
 
+fun getUniqueArg (args: Operand.t vector): Operand.t =
+    if Vector.length args = 1
+    then Vector.first args
+    else Error.bug "Bad argument count for Trace_noHeap"
+
 fun isForbiddenHeapOp (s: Statement.t): bool = let
    fun isForbiddenHeapArg (arg: Operand.t): bool =
        case arg of
            Operand.Cast _ => false
          | Operand.Const _ => false
          | Operand.Var _ => false
-         | _ =>
-           true
-   fun isForbiddenHeapArgs (args: Operand.t vector): bool =
-       if Vector.length args = 1
-       then isForbiddenHeapArg (Vector.first args)
-       else Error.bug "Bad argument count for Trace_noHeap"
+         | _ => true
 in
    case s of
-       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} => isForbiddenHeapArgs args
-    | _ => false
+       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
+       isForbiddenHeapArg (getUniqueArg args)
+     | _ => false
 end
 
-fun maybeElideNoHeap (s: Statement.t): Statement.t option =
-    NONE
+fun maybeElideNoHeap (s: Statement.t): Statement.t option = let
+   fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =
+       case dst of
+           SOME dst' => dst'
+         | _ => Error.bug "Missing `dst` for Trace_noHeap"
+   fun buildBind (arg: Operand.t, dst: (Var.t * Type.t) option) =
+       Statement.Bind {dst = getDst dst,
+                       pinned = false,
+                       src = arg}
+in
+   case s of
+       Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
+       SOME (buildBind (getUniqueArg args, dst))
+    | _ => NONE
+end
 
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"

@@ -583,7 +583,7 @@ local
       val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
    in () end
 
-   (* Test 7: Trace_noHeap without destination *)
+   (* Test 7: Trace_noHeap without destination should raise Fail *)
    val _ = let
       val _ = print "Test 7: Trace_noHeap without destination\n"
       val v2 = newVar ()
@@ -592,8 +592,8 @@ local
          dst = NONE,
          prim = Prim.Trace_noHeap
       }
-      val res = TraceHeapOps.maybeElideNoHeap s
-      val _ = assert (Option.isNone res, "Should NOT elide Trace_noHeap without destination")
+      val raised = (TraceHeapOps.maybeElideNoHeap s; false) handle Fail _ => true
+      val _ = assert (raised, "Should raise Fail for Trace_noHeap without destination")
    in () end
 
    (* Test 8: Variety of IR constructs (SetExnStackLocal, etc.) *)
