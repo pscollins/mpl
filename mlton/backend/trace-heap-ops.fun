@@ -59,6 +59,8 @@ in
               statics = statics}
 end
 
+fun isForbiddenHeapOp (s: Statement.t): bool = false
+
 fun transform (p: Program.t): Program.t = let
    val _ = print "CALLED PASS!\n"
 in

@@ -26,6 +26,24 @@ signature TRACE_HEAP_OPS =
           (Program.t * (Statement.t -> Statement.t option)) ->
           Program.t
 
+      (* Returns `true` if the supplied `Statement.t`, `s` is a "heap operation"
+      that is forbidden by a `noHeap` statement.
+
+      For now, a "forbidden heap operation" is defined as follows:
+
+        If `s` is a `Trace_noHeap` `PrimApp` whose `Operand` is "heap-accessing"
+        (defined below) -> `true`. Otherwise, `false`.
+
+     and for an `Operand` `o`, "heap-accessing" is defined as follows:
+
+        If `o` is a `Var`, then it is not "heap-accessing." All other `Operand`s
+        are "heap-accessing."
+
+      TODO(pscollins): Revisit these definitions.
+      *)
+
+      val isForbiddenHeapOp: Statement.t -> bool
+
       (* TODO(pscollins): Fill in *)
       val transform: Program.t -> Program.t
    end
