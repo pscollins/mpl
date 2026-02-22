@@ -849,6 +849,12 @@ fun checkPrimApp {args, prim, result} =
        in
           done ([isTy], SOME isTy)
        end
+       | Prim.Trace_heapOK => let
+          val ty = Vector.first args
+          fun isTy t = equals (t, ty)
+       in
+          done ([isTy], SOME isTy)
+       end
 
        | Prim.Trace_sourceMarkValue =>
          Error.bug "sourceMarkValue should have been eliminated in core-ml"

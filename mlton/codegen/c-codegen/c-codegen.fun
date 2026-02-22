@@ -195,6 +195,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
        (* noHeap is eliminated in RSSA, but we still need to mark it as
        supported here *)
        | Trace_noHeap =>  true
+       | Trace_heapOK =>  true
        | Thread_returnToC => false
        | Word_add _ => true
        | Word_addCheckP _ => true
