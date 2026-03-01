@@ -473,6 +473,143 @@ local
 
    val _ = print "TraceHeapOps.mapStatements tests finished.\n"
 
+   val _ = print "Running TraceHeapOps.foldStatements tests...\n"
+
+   (* Test 1: Empty program *)
+   val _ = let
+      val _ = print "Test 1: Empty program\n"
+      val mainLabel = Label.newNoname ()
+      val mainFunc = Func.newNoname ()
+      val mainBlock = mkBlock (mainLabel, [], Transfer.Return (Vector.new0 ()))
+      val mainFunction = mkFunction (mainFunc, mainLabel, [mainBlock])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = mainFunction,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val count = TraceHeapOps.foldStatements (p, 0, fn (_, acc) => acc + 1)
+      val _ = assert (count = 0, "Empty program should have 0 statements")
+   in () end
+
+   (* Test 2: Count statements *)
+   val _ = let
+      val _ = print "Test 2: Count statements\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = move (v1, v2)
+      val s2 = profile ()
+      val s3 = move (v2, v1)
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2, s3], Transfer.Return (Vector.new0 ()))
+      val f = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val count = TraceHeapOps.foldStatements (p, 0, fn (_, acc) => acc + 1)
+      val _ = assert (count = 3, "Should have 3 statements")
+   in () end
+
+   (* Test 3: Collect all statements *)
+   val _ = let
+      val _ = print "Test 3: Collect all statements\n"
+      val v1 = newVar ()
+      val s1 = move (v1, v1)
+      val s2 = profile ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val stmts = TraceHeapOps.foldStatements (p, [], fn (s, acc) => s :: acc)
+      val _ = assert (List.length stmts = 2, "Should have collected 2 statements")
+      
+      val hasMove = List.exists (stmts, fn s => case s of Statement.Move _ => true | _ => false)
+      val hasProfile = List.exists (stmts, fn s => case s of Statement.Profile _ => true | _ => false)
+      val _ = assert (hasMove andalso hasProfile, "Should have both move and profile")
+   in () end
+
+   (* Test 4: Multiple functions and blocks *)
+   val _ = let
+      val _ = print "Test 4: Multiple functions and blocks\n"
+      val v1 = newVar ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [profile ()], Transfer.Goto {args = Vector.new0 (), dst = l1}) (* Infinite loop block *)
+      val l2 = Label.newNoname ()
+      val b2 = mkBlock (l2, [profile (), profile ()], Transfer.Return (Vector.new0 ()))
+      
+      val f1 = mkFunction (Func.newNoname (), l1, [b1, b2])
+
+      val l3 = Label.newNoname ()
+      val b3 = mkBlock (l3, [profile ()], Transfer.Return (Vector.new0 ()))
+      val f2 = mkFunction (Func.newNoname (), l3, [b3])
+      
+      val p = Program.T {
+          functions = [f1],
+          handlesSignals = false,
+          main = f2,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val count = TraceHeapOps.foldStatements (p, 0, fn (_, acc) => acc + 1)
+      val _ = assert (count = 4, "Should find 4 statements across functions and blocks")
+   in () end
+
+   (* Test 5: Sum specific statement types *)
+   val _ = let
+      val _ = print "Test 5: Sum specific statement types\n"
+      val v1 = newVar ()
+      val s1 = move (v1, v1)
+      val s2 = primAdd (v1, v1, v1)
+      val s3 = move (v1, v1)
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2, s3], Transfer.Return (Vector.new0 ()))
+      val f = mkFunction (Func.newNoname (), l1, [b1])
+      
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      
+      val moveCount = TraceHeapOps.foldStatements (p, 0, fn (s, acc) => 
+         case s of Statement.Move _ => acc + 1 | _ => acc)
+      val _ = assert (moveCount = 2, "Should have 2 move statements")
+      
+      val primCount = TraceHeapOps.foldStatements (p, 0, fn (s, acc) => 
+         case s of Statement.PrimApp _ => acc + 1 | _ => acc)
+      val _ = assert (primCount = 1, "Should have 1 primapp statement")
+   in () end
+
+   val _ = print "TraceHeapOps.foldStatements tests finished.\n"
+
    val _ = print "Running TraceHeapOps.isForbiddenHeapOp tests...\n"
 
    (* Test 1: Non-PrimApp statements should return false *)
