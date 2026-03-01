@@ -29,6 +29,19 @@ signature TRACE_HEAP_OPS =
           (Program.t * (Statement.t -> Statement.t option)) ->
           Program.t
 
+
+      (* Given:
+
+          (program, initial, f)
+
+        Returns the result of;
+
+           fold (flattenToStatements program, initial, f)
+       *)
+      val foldStatements:
+          (Program.t * 'a * (Statement.t * 'a -> 'a)) ->
+          'a
+ 
       (* Converts a list of statements into a string representation. *)
       val statementsToString: Statement.t list -> string
 

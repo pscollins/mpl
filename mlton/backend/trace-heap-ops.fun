@@ -29,7 +29,7 @@ fun mapStatements
            SOME s' => s'
          | NONE => s
    fun rewriteStatements (stmts: Statement.t vector) =
-       Vector.map (stmts, rewriteStatement) 
+       Vector.map (stmts, rewriteStatement)
    fun rewriteBlock (b: Block.t) = let
       val Block.T {args, kind, label, statements, transfer} = b
    in
@@ -58,6 +58,10 @@ in
               profileInfo = profileInfo,
               statics = statics}
 end
+
+fun foldStatements (p: Program.t, init: 'a, f: Statement.t * 'a -> 'a): 'a =
+    raise Fail "error"
+
 
 fun statementsToString (stmts: Statement.t list): string =
     Layout.toString (Layout.align (List.map (stmts, Statement.layout)))
