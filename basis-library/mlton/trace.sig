@@ -9,9 +9,11 @@ signature MLTON_TRACE = sig
     movement around the mark. *)
     val sourceMarkValue: 'a * string -> unit
 
-    (* `noHeap  *)
+    (* The call `noHeap (expr)` asserts that `expr` does not correspond to a
+    pointer dereference, failing compilation if so. *)
     val noHeap: 'a -> 'a
 
-    (* `heapOK  *)
+    (* `heapOK` waives the error introduced by `noHeap`, i.e. `noHeap o heapOK`
+    is guaranteed to be a noop that always succeeds. *)
     val heapOK: 'a -> 'a
 end
