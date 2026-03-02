@@ -89,13 +89,13 @@ fun isForbiddenHeapOperand (arg: Operand.t): bool =
 fun collectForbiddenHeapVars (p: Program.t): VarSet.t = let
    fun updateSet (stmt: Statement.t, set: VarSet.t) =
        case stmt of
-           Statement.Bind {(dstVar, _), src, ...} =>
+           Statement.Bind {dst = (dstVar, _), src, ...} =>
            if isForbiddenHeapOperand src then
-              VarSet.add (dstVar, set)
+              VarSet.add (set, dstVar)
            else set
         |  _ => set
 in
-    foldstatements (p, VarSet.empty, updateSet)
+    foldStatements (p, VarSet.empty, updateSet)
 end
 
 fun isForbiddenHeapOp (s: Statement.t): bool =
