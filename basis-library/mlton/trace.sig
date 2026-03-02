@@ -11,4 +11,7 @@ signature MLTON_TRACE = sig
 
     (* `noHeap  *)
     val noHeap: 'a -> 'a
+
+    (* `heapOK  *)
+    val heapOK: 'a -> 'a
 end
