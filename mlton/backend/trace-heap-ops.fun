@@ -59,9 +59,15 @@ in
               statics = statics}
 end
 
-fun foldStatements (p: Program.t, init: 'a, f: Statement.t * 'a -> 'a): 'a =
-    raise Fail "error"
-
+fun foldStatements (p: Program.t, init: 'a, f: Statement.t * 'a -> 'a): 'a = let
+   fun constTrue x = true
+   (* TODO(pscollins): Consider a more efficient implementation -- for now, for
+   simplicity, we'll just reuse `filterStatements` to flatten the program into a
+   `Statement.t list` *)
+   val stmts = filterStatements (p, constTrue)
+in
+   List.fold (stmts, init, f)
+end
 
 fun statementsToString (stmts: Statement.t list): string =
     Layout.toString (Layout.align (List.map (stmts, Statement.layout)))
