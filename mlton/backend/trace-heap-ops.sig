@@ -45,7 +45,9 @@ signature TRACE_HEAP_OPS =
       (* Converts a list of statements into a string representation. *)
       val statementsToString: Statement.t list -> string
 
-
+      structure VarSet: SET
+      sharing type VarSet.Element.t = Var.t
+ 
       (* Returns `true` if the provided `Operand.t` is "heap-accessing."
 
        For an `Operand` `o`, "heap-accessing" is defined as follows:

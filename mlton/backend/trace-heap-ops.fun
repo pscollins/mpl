@@ -3,6 +3,8 @@ struct
 
 open S
 
+structure VarSet = UnorderedSet (Var)
+
 fun filterStatements
         (p: Program.t, pred: Statement.t -> bool): Statement.t list = let
    val Program.T {functions, main, ...} = p

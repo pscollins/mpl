@@ -1307,5 +1307,35 @@ local
    in () end
 
    val _ = print "TraceHeapOps.transform tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.VarSet tests...\n"
+
+   val _ = let
+      val _ = print "Test 1: VarSet basic operations\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val v3 = newVar ()
+      
+      val vs = TraceHeapOps.VarSet.empty
+      val _ = assert (TraceHeapOps.VarSet.isEmpty vs, "New set should be empty")
+      val _ = assert (TraceHeapOps.VarSet.size vs = 0, "New set size should be 0")
+      
+      val vs = TraceHeapOps.VarSet.add (vs, #1 v1)
+      val _ = assert (not (TraceHeapOps.VarSet.isEmpty vs), "Set should not be empty after add")
+      val _ = assert (TraceHeapOps.VarSet.size vs = 1, "Set size should be 1")
+      val _ = assert (TraceHeapOps.VarSet.contains (vs, #1 v1), "Set should contain v1")
+      val _ = assert (not (TraceHeapOps.VarSet.contains (vs, #1 v2)), "Set should not contain v2")
+      
+      val vs = TraceHeapOps.VarSet.add (vs, #1 v2)
+      val _ = assert (TraceHeapOps.VarSet.size vs = 2, "Set size should be 2")
+      val _ = assert (TraceHeapOps.VarSet.contains (vs, #1 v2), "Set should contain v2")
+      
+      val vs = TraceHeapOps.VarSet.remove (vs, #1 v1)
+      val _ = assert (TraceHeapOps.VarSet.size vs = 1, "Set size should be 1 after remove")
+      val _ = assert (not (TraceHeapOps.VarSet.contains (vs, #1 v1)), "Set should not contain v1 after remove")
+      val _ = assert (TraceHeapOps.VarSet.contains (vs, #1 v2), "Set should still contain v2")
+   in () end
+
+   val _ = print "TraceHeapOps.VarSet tests finished.\n"
 in
 end
