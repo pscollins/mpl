@@ -1308,6 +1308,138 @@ local
 
    val _ = print "TraceHeapOps.transform tests finished.\n"
 
+   val _ = print "Running TraceHeapOps.collectForbiddenHeapVars tests...\n"
+
+   (* Test 1: Empty program *)
+   val _ = let
+      val _ = print "Test 1: Empty program\n"
+      val mainLabel = Label.newNoname ()
+      val mainBlock = mkBlock (mainLabel, [], Transfer.Return (Vector.new0 ()))
+      val mainFunction = mkFunction (Func.newNoname (), mainLabel, [mainBlock])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = mainFunction,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenHeapVars p
+      val _ = assert (TraceHeapOps.VarSet.isEmpty vars, "Empty program should have no forbidden vars")
+   in () end
+
+   (* Test 2: Binds with non-heap-accessing operands *)
+   val _ = let
+      val _ = print "Test 2: Binds with non-heap-accessing operands\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = Statement.Bind { dst = v1, src = Operand.bool true, pinned = false }
+      val s2 = Statement.Bind { dst = v2, src = Operand.Var {ty = #2 v1, var = #1 v1}, pinned = false }
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenHeapVars p
+      val _ = assert (TraceHeapOps.VarSet.isEmpty vars, "Non-heap-accessing binds should not result in forbidden vars")
+   in () end
+
+   (* Test 3: Binds with heap-accessing operands *)
+   val _ = let
+      val _ = print "Test 3: Binds with heap-accessing operands\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val v3 = newVar ()
+      
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v1, var = #1 v1},
+         offset = Bytes.fromInt 0,
+         ty = #2 v1
+      }
+      val s1 = Statement.Bind { dst = v2, src = offsetOp, pinned = false }
+      val s2 = Statement.Bind { dst = v3, src = Operand.GCState, pinned = false }
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenHeapVars p
+      val _ = assert (TraceHeapOps.VarSet.size vars = 2, "Should have 2 forbidden vars")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v2), "v2 should be forbidden")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v3), "v3 should be forbidden")
+   in () end
+
+   (* Test 4: Mixed binds and other statements *)
+   val _ = let
+      val _ = print "Test 4: Mixed binds and other statements\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val v3 = newVar ()
+      
+      val s1 = Statement.Bind { dst = v1, src = Operand.GCState, pinned = false }
+      val s2 = move (v2, v1)
+      val s3 = Statement.Bind { dst = v3, src = Operand.Var {ty = #2 v1, var = #1 v1}, pinned = false }
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2, s3], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenHeapVars p
+      val _ = assert (TraceHeapOps.VarSet.size vars = 1, "Should have 1 forbidden var")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v1), "v1 should be forbidden")
+      val _ = assert (not (TraceHeapOps.VarSet.contains (vars, #1 v3)), "v3 should NOT be forbidden (it's a var-to-var bind)")
+   in () end
+
+   (* Test 5: Multiple functions and blocks *)
+   val _ = let
+      val _ = print "Test 5: Multiple functions and blocks\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [Statement.Bind { dst = v1, src = Operand.GCState, pinned = false }], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+
+      val l2 = Label.newNoname ()
+      val b2 = mkBlock (l2, [Statement.Bind { dst = v2, src = Operand.GCState, pinned = false }], Transfer.Return (Vector.new0 ()))
+      val f2 = mkFunction (Func.newNoname (), l2, [b2])
+      
+      val p = Program.T {
+          functions = [f1],
+          handlesSignals = false,
+          main = f2,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenHeapVars p
+      val _ = assert (TraceHeapOps.VarSet.size vars = 2, "Should find 2 forbidden vars across functions")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v1), "v1 should be forbidden")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v2), "v2 should be forbidden")
+   in () end
+
+   val _ = print "TraceHeapOps.collectForbiddenHeapVars tests finished.\n"
+
    val _ = print "Running TraceHeapOps.VarSet tests...\n"
 
    val _ = let
