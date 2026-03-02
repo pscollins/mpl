@@ -86,6 +86,8 @@ fun isForbiddenHeapOperand (arg: Operand.t): bool =
          | Operand.Var _ => false
          | _ => true
 
+fun collectForbiddenHeapVars (p: Program.t): VarSet.t = raise Fail "error"
+
 fun isForbiddenHeapOp (s: Statement.t): bool =
     case s of
         Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
