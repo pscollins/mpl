@@ -86,7 +86,17 @@ fun isForbiddenHeapOperand (arg: Operand.t): bool =
          | Operand.Var _ => false
          | _ => true
 
-fun collectForbiddenHeapVars (p: Program.t): VarSet.t = raise Fail "error"
+fun collectForbiddenHeapVars (p: Program.t): VarSet.t = let
+   fun updateSet (stmt: Statement.t, set: VarSet.t) =
+       case stmt of
+           Statement.Bind {(dstVar, _), src, ...} =>
+           if isForbiddenHeapOperand src then
+              VarSet.add (dstVar, set)
+           else set
+        |  _ => set
+in
+    foldstatements (p, VarSet.empty, updateSet)
+end
 
 fun isForbiddenHeapOp (s: Statement.t): bool =
     case s of
