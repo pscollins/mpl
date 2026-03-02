@@ -98,12 +98,17 @@ in
     foldStatements (p, VarSet.empty, updateSet)
 end
 
-fun isForbiddenHeapOp (s: Statement.t): bool =
+fun isForbiddenHeapOp (vs: VarSet.t) (s: Statement.t): bool = let
+   fun isForbidden arg =
+       if isForbiddenHeapOperand arg then
+          true
+       else VarSet.contains (vs, arg)
+in
     case s of
         Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
-        isForbiddenHeapOperand (getUniqueArg args)
+        isForbidden (getUniqueArg args)
       | _ => false
-
+end
 local
    fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =
        case dst of
@@ -131,7 +136,8 @@ fun maybeElideHeapOk (s: Statement.t): Statement.t option =
 end
 
 fun transform (p: Program.t): Program.t = let
-   val badStmts = filterStatements (p, isForbiddenHeapOp)
+   val badVars = collectForbiddenHeapVars p
+   val badStmts = filterStatements (p, isForbiddenHeapOp badVars)
    fun maybeElide s =
        case maybeElideNoHeap s of
            NONE => maybeElideHeapOk s

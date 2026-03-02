@@ -70,14 +70,15 @@ signature TRACE_HEAP_OPS =
 
       For now, a "forbidden heap operation" is defined as follows:
 
-        If `s` is a `Trace_noHeap` `PrimApp` whose `Operand` is "heap-accessing"
-        (defined below) -> `true`. Otherwise, `false`.
+        If `s` is a `Trace_noHeap` `PrimApp` whose `Operand` is
+        "heap-accessing", or an alias of a "heap-acessing" operand provided in
+        the `VarSet.t` -> `true`. Otherwise, `false`.
 
      and for an `Operand` "heap-accessing" is defined as above.
 
      TODO(pscollins): Revisit these definitions.
       *)
-      val isForbiddenHeapOp: Statement.t -> bool
+      val isForbiddenHeapOp: VarSet.t -> Statement.t -> bool
 
       (* If the provided `Statement.t` `s` is a `Trace_noHeap` `PrimApp`,
       returns `SOME s'`, where `s'` is a `Bind` that performs a 'copy'
