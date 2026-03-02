@@ -3,8 +3,6 @@
    Test `Trace_noHeap` rejects a case where a heap load is necessary.
 
    grep 'Found forbidden heap operations' %t
-
-   TODO(pscollins): Compilation doesn't fail when it should -- fix it.
  *)
 
 val _ = let
