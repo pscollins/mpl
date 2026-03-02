@@ -100,9 +100,9 @@ end
 
 fun isForbiddenHeapOp (vs: VarSet.t) (s: Statement.t): bool = let
    fun isForbidden arg =
-       if isForbiddenHeapOperand arg then
-          true
-       else VarSet.contains (vs, arg)
+       case arg of
+             Operand.Var {var, ...} => VarSet.contains (vs, var)
+           | _ => isForbiddenHeapOperand arg
 in
     case s of
         Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>

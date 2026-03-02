@@ -612,6 +612,8 @@ local
 
    val _ = print "Running TraceHeapOps.isForbiddenHeapOp tests...\n"
 
+   val emptySet = TraceHeapOps.VarSet.empty
+
    (* Test 1: Non-PrimApp statements should return false *)
    val _ = let
       val _ = print "Test 1: Non-PrimApp statements\n"
@@ -624,11 +626,11 @@ local
       val s4 = Statement.Bind { dst = v1, pinned = false, src = Operand.Var {ty = #2 v2, var = #1 v2} }
       val s5 = Statement.SetSlotExnStack
       
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Move should not be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s2), "Profile should not be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s3), "SetExnStackLocal should not be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s4), "Bind should not be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s5), "SetSlotExnStack should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s1), "Move should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s2), "Profile should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s3), "SetExnStackLocal should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s4), "Bind should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s5), "SetSlotExnStack should not be forbidden")
    in () end
 
    (* Test 2: Non-Trace_noHeap PrimApps should return false *)
@@ -639,7 +641,7 @@ local
       
       val s1 = primAdd (v1, v2, v2)
       
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Word_add should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s1), "Word_add should not be forbidden")
    in () end
 
    (* Test 3: Trace_noHeap with Var, Const, or Cast operand should return false *)
@@ -658,9 +660,9 @@ local
       val castOp = Operand.Cast (Operand.Var {ty = #2 v2, var = #1 v2}, #2 v2)
       val s3 = traceNoHeap (v1, castOp)
 
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s1), "Trace_noHeap with Var should NOT be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s2), "Trace_noHeap with Const should NOT be forbidden")
-      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp s3), "Trace_noHeap with Cast should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s1), "Trace_noHeap with Var should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s2), "Trace_noHeap with Const should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenHeapOp emptySet s3), "Trace_noHeap with Cast should NOT be forbidden")
    in () end
 
    (* Test 4: Trace_noHeap with heap-accessing operands should return true *)
@@ -690,9 +692,21 @@ local
       }
       val s3 = traceNoHeap (v1, seqOffsetOp)
 
-      val _ = assert (TraceHeapOps.isForbiddenHeapOp s1, "Trace_noHeap with Offset SHOULD be forbidden")
-      val _ = assert (TraceHeapOps.isForbiddenHeapOp s2, "Trace_noHeap with GCState SHOULD be forbidden")
-      val _ = assert (TraceHeapOps.isForbiddenHeapOp s3, "Trace_noHeap with SequenceOffset SHOULD be forbidden")
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp emptySet s1, "Trace_noHeap with Offset SHOULD be forbidden")
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp emptySet s2, "Trace_noHeap with GCState SHOULD be forbidden")
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp emptySet s3, "Trace_noHeap with SequenceOffset SHOULD be forbidden")
+   in () end
+
+   (* Test 5: Trace_noHeap with Var operand that is in the VarSet *)
+   val _ = let
+      val _ = print "Test 5: Trace_noHeap with Var operand in VarSet\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val vs = TraceHeapOps.VarSet.add (TraceHeapOps.VarSet.empty, #1 v2)
+      val s1 = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val _ = assert (TraceHeapOps.isForbiddenHeapOp vs s1, "Trace_noHeap with Var in VarSet SHOULD be forbidden")
    in () end
 
    val _ = print "TraceHeapOps.isForbiddenHeapOp tests finished.\n"
@@ -1304,6 +1318,38 @@ local
                       s :: _ => (case s of Statement.Bind _ => true | _ => false)
                     | _ => false
       val _ = assert (isBind, "Trace_heapOK with Offset should have been elided to Bind")
+   in () end
+
+   (* Test 11: Program with forbidden Trace_noHeap via alias *)
+   val _ = let
+      val _ = print "Test 11: Program with forbidden Trace_noHeap via alias\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val v3 = newVar ()
+      
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v1, var = #1 v1},
+         offset = Bytes.fromInt 0,
+         ty = #2 v1
+      }
+      (* v2 becomes an alias for a heap-accessing operand *)
+      val s1 = Statement.Bind { dst = v2, src = offsetOp, pinned = false }
+      (* Trace_noHeap uses v2, which is forbidden *)
+      val s2 = traceNoHeap (v3, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val raised = (TraceHeapOps.transform p; false) handle _ => true
+      val _ = assert (raised, "Forbidden heap op via alias should have raised an error")
    in () end
 
    val _ = print "TraceHeapOps.transform tests finished.\n"
