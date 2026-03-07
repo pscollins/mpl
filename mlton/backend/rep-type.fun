@@ -847,13 +847,13 @@ fun checkPrimApp {args, prim, result} =
           val ty = Vector.first args
           fun isTy t = equals (t, ty)
        in
-          done ([isTy], SOME isTy)
+          done ([isTy], SOME isTy) orelse done ([isTy], NONE)
        end
        | Prim.Trace_heapOK => let
           val ty = Vector.first args
           fun isTy t = equals (t, ty)
        in
-          done ([isTy], SOME isTy)
+          done ([isTy], SOME isTy) orelse done ([isTy], NONE)
        end
 
        | Prim.Trace_sourceMarkValue =>
