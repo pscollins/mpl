@@ -279,7 +279,27 @@ structure Value =
                          finalTree: TypeTree.t option ref,
                          finalType: Type.t option ref,
                          finalTypes: Type.t Prod.t option ref,
-                         flat: Flat.t ref}
+                         flat: Flat.t ref,
+                         id: int}
+
+      val nextId =
+         let
+            val r = ref 0
+         in
+            fn () => !r before r := 1 + !r
+         end
+
+      fun origType (v: t): Type.t =
+         case v of
+            Ground ty => ty
+          | Weak {arg} => Type.weak (origType arg)
+          | Object e =>
+               let
+                  val {args, con, ...} = Equatable.value e
+               in
+                  Type.object {args = Prod.map (args, origType),
+                               con = con}
+               end
 
       fun layout (v: t): Layout.t =
          let
@@ -289,9 +309,10 @@ structure Value =
                Ground t => Type.layout t
              | Object e =>
                   Equatable.layout
-                  (e, fn {args, con, flat, ...} =>
+                  (e, fn {args, con, flat, id, ...} =>
                    seq [str "Object ",
-                        record [("args", Prod.layout (args, layout)),
+                        record [("id", Int.layout id),
+                                ("args", Prod.layout (args, layout)),
                                 ("con", ObjectCon.layout con),
                                 ("flat", Flat.layout (! flat))]])
              | Weak {arg, ...} => seq [str "Weak ", layout arg]
@@ -321,8 +342,8 @@ structure Value =
                    val () =
                       Equatable.equate
                       (e, e',
-                       fn (z as {args = a, coercedFrom = c, flat = f, ...},
-                           z' as {args = a', coercedFrom = c', flat = f', ...}) =>
+                       fn (z as {args = a, coercedFrom = c, flat = f, id = i, ...},
+                           z' as {args = a', coercedFrom = c', flat = f', id = i', ...}) =>
                        let
                           val () = unifyProd (a, a')
                        in
@@ -353,11 +374,12 @@ structure Value =
          case v of
             Object e =>
                let
-                  val {coercedFrom, flat, ...} = Equatable.value e
+                  val {coercedFrom, flat, id, ...} = Equatable.value e
                in
                   case ! flat of
                      Flat =>
                         let
+                           val () = print (concat ["dontFlatten: disabling flattening for Object ", Int.toString id, " ", Layout.toString (Type.layout (origType v)), "\n"])
                            val () = flat := NotFlat
                            val from = !coercedFrom
                            val () = coercedFrom := AppendList.empty
@@ -407,12 +429,17 @@ structure Value =
           * Don't flatten objects with mutable fields, since sharing must be
           * preserved.
           *)
-         not (Prod.isEmpty args)
-         andalso Prod.allAreImmutable args
-         andalso (case con of
-                     ObjectCon.Con _ => false
-                   | ObjectCon.Sequence => false
-                   | ObjectCon.Tuple => true)
+         let
+            val res =
+               not (Prod.isEmpty args)
+               andalso Prod.allAreImmutable args
+               andalso (case con of
+                           ObjectCon.Con _ => false
+                         | ObjectCon.Sequence => false
+                         | ObjectCon.Tuple => true)
+         in
+            res
+         end
 
       fun objectFields {args, con} =
          let
@@ -441,7 +468,8 @@ structure Value =
              finalTree = ref NONE,
              finalType = ref NONE,
              finalTypes = ref NONE,
-             flat = ref flat}
+             flat = ref flat,
+             id = nextId ()}
          end
 
       fun object f =
@@ -464,18 +492,6 @@ structure Value =
          case v of
             Object e => SOME (Equatable.value e)
           | _ => NONE
-
-      fun origType (v: t): Type.t =
-         case v of
-            Ground ty => ty
-          | Weak {arg} => Type.weak (origType arg)
-          | Object e =>
-               let
-                  val {args, con, ...} = Equatable.value e
-               in
-                  Type.object {args = Prod.map (args, origType),
-                               con = con}
-               end
 
       val traceFinalType =
          Trace.trace ("DeepFlatten.Value.finalType", layout, Type.layout)
@@ -522,18 +538,27 @@ structure Value =
              NONE =>
                 Prod.make (Vector.new1 {elt = finalType v,
                                         isMutable = false})
-           | SOME {args, con, finalTypes, flat, ...} =>
+           | SOME {args, con, finalTypes, flat, id, ...} =>
                 Ref.memoize
                 (finalTypes, fn () =>
                  let
-                    val args = prodFinalTypes args
+                    val argsFinal = prodFinalTypes args
+                    val _ =
+                        if ObjectCon.isSequence con andalso Prod.length argsFinal > Prod.length args
+                        then print (concat ["Flattening array elements: Object ",
+                                            Int.toString id, " ",
+                                            Layout.toString (Type.layout (origType v)),
+                                            " -> ",
+                                            Int.toString (Prod.length argsFinal),
+                                            " fields\n"])
+                        else ()
                  in
                     case !flat of
-                       Flat => args
+                       Flat => argsFinal
                      | NotFlat =>
                           Prod.make
                           (Vector.new1
-                           {elt = Type.object {args = args, con = con},
+                           {elt = Type.object {args = argsFinal, con = con},
                             isMutable = false})
                  end)) arg
       and prodFinalTypes (p: t Prod.t): Type.t Prod.t =
