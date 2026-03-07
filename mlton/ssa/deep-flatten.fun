@@ -379,7 +379,7 @@ structure Value =
                   case ! flat of
                      Flat =>
                         let
-                           val () = print (concat ["dontFlatten: disabling flattening for Object ", Int.toString id, " ", Layout.toString (Type.layout (origType v)), "\n"])
+                           val () = print (concat ["/* dontFlatten Object ", Int.toString id, " : ", Layout.toString (Type.layout (origType v)), " */\n"])
                            val () = flat := NotFlat
                            val from = !coercedFrom
                            val () = coercedFrom := AppendList.empty
@@ -545,12 +545,12 @@ structure Value =
                     val argsFinal = prodFinalTypes args
                     val _ =
                         if ObjectCon.isSequence con andalso Prod.length argsFinal > Prod.length args
-                        then print (concat ["Flattening array elements: Object ",
-                                            Int.toString id, " ",
+                        then print (concat ["/* Flattening array elements: Object ",
+                                            Int.toString id, " : ",
                                             Layout.toString (Type.layout (origType v)),
                                             " -> ",
                                             Int.toString (Prod.length argsFinal),
-                                            " fields\n"])
+                                            " fields */\n"])
                         else ()
                  in
                     case !flat of
@@ -569,6 +569,18 @@ structure Value =
             Vector.foldr
             (Prod.dest (finalTypes elt), ac, fn ({elt, isMutable = i'}, ac) =>
              {elt = elt, isMutable = i orelse i'} :: ac))))
+
+      fun isFlattened (v: t): bool =
+         case deObject v of
+            NONE => false
+          | SOME {flat, ...} => !flat = Flat
+
+      fun isSequenceFlattened (v: t): bool =
+         case deObject v of
+            NONE => false
+          | SOME {con, args, ...} =>
+               ObjectCon.isSequence con
+               andalso Prod.length (prodFinalTypes args) > Prod.length args
    end
 
 structure Object =
@@ -962,6 +974,27 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
          end
       fun transformBind {exp, ty, var}: Statement.t list =
          let
+            val () =
+               case var of
+                  NONE => ()
+                | SOME x =>
+                     let
+                        val v = varValue x
+                     in
+                        if Value.isFlattened v then
+                           let
+                              val SOME {id, ...} = Value.deObject v
+                           in
+                              print (concat ["/* Flattening val ", Var.toString x, " : ", Layout.toString (Type.layout ty), " (Object ", Int.toString id, ") */\n"])
+                           end
+                        else if Value.isSequenceFlattened v then
+                           let
+                              val SOME {id, ...} = Value.deObject v
+                           in
+                              print (concat ["/* Flattening array elements for val ", Var.toString x, " : ", Layout.toString (Type.layout ty), " (Object ", Int.toString id, ") */\n"])
+                           end
+                        else ()
+                     end
             fun simpleTree () = Option.app (var, simpleVarTree)
             fun doit (e: Exp.t) =
                let
