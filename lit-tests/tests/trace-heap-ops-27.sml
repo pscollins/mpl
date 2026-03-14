@@ -11,12 +11,12 @@
  *)
 
 val _ = let
-    val arr = Array.fromList [(1, 2), (3, 4)]
+    val arr = Array.fromList [(1.0, 2.0), (3.0, 4.0)]
     val p = Array.sub (arr, 0)
     val x = #1 p
     val y = #2 p
     val x' = MLton.Trace.noHeap x
     val y' = MLton.Trace.noHeap y
 in
-    print(Int.toString (x' + y'))
+    print (Real.toString (x' + y'))
 end
