@@ -9,6 +9,16 @@
 
    If DeepFlatten is NOT active, `x = #1 p` is an `Offset` (heap load).
    If DeepFlatten IS active, `x = #1 p` is just a `Bind` from a variable.
+
+   TODO(pscollins): Currently this fails (as the expectation shows above)
+   because flattening gives us
+
+      arr = [1 2 3 4]
+      x = arr[0]
+      y = arr[1]
+
+   Ideally we could fix it by putting a `heapOk` around the `p` load, but then
+   the _prim would beak the flattening transformation.
  *)
 
 val _ = let
