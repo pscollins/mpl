@@ -552,11 +552,11 @@ class RSSAParser:
     def parse_function(self, text: str) -> Optional[Function]:
         # Handle headers with nested parens
         # fun name (args): {meta} = start ()
-        header_re = r"fun\s+(\w+)\s*\((.*)\):\s*\{(.*)\}\s*=\s*(\w+)\s*\(\)"
+        header_re = r"fun\s+([\w:.'?]+)\s*\((.*)\):\s*\{(.*)\}\s*=\s*([\w:.'?]+)\s*\(\)"
         # We need to find the FIRST ): that is at depth 0 relative to the opening (
         # and the FIRST } = that is at depth 0 relative to the opening {
         
-        m_name = re.match(r"fun\s+(\w+)", text)
+        m_name = re.match(r"fun\s+([\w:.'?]+)", text)
         if not m_name: return None
         name = m_name.group(1)
         
@@ -575,7 +575,7 @@ class RSSAParser:
         meta_str = text[meta_start+1:meta_end]
         
         # Find start label
-        start_match = re.search(r"=\s*(\w+)\s*\(\)", text[meta_end:])
+        start_match = re.search(r"=\s*([\w:.'?]+)\s*\(\)", text[meta_end:])
         if not start_match: return None
         start_label = Label(start_match.group(1))
         
@@ -594,7 +594,7 @@ class RSSAParser:
             else: returns = [Type(t.strip()) for t in self.split_by_comma(m_returns.group(2))]
 
         # Blocks
-        block_parts = re.split(r"^\s+(\w+)\s*\((.*?)\)\s*(\w+)\s*=", text, flags=re.MULTILINE)
+        block_parts = re.split(r"^\s+([\w:.'?]+)\s*\((.*?)\)\s*([\w:.'?]+)\s*=", text, flags=re.MULTILINE)
         blocks = []
         for i in range(1, len(block_parts), 4):
             label = Label(block_parts[i])
@@ -682,19 +682,20 @@ class RSSAParser:
                 pinned = True
                 lhs = lhs[7:].strip()
             
-            if ":" in lhs:
-                v_str, t_str = lhs.split(":", 1)
+            idx = self.find_last_top_level(lhs, ":")
+            if idx != -1:
+                v_str, t_str = lhs[:idx], lhs[idx+1:]
                 dst = (Var(v_str.strip()), Type(t_str.strip()))
                 if rhs.startswith("NormalObject") or rhs.startswith("SequenceObject"):
                     return ObjectStmt(dst, self.parse_object_def(rhs))
-                m_prim = re.match(r"^(\w+)\s*\((.*)\)$", rhs, re.DOTALL)
+                m_prim = re.match(r"^([\w:.'?]+)\s*\((.*)\)$", rhs, re.DOTALL)
                 if m_prim and m_prim.group(1) not in ["OW64", "OP", "XW8", "XW64", "Cast"]:
                     return PrimApp(dst, m_prim.group(1), self.parse_operand_list(m_prim.group(2)))
                 return Bind(dst, pinned, self.parse_operand(rhs))
             else:
                 return Move(self.parse_operand(lhs), self.parse_operand(rhs))
 
-        m_prim = re.match(r"^(\w+)\s*\((.*)\)$", line, re.DOTALL)
+        m_prim = re.match(r"^([\w:.'?]+)\s*\((.*)\)$", line, re.DOTALL)
         if m_prim and m_prim.group(1) not in ["OW64", "OP", "XW8", "XW64", "Cast", "SetHandler"]:
             return PrimApp(None, m_prim.group(1), self.parse_operand_list(m_prim.group(2)))
         return None
@@ -710,7 +711,7 @@ class RSSAParser:
     def parse_object_def(self, s: str) -> ObjectDef:
         if s.startswith("NormalObject"):
             body = s[12:].strip().strip("{}")
-            tycon_match = re.search(r"tycon\s*=\s*(\w+)", body)
+            tycon_match = re.search(r"tycon\s*=\s*([\w:.]+)", body)
             tycon = ObjptrTycon(tycon_match.group(1)) if tycon_match else ObjptrTycon("unknown")
             init = []
             init_match = re.search(r"init\s*=\s*\((.*)\)", body, re.DOTALL)
@@ -752,21 +753,21 @@ class RSSAParser:
             test_match = re.search(r"test\s*=\s*(.*?),", body, re.DOTALL)
             test = self.parse_operand(test_match.group(1)) if test_match else ConstOperand(Const("unknown"))
             default = None
-            def_match = re.search(r"default\s*=\s*(None|(\w+))", body)
+            def_match = re.search(r"default\s*=\s*(None|([\w:.'?]+))", body)
             if def_match and def_match.group(2): default = Label(def_match.group(2))
             cases = []
             cases_match = re.search(r"cases\s*=\s*\((.*)\)", body, re.DOTALL)
             if cases_match:
-                c_items = re.findall(r"\((.*?),\s*(\w+)\)", cases_match.group(1))
+                c_items = re.findall(r"\((.*?),\s*([\w:.'?]+)\)", cases_match.group(1))
                 for c, l in c_items: cases.append((Const(c.strip()), Label(l)))
             return Switch(test, cases, default)
         if "ccall" in line:
-            m = re.match(r"ccall\s+(\w+)\s*\((.*?)\)(\s+return\s+(\w+))?", line, re.DOTALL)
+            m = re.match(r"ccall\s+([\w:.'?]+)\s*\((.*?)\)(\s+return\s+([\w:.'?]+))?", line, re.DOTALL)
             if m: return CCall(m.group(1), self.parse_operand_list(m.group(2)), Label(m.group(4)) if m.group(4) else None)
         if line.endswith("Tail"):
-            m = re.match(r"(\w+)\s*\((.*?)\)\s*Tail", line, re.DOTALL)
+            m = re.match(r"([\w:.'?]+)\s*\((.*?)\)\s*Tail", line, re.DOTALL)
             if m: return TailCall(Func(m.group(1)), self.parse_operand_list(m.group(2)))
-        m = re.match(r"(\w+)\s*\((.*?)\)(\s+return\s+(\w+))?", line, re.DOTALL)
+        m = re.match(r"([\w:.'?]+)\s*\((.*?)\)(\s+return\s+([\w:.'?]+))?", line, re.DOTALL)
         if m:
             target, args_s = m.group(1), m.group(2)
             args = self.parse_operand_list(args_s)
