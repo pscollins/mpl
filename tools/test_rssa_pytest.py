@@ -84,3 +84,38 @@ def test_use_def_subgraph(rssa_content):
             in_exit_20 = True
             break
     assert not in_exit_20
+
+def test_repro_x_54427_missing():
+    rssa_content = """
+Functions:
+fun main_4 (global_argc: Word32, global_argv: Word64): {raises = None, returns = Some (Word32)} = L_1502 ()
+  L_1502 () Jump =
+    f () return L_9404
+  L_9404 (x_54427: Objptr (opt_33)) CReturn {func = {args = (CPointer, Word64), return = Objptr (opt_33)}} =
+    x_61784: Real64 = x_54427
+    return (x_61784)
+"""
+    program = parse_rssa(rssa_content)
+    
+    # Check if L_9404 was parsed
+    found_l9404 = False
+    for f in program.functions:
+        for b in f.blocks:
+            if b.label.name == "L_9404":
+                found_l9404 = True
+    
+    assert found_l9404, "L_9404 block should be parsed"
+    
+    subgraph = program.get_use_def_subgraph("x_61784")
+    
+    # Check if x_54427 definition (the block L_9404 itself) is in the subgraph
+    found_x54427_def = False
+    for f, b, e in subgraph:
+        # For block arguments, the 'element' e is the Block itself
+        if b and b.label.name == "L_9404":
+            for v, t in b.args:
+                if str(v) == "x_54427":
+                    found_x54427_def = True
+                    break
+    
+    assert found_x54427_def, "Definition of x_54427 should be found in the subgraph of x_61784"
