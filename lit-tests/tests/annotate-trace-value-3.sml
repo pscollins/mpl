@@ -12,7 +12,7 @@
  *)
 
 val _ = let
-   val arr = Array.fromList [(1, 2), (3, 4)]
+   val arr = Array.fromList [(1.0, 2.0), (3.0, 4.0)]
    val p1 = Array.sub (arr, 0)
    val x1 = #1 p1
    val y1 = #2 p1
@@ -25,5 +25,5 @@ val _ = let
    val _ = MLton.Trace.sourceMarkValue (x2, "px2")
    val _ = MLton.Trace.sourceMarkValue (y2, "py2")
 in
-    print (Int.toString (x1 + y1 + x2 + y2))
+   print (Real.toString (x1 + y1 + x2 + y2))
 end
