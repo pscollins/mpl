@@ -47,7 +47,8 @@ class GCField:
 # Operand
 @dataclass
 class Operand:
-    pass
+    def get_vars(self) -> List[Var]:
+        return []
 
 @dataclass
 class Cast(Operand):
@@ -55,6 +56,8 @@ class Cast(Operand):
     ty: Type
     def __str__(self):
         return f"Cast ({self.operand}, {self.ty})"
+    def get_vars(self) -> List[Var]:
+        return self.operand.get_vars()
 
 @dataclass
 class ConstOperand(Operand):
@@ -74,6 +77,8 @@ class Offset(Operand):
     ty: Type
     def __str__(self):
         return f"Offset {{base: {self.base}, offset: {self.offset}, ty: {self.ty}}}"
+    def get_vars(self) -> List[Var]:
+        return self.base.get_vars()
 
 @dataclass
 class ObjptrTyconOperand(Operand):
@@ -96,6 +101,8 @@ class SequenceOffset(Operand):
     ty: Type
     def __str__(self):
         return f"SequenceOffset {{base: {self.base}, index: {self.index}, offset: {self.offset}, scale: {self.scale}, ty: {self.ty}}}"
+    def get_vars(self) -> List[Var]:
+        return self.base.get_vars() + self.index.get_vars()
 
 @dataclass
 class VarOperand(Operand):
@@ -103,17 +110,22 @@ class VarOperand(Operand):
     ty: Type
     def __str__(self):
         return str(self.var)
+    def get_vars(self) -> List[Var]:
+        return [self.var]
 
 @dataclass
 class Address(Operand):
     operand: Operand
     def __str__(self):
         return f"Address {self.operand}"
+    def get_vars(self) -> List[Var]:
+        return self.operand.get_vars()
 
 # Object
 @dataclass
 class ObjectDef:
-    pass
+    def get_vars(self) -> List[Var]:
+        return []
 
 @dataclass
 class NormalObject(ObjectDef):
@@ -122,6 +134,11 @@ class NormalObject(ObjectDef):
     def __str__(self):
         inits = ", ".join([f"{{offset = {i['offset']}, src = {i['src']}}}" for i in self.init])
         return f"NormalObject {{init = ({inits}), tycon = {self.tycon}}}"
+    def get_vars(self) -> List[Var]:
+        res = []
+        for i in self.init:
+            res.extend(i['src'].get_vars())
+        return res
 
 @dataclass
 class SequenceObject(ObjectDef):
@@ -130,11 +147,17 @@ class SequenceObject(ObjectDef):
     def __str__(self):
         inits = ", ".join([str(i) for i in self.init])
         return f"SequenceObject {{init = ({inits}), tycon = {self.tycon}}}"
+    def get_vars(self) -> List[Var]:
+        res = []
+        for i in self.init:
+            res.extend(i.get_vars())
+        return res
 
 # Statement
 @dataclass
 class Statement:
-    pass
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        return [], []
 
 @dataclass
 class Bind(Statement):
@@ -144,6 +167,8 @@ class Bind(Statement):
     def __str__(self):
         pinned_str = "pinned " if self.pinned else ""
         return f"{self.dst[0]}: {self.dst[1]} = {pinned_str}{self.src}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        return [self.dst[0]], self.src.get_vars()
 
 @dataclass
 class Move(Statement):
@@ -151,6 +176,16 @@ class Move(Statement):
     src: Operand
     def __str__(self):
         return f"{self.dst} = {self.src}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        # Move can be Var = Var or Offset = Var etc.
+        # If dst is Var, it's a def.
+        defs = []
+        if isinstance(self.dst, VarOperand):
+            defs.append(self.dst.var)
+        uses = self.src.get_vars()
+        if not isinstance(self.dst, VarOperand):
+            uses.extend(self.dst.get_vars())
+        return defs, uses
 
 @dataclass
 class ObjectStmt(Statement):
@@ -158,6 +193,8 @@ class ObjectStmt(Statement):
     obj: ObjectDef
     def __str__(self):
         return f"{self.dst[0]}: {self.dst[1]} = {self.obj}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        return [self.dst[0]], self.obj.get_vars()
 
 @dataclass
 class PrimApp(Statement):
@@ -168,6 +205,12 @@ class PrimApp(Statement):
         args_str = ", ".join([str(a) for a in self.args])
         dst_str = f"{self.dst[0]}: {self.dst[1]} = " if self.dst else ""
         return f"{dst_str}{self.prim} ({args_str})"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        defs = [self.dst[0]] if self.dst else []
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return defs, uses
 
 @dataclass
 class SetHandler(Statement):
@@ -178,7 +221,8 @@ class SetHandler(Statement):
 # Transfer
 @dataclass
 class Transfer:
-    pass
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        return [], []
 
 @dataclass
 class Goto(Transfer):
@@ -187,6 +231,11 @@ class Goto(Transfer):
     def __str__(self):
         args_str = ", ".join([str(a) for a in self.args])
         return f"{self.dst} ({args_str})"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class Call(Transfer):
@@ -196,6 +245,11 @@ class Call(Transfer):
     def __str__(self):
         args_str = ", ".join([str(a) for a in self.args])
         return f"{self.func} ({args_str}) return {self.return_label}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class TailCall(Transfer):
@@ -204,6 +258,11 @@ class TailCall(Transfer):
     def __str__(self):
         args_str = ", ".join([str(a) for a in self.args])
         return f"{self.func} ({args_str}) Tail"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class CCall(Transfer):
@@ -214,6 +273,11 @@ class CCall(Transfer):
         args_str = ", ".join([str(a) for a in self.args])
         ret_str = f" return {self.return_label}" if self.return_label else ""
         return f"ccall {self.func} ({args_str}){ret_str}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class Return(Transfer):
@@ -221,6 +285,11 @@ class Return(Transfer):
     def __str__(self):
         args_str = ", ".join([str(a) for a in self.args])
         return f"return ({args_str})"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class Raise(Transfer):
@@ -228,6 +297,11 @@ class Raise(Transfer):
     def __str__(self):
         args_str = ", ".join([str(a) for a in self.args])
         return f"raise ({args_str})"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        uses = []
+        for a in self.args:
+            uses.extend(a.get_vars())
+        return [], uses
 
 @dataclass
 class Switch(Transfer):
@@ -238,6 +312,8 @@ class Switch(Transfer):
         cases_str = ", ".join([f"({c[0]}, {c[1]})" for c in self.cases])
         default_str = f", default = {self.default}" if self.default else ""
         return f"switch {{test = {self.test}, cases = ({cases_str}){default_str}}}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        return [], self.test.get_vars()
 
 # Kind
 @dataclass
@@ -313,6 +389,110 @@ class Program:
         for f in self.functions:
             res += str(f) + "\n"
         return res
+
+    def get_use_def_subgraph(self, target_var_name: str) -> List[Any]:
+        # Maps var name to list of (parent, element) where element is Stmt/Transfer/Header
+        # and parent is Function/Block
+        var_to_defs = {}
+        var_to_uses = {}
+        
+        all_elements = [] # List of (function, block, element)
+
+        def add_def(v, f, b, e):
+            name = str(v)
+            if name not in var_to_defs: var_to_defs[name] = []
+            var_to_defs[name].append((f, b, e))
+        
+        def add_use(v, f, b, e):
+            name = str(v)
+            if name not in var_to_uses: var_to_uses[name] = []
+            var_to_uses[name].append((f, b, e))
+
+        funcs = self.functions + ([self.main] if self.main else [])
+        for f in funcs:
+            # Header defs
+            for v, t in f.args:
+                add_def(v, f, None, f)
+            
+            for b in f.blocks:
+                # Block arg defs
+                for v, t in b.args:
+                    add_def(v, f, b, b)
+                
+                for s in b.statements:
+                    defs, uses = s.get_defs_uses()
+                    for d in defs: add_def(d, f, b, s)
+                    for u in uses: add_use(u, f, b, s)
+                
+                defs, uses = b.transfer.get_defs_uses()
+                for d in defs: add_def(d, f, b, b.transfer)
+                for u in uses: add_use(u, f, b, b.transfer)
+
+                # Special case: Goto/Call/etc. define variables in the target block
+                if isinstance(b.transfer, Goto):
+                    # Find target block
+                    target = next((bt for bt in f.blocks if bt.label.name == b.transfer.dst.name), None)
+                    if target:
+                        for i, arg_op in enumerate(b.transfer.args):
+                            if i < len(target.args):
+                                dst_var = target.args[i][0]
+                                # This is a "use-def" edge: dst_var is defined by b.transfer (which uses arg_op)
+                                # For simplicity, we'll just say the transfer uses the operands and "defines" the target block args
+                                add_def(dst_var, f, target, b.transfer)
+                                for u in arg_op.get_vars():
+                                    add_use(u, f, b, b.transfer)
+
+        # BFS
+        visited_vars = set()
+        visited_elements_ids = set()
+        visited_elements = []
+        queue = [target_var_name]
+        
+        while queue:
+            curr_var = queue.pop(0)
+            if curr_var in visited_vars: continue
+            visited_vars.add(curr_var)
+            
+            # Definitions of this var
+            for f, b, e in var_to_defs.get(curr_var, []):
+                triple_id = (id(f), id(b), id(e))
+                if triple_id not in visited_elements_ids:
+                    visited_elements_ids.add(triple_id)
+                    visited_elements.append((f, b, e))
+                
+                # Add all variables USED in this definition
+                uses = []
+                if isinstance(e, Statement) or isinstance(e, Transfer):
+                    _, uses = e.get_defs_uses()
+                
+                for u in uses:
+                    u_name = str(u)
+                    if u_name not in visited_vars:
+                        queue.append(u_name)
+
+            # Uses of this var
+            # Only follow uses for local variables or if it's the target var
+            if not curr_var.startswith("global_") or curr_var == target_var_name:
+                for f, b, e in var_to_uses.get(curr_var, []):
+                    triple_id = (id(f), id(b), id(e))
+                    if triple_id not in visited_elements_ids:
+                        visited_elements_ids.add(triple_id)
+                        visited_elements.append((f, b, e))
+                    
+                    # Add all variables DEFINED by this use
+                    defs = []
+                    if isinstance(e, Statement) or isinstance(e, Transfer):
+                        defs, _ = e.get_defs_uses()
+                    elif isinstance(e, Block): # Block arg header
+                        # The variables are the block arguments
+                        defs = [a[0] for a in e.args]
+                    
+                    for d in defs:
+                        d_name = str(d)
+                        if d_name not in visited_vars:
+                            queue.append(d_name)
+
+        return visited_elements
 
 class RSSAParser:
     def __init__(self, text: str):

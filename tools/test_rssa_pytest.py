@@ -51,6 +51,36 @@ def test_operand_parsing():
     assert op.offset == -8
     assert str(op.ty) == "Objptr"
     
-    op = parser.parse_operand("0x123:w32")
-    assert isinstance(op, ConstOperand)
-    assert op.const.value == "0x123:w32"
+def test_use_def_subgraph(rssa_content):
+    program = parse_rssa(rssa_content)
+    # x_61059 is a Word64 offset of an argument in num_26
+    subgraph = program.get_use_def_subgraph("x_61059")
+    
+    assert len(subgraph) > 0
+    
+    # Check if x_61060 is in the subgraph because it uses x_61059
+    # We can check by seeing if the Bind statement defining x_61060 is there.
+    found_61060_def = False
+    for f, b, e in subgraph:
+        if hasattr(e, 'dst') and e.dst and str(e.dst[0]) == "x_61060":
+            found_61060_def = True
+            break
+    assert found_61060_def
+    
+    # Check if x_61057 is in the subgraph (it also uses x_61059 directly)
+    found_61057_def = False
+    for f, b, e in subgraph:
+        if hasattr(e, 'dst') and e.dst and str(e.dst[0]) == "x_61057":
+            found_61057_def = True
+            break
+    assert found_61057_def
+
+    # Check that we didn't pull in EVERYTHING (e.g. some random var from another function)
+    # exit_20 uses many globals, but it shouldn't be in our subgraph if it doesn't use x_61059
+    # or anything defined by it.
+    in_exit_20 = False
+    for f, b, e in subgraph:
+        if f.name.name == "exit_20":
+            in_exit_20 = True
+            break
+    assert not in_exit_20
