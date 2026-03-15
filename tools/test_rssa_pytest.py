@@ -3,14 +3,19 @@ import os
 import textwrap
 from rssa import parse_rssa
 
-RSSA_PATH = "/tmp/out-real/annotate-trace-value-3.traceHeapOps.post.rssa"
+RSSA_PATH = "testdata/annotate-trace-value-3.traceHeapOps.post.rssa"
+CACHED_RSSA_FILE_CONTENTS = []
+
+def _read_test_ir():
+    if not CACHED_RSSA_FILE_CONTENTS:
+        with open(RSSA_PATH, 'r') as f:
+            CACHED_RSSA_FILE_CONTENTS.append(f.read())
+    return CACHED_RSSA_FILE_CONTENTS[0]
+
 
 @pytest.fixture
 def rssa_content():
-    if not os.path.exists(RSSA_PATH):
-        pytest.skip(f"RSSA file not found at {RSSA_PATH}")
-    with open(RSSA_PATH, 'r') as f:
-        return f.read()
+    return _read_test_ir()
 
 def test_parse_functions(rssa_content):
     program = parse_rssa(rssa_content)

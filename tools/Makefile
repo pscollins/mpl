@@ -2,7 +2,7 @@
 
 .PHONY: test
 test:
-	PYTHONPATH=. ../.venv/bin/pytest test_rssa_pytest.py
+	venv/bin/pytest
 
 .PHONY: clean
 clean:
