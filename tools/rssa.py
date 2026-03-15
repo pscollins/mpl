@@ -96,13 +96,25 @@ class RuntimeOperand(Operand):
 class SequenceOffset(Operand):
     base: Operand
     index: Operand
-    offset: int
     scale: int
+    offset: int
     ty: Type
     def __str__(self):
-        return f"SequenceOffset {{base: {self.base}, index: {self.index}, offset: {self.offset}, scale: {self.scale}, ty: {self.ty}}}"
+        # We want to print it back as it was parsed if possible, 
+        # but for now let's just use the canonical name if we know it.
+        pre = "X"
+        for p, t in {"XP": "Objptr", "XW8": "Word8", "XW16": "Word16", "XW32": "Word32", "XW64": "Word64",
+                      "XB8": "Int8", "XB16": "Int16", "XB32": "Int32", "XB64": "Int64",
+                      "XR32": "Real32", "XR64": "Real64"}.items():
+            if t == str(self.ty):
+                pre = p
+                break
+        off_str = str(self.offset).replace("-", "~")
+        return f"{pre} ({self.base}, {self.index}, {self.scale}, {off_str})"
     def get_vars(self) -> List[Var]:
-        return self.base.get_vars() + self.index.get_vars()
+        res = self.base.get_vars() + self.index.get_vars()
+        return res
+
 
 @dataclass
 class VarOperand(Operand):
@@ -218,6 +230,16 @@ class SetHandler(Statement):
     def __str__(self):
         return f"SetHandler ({self.label})"
 
+@dataclass
+class Store(Statement):
+    dst: Operand
+    src: Operand
+    def __str__(self):
+        return f"{self.dst} := {self.src}"
+    def get_defs_uses(self) -> Tuple[List[Var], List[Var]]:
+        # Store doesn't define a variable, but it uses both dst (as address) and src
+        return [], self.dst.get_vars() + self.src.get_vars()
+
 # Transfer
 @dataclass
 class Transfer:
@@ -327,6 +349,15 @@ class JumpKind(Kind):
 @dataclass
 class HandlerKind(Kind):
     def __str__(self): return "Handler"
+
+@dataclass
+class CReturnKind(Kind):
+    def __str__(self): return "CReturn"
+
+@dataclass
+class UnknownKind(Kind):
+    name: str
+    def __str__(self): return self.name
 
 # Block
 @dataclass
@@ -479,7 +510,10 @@ class Program:
                         visited_elements_ids.add(triple_id)
                         visited_elements.append((f, b, e))
                     
-                    # Add all variables DEFINED by this use
+                    # Add all variables DEFINED by this use (if any)
+                    # and also continue BFS if it's a def-use chain.
+                    # Actually, if we are at a use, we want to find other things
+                    # related to the variables DEFINED by this statement.
                     defs = []
                     if isinstance(e, Statement) or isinstance(e, Transfer):
                         defs, _ = e.get_defs_uses()
@@ -594,27 +628,83 @@ class RSSAParser:
             else: returns = [Type(t.strip()) for t in self.split_by_comma(m_returns.group(2))]
 
         # Blocks
-        block_parts = re.split(r"^\s+([\w:.'?]+)\s*\((.*?)\)\s*([\w:.'?]+)\s*=", text, flags=re.MULTILINE)
         blocks = []
-        for i in range(1, len(block_parts), 4):
-            label = Label(block_parts[i])
-            b_args = self.parse_args(block_parts[i+1])
-            kind = JumpKind() if block_parts[i+2] == "Jump" else HandlerKind()
+        # Find all block starts: label (args) kind = 
+        # We can't use a simple regex because kind can contain nested {} and ()
+        lines = text.strip("\n").split("\n")
+        current_block_header = None
+        current_block_body = []
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # A block start usually looks like "  label (args) kind = "
+            # It must start with exactly two spaces
+            m_start = re.match(r"^  ([\w:.'?]+)\s*\(", line)
+            if m_start:
+                # If we were already parsing a block, save it
+                if current_block_header:
+                    blocks.append(self.finalize_block(current_block_header, current_block_body))
+                
+                # New block header. We need to find the matching '=' at depth 0 at the END of a line
+                header_text = ""
+                depth = 0
+                found_eq_at_end = False
+                while i < len(lines):
+                    l = lines[i]
+                    header_text += (" " if header_text else "") + l.strip()
+                    depth += l.count("(") + l.count("{") - l.count(")") - l.count("}")
+                    
+                    l_trimmed = l.strip()
+                    if l_trimmed.endswith("=") and depth == 0:
+                        found_eq_at_end = True
+                        break
+                    i += 1
+                
+                current_block_header = header_text
+                current_block_body = []
+            else:
+                if current_block_header:
+                    current_block_body.append(line)
+            i += 1
             
-            body = block_parts[i+3]
-            stmts_and_transfer = self.split_statements(body)
-            
-            statements = []
-            transfer = Goto(Label("error"), [])
-            if stmts_and_transfer:
-                for line in stmts_and_transfer[:-1]:
-                    stmt = self.parse_statement(line)
-                    if stmt: statements.append(stmt)
-                transfer = self.parse_transfer(stmts_and_transfer[-1])
-            
-            blocks.append(Block(label, b_args, kind, statements, transfer))
+        if current_block_header:
+            blocks.append(self.finalize_block(current_block_header, current_block_body))
             
         return Function(func_name, args, start_label, blocks, raises, returns)
+
+    def finalize_block(self, header: str, body_lines: List[str]) -> Block:
+        # header is "label (args) kind ="
+        m = re.match(r"^([\w:.'?]+)\s*\((.*)\)\s*(.*?)\s*=$", header.strip())
+        if not m:
+            # Fallback if parsing failed
+            return Block(Label("error"), [], JumpKind(), [], Goto(Label("error"), []))
+        
+        label = Label(m.group(1))
+        args = self.parse_args(m.group(2))
+        kind_str = m.group(3).strip()
+        
+        if kind_str == "Jump":
+            kind = JumpKind()
+        elif kind_str == "Handler":
+            kind = HandlerKind()
+        elif kind_str.startswith("CReturn"):
+            kind = CReturnKind()
+        else:
+            kind = UnknownKind(kind_str)
+            
+        body = "\n".join(body_lines)
+        stmts_and_transfer = self.split_statements(body)
+        
+        statements = []
+        transfer = Goto(Label("error"), [])
+        if stmts_and_transfer:
+            for line in stmts_and_transfer[:-1]:
+                stmt = self.parse_statement(line)
+                if stmt: statements.append(stmt)
+            transfer = self.parse_transfer(stmts_and_transfer[-1])
+            
+        return Block(label, args, kind, statements, transfer)
 
     def find_matching_char(self, s: str, start: int, open_c: str, close_c: str) -> int:
         depth = 0
@@ -672,6 +762,12 @@ class RSSAParser:
         if line.startswith("SetHandler"):
             m = re.match(r"SetHandler\s*\((.*?)\)", line)
             if m: return SetHandler(Label(m.group(1).strip()))
+
+        store_idx = self.find_top_level(line, ":")
+        if store_idx != -1 and line[store_idx:store_idx+2] == ":=":
+            lhs = line[:store_idx].strip()
+            rhs = line[store_idx+2:].strip()
+            return Store(self.parse_operand(lhs), self.parse_operand(rhs))
 
         eq_idx = self.find_top_level(line, "=")
         if eq_idx != -1:
@@ -799,12 +895,38 @@ class RSSAParser:
         if s.startswith("Cast"):
             m = re.match(r"Cast\s*\((.*),\s*(.*)\)", s, re.DOTALL)
             if m: return Cast(self.parse_operand(m.group(1)), Type(m.group(2).strip()))
-        for pre, ty in [("OW64", "Word64"), ("OP", "Objptr")]:
-            m = re.match(r"^" + pre + r"\b\s*\((.*),\s*(.*)\)$", s, re.DOTALL)
-            if m: return Offset(self.parse_operand(m.group(1)), int(m.group(2).replace("~", "-")), Type(ty))
-        for pre, ty in [("XW8", "Word8"), ("XW64", "Word64")]:
-            m = re.match(r"^" + pre + r"\b\s*\((.*),\s*(.*),\s*(.*),\s*(.*)\)$", s, re.DOTALL)
-            if m: return SequenceOffset(self.parse_operand(m.group(1)), self.parse_operand(m.group(2)), int(m.group(4).replace("~", "-")), int(m.group(3)), Type(ty))
+        
+        # Offset: O[PWB][\d+]*
+        m_off = re.match(r"^(O[PWB]\d*|OR\d*)\s*\((.*),\s*(.*)\)$", s, re.DOTALL)
+        if m_off:
+            prefix = m_off.group(1)
+            base = self.parse_operand(m_off.group(2))
+            offset = int(m_off.group(3).replace("~", "-"))
+            ty_map = {"OP": "Objptr", "OW8": "Word8", "OW16": "Word16", "OW32": "Word32", "OW64": "Word64", 
+                      "OB8": "Int8", "OB16": "Int16", "OB32": "Int32", "OB64": "Int64",
+                      "OR32": "Real32", "OR64": "Real64"}
+            ty = ty_map.get(prefix, "unknown")
+            return Offset(base, offset, Type(ty))
+
+        # SequenceOffset: X[PWB][\d+]*
+        m_seq = re.match(r"^(X[PWB]\d*|XR\d*)\s*\((.*),\s*(.*),\s*(.*),\s*(.*)\)$", s, re.DOTALL)
+        if m_seq:
+            prefix = m_seq.group(1)
+            base = self.parse_operand(m_seq.group(2))
+            index = self.parse_operand(m_seq.group(3))
+            scale = int(m_seq.group(4))
+            offset = int(m_seq.group(5).replace("~", "-"))
+            ty_map = {"XP": "Objptr", "XW8": "Word8", "XW16": "Word16", "XW32": "Word32", "XW64": "Word64",
+                      "XB8": "Int8", "XB16": "Int16", "XB32": "Int32", "XB64": "Int64",
+                      "XR32": "Real32", "XR64": "Real64"}
+            ty = ty_map.get(prefix, "unknown")
+            return SequenceOffset(base, index, scale, offset, Type(ty))
+
+        # Address: A[PWB][\d+]*
+        m_addr = re.match(r"^(A[PWB]\d*)\s*\((.*)\)$", s, re.DOTALL)
+        if m_addr:
+             return Address(self.parse_operand(m_addr.group(2)))
+
         if s.startswith("Runtime"): return RuntimeOperand(GCField(s[7:].strip()))
         if "0x" in s or s.lstrip("-~").isdigit() or s.startswith("\"") or s in ["NULL", "true", "false"]: return ConstOperand(Const(s))
         return VarOperand(Var(s), Type("unknown"))

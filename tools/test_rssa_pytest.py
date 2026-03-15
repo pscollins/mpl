@@ -1,5 +1,6 @@
 import pytest
 import os
+import textwrap
 from rssa import parse_rssa
 
 RSSA_PATH = "/tmp/out-real/annotate-trace-value-3.traceHeapOps.post.rssa"
@@ -86,15 +87,15 @@ def test_use_def_subgraph(rssa_content):
     assert not in_exit_20
 
 def test_repro_x_54427_missing():
-    rssa_content = """
-Functions:
-fun main_4 (global_argc: Word32, global_argv: Word64): {raises = None, returns = Some (Word32)} = L_1502 ()
-  L_1502 () Jump =
-    f () return L_9404
-  L_9404 (x_54427: Objptr (opt_33)) CReturn {func = {args = (CPointer, Word64), return = Objptr (opt_33)}} =
-    x_61784: Real64 = x_54427
-    return (x_61784)
-"""
+    rssa_content = textwrap.dedent("""
+    Functions:
+    fun main_4 (global_argc: Word32, global_argv: Word64): {raises = None, returns = Some (Word32)} = L_1502 ()
+      L_1502 () Jump =
+        f () return L_9404
+      L_9404 (x_54427: Objptr (opt_33)) CReturn {func = {args = (CPointer, Word64), return = Objptr (opt_33)}} =
+        x_61784: Real64 = x_54427
+        return (x_61784)
+    """)
     program = parse_rssa(rssa_content)
     
     # Check if L_9404 was parsed
@@ -119,3 +120,31 @@ fun main_4 (global_argc: Word32, global_argv: Word64): {raises = None, returns =
                     break
     
     assert found_x54427_def, "Definition of x_54427 should be found in the subgraph of x_61784"
+
+def test_repro_xr64_stores():
+    rssa_content = textwrap.dedent("""
+    Functions:
+    fun main_4 (global_argc: Word32, global_argv: Word64): {raises = None, returns = Some (Word32)} = L_1502 ()
+      L_1502 () Jump =
+        f () return L_9404
+      L_9404 (x_54427: Objptr (opt_33)) CReturn {func = {args = (CPointer, Word64), return = Objptr (opt_33)}} =
+        XR64 (x_54427, 0, 1, 0) := x_61809
+        XR64 (x_54427, 8, 1, 8) := x_61808
+        x_61784: Real64 = XR64 (x_54427, 0, 1, 8)
+        return (x_61784)
+    """)
+    program = parse_rssa(rssa_content)
+    subgraph = program.get_use_def_subgraph("x_61784")
+    
+    # Check if the XR64 store statements are in the subgraph
+    # They should be because they use x_54427, which x_61784 also uses.
+    found_store1 = False
+    found_store2 = False
+    for f, b, e in subgraph:
+        if str(e) == "XR64 (x_54427, 0, 1, 0) := x_61809":
+            found_store1 = True
+        if str(e) == "XR64 (x_54427, 8, 1, 8) := x_61808":
+            found_store2 = True
+            
+    assert found_store1, "Store statement 1 should be in the subgraph"
+    assert found_store2, "Store statement 2 should be in the subgraph"
