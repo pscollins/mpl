@@ -157,6 +157,7 @@ signature PRIM =
        | Trace_staticSourceMarkValue of string  (* to machine *)
        | Trace_noHeap  (* ssa *)
        | Trace_heapOK  (* ssa *)
+       | Trace_noTuple (* ssa *)
        | TopLevel_getHandler (* implement exceptions *)
        | TopLevel_getSuffix (* implement suffix *)
        | TopLevel_setHandler (* implement exceptions *)

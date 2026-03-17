@@ -855,6 +855,12 @@ fun checkPrimApp {args, prim, result} =
        in
           done ([isTy], SOME isTy) orelse done ([isTy], NONE)
        end
+       | Prim.Trace_noTuple => let
+          val ty = Vector.first args
+          fun isTy t = equals (t, ty)
+       in
+          done ([isTy], SOME isTy) orelse done ([isTy], NONE)
+       end
 
        | Prim.Trace_sourceMarkValue =>
          Error.bug "sourceMarkValue should have been eliminated in core-ml"

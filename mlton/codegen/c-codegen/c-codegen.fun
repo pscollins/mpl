@@ -196,6 +196,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
        supported here *)
        | Trace_noHeap =>  true
        | Trace_heapOK =>  true
+       | Trace_noTuple => true
        | Thread_returnToC => false
        | Word_add _ => true
        | Word_addCheckP _ => true
