@@ -449,6 +449,8 @@ structure Trace = struct
   val sourceMarkValue = _prim "Trace_sourceMarkValue": 'a * String8.string -> unit;
   val noHeap = _prim "Trace_noHeap": 'a -> 'a;
   val heapOK = _prim "Trace_heapOK": 'a -> 'a;
+
+  val noTuple = _prim "Trace_noTuple": 'a -> 'a;
 end
 
 structure Weak =

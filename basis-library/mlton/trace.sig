@@ -16,4 +16,8 @@ signature MLTON_TRACE = sig
     (* `heapOK` waives the error introduced by `noHeap`, i.e. `noHeap o heapOK`
     is guaranteed to be a noop that always succeeds. *)
     val heapOK: 'a -> 'a
+
+    (* The call `noTuple (expr)` asserts that `expr` does not correspond to a
+    tuple member access, failing compilation if so. *)
+    val noTuple: 'a -> 'a
 end
