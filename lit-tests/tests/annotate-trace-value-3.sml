@@ -1,7 +1,5 @@
 (* RUN: mpl-compile -keep-pass annotateTraceValue %s %t || true
 
-   Test sourceMarkValue -> staticSourceMarkValue conversion
-
    (Test case for understanding `DeepFlatten`)
 
    Expect static version in `.post`
