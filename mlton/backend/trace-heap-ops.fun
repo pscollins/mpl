@@ -167,8 +167,10 @@ fun maybeElideNoTuple (s: Statement.t): Statement.t option =
 end
 
 fun transform (p: Program.t): Program.t = let
-   val badVars = collectForbiddenHeapVars p
-   val badStmts = filterStatements (p, isForbiddenHeapOp badVars)
+   val badHeapVars = collectForbiddenHeapVars p
+   val badTupleVars = collectForbiddenTupleVars p
+   val badHeapStmts = filterStatements (p, isForbiddenHeapOp badHeapVars)
+   val badTupleStmts = filterStatements (p, isForbiddenTupleOp badTupleVars)
    fun doMaybeElide (preds, s, acc) =
        case (preds, acc) of
            (pred::preds', NONE) => doMaybeElide (preds', s, pred s)
@@ -179,10 +181,15 @@ fun transform (p: Program.t): Program.t = let
    fun doRewrite (p: Program.t) =
        mapStatements (p, maybeElide)
 in
-   case badStmts of
-       [] => doRewrite p
-     | _ => Error.bug (concat ["Found forbidden heap operations: ",
-                               statementsToString badStmts])
+   case (badHeapStmts, badTupleStmts)  of
+       ([], []) => doRewrite p
+     | (_, []) => Error.bug (concat ["Found forbidden heap operations: ",
+                                     statementsToString badHeapStmts])
+     | ([], _) => Error.bug (concat ["Found forbidden tuple operations: ",
+                                     statementsToString badTupleStmts])
+     | (_, _) => Error.bug (concat ["Found forbidden heap+tuple operations: ",
+                                    statementsToString (badHeapStmts @ badTupleStmts)])
+
 end
 
 end

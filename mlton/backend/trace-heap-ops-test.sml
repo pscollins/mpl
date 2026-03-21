@@ -1591,6 +1591,90 @@ local
       val _ = assert (raised, "Forbidden heap op via alias should have raised an error")
    in () end
 
+   (* Test 12: Program with valid Trace_noTuple (should be elided) *)
+   val _ = let
+      val _ = print "Test 12: Program with valid Trace_noTuple\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s1 = traceNoTuple (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val p' = TraceHeapOps.transform p
+      val stmts = TraceHeapOps.filterStatements (p', fn _ => true)
+      val _ = assert (List.length stmts = 1, "Should have 1 statement")
+      val isBind = case stmts of
+                      s :: _ => (case s of Statement.Bind _ => true | _ => false)
+                    | _ => false
+      val _ = assert (isBind, "Trace_noTuple should have been elided to Bind")
+   in () end
+
+   (* Test 13: Program with forbidden Trace_noTuple (should raise error) *)
+   val _ = let
+      val _ = print "Test 13: Program with forbidden Trace_noTuple\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s1 = traceNoTuple (v1, offsetOp)
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val raised = (TraceHeapOps.transform p; false) handle _ => true
+      val _ = assert (raised, "Forbidden tuple op should have raised an error")
+   in () end
+
+   (* Test 14: Program with forbidden Trace_noTuple via alias *)
+   val _ = let
+      val _ = print "Test 14: Program with forbidden Trace_noTuple via alias\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val v3 = newVar ()
+      
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v1, var = #1 v1},
+         offset = Bytes.fromInt 0,
+         ty = #2 v1
+      }
+      (* v2 becomes an alias for a tuple-accessing operand *)
+      val s1 = Statement.Bind { dst = v2, src = offsetOp, pinned = false }
+      (* Trace_noTuple uses v2, which is forbidden *)
+      val s2 = traceNoTuple (v3, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val raised = (TraceHeapOps.transform p; false) handle _ => true
+      val _ = assert (raised, "Forbidden tuple op via alias should have raised an error")
+   in () end
+
    val _ = print "TraceHeapOps.transform tests finished.\n"
 
    val _ = print "Running TraceHeapOps.collectForbiddenHeapVars tests...\n"
