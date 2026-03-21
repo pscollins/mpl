@@ -41,13 +41,13 @@ signature TRACE_HEAP_OPS =
       val foldStatements:
           (Program.t * 'a * (Statement.t * 'a -> 'a)) ->
           'a
- 
+
       (* Converts a list of statements into a string representation. *)
       val statementsToString: Statement.t list -> string
 
       structure VarSet: SET
       sharing type VarSet.Element.t = Var.t
- 
+
       (* Returns `true` if the provided `Operand.t` is "heap-accessing."
 
        For an `Operand` `o`, "heap-accessing" is defined as follows:
@@ -64,6 +64,15 @@ signature TRACE_HEAP_OPS =
       TODO(pscollins): Consider if this check needs to be more aggressive
        *)
       val collectForbiddenHeapVars: Program.t -> VarSet.t
+
+      (* Returns `true` if the provided `Operand.t` is "tuple-accessing."
+
+       For an `Operand` `o`, "tuple-accessing" is defined as follows:
+
+        If `o` is an `Offset`, then `o` is tuple-accessing. No other operands
+        are "tuple-accessing."
+       *)
+      val isForbiddenTupleOperand: Operand.t -> bool
 
       (* Returns `true` if the supplied `Statement.t`, `s` is a "heap operation"
       that is forbidden by a `noHeap` statement.
