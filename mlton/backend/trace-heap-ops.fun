@@ -151,11 +151,17 @@ fun maybeElideNoHeap (s: Statement.t): Statement.t option =
    case s of
        Statement.PrimApp {prim = Prim.Trace_noHeap, ...} =>
        buildBindFromStmt s
-    | _ => NONE
+     | _ => NONE
 
 fun maybeElideHeapOk (s: Statement.t): Statement.t option =
+    case s of
+        Statement.PrimApp {prim = Prim.Trace_heapOK, ...} =>
+        buildBindFromStmt s
+      | _ => NONE
+
+fun maybeElideNoTuple (s: Statement.t): Statement.t option =
    case s of
-       Statement.PrimApp {prim = Prim.Trace_heapOK, ...} =>
+       Statement.PrimApp {prim = Prim.Trace_noTuple, ...} =>
        buildBindFromStmt s
     | _ => NONE
 end

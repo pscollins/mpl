@@ -1136,6 +1136,115 @@ local
 
    val _ = print "TraceHeapOps.maybeElideHeapOk tests finished.\n"
 
+   val _ = print "Running TraceHeapOps.maybeElideNoTuple tests...\n"
+
+   (* Test 1: Trace_noTuple with Var operand *)
+   val _ = let
+      val _ = print "Test 1: Trace_noTuple with Var operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = traceNoTuple (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, pinned}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match Trace_noTuple dst")
+               val _ = assert (not pinned, "Bind should not be pinned")
+               val _ = case src of
+                  Operand.Var {var, ...} => assert (Var.equals (var, #1 v2), "Bind src should match Trace_noTuple arg")
+                | _ => assert (false, "Bind src should be a Var")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 2: Trace_noTuple with Const operand *)
+   val _ = let
+      val _ = print "Test 2: Trace_noTuple with Const operand\n"
+      val v1 = newVar ()
+      val s = traceNoTuple (v1, Operand.bool true)
+      
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, ...}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match Trace_noTuple dst")
+               val _ = case src of
+                  Operand.Const _ => ()
+                | _ => assert (false, "Bind src should be a Const")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 3: Trace_noTuple with Offset operand *)
+   val _ = let
+      val _ = print "Test 3: Trace_noTuple with Offset operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s = traceNoTuple (v1, offsetOp)
+      
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = case res of
+         SOME (Statement.Bind {dst, src, ...}) =>
+            let
+               val _ = assert (Var.equals (#1 dst, #1 v1), "Bind dst should match")
+               val _ = case src of
+                  Operand.Offset _ => ()
+                | _ => assert (false, "Bind src should be an Offset")
+            in () end
+       | _ => assert (false, "Should have returned SOME Bind")
+   in () end
+
+   (* Test 4: Other PrimApp (not Trace_noTuple) *)
+   val _ = let
+      val _ = print "Test 4: Other PrimApp\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = primAdd (v1, v2, v2)
+      
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = assert (Option.isNone res, "Should NOT elide non-Trace_noTuple PrimApp")
+   in () end
+
+   (* Test 5: Move statement *)
+   val _ = let
+      val _ = print "Test 5: Move statement\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      val s = move (v1, v2)
+      
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = assert (Option.isNone res, "Should NOT elide Move statement")
+   in () end
+
+   (* Test 6: Profile statement *)
+   val _ = let
+      val _ = print "Test 6: Profile statement\n"
+      val s = profile ()
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
+   in () end
+
+   (* Test 7: Trace_noTuple without destination should raise Fail *)
+   val _ = let
+      val _ = print "Test 7: Trace_noTuple without destination\n"
+      val v2 = newVar ()
+      val s = Statement.PrimApp {
+         args = Vector.fromList [Operand.Var {ty = #2 v2, var = #1 v2}],
+         dst = NONE,
+         prim = Prim.Trace_noTuple
+      }
+      val raised = (TraceHeapOps.maybeElideNoTuple s; false) handle Fail _ => true
+      val _ = assert (raised, "Should raise Fail for Trace_noTuple without destination")
+   in () end
+
+   val _ = print "TraceHeapOps.maybeElideNoTuple tests finished.\n"
+
    val _ = print "Running TraceHeapOps.statementsToString tests...\n"
 
    val _ = let

@@ -121,6 +121,14 @@ signature TRACE_HEAP_OPS =
        *)
       val maybeElideHeapOk: Statement.t -> Statement.t option
 
+      (* Like above, but for `Trace_noTuple
+
+        PrimApp (args=[arg], dst=(SOME d), prim=Trace_noTuple)
+          -->
+        Bind (dst=d, src=arg, pinned=false)
+       *)
+      val maybeElideNoTuple: Statement.t -> Statement.t option
+
       (* If the provided `Program.t` contains any statements satisfying
       `isForbiddenHeapOp`, raise an error.
 
