@@ -123,6 +123,46 @@ local
 
    val _ = print "TraceHeapOps.isForbiddenHeapOperand tests finished.\n"
 
+   val _ = print "Running TraceHeapOps.isForbiddenTupleOperand tests...\n"
+
+   (* Test 1: Non-tuple-accessing operands *)
+   val _ = let
+      val _ = print "Test 1: Non-tuple-accessing operands\n"
+      val v1 = newVar ()
+      
+      (* Var *)
+      val opVar = Operand.Var {ty = #2 v1, var = #1 v1}
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOperand opVar), "Var should NOT be tuple-accessing")
+      
+      (* Const *)
+      val opConst = Operand.bool true
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOperand opConst), "Const should NOT be tuple-accessing")
+      
+      (* Cast *)
+      val opCast = Operand.Cast (opVar, #2 v1)
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOperand opCast), "Cast should NOT be tuple-accessing")
+
+      (* GCState *)
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOperand Operand.GCState), "GCState should NOT be tuple-accessing")
+
+      (* ObjptrTycon *)
+      val opObjptrTycon = Operand.ObjptrTycon ObjptrTycon.fill0Normal
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOperand opObjptrTycon), "ObjptrTycon should NOT be tuple-accessing")
+   in () end
+
+   (* Test 2: Tuple-accessing operands *)
+   val _ = let
+      val _ = print "Test 2: Tuple-accessing operands\n"
+      val v1 = newVar ()
+      val opVar = Operand.Var {ty = #2 v1, var = #1 v1}
+      
+      (* Offset *)
+      val opOffset = Operand.Offset {base = opVar, offset = Bytes.fromInt 0, ty = #2 v1}
+      val _ = assert (TraceHeapOps.isForbiddenTupleOperand opOffset, "Offset SHOULD be tuple-accessing")
+   in () end
+
+   val _ = print "TraceHeapOps.isForbiddenTupleOperand tests finished.\n"
+
    val _ = print "Running TraceHeapOps.filterStatements tests...\n"
 
    (* Test 1: Empty program *)

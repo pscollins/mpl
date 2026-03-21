@@ -88,8 +88,8 @@ fun isForbiddenHeapOperand (arg: Operand.t): bool =
 
 fun isForbiddenTupleOperand (arg: Operand.t): bool =
     case arg of
-           Operand.Offset _ => false
-         | _ => true
+           Operand.Offset _ => true
+         | _ => false
 
 fun collectForbiddenHeapVars (p: Program.t): VarSet.t = let
    fun updateSet (stmt: Statement.t, set: VarSet.t) =
