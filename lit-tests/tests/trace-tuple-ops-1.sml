@@ -4,7 +4,6 @@
    Test `Trace_noTuple` on components of an (real * real) array` element
 
    Verifies that `DeepFlatten` works as intended
-
  *)
 
 val _ = let

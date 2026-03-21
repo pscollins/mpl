@@ -1,4 +1,4 @@
-(* RUN: mpl-print-c -disable-pass DeepFlatten %s > %t 2>&1 || true
+(* RUN: mpl-print-c -disable-pass deepFlatten %s > %t 2>&1 || true
    RUN: grep 'Found forbidden tuple operations' %t
 
    Test `Trace_noTuple` on components of an (real * real) array` element, with
