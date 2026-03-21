@@ -98,6 +98,9 @@ signature TRACE_HEAP_OPS =
       *)
       val isForbiddenHeapOp: VarSet.t -> Statement.t -> bool
 
+      (* Like above, but for "tuple-acessing" operands. *)
+      val isForbiddenTupleOp: VarSet.t -> Statement.t -> bool
+
       (* If the provided `Statement.t` `s` is a `Trace_noHeap` `PrimApp`,
       returns `SOME s'`, where `s'` is a `Bind` that performs a 'copy'
       equivalent to the  original `PrimApp`, i.e.:

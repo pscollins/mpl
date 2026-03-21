@@ -111,17 +111,29 @@ fun collectForbiddenHeapVars (p: Program.t): VarSet.t =
 fun collectForbiddenTupleVars (p: Program.t): VarSet.t =
     collectVarsMatchingSrcPred isForbiddenTupleOperand p
 
-fun isForbiddenHeapOp (vs: VarSet.t) (s: Statement.t): bool = let
+fun isForbiddenOp (operandPred: Operand.t -> bool, wantPrim: Type.t Prim.t)
+                  (vs: VarSet.t) (s: Statement.t): bool = let
    fun isForbidden arg =
        case arg of
              Operand.Var {var, ...} => VarSet.contains (vs, var)
-           | _ => isForbiddenHeapOperand arg
+           | _ => operandPred arg
 in
     case s of
-        Statement.PrimApp {args, dst, prim = Prim.Trace_noHeap} =>
-        isForbidden (getUniqueArg args)
+        Statement.PrimApp {args, dst, prim} =>
+        if prim = wantPrim then
+           isForbidden (getUniqueArg args)
+        else false
       | _ => false
 end
+
+fun isForbiddenHeapOp (vs: VarSet.t) (s: Statement.t): bool =
+    isForbiddenOp (isForbiddenHeapOperand, Prim.Trace_noHeap)
+                  vs s
+
+fun isForbiddenTupleOp (vs: VarSet.t) (s: Statement.t): bool =
+    isForbiddenOp (isForbiddenTupleOperand, Prim.Trace_noTuple)
+                  vs s
+
 local
    fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =
        case dst of
