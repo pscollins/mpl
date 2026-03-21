@@ -1526,6 +1526,78 @@ local
 
    val _ = print "TraceHeapOps.collectForbiddenHeapVars tests finished.\n"
 
+   val _ = print "Running TraceHeapOps.collectForbiddenTupleVars tests...\n"
+
+   (* Test 1: Empty program *)
+   val _ = let
+      val _ = print "Test 1: Empty program\n"
+      val mainLabel = Label.newNoname ()
+      val mainBlock = mkBlock (mainLabel, [], Transfer.Return (Vector.new0 ()))
+      val mainFunction = mkFunction (Func.newNoname (), mainLabel, [mainBlock])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = mainFunction,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenTupleVars p
+      val _ = assert (TraceHeapOps.VarSet.isEmpty vars, "Empty program should have no forbidden vars")
+   in () end
+
+   (* Test 2: Binds with non-tuple-accessing operands *)
+   val _ = let
+      val _ = print "Test 2: Binds with non-tuple-accessing operands\n"
+      val v1 = newVar ()
+      val s1 = Statement.Bind { dst = v1, src = Operand.bool true, pinned = false }
+      val s2 = Statement.Bind { dst = newVar (), src = Operand.GCState, pinned = false }
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1, s2], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenTupleVars p
+      val _ = assert (TraceHeapOps.VarSet.isEmpty vars, "Non-tuple-accessing binds should not result in forbidden vars")
+   in () end
+
+   (* Test 3: Binds with tuple-accessing operands *)
+   val _ = let
+      val _ = print "Test 3: Binds with tuple-accessing operands\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v1, var = #1 v1},
+         offset = Bytes.fromInt 0,
+         ty = #2 v1
+      }
+      val s1 = Statement.Bind { dst = v2, src = offsetOp, pinned = false }
+      
+      val l1 = Label.newNoname ()
+      val b1 = mkBlock (l1, [s1], Transfer.Return (Vector.new0 ()))
+      val f1 = mkFunction (Func.newNoname (), l1, [b1])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f1,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val vars = TraceHeapOps.collectForbiddenTupleVars p
+      val _ = assert (TraceHeapOps.VarSet.size vars = 1, "Should have 1 forbidden var")
+      val _ = assert (TraceHeapOps.VarSet.contains (vars, #1 v2), "v2 should be forbidden")
+   in () end
+
+   val _ = print "TraceHeapOps.collectForbiddenTupleVars tests finished.\n"
+
    val _ = print "Running TraceHeapOps.VarSet tests...\n"
 
    val _ = let
