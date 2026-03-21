@@ -74,6 +74,15 @@ signature TRACE_HEAP_OPS =
        *)
       val isForbiddenTupleOperand: Operand.t -> bool
 
+
+      (* Collects all `Var.t`s that correspond to "tuple-accessing" values. For
+      now, only covers `Var.t`s that are directly defined as an alias for a
+      "tuple-accessing" `Operand.t` in a `Bind` statement.
+
+      TODO(pscollins): Consider if this check needs to be more aggressive
+       *)
+      val collectForbiddenTupleVars: Program.t -> VarSet.t
+
       (* Returns `true` if the supplied `Statement.t`, `s` is a "heap operation"
       that is forbidden by a `noHeap` statement.
 

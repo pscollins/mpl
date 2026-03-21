@@ -91,17 +91,25 @@ fun isForbiddenTupleOperand (arg: Operand.t): bool =
            Operand.Offset _ => true
          | _ => false
 
-fun collectForbiddenHeapVars (p: Program.t): VarSet.t = let
+
+fun collectVarsMatchingSrcPred (srcPred: Operand.t -> bool)
+                               (p: Program.t): VarSet.t = let
    fun updateSet (stmt: Statement.t, set: VarSet.t) =
        case stmt of
            Statement.Bind {dst = (dstVar, _), src, ...} =>
-           if isForbiddenHeapOperand src then
+           if srcPred src then
               VarSet.add (set, dstVar)
            else set
         |  _ => set
 in
-    foldStatements (p, VarSet.empty, updateSet)
+   foldStatements (p, VarSet.empty, updateSet)
 end
+
+fun collectForbiddenHeapVars (p: Program.t): VarSet.t =
+    collectVarsMatchingSrcPred isForbiddenHeapOperand p
+
+fun collectForbiddenTupleVars (p: Program.t): VarSet.t =
+    collectVarsMatchingSrcPred isForbiddenTupleOperand p
 
 fun isForbiddenHeapOp (vs: VarSet.t) (s: Statement.t): bool = let
    fun isForbidden arg =
