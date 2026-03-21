@@ -37,6 +37,12 @@ local
       prim = Prim.Trace_heapOK
    }
 
+   fun traceNoTuple (dst, arg) = Statement.PrimApp {
+      args = Vector.fromList [arg],
+      dst = SOME dst,
+      prim = Prim.Trace_noTuple
+   }
+
    fun profile () = Statement.Profile (ProfileExp.Enter SourceInfo.unknown)
 
    fun mkBlock (label, stmts, transfer) =
@@ -750,6 +756,90 @@ local
    in () end
 
    val _ = print "TraceHeapOps.isForbiddenHeapOp tests finished.\n"
+
+   val _ = print "Running TraceHeapOps.isForbiddenTupleOp tests...\n"
+
+   (* Test 1: Non-PrimApp statements should return false *)
+   val _ = let
+      val _ = print "Test 1: Non-PrimApp statements\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = move (v1, v2)
+      val s2 = profile ()
+      val s3 = Statement.SetExnStackLocal
+      val s4 = Statement.Bind { dst = v1, pinned = false, src = Operand.Var {ty = #2 v2, var = #1 v2} }
+      
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s1), "Move should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s2), "Profile should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s3), "SetExnStackLocal should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s4), "Bind should not be forbidden")
+   in () end
+
+   (* Test 2: Non-Trace_noTuple PrimApps should return false *)
+   val _ = let
+      val _ = print "Test 2: Non-Trace_noTuple PrimApps\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val s1 = primAdd (v1, v2, v2)
+      val s2 = traceNoHeap (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s1), "Word_add should not be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s2), "Trace_noHeap should not be forbidden")
+   in () end
+
+   (* Test 3: Trace_noTuple with Var, Const, or Cast operand should return false *)
+   val _ = let
+      val _ = print "Test 3: Trace_noTuple with Var, Const, or Cast operand\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      (* Var operand *)
+      val s1 = traceNoTuple (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      (* Const operand *)
+      val s2 = traceNoTuple (v1, Operand.bool true)
+      
+      (* Cast(Var) operand *)
+      val castOp = Operand.Cast (Operand.Var {ty = #2 v2, var = #1 v2}, #2 v2)
+      val s3 = traceNoTuple (v1, castOp)
+
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s1), "Trace_noTuple with Var should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s2), "Trace_noTuple with Const should NOT be forbidden")
+      val _ = assert (not (TraceHeapOps.isForbiddenTupleOp emptySet s3), "Trace_noTuple with Cast should NOT be forbidden")
+   in () end
+
+   (* Test 4: Trace_noTuple with tuple-accessing operands should return true *)
+   val _ = let
+      val _ = print "Test 4: Trace_noTuple with tuple-accessing operands\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      (* Offset operand *)
+      val offsetOp = Operand.Offset {
+         base = Operand.Var {ty = #2 v2, var = #1 v2},
+         offset = Bytes.fromInt 0,
+         ty = #2 v2
+      }
+      val s1 = traceNoTuple (v1, offsetOp)
+
+      val _ = assert (TraceHeapOps.isForbiddenTupleOp emptySet s1, "Trace_noTuple with Offset SHOULD be forbidden")
+   in () end
+
+   (* Test 5: Trace_noTuple with Var operand that is in the VarSet *)
+   val _ = let
+      val _ = print "Test 5: Trace_noTuple with Var operand in VarSet\n"
+      val v1 = newVar ()
+      val v2 = newVar ()
+      
+      val vs = TraceHeapOps.VarSet.add (TraceHeapOps.VarSet.empty, #1 v2)
+      val s1 = traceNoTuple (v1, Operand.Var {ty = #2 v2, var = #1 v2})
+      
+      val _ = assert (TraceHeapOps.isForbiddenTupleOp vs s1, "Trace_noTuple with Var in VarSet SHOULD be forbidden")
+   in () end
+
+   val _ = print "TraceHeapOps.isForbiddenTupleOp tests finished.\n"
 
    val _ = print "Running TraceHeapOps.maybeElideNoHeap tests...\n"
 

@@ -120,7 +120,7 @@ fun isForbiddenOp (operandPred: Operand.t -> bool, wantPrim: Type.t Prim.t)
 in
     case s of
         Statement.PrimApp {args, dst, prim} =>
-        if prim = wantPrim then
+        if Prim.equals (prim, wantPrim) then
            isForbidden (getUniqueArg args)
         else false
       | _ => false
