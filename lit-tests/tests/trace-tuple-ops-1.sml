@@ -13,7 +13,7 @@ val _ = let
     val x = #1 p
     val y = #2 p
     val x' = MLton.Trace.noTuple x
-    val y' = MLton.Trace.noTiple y
+    val y' = MLton.Trace.noTuple y
 in
     print (Real.toString (x' + y'))
 end
