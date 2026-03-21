@@ -169,10 +169,13 @@ end
 fun transform (p: Program.t): Program.t = let
    val badVars = collectForbiddenHeapVars p
    val badStmts = filterStatements (p, isForbiddenHeapOp badVars)
-   fun maybeElide s =
-       case maybeElideNoHeap s of
-           NONE => maybeElideHeapOk s
-         | res => res
+   fun doMaybeElide (preds, s, acc) =
+       case (preds, acc) of
+           (pred::preds', NONE) => doMaybeElide (preds', s, pred s)
+         | _ => acc
+   fun maybeElide (s: Statement.t): Statement.t option =
+       doMaybeElide ([maybeElideNoHeap, maybeElideHeapOk, maybeElideNoTuple],
+                     s, NONE)
    fun doRewrite (p: Program.t) =
        mapStatements (p, maybeElide)
 in
