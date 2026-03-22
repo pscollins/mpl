@@ -502,17 +502,25 @@ structure Value =
           *)
          val notEmpty = not (Prod.isEmpty args)
          val isImmut = Prod.allAreImmutable args
-         val badCon = 
+         val badCon =
              (case con of
                   ObjectCon.Con _ => false
                 | ObjectCon.Sequence => false
                 | ObjectCon.Tuple => true)
+         val conCase =
+             (case con of
+                  ObjectCon.Con _ => "isCon"
+                | ObjectCon.Sequence => "isSeq"
+                | ObjectCon.Tuple => "isTuple")
          val _ = print (String.concat ["mayFlatten: notEmpty=",
                                        Bool.toString notEmpty,
                                        " isImmut=",
                                        Bool.toString isImmut,
                                        " badCon=",
-                                       Bool.toString badCon, "\n"])
+                                       Bool.toString badCon,
+                                       " conCase=",
+                                       conCase,
+                                       "\n"])
       in
          notEmpty andalso isImmut andalso badCon
       end
