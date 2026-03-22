@@ -493,19 +493,29 @@ structure Value =
           coerce {from = e, to = e'})
 
       (* Heuristics for deciding whether an object can be flattened. *)
-      fun mayFlatten {args, con}: bool =
+      fun mayFlatten {args, con}: bool = let
          (* Don't flatten constructors, since they are part of a sum type.
           * Don't flatten unit (empty args).
           * Don't flatten sequences (handled elsewhere).
           * Don't flatten objects with mutable fields, since identity/sharing
           * must be preserved.
           *)
-         not (Prod.isEmpty args)
-         andalso Prod.allAreImmutable args
-         andalso (case con of
-                     ObjectCon.Con _ => false
-                   | ObjectCon.Sequence => false
-                   | ObjectCon.Tuple => true)
+         val notEmpty = not (Prod.isEmpty args)
+         val isImmut = Prod.allAreImmutable args
+         val badCon = 
+             (case con of
+                  ObjectCon.Con _ => false
+                | ObjectCon.Sequence => false
+                | ObjectCon.Tuple => true)
+         val _ = print (String.concat ["mayFlatten: notEmpty=",
+                                       Bool.toString notEmpty,
+                                       " isImmut=",
+                                       Bool.toString isImmut,
+                                       " badCon=",
+                                       Bool.toString badCon, "\n"])
+      in
+         notEmpty andalso isImmut andalso badCon
+      end
 
       fun objectFields {args, con} =
          let
