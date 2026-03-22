@@ -6,6 +6,23 @@
  * See the file MLton-LICENSE for details.
  *)
 
+(*
+ * DeepFlatten implements a compiler pass that recursively flattens nested
+ * immutable objects (tuples and records) into their parent objects.
+ *
+ * For example, if we have a tuple (int, (real, bool)), deep flattening
+ * might transform it into a single flat object (int, real, bool).
+ * This reduces heap allocations and indirection.
+ *
+ * The pass consists of two main phases:
+ * 1. Analysis: A dataflow-style analysis that determines which objects
+ *    can be safely and profitably flattened. It uses a unification-based
+ *    approach to ensure consistency across the program.
+ * 2. Transformation: Rewrites the SSA2 program to use the flattened
+ *    representations, updating Select, Update, Object, and Sequence
+ *    expressions.
+ *)
+
 functor DeepFlatten (S: SSA2_TRANSFORM_STRUCTS): SSA2_TRANSFORM =
 struct
 
@@ -17,6 +34,10 @@ datatype z = datatype Transfer.t
 
 structure Tree = Tree (structure Seq = Prod)
 
+(* TypeTree represents the flattened structure of a type.
+ * A TypeTree is either 'Flat' (meaning its components are pulled up into
+ * the parent) or 'NotFlat' (meaning it remains a distinct object).
+ *)
 structure TypeTree =
    struct
       datatype t = datatype Tree.t
@@ -48,6 +69,9 @@ structure TypeTree =
           | NotFlat _ => false
    end
 
+(* VarTree maps a variable to a tree of variables that represent its
+ * flattened components.
+ *)
 structure VarTree =
    struct
       open TypeTree
@@ -60,6 +84,9 @@ structure VarTree =
 
       val fromTypeTree: TypeTree.t -> t = fn t => t
 
+      (* Collects all variables that serve as "roots" (unflattened parts)
+       * in this VarTree.
+       *)
       val foldRoots: t * 'a * (Var.t * 'a -> 'a) -> 'a =
          fn (t, a, f) =>
          let
@@ -91,12 +118,22 @@ structure VarTree =
             T (info, Prod.map (ts, dropVars))
          end
 
+      (* Generates Select statements to fill in the variable roots of a VarTree
+       * from a base object and offset.
+       *
+       * This is used when a variable is projected from a flattened field
+       * but its own components are not (yet) available as variables.
+       *)
       fun fillInRoots (t: t, {base: Var.t Base.t, offset: int, readBarrier})
          : t * Statement.t list =
          let
             fun loop (t as T (info, ts), offset, ac) =
                case info of
                   Flat =>
+                     (* Recurse into children of a flattened object.
+                      * The offset remains the same because the children
+                      * are mapped directly onto the parent's layout.
+                      *)
                      let
                         val (ts, (offset, ac)) =
                            Vector.mapAndFold
@@ -112,6 +149,10 @@ structure VarTree =
                         (T (Flat, Prod.make ts), offset, ac)
                      end
                 | NotFlat {ty, var} =>
+                     (* Found a root (an unflattened object or primitive).
+                      * If it doesn't have a variable name yet, create one
+                      * and generate the Select statement.
+                      *)
                      let
                         val (t, ac) =
                            case var of
@@ -129,6 +170,7 @@ structure VarTree =
                                  end
                             | SOME _ => (t, ac)
                      in
+                        (* Move to the next field in the physical layout. *)
                         (t, offset + 1, ac)
                      end
             val (t, _, ac) = loop (t, offset, [])
@@ -147,6 +189,11 @@ structure VarTree =
          fillInRoots
    end
 
+(* flatten and flattensAt handle the recursive logic of mapping a VarTree
+ * from one layout (represented by VarTree.t) to another (represented by TypeTree.t).
+ * This is used when values are passed between variables with different
+ * flattening decisions (e.g., at function calls or assignments).
+ *)
 fun flatten {base: Var.t Base.t option,
              from: VarTree.t,
              offset: int,
@@ -156,6 +203,9 @@ fun flatten {base: Var.t Base.t option,
    in
       case from of
          VarTree.Flat =>
+            (* Source is already flat. If the target is also flat,
+             * we recursively map the components.
+             *)
             if TypeTree.isFlat to
                then flattensAt {base = base,
                                 froms = fs,
@@ -163,6 +213,10 @@ fun flatten {base: Var.t Base.t option,
                                 tos = Tree.children to}
             else Error.bug "DeepFlatten.flatten: cannot flatten from Flat to NotFlat"
        | VarTree.NotFlat {ty, var} =>
+            (* Source is not flat (it's a single object variable).
+             * We might need to project it from a base (if it doesn't have a name),
+             * or if the target is flat, we decompose this object.
+             *)
             let
                val (var, ss) =
                   case var of
@@ -185,6 +239,9 @@ fun flatten {base: Var.t Base.t option,
                val (r, ss) =
                   if TypeTree.isFlat to
                      then
+                        (* Target is flat, so decompose this object variable
+                         * by selecting its fields.
+                         *)
                         let
                            val (_, r, ss') =
                               flattensAt {base = SOME (Base.Object var),
@@ -198,6 +255,9 @@ fun flatten {base: Var.t Base.t option,
                                 fs),
                         ss)
             in
+               (* Increment offset by 1 because this was one object/primitive
+                * in the physical layout of the parent.
+                *)
                ({offset = 1 + offset}, r, ss)
             end
    end
@@ -266,6 +326,11 @@ structure Flat =
 
 datatype z = datatype Flat.t
 
+(* Value represents the analysis domain.
+ * Ground: A primitive or unflattened type.
+ * Object: A potentially flattened object.
+ * Weak: A weak pointer.
+ *)
 structure Value =
    struct
       datatype t =
@@ -309,6 +374,10 @@ structure Value =
       val traceUnify =
          Trace.trace2 ("DeepFlatten.Value.unify", layout, layout, Unit.layout)
 
+      (* Unify two values, ensuring they have the same flattening decision.
+       * If one must be NotFlat, then the other (and all equated objects)
+       * must also be NotFlat.
+       *)
       val rec unify: t * t -> unit =
          fn arg =>
          traceUnify
@@ -324,8 +393,13 @@ structure Value =
                        fn (z as {args = a, coercedFrom = c, flat = f, ...},
                            z' as {args = a', coercedFrom = c', flat = f', ...}) =>
                        let
+                          (* Recursively unify children. *)
                           val () = unifyProd (a, a')
                        in
+                          (* If either side was previously marked Flat but
+                           * the other is NotFlat, we must trigger 'dontFlatten'
+                           * to propagate the NotFlat decision.
+                           *)
                           case (!f, !f') of
                              (Flat, Flat) =>
                                 (c := AppendList.append (!c', !c); z)
@@ -348,6 +422,8 @@ structure Value =
          Vector.foreach2
          (Prod.dest p, Prod.dest p',
           fn ({elt = e, ...}, {elt = e', ...}) => unify (e, e'))
+      
+      (* Explicitly mark a value as NotFlat and propagate this decision. *)
       and dontFlatten: t -> unit =
          fn v =>
          case v of
@@ -368,6 +444,12 @@ structure Value =
                end
           | _ => ()
 
+      (* Coerce one value to another. If the target is Flat, then the source
+       * must be compatible with being flattened.
+       *
+       * Coercion is weaker than unification: if 'to' is NotFlat, 'from'
+       * can still be Flat. But if 'to' is Flat, 'from' MUST also be Flat.
+       *)
       val rec coerce =
          fn arg as {from, to} =>
          traceCoerce
@@ -383,13 +465,24 @@ structure Value =
                     let
                        val {args = a, con, ...} = Equatable.value e
                     in
+                       (* Sequences and mutable objects cannot be flattened. *)
                        if Prod.someIsMutable a orelse ObjectCon.isSequence con
                           then unify (from, to)
                        else
                           case !f' of
-                             Flat => (AppendList.push (c', from)
-                                      ; coerceProd {from = a, to = a'})
-                           | NotFlat => unify (from, to)
+                             Flat => 
+                                (* Target is flat, so source must be too.
+                                 * We record the relationship in coercedFrom
+                                 * so that if source later becomes NotFlat,
+                                 * target can also be marked NotFlat.
+                                 *)
+                                (AppendList.push (c', from)
+                                 ; coerceProd {from = a, to = a'})
+                           | NotFlat => 
+                                (* Target is not flat, so source doesn't have
+                                 * to be. Just unify to be safe.
+                                 *)
+                                unify (from, to)
                     end)
            | (Weak _, Weak _) => unify (from, to)
            | _ => Error.bug "DeepFlatten.coerce: strange") arg
@@ -399,13 +492,13 @@ structure Value =
          (Prod.dest p, Prod.dest p', fn ({elt = e, ...}, {elt = e', ...}) =>
           coerce {from = e, to = e'})
 
+      (* Heuristics for deciding whether an object can be flattened. *)
       fun mayFlatten {args, con}: bool =
          (* Don't flatten constructors, since they are part of a sum type.
-          * Don't flatten unit.
-          * Don't flatten sequences (of course their components can be
-          * flattened).
-          * Don't flatten objects with mutable fields, since sharing must be
-          * preserved.
+          * Don't flatten unit (empty args).
+          * Don't flatten sequences (handled elsewhere).
+          * Don't flatten objects with mutable fields, since identity/sharing
+          * must be preserved.
           *)
          not (Prod.isEmpty args)
          andalso Prod.allAreImmutable args
@@ -484,6 +577,7 @@ structure Value =
                       layout,
                       fn p => Prod.layout (p, Type.layout))
 
+      (* Computes the final TypeTree after all unification and coercion. *)
       fun finalTree (v: t): TypeTree.t =
          let
             fun notFlat (): TypeTree.info =
@@ -503,6 +597,10 @@ structure Value =
                       Tree.T (info, Prod.map (args, finalTree))
                    end)
          end
+      
+      (* Computes the final Type.t of a value. If flattened, this will be
+       * the consolidated type.
+       *)
       and finalType arg: Type.t =
          traceFinalType
          (fn v =>
@@ -515,6 +613,8 @@ structure Value =
                    Ref.memoize (r, fn () => Prod.elt (finalTypes v, 0))
                 end
            | Weak {arg, ...} => Type.weak (finalType arg)) arg
+      
+      (* Computes the product of types for a potentially flattened object. *)
       and finalTypes arg: Type.t Prod.t =
          traceFinalTypes
          (fn v =>
@@ -553,6 +653,7 @@ structure Object =
       fun select ({args, ...}: t, offset): Value.t =
          Prod.elt (args, offset)
 
+      (* Computes the final offsets of fields in a flattened object. *)
       fun finalOffsets ({args, finalOffsets = r, ...}: t): int vector =
          Ref.memoize
          (r, fn () =>
@@ -566,8 +667,12 @@ structure Object =
          Vector.sub (finalOffsets object, offset)
    end
 
+(* The main entry point for the transformation. *)
 fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
    let
+      (* Analysis phase: use the standard SSA analysis framework to propagate
+       * flattening decisions through the program.
+       *)
       val {get = conValue: Con.t -> Value.t option ref, ...} =
          Property.get (Con.plist, Property.initFun (fn _ => ref NONE))
       val conValue =
@@ -701,6 +806,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
 
       val {get = sporkDataValue: Type.t -> Value.t, ...} =
          Property.get (Type.plist, Property.initFun typeValue)
+      
+      (* Primitives have specific rules for whether they allow flattening
+       * of their arguments.
+       *)
       fun primApp {args, prim, resultVar = _, resultType} =
          let
             fun weak v =
@@ -830,7 +939,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
          in
             v
          end
-      val {func, value = varValue, ...} =
+      
+      (* Perform the whole-program analysis. *)
+      val {func, value= varValue: Var.t -> Value.t, ...} =
+      (* val {get = varValue: Var.t -> Value.t, func, ...} = *)
          analyze {base = base,
                   coerce = coerce,
                   const = const,
@@ -847,7 +959,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                   sequence = sequence,
                   update = update,
                   useFromTypeOnBinds = false}
-      (* Don't flatten outermost part of formal parameters. *)
+      
+      (* Don't flatten outermost part of formal parameters, as they must match
+       * the expected calling convention.
+       *)
       fun dontFlattenFormals (xts: (Var.t * Type.t) vector): unit =
          Vector.foreach (xts, fn (x, _) => Value.dontFlatten (varValue x))
       val () =
@@ -880,7 +995,8 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
           in
              ()
           end)
-      (* Transform the program. *)
+      
+      (* Transformation phase: rewrite the program based on analysis results. *)
       val datatypes =
          Vector.map
          (datatypes, fn Datatype.T {cons, tycon} =>
@@ -935,6 +1051,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                      NONE => bug ()
                    | SOME y => y
          end
+      
+      (* Transforms a Bind expression. If the result is flattened, it might
+       * generate multiple statements or none (if the components are handled).
+       *)
       fun transformBind {exp, ty, var}: Statement.t list =
          let
             fun simpleTree () = Option.app (var, simpleVarTree)
@@ -966,6 +1086,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                                NONE => simple ()
                              | SOME {args = expects, flat, ...} =>
                                   let
+                                     (* Recursively transform components. *)
                                      val z =
                                         Vector.map2
                                         (args, Prod.dest expects,
@@ -987,8 +1108,17 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                                                             Prod.make vts))
                                   in
                                      case !flat of
-                                        Flat => (set VarTree.Flat; none ())
+                                        Flat => 
+                                           (* If target object is Flat, we don't
+                                            * generate an Object expression.
+                                            * We just update the VarTree mapping.
+                                            *)
+                                           (set VarTree.Flat; none ())
                                       | NotFlat =>
+                                           (* Target is NotFlat, so generate
+                                            * a physical Object expression
+                                            * with (potentially) flattened fields.
+                                            *)
                                            let
                                               val ty = Value.finalType v
                                               val () =
@@ -1114,6 +1244,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                   (Option.app (var, fn y => setVarTree (y, varTree x))
                    ; none ())
          end
+      
+      (* Transforms a statement, potentially expanding a single Update into
+       * multiple updates if the object being updated is flattened.
+       *)
       fun transformStatement (s: Statement.t): Statement.t list =
          let
             fun simple () = [Statement.replaceUses (s, replaceVar)]
