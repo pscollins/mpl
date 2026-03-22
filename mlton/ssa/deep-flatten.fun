@@ -514,9 +514,9 @@ structure Value =
              *)
             val _  =
                if (case con  of
-                      ObjectCon.Con _ => true
-                    | ObjectCon.Tuple => true
-                    | ObjectCon.Sequence => false)
+                       ObjectCon.Con _ => (print "NO: CON!\n"; true)
+                     | ObjectCon.Tuple => (print "YES: TUPLE!\n"; true)
+                     | ObjectCon.Sequence => (print "NO: SEQ!\n"; false))
                   then Vector.foreach (Prod.dest args, fn {elt, isMutable} =>
                                        if isMutable
                                           then ()
@@ -524,8 +524,8 @@ structure Value =
                else ()
             val flat =
                if mayFlatten {args = args, con = con}
-                  then Flat.Flat
-               else Flat.NotFlat
+               then (print "MayFlatten: YES!\n"; Flat.Flat)
+               else (print "MayFlatten: NO!\n"; Flat.NotFlat)
          in
             {args = args,
              coercedFrom = ref AppendList.empty,
