@@ -1028,10 +1028,11 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                        Var.layout, VarTree.layout, Unit.layout)
          setVarTree
       fun simpleVarTree (x: Var.t): unit =
-         setVarTree
-         (x, VarTree.labelRoot (VarTree.fromTypeTree
-                                (Value.finalTree (varValue x)),
-                                x))
+         (print (concat ["simpleVarTree: ", Var.toString x, "\n"])
+          ; setVarTree
+            (x, VarTree.labelRoot (VarTree.fromTypeTree
+                                   (Value.finalTree (varValue x)),
+                                   x)))
       fun transformFormals xts =
          Vector.map (xts, fn (x, _) =>
                      let
@@ -1249,81 +1250,85 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
        * multiple updates if the object being updated is flattened.
        *)
       fun transformStatement (s: Statement.t): Statement.t list =
-         let
-            fun simple () = [Statement.replaceUses (s, replaceVar)]
-         in
-            case s of
-               Bind b => transformBind b
-             | Profile _ => simple ()
-             | Update {base, offset, value, writeBarrier} =>
-                  let
-                     val baseVar =
-                        case base of
-                           Base.Object x => x
-                         | Base.SequenceSub {sequence = x, ...} => x
-                  in
-                     case Value.deObject (varValue baseVar) of
-                        NONE => simple ()
-                      | SOME object =>
-                           let
-                              val ss = ref []
-                              val child =
-                                 Value.finalTree (Object.select (object, offset))
-                              val offset = Object.finalOffset (object, offset)
-                              val base = Base.map (base, replaceVar)
-                              val us =
-                                 if not (TypeTree.isFlat child)
-                                    then [Update {base = base,
-                                                  offset = offset,
-                                                  value = replaceVar value,
-                                                  writeBarrier = writeBarrier}]
-                                 else
-                                    let
-                                       val (vt, ss') =
-                                          coerceTree {from = varTree value,
-                                                      to = child}
-                                       val () = ss := ss' @ (!ss)
-                                       val r = ref offset
-                                       val us = ref []
-                                       val () =
-                                          VarTree.foreachRoot
-                                          (vt, fn var =>
-                                           let
-                                              val offset = !r
-                                              val () = r := 1 + !r
-                                           in
-                                              List.push (us,
-                                                         Update {base = base,
-                                                                 offset = offset,
-                                                                 value = var,
-                                                                 writeBarrier = writeBarrier})
-                                           end)
-                                    in
-                                       !us
-                                    end
-                           in
-                              !ss @ us
-                           end
-                  end
-         end
+         (print (concat ["transformStatement: ", Layout.toString (Statement.layout s), "\n"])
+          ; let
+               fun simple () = [Statement.replaceUses (s, replaceVar)]
+            in
+               case s of
+                  Bind b =>  transformBind b
+                | Profile _ => simple ()
+                | Update {base, offset, value, writeBarrier} =>
+                     let
+                        val baseVar =
+                           case base of
+                              Base.Object x => x
+                            | Base.SequenceSub {sequence = x, ...} => x
+                     in
+                        case Value.deObject (varValue baseVar) of
+                           NONE => simple ()
+                         | SOME object =>
+                              let
+                                 val ss = ref []
+                                 val child =
+                                    Value.finalTree (Object.select (object, offset))
+                                 val offset = Object.finalOffset (object, offset)
+                                 val base = Base.map (base, replaceVar)
+                                 val us =
+                                    if not (TypeTree.isFlat child)
+                                       then [Update {base = base,
+                                                     offset = offset,
+                                                     value = replaceVar value,
+                                                     writeBarrier = writeBarrier}]
+                                    else
+                                       let
+                                          val (vt, ss') =
+                                             coerceTree {from = varTree value,
+                                                         to = child}
+                                          val () = ss := ss' @ (!ss)
+                                          val r = ref offset
+                                          val us = ref []
+                                          val () =
+                                             VarTree.foreachRoot
+                                             (vt, fn var =>
+                                              let
+                                                 val offset = !r
+                                                 val () = r := 1 + !r
+                                              in
+                                                 List.push (us,
+                                                            Update {base = base,
+                                                                    offset = offset,
+                                                                    value = var,
+                                                                    writeBarrier = writeBarrier})
+                                              end)
+                                       in
+                                          !us
+                                       end
+                              in
+                                 !ss @ us
+                              end
+                     end
+             end)
       val transformStatement =
-         Trace.trace ("DeepFlatten.transformStatement",
+          Trace.trace ("DeepFlatten.transformStatement",
                       Statement.layout,
                       List.layout Statement.layout)
          transformStatement
       fun transformStatements ss =
          Vector.concatV
          (Vector.map (ss, Vector.fromList o transformStatement))
-      fun transformTransfer t = Transfer.replaceVar (t, replaceVar)
+      fun transformTransfer t =
+         (print (concat ["transFormTransfer: ", Layout.toString (Transfer.layout t), "\n"])
+          ; Transfer.replaceVar (t, replaceVar))
       val transformTransfer =
-         Trace.trace ("DeepFlatten.transformTransfer",
+          Trace.trace ("DeepFlatten.transformTransfer",
                       Transfer.layout, Transfer.layout)
          transformTransfer
-      fun transformBlock (Block.T {args, label, statements, transfer}) =
-         Block.T {args = transformFormals args,
-                  label = label,
-                  statements = transformStatements statements,
-                  transfer = transformTransfer transfer}
+      fun transformBlock (b as Block.T {args, label, statements, transfer}) =
+         (print (concat ["transFormBlock: ", Layout.toString (Block.layout b), "\n"])
+          ; Block.T {args = transformFormals args,
+                     label = label,
+                     statements = transformStatements statements,
+                     transfer = transformTransfer transfer})
       fun transformFunction (f: Function.t): Function.t =
           let
              val {args, inline, name, start, ...} = Function.dest f
