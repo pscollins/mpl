@@ -673,6 +673,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
       (* Analysis phase: use the standard SSA analysis framework to propagate
        * flattening decisions through the program.
        *)
+      val _ = print "========= BEGIN DEEP FLATTEN\n"
       val {get = conValue: Con.t -> Value.t option ref, ...} =
          Property.get (Con.plist, Property.initFun (fn _ => ref NONE))
       val conValue =
@@ -1358,8 +1359,10 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                     globals = globals,
                     main = main}
       val () = Program.clear program
+      val result = shrink program
+      val _ = print "========= END DEEP FLATTEN\n"
    in
-      shrink program
+      result
    end
 
 end
