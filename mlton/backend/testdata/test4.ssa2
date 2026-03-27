@@ -1,0 +1,7 @@
+(* Datatypes: *) 
+
+(* Globals: *) val g1: word64 = 0x7B:w64 
+
+(* Functions: *) fun main4 (): {returns = Some (), raises = None} = L3 () block L3 () return () 
+
+(* Main: *) main4

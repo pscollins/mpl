@@ -1,0 +1,11 @@
+(* Datatypes: *) 
+
+(* Globals: *) 
+
+(* Functions: *) 
+fun main2 (): {returns = Some (), raises = None} = L1 () 
+block L1 () 
+  val v1: intInf = 42:ii 
+  return () 
+
+(* Main: *) main2

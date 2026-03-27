@@ -59,6 +59,7 @@ local
       }
       
       val s1 = layoutToString p1
+      val _ = (print "Layout for Test 1:\n"; print s1; print "\n")
       val p1' = ParseSsa2.parseString s1
       val s1' = layoutToString p1'
       
@@ -106,11 +107,113 @@ local
       }
       
       val s2 = layoutToString p2
+      val _ = (print "Layout for Test 2:\n"; print s2; print "\n")
       val p2' = ParseSsa2.parseString s2
       val s2' = layoutToString p2'
       
       val _ = assertEqual (s2, s2', "Round-trip layout mismatch in Test 2")
       val _ = print "Test 2 passed\n"
+   in () end
+
+   (* Test 3: Program with datatypes *)
+   val _ = let
+      val _ = print "Test 3: Program with datatypes\n"
+      val mainFunc = Func.fromString "main3"
+      val mainLabel = Label.fromString "L2"
+      
+      val tycon = Tycon.fromString "list"
+      val conNil = Con.fromString "Nil"
+      val conCons = Con.fromString "Cons"
+      
+      val dt = Datatype.T {
+         cons = Vector.fromList [
+            {args = Prod.empty (), con = conNil},
+            {args = Prod.make (Vector.fromList [
+               {elt = Type.intInf, isMutable = false},
+               {elt = Type.datatypee tycon, isMutable = false}
+            ]), con = conCons}
+         ],
+         tycon = tycon
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      
+      val p3 = Program.T {
+         datatypes = Vector.fromList [dt],
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val s3 = layoutToString p3
+      val _ = (print "Layout for Test 3:\n"; print s3; print "\n")
+      val p3' = ParseSsa2.parseString s3
+      val s3' = layoutToString p3'
+      
+      val _ = assertEqual (s3, s3', "Round-trip layout mismatch in Test 3")
+      val _ = print "Test 3 passed\n"
+   in () end
+
+   (* Test 4: Program with globals *)
+   val _ = let
+      val _ = print "Test 4: Program with globals\n"
+      val mainFunc = Func.fromString "main4"
+      val mainLabel = Label.fromString "L3"
+      
+      val varG = Var.fromString "g1"
+      val tyG = Type.word WordSize.word64
+      
+      val global1 = Statement.Bind {
+         exp = Exp.Const (Const.Word (WordX.fromInt (123, WordSize.word64))),
+         ty = tyG,
+         var = SOME varG
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      
+      val p4 = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.fromList [global1],
+         main = mainFunc
+      }
+      
+      val s4 = layoutToString p4
+      val p4' = ParseSsa2.parseString s4
+      val s4' = layoutToString p4'
+      
+      val _ = assertEqual (s4, s4', "Round-trip layout mismatch in Test 4")
+      val _ = print "Test 4 passed\n"
    in () end
 
    val _ = print "All ParseSsa2 tests passed!\n"

@@ -1,0 +1,7 @@
+(* Datatypes: *) datatype list = () Nil | (intInf, list) Cons 
+
+(* Globals: *) 
+
+(* Functions: *) fun main3 (): {returns = Some (), raises = None} = L2 () block L2 () return () 
+
+(* Main: *) main3

@@ -1,0 +1,7 @@
+(* Datatypes: *) 
+
+(* Globals: *) 
+
+(* Functions: *) fun main (): {returns = Some (), raises = None} = L0 () block L0 () return () 
+
+(* Main: *) main
