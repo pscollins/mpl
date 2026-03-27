@@ -7,7 +7,8 @@
 set -e
 set -x
 SCRIPT_DIR=$(dirname $(realpath $0))
-MPL=${SCRIPT_DIR}/../../build/bin/mlton-mpl.debug
+# MPL=${SCRIPT_DIR}/../../build/bin/mlton-mpl.debug
+MPL=${SCRIPT_DIR}/../../build/bin/mpl
 OUTDIR=$(mktemp -d)
 
 # Check if OVERRIDE_OUTDIR is provided and non-empty
