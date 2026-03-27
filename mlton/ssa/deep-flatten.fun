@@ -34,6 +34,9 @@ datatype z = datatype Transfer.t
 
 structure Tree = Tree (structure Seq = Prod)
 
+fun doPrint x = x
+(* fun doPrint x = print x *)
+
 (* TypeTree represents the flattened structure of a type.
  * A TypeTree is either 'Flat' (meaning its components are pulled up into
  * the parent) or 'NotFlat' (meaning it remains a distinct object).
@@ -512,7 +515,7 @@ structure Value =
                   ObjectCon.Con _ => "isCon"
                 | ObjectCon.Sequence => "isSeq"
                 | ObjectCon.Tuple => "isTuple")
-         val _ = print (String.concat ["mayFlatten: notEmpty=",
+         val _ = doPrint (String.concat ["mayFlatten: notEmpty=",
                                        Bool.toString notEmpty,
                                        " isImmut=",
                                        Bool.toString isImmut,
@@ -532,9 +535,9 @@ structure Value =
              *)
             val _  =
                if (case con  of
-                       ObjectCon.Con _ => (print "NO: CON!\n"; true)
-                     | ObjectCon.Tuple => (print "YES: TUPLE!\n"; true)
-                     | ObjectCon.Sequence => (print "NO: SEQ!\n"; false))
+                       ObjectCon.Con _ => (doPrint "NO: CON!\n"; true)
+                     | ObjectCon.Tuple => (doPrint "YES: TUPLE!\n"; true)
+                     | ObjectCon.Sequence => (doPrint "NO: SEQ!\n"; false))
                   then Vector.foreach (Prod.dest args, fn {elt, isMutable} =>
                                        if isMutable
                                           then ()
@@ -542,8 +545,8 @@ structure Value =
                else ()
             val flat =
                if mayFlatten {args = args, con = con}
-               then (print "MayFlatten: YES!\n"; Flat.Flat)
-               else (print "MayFlatten: NO!\n"; Flat.NotFlat)
+               then (doPrint "MayFlatten: YES!\n"; Flat.Flat)
+               else (doPrint "MayFlatten: NO!\n"; Flat.NotFlat)
          in
             {args = args,
              coercedFrom = ref AppendList.empty,
@@ -691,7 +694,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
       (* Analysis phase: use the standard SSA analysis framework to propagate
        * flattening decisions through the program.
        *)
-      val _ = print "========= BEGIN DEEP FLATTEN\n"
+      val _ = doPrint "========= BEGIN DEEP FLATTEN\n"
       val {get = conValue: Con.t -> Value.t option ref, ...} =
          Property.get (Con.plist, Property.initFun (fn _ => ref NONE))
       val conValue =
@@ -1047,7 +1050,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                        Var.layout, VarTree.layout, Unit.layout)
          setVarTree
       fun simpleVarTree (x: Var.t): unit =
-         (print (concat ["simpleVarTree: ", Var.toString x, "\n"])
+         (doPrint (concat ["simpleVarTree: ", Var.toString x, "\n"])
           ; setVarTree
             (x, VarTree.labelRoot (VarTree.fromTypeTree
                                    (Value.finalTree (varValue x)),
@@ -1269,7 +1272,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
        * multiple updates if the object being updated is flattened.
        *)
       fun transformStatement (s: Statement.t): Statement.t list =
-         (print (concat ["transformStatement: ", Layout.toString (Statement.layout s), "\n"])
+         (doPrint (concat ["transformStatement: ", Layout.toString (Statement.layout s), "\n"])
           ; let
                fun simple () = [Statement.replaceUses (s, replaceVar)]
             in
@@ -1336,14 +1339,14 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
          Vector.concatV
          (Vector.map (ss, Vector.fromList o transformStatement))
       fun transformTransfer t =
-         (print (concat ["transFormTransfer: ", Layout.toString (Transfer.layout t), "\n"])
+         (doPrint (concat ["transFormTransfer: ", Layout.toString (Transfer.layout t), "\n"])
           ; Transfer.replaceVar (t, replaceVar))
       val transformTransfer =
           Trace.trace ("DeepFlatten.transformTransfer",
                       Transfer.layout, Transfer.layout)
          transformTransfer
       fun transformBlock (b as Block.T {args, label, statements, transfer}) =
-         (print (concat ["transFormBlock: ", Layout.toString (Block.layout b), "\n"])
+         (doPrint (concat ["transFormBlock: ", Layout.toString (Block.layout b), "\n"])
           ; Block.T {args = transformFormals args,
                      label = label,
                      statements = transformStatements statements,
@@ -1378,7 +1381,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                     main = main}
       val () = Program.clear program
       val result = shrink program
-      val _ = print "========= END DEEP FLATTEN\n"
+      val _ = doPrint "========= END DEEP FLATTEN\n"
    in
       result
    end
