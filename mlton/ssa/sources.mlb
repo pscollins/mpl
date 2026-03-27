@@ -94,8 +94,10 @@ local
 in
    signature SSA
    signature SSA2
+   signature SSA_TREE2
 
    functor Ssa
    functor Ssa2
+   functor SsaTree2
    functor SsaToSsa2
 end
