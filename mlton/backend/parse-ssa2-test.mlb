@@ -4,6 +4,6 @@ local
    ../atoms/sources.mlb
    ../ssa/sources.mlb
    sources.mlb
-   parse-ssa-test.sml
+   parse-ssa2-test.sml
 in
 end
