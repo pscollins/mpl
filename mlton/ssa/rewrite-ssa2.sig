@@ -12,10 +12,17 @@ sig
 
   (*  *)
 
-  (* val extractUses: Statement.t -> Var.t list *)
+   (* Returns a set of all `Var.t`s defined by this statement *)
+   val extractUses: Statement.t -> VarSet.t
 
-  (* val extractDefs: Statement.t -> Var.t list *)
+   (* Returns a set of all `Var.t`s used by this statement *)
+   val extractDefs: Statement.t -> VarSet.t
 
+
+   (* If `Var.t` is defined by some statement in the provided `Statement.t
+   vector`, returns it. The SSA property guarantees that in this case, the index
+    is unique. Otherwise, returns NONE. *)
+   val getDefIndex: (Statement.t vector * Var.t) -> int option
 
   (* val getDependencyGraphDownward: (Block.t * Var.t) -> *)
   (*                                 Statement.t list *)

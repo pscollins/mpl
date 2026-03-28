@@ -6,4 +6,13 @@ open Ssa2
 
 structure VarSet = UnorderedSet (Var)
 
+fun extractUses (stmt: Statement.t): VarSet.t =
+    VarSet.empty
+        
+fun extractDefs (stmt: Statement.t): VarSet.t =
+    VarSet.empty
+
+fun getDefIndex (stmts: Statement.t vector, v: Var.t): int option =
+    NONE
+        
 end
