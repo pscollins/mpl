@@ -1239,10 +1239,10 @@ fun parseFull parseX =
    name >>= (fn pname =>
    case pname of
       "CFunction" => CFunction <$> CFunction.parse parseX
+    | "spork_getData" => char #"<" *> Spid.parse <* char #">" >>= (fn spid => pure (Spork_getData spid))
     | _ => (case fromString pname of
                NONE => fail "prim"
-             | SOME p => pure p))
-end
+             | SOME p => pure p))end
 
 fun 'a checkApp (prim: 'a t,
                  {args: 'a vector,
