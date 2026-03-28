@@ -6,11 +6,32 @@ open Ssa2
 
 structure VarSet = UnorderedSet (Var)
 
+fun doExtract (stmt: Statement.t,
+               walk: (Statement.t * (Var.t -> unit)) -> unit): VarSet.t = let
+   val acc = ref (VarSet.empty)
+   fun collectVar (v: Var.t) = let
+      val acc' = VarSet. add (!acc, v)
+      val _ = acc := acc'
+   in
+      ()
+   end
+   val _ = walk (stmt, collectVar) 
+in 
+   !acc
+end
+                                                    
 fun extractUses (stmt: Statement.t): VarSet.t =
-    VarSet.empty
-        
-fun extractDefs (stmt: Statement.t): VarSet.t =
-    VarSet.empty
+    doExtract (stmt, Block.forEachUse)
+
+fun extractDefs (stmt: Statement.t): VarSet.t = let
+   fun extractVar (v: Var.t, t: Type.t): Var.t =
+       t
+   fun forEachDefVarOnly (s: Statement.t, f: Var.t -> unit) =
+       Block.forEachDef (s, f o extractVar)
+in
+   doExtract (s, forEachDefVarOnly)
+end
+
 
 fun getDefIndex (stmts: Statement.t vector, v: Var.t): int option =
     NONE
