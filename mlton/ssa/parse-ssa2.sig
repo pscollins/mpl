@@ -1,6 +1,8 @@
 signature PARSE_SSA2 =
    sig
-      structure Ssa: SSA_TREE2
-      (* P *)
-      val parseString: string -> Ssa.Program.t
+      structure Ssa2: SSA_TREE2
+
+      (* Pases the provided string into an `Ssa2.Program.t`; raises an error on
+      failure*)
+      val parseString: string -> Ssa2.Program.t
    end

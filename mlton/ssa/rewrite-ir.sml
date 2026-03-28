@@ -9,8 +9,11 @@ local
       let
          val layouts = ref []
          val _ = Program.layouts (p, fn l => layouts := l :: !layouts)
+         val l = Layout.align (List.rev (!layouts))
+         val ss = ref []
       in
-         Layout.toString (Layout.align (List.rev (!layouts)))
+         Layout.print (l, fn s => ss := s :: !ss)
+         ; String.concat (List.rev (!ss))
       end
 
    fun usage () =
