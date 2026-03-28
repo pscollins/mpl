@@ -32,7 +32,14 @@ in
 end
 
 
-fun getDefIndex (stmts: Statement.t vector, v: Var.t): int option =
-    NONE
-        
+fun getDefIndex (stmts: Statement.t vector, v: Var.t): int option = let
+   fun isMatch (s: Statement.t): bool = let
+      val vars = extractDefs s
+   in
+      VarSet.contains (extractDefs s, v)
+   end
+in
+   Vector.index (stmts, isMatch)
+end
+
 end
