@@ -1,9 +1,3 @@
-(* Copyright (C) 2026 Patrick.
- *
- * MLton is released under a HPND-style license.
- * See the file MLton-LICENSE for details.
- *)
-
 structure Atoms = Atoms ()
 structure Ssa2 = Ssa2 (open Atoms)
 structure ParseSsa2 = ParseSsa2 (Ssa2)

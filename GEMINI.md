@@ -24,4 +24,9 @@ build/bin/mpl -output build/tmp_out.bin $INFILE
 
 
 ## Tools
-Version control in this project is managed via `jj` wrapped around `git`.
+Version control in this project is managed via `jj` wrapped around `git`. Never
+interact with `git` directly -- always use `jj` instead.
+
+## Formatting
+While existing files may have a copyright comment at the top, new files that are
+created in this repositiory should not have a copyright comment added.

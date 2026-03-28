@@ -1,9 +1,3 @@
-(* Copyright (C) 2026 Patrick.
- *
- * MLton is released under a HPND-style license.
- * See the file MLton-LICENSE for details.
- *)
-
 functor ParseSsa2 (S: SSA_TREE2): PARSE_SSA2 =
 struct
    structure Ssa = S
