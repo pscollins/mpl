@@ -42,4 +42,12 @@ in
    Vector.index (stmts, isMatch)
 end
 
+fun getDependenciesDownwards
+        (stmts: Statement.t vector, v: Var.t): Statement.t list = let
+   val wantVars = ref (VarSet.singleton v)
+                      
+   fun processStmt (s: Statement.t, wantVars: Var
+   fun getDependenciesIn (stmts: Statement.t vector,
+                          wantVars: VarSet.t)
+
 end

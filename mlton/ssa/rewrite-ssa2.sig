@@ -12,24 +12,34 @@ sig
 
   (*  *)
 
-   (* Returns a set of all `Var.t`s defined by this statement *)
+   (* Returns a set of all `Var.t`s used by this statement *)
    val extractUses: Statement.t -> VarSet.t
 
-   (* Returns a set of all `Var.t`s used by this statement *)
+   (* Returns a set of all `Var.t`s defined by this statement *)
    val extractDefs: Statement.t -> VarSet.t
-
 
    (* If `Var.t` is defined by some statement in the provided `Statement.t
    vector`, returns it. The SSA property guarantees that in this case, the index
     is unique. Otherwise, returns NONE. *)
    val getDefIndex: (Statement.t vector * Var.t) -> int option
 
+
+   (*
+   Executes the following steps:
+
+     1. Finds the `Statement.t` that defines the given `Var.t`, if any
+     2. Recursively walks down the use-def chain that begins at that statement
+
+   returning an empty list if no such statement exists.
+   *)
+   val getDependenciesDownwards:
+       (Statement.t vector * Var.t) -> Statement.t list
+
   (* val getDependencyGraphDownward: (Block.t * Var.t) -> *)
   (*                                 Statement.t list *)
 
   (* val extractSubgraphDownward: (Block.t * Var.t) -> *)
   (*                              Statement.t list *)
-                              
   (* Rewrite passes defined below *)
 
   (* TODO(pscolins): Add rewrites *)
