@@ -10,7 +10,7 @@ fun doExtract (stmt: Statement.t,
                walk: (Statement.t * (Var.t -> unit)) -> unit): VarSet.t = let
    val acc = ref (VarSet.empty)
    fun collectVar (v: Var.t) = let
-      val acc' = VarSet. add (!acc, v)
+      val acc' = VarSet.add (!acc, v)
       val _ = acc := acc'
    in
       ()
@@ -21,15 +21,14 @@ in
 end
                                                     
 fun extractUses (stmt: Statement.t): VarSet.t =
-    doExtract (stmt, Block.forEachUse)
+    doExtract (stmt, Statement.foreachUse)
 
 fun extractDefs (stmt: Statement.t): VarSet.t = let
-   fun extractVar (v: Var.t, t: Type.t): Var.t =
-       t
+   fun extractVar (v: Var.t, t: Type.t): Var.t = v
    fun forEachDefVarOnly (s: Statement.t, f: Var.t -> unit) =
-       Block.forEachDef (s, f o extractVar)
+       Statement.foreachDef (s, f o extractVar)
 in
-   doExtract (s, forEachDefVarOnly)
+   doExtract (stmt, forEachDefVarOnly)
 end
 
 
