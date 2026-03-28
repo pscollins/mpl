@@ -1879,6 +1879,12 @@ structure Program =
             val () = Label.parseReset {prims = Vector.new0 ()}
             val () = Func.parseReset {prims = Vector.new0 ()}
 
+            val () = Tycon.setParseRetainNames true
+            val () = Con.setParseRetainNames true
+            val () = Var.setParseRetainNames true
+            val () = Label.setParseRetainNames true
+            val () = Func.setParseRetainNames true
+
             val parseProgram =
                T <$>
                (many Datatype.parse >>= (fn datatypes =>
@@ -1890,7 +1896,17 @@ structure Program =
                       functions = functions,
                       main = main})))))
          in
-            parseProgram <* (mlSpaces *> (failing next <|> fail "end of file"))
+            (parseProgram <* (mlSpaces *> (failing next <|> fail "end of file")))
+            >>= (fn p =>
+                 let
+                    val () = Tycon.setParseRetainNames false
+                    val () = Con.setParseRetainNames false
+                    val () = Var.setParseRetainNames false
+                    val () = Label.setParseRetainNames false
+                    val () = Func.setParseRetainNames false
+                 in
+                    pure p
+                 end)
          end
 
       fun layoutStats (program as T {datatypes, globals, functions, main, ...}) =

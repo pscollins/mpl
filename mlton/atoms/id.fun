@@ -10,6 +10,7 @@
 structure UniqueString:
    sig
       val unique: string -> string
+      val reserve: string * int -> unit
       val reset: unit -> unit
    end =
    struct
@@ -24,6 +25,16 @@ structure UniqueString:
                 fn () => Counter.new 0)
          in
             concat [original, "_", Int.toString (Counter.next c)]
+         end
+
+      fun reserve (original: string, n: int): unit =
+         let
+            val c =
+               HashTable.lookupOrInsert
+               (counters, original,
+                fn () => Counter.new 0)
+         in
+            Counter.reset (c, Int.max (Counter.value c, n + 1))
          end
 
       fun reset () = HashTable.removeAll (counters, fn _ => true)
@@ -129,6 +140,9 @@ local
       (ignore o HashTable.lookupOrInsert)
       (cache, toString id, fn () => id)
 
+   val parseRetainNames: bool ref = ref false
+   fun setParseRetainNames b = parseRetainNames := b
+
    val alphanum =
       named ("alphanum", nextSat (fn c => Char.isAlphaNum c orelse c = #"_" orelse c = #"'"))
    val sym =
@@ -160,10 +174,21 @@ local
                 if Char.isDigit (String.sub (printName, i))
                    then loop (i - 1, true)
                 else if b andalso String.sub (printName, i) = #"_"
-                        then newString (String.substring (printName, 0, i))
+                        then
+                           let
+                              val original = String.substring (printName, 0, i)
+                              val n =
+                                 case Int.fromString (String.substring (printName, i + 1, String.size printName - (i + 1))) of
+                                    NONE => Error.bug "Id.parseGen.make: Int.fromString failed"
+                                  | SOME n => n
+                           in
+                              if !parseRetainNames
+                                 then (UniqueString.reserve (original, n); fromString printName)
+                                 else newString original
+                           end
                         else fromString printName
            in
-              loop (String.size printName - 1, false)
+              loop (String.size printName - 1, false) handle _ => fromString printName
            end
       in
          case Vector.peek (alts, fn (s, _) => String.equals (printName, s)) of
@@ -177,6 +202,7 @@ in
    fun parseReset {prims} =
       (HashTable.removeAll (cache, fn _ => true);
        Vector.foreach (prims, insert))
+   val setParseRetainNames = setParseRetainNames
    val reset = UniqueString.reset
 end
 
