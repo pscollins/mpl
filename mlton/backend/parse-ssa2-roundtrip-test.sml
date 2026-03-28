@@ -41,10 +41,12 @@ local
          val content = File.contents path
          
          (* First parse *)
+         val _ = Var.reset ()
          val p1 = ParseSsa2.parseString content
          val s1 = layoutToString p1
          
          (* Second parse (round-trip) *)
+         val _ = Var.reset ()
          val p2 = ParseSsa2.parseString s1
          val s2 = layoutToString p2
          

@@ -33,6 +33,7 @@ signature ID =
       val parseAs: (string * 'a) vector * (t -> 'a) -> 'a Parse.t
       val parseExcept: string vector -> t Parse.t
       val parseReset: {prims: t vector} -> unit
+      val reset: unit -> unit
       val plist: t -> PropertyList.t
       val printNameAlphaNumeric: bool ref
       val toString: t -> string

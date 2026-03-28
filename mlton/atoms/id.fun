@@ -10,6 +10,7 @@
 structure UniqueString:
    sig
       val unique: string -> string
+      val reset: unit -> unit
    end =
    struct
       val counters: (string, Counter.t) HashTable.t =
@@ -24,6 +25,8 @@ structure UniqueString:
          in
             concat [original, "_", Int.toString (Counter.next c)]
          end
+
+      fun reset () = HashTable.removeAll (counters, fn _ => true)
    end
 
 functor Id (S: ID_STRUCTS): ID =
@@ -174,6 +177,7 @@ in
    fun parseReset {prims} =
       (HashTable.removeAll (cache, fn _ => true);
        Vector.foreach (prims, insert))
+   val reset = UniqueString.reset
 end
 
 val new = newString o originalName
