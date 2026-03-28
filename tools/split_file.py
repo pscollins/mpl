@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-def split_file(infile, chunks, out_base):
+def split_file(infile, chunks, out_base, suffix=""):
     if not os.path.exists(infile):
         print(f"Error: Input file '{infile}' not found.")
         sys.exit(1)
@@ -20,8 +20,10 @@ def split_file(infile, chunks, out_base):
         sys.exit(1)
 
     if chunks == 1:
-        with open(f"{out_base}.1", 'w') as f:
+        output_file = f"{out_base}.1{suffix}"
+        with open(output_file, 'w') as f:
             f.writelines(lines)
+        print(f"Wrote {len(lines)} lines to {output_file}")
         return
 
     # Find all possible split points (indices of lines starting with non-whitespace)
@@ -68,7 +70,7 @@ def split_file(infile, chunks, out_base):
         start = all_splits[i]
         end = all_splits[i+1]
         chunk_lines = lines[start:end]
-        output_file = f"{out_base}.{i+1}"
+        output_file = f"{out_base}.{i+1}{suffix}"
         with open(output_file, 'w') as f:
             f.writelines(chunk_lines)
         print(f"Wrote {len(chunk_lines)} lines to {output_file}")
@@ -78,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--infile", required=True, help="Input file path")
     parser.add_argument("--chunks", type=int, required=True, help="Number of chunks")
     parser.add_argument("--out_base", required=True, help="Base name for output files")
+    parser.add_argument("--suffix", default="", help="Suffix for output files")
 
     args = parser.parse_args()
-    split_file(args.infile, args.chunks, args.out_base)
+    split_file(args.infile, args.chunks, args.out_base, args.suffix)
