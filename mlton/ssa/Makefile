@@ -1,7 +1,7 @@
 MLTON := mlton
 
 .PHONY: unittest
-unittest: parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin rewrite-ir
+unittest: parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin rewrite-ir rewrite-ssa2
 
 rewrite-ir: rewrite-ir.mlb rewrite-ir.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
@@ -14,7 +14,11 @@ parse-ssa2-roundtrip-test.bin: parse-ssa2-roundtrip-test.mlb parse-ssa2-roundtri
 	$(MLTON) -output $@ $<
 	./$@
 
+rewrite-ssa2: rewrite-ssa2.mlb rewrite-ssa2-test.sml $(wildcard *.fun *.sig)
+	$(MLTON) -output $@ $<
+	./$@
+
 
 .PHONY: clean
 clean:
-	rm -f *.bin rewrite-ir
+	rm -f *.bin rewrite-ir rewrite-ssa2
