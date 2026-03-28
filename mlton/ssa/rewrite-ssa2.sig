@@ -3,6 +3,8 @@ sig
    structure Ssa2: SSA_TREE2
    include SSA_TREE2
 
+   structure VarSet: SET where type Element.t = Var.t
+
   (* This file contains ad-hoc rewrite passes for SSA2, intended primarily for
   debugging *)
 
