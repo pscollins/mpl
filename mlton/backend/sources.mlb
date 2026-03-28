@@ -69,9 +69,6 @@ local
    emit-diagnostics.sig
    emit-diagnostics.fun
 
-   parse-ssa2.sig
-   parse-ssa2.fun
-
    allocate-variables.sig
    allocate-variables.fun
    equivalence-graph.sig
@@ -92,7 +89,6 @@ in
    functor BackendAtoms
    functor EmitDiagnostics
    functor Machine
-   functor ParseSsa2
    functor Rssa
    functor Ssa2ToRssa
    functor TraceHeapOps

@@ -11,9 +11,11 @@ Library
 
 signature SSA
 signature SSA2
+signature PARSE_SSA2
 
 functor Ssa
 functor Ssa2
+functor ParseSsa2
 functor SsaToSsa2
 
 is
@@ -99,5 +101,7 @@ ssa.sig
 ssa2.sig
 ssa.fun
 ssa2.fun
+parse-ssa2.sig
+parse-ssa2.fun
 ssa-to-ssa2.sig
 ssa-to-ssa2.fun
