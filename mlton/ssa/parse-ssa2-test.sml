@@ -22,6 +22,18 @@ local
          Layout.toString (Layout.align (List.rev (!lts)))
       end
 
+   fun isSubstring (sub, s) =
+      let
+         val n = String.size sub
+         val m = String.size s
+         fun loop i =
+            if i + n > m then false
+            else if String.substring (s, i, n) = sub then true
+            else loop (i + 1)
+      in
+         loop 0
+      end
+
    fun assertEqual (s1, s1', msg) =
       if s1 = s1' then () 
       else (print (msg ^ "\n"); 
@@ -214,6 +226,30 @@ local
       
       val _ = assertEqual (s4, s4', "Round-trip layout mismatch in Test 4")
       val _ = print "Test 4 passed\n"
+   in () end
+
+   (* Test 5: Retention of variable names *)
+   val _ = let
+      val _ = print "Test 5: Retention of variable names\n"
+      val s = "(* Datatypes: *) \n\n" ^
+              "(* Globals: *) \n\n" ^
+              "(* Functions: *) \n" ^
+              "fun main_1 (): {returns = Some (), raises = None} = L_1 () block L_1 () return () \n\n" ^
+              "(* Main: *) main_1"
+      val p = ParseSsa2.parseString s
+      val s' = layoutToString p
+      
+      val _ = assert (isSubstring ("main_1", s'), "main_1 NOT retained")
+      val _ = assert (isSubstring ("L_1", s'), "L_1 NOT retained")
+      
+      val _ = print "Testing new name generation after parsing...\n"
+      val newVar = Var.newString "main"
+      val newName = Var.toString newVar
+      val _ = print ("New name for 'main': " ^ newName ^ "\n")
+      val _ = assert (newName = "main_0" orelse newName = "main_2", 
+                      "new name might collide with retained main_1")
+
+      val _ = print "Test 5 passed\n"
    in () end
 
    val _ = print "All ParseSsa2 tests passed!\n"
