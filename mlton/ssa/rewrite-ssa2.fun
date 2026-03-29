@@ -91,5 +91,7 @@ in
    !seen
 end
 
+fun fromProgram (program: Program.t): t = new()
+
 end
 end

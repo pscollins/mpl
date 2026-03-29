@@ -37,9 +37,15 @@ sig
 
    (* An (undirected) edge whose nodes are `Var.t`s, where `u` and `v` are
    connected by an edge if `u` is a `Var.t` that appears on the RHS of the
-   definition of `v` (or vice-versa) *)
+   definition of `v` (or vice-versa).
+
+   It is intended to be defined such that the subgraph reachable from `v` is the
+   smallest possible subgraph that contains all `Var.t`s "relevant to" `v`, so
+   that we can prune a `Program.t` to only contain these `Var.t`s without
+   "losing" information.
+    *)
    structure UseDefGraph: sig
-     type graph 
+     type graph
      type t = {
         (* Underlying digraph *)
         graph: graph,
@@ -53,6 +59,28 @@ sig
      val addEdge: t -> (Var.t * Var.t) -> unit
      (* Finds all of the `Var.t`s reachable from the provided `Var.t` *)
      val findReachable: (t * Var.t) -> VarSet.t
+
+     (* Constructs a UseDefGraph from the provided `Program.t` according to the
+     following rules.
+
+     Let `n1`, `n2` be vertices in the graph corresponding to `Var.t`s `v1`,
+     `v2`, respectively. Then there is an edge between `n1` and `n2` (and back)
+     if:
+
+     * `v1` is connected to `v2` by a `Statement.t`, e.g.:
+
+       * `v1` is the `var` of a `Bind` expression whose `exp` contains `v2`
+       * `v1` is the `base` of an `Update` epxression whose `value` is `v2`
+
+     * `v1` is connected to `v2` by an "argument" relationship, e.g.:
+
+       * A function defined as `fun f(v1)` is called as `f(v2)`
+       * A block with formal parameter `v1` is called with argument `v2`
+
+     * `v1` is connected to `v2` by a "return" relationship, e.g.:
+       * TODO(pscollins): How would this work?
+     *)
+     val fromProgram: Program.t -> t
    end
 
   (* Rewrite passes defined below *)
