@@ -41,11 +41,11 @@ end
 
 structure UseDefGraph = struct
 structure G = DirectedGraph
-type graph = unit G.t
+type graph = Var.t G.t
 type t = {
    graph: graph,
-   getNode: Var.t -> unit G.Node.t,
-   getVar: unit G.Node.t -> Var.t
+   getNode: Var.t -> Var.t G.Node.t,
+   getVar: Var.t G.Node.t -> Var.t
 }
 
 fun new () = let
@@ -79,9 +79,17 @@ in
    ()
 end
 
-fun findReachable ({graph,  getNode, getVar}: t, root: Var.t) =
-    VarSet.empty
-
+fun findReachable ({graph,  getNode, getVar}: t, root: Var.t) = let
+   val seen = ref (VarSet.empty)
+   fun markSeen (n: Var.t G.Node.t): unit = let
+      val seen' = VarSet.add (!seen, getVar n)
+   in
+      seen := seen'
+   end
+   val _ = G.foreachDescendent (graph, getNode root, markSeen)
+in
+   !seen
 end
 
+end
 end
