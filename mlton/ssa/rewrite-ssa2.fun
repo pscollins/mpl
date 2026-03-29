@@ -116,6 +116,19 @@ in
    getFunction
 end
 
+(* Like above, but for block labels -> blocks *)
+fun buildLabelMapping (p: Program.t): (Label.t -> Block.t) = let
+   val Program.T {functions, ...} = p
+   val {get = getBlock, set = setBlock, ...} =
+       Property.getSetOnce
+           (Label.plist, Property.initRaise ("label lookup", Label.layout))
+   fun addBlock b = setBlock (Block.label b, b)
+   fun addFunction f = Vector.foreach (Function.blocks f, addBlock)
+   val _ = List.foreach (functions, addFunction)
+in
+   getBlock
+end
+
 fun vectorToSet (vs: Var.t vector): VarSet.t = let
    fun doAdd (v: Var.t, varSet: VarSet.t) =
        VarSet.add (varSet, v)
@@ -123,43 +136,64 @@ in
    Vector.fold (vs, VarSet.empty, doAdd)
 end
 
-(* Extracts the arguments of `f` as a `VarSet.t` *)
-fun getArgs (f: Function.t): VarSet.t = let
-   val {args, ...} = Function.dest f 
-   fun addArg (a: Var.t * Type.t, vs: VarSet.t): VarSet.t = let
-      val (var, _) = a
+local
+   fun argsToSet (args: (Var.t * Type.t) vector): VarSet.t = let
+      fun addArg (a: Var.t * Type.t, vs: VarSet.t): VarSet.t = let
+         val (var, _) = a
+      in
+         VarSet.add (vs, var)
+      end
    in
-      VarSet.add (vs, var)
+      Vector.fold (args, VarSet.empty, addArg)
    end
 in
-   Vector.fold (args, VarSet.empty, addArg)
+(* Extracts the arguments of `f` as a `VarSet.t` *)
+fun getFuncArgs (f: Function.t): VarSet.t = let
+   val {args, ...} = Function.dest f 
+in
+   argsToSet args
+end
+
+(* Extracts the arguments of `b` as a `VarSet.t` *)
+fun getBlockArgs (b: Block.t): VarSet.t = let
+   val Block.T {args, ...} = b
+in
+   argsToSet args
+end
 end
 
 (* Returns the set of variables "used" by a `Transfer.t` *)
 fun getTransferUses (transfer: Transfer.t): VarSet.t =
     (* TODO(pscollins): Handle the other cases *)
     case transfer of
-        Transfer.Call {args, ...} => vectorToSet (args)
+        Transfer.Call {args, ...} => vectorToSet args
+     |  Transfer.Goto {args, ...} => vectorToSet args
      |  _ => VarSet.empty
 
 (* Returns the set of variables "defined" by `Transfer.t` (considiering
 call-arguments as "definitons," since a call binds the arguments to the formal
-paramters *)
+paramters) *)
 fun getTransferDefs
         (funcToFunction: Func.t -> Function.t,
+         labelToBlock: Label.t -> Block.t,
          transfer: Transfer.t): VarSet.t =
     case transfer of
         Transfer.Call {func, ...} =>
-        getArgs (funcToFunction func)
+        getFuncArgs (funcToFunction func)
+     | Transfer.Goto {dst, ...} =>
+        getBlockArgs (labelToBlock dst)
      (* TODO(pscollins): Handle the other cases *)
-        |  _ => VarSet.empty
+     |  _ => VarSet.empty
 
 fun fromProgram (program: Program.t): t = let
    val g as {graph, getNode, getVar} = new()
    val doAddEdge = addEdge g
    val funcToFunction = buildFuncMapping program
+   val labelToBlock = buildLabelMapping program
    fun getTransferUseDefs (t: Transfer.t) =
-       (getTransferUses t, getTransferDefs (funcToFunction, t))
+       (getTransferUses t, getTransferDefs (funcToFunction,
+                                            labelToBlock,
+                                            t))
    fun addEdges (froms: VarSet.t, tos: VarSet.t) = let
       fun addEdgesForSource (from: Var.t) = let
          fun addEdgeToSink (to: Var.t) =
@@ -194,6 +228,5 @@ in
    addProgram program; g
 end
 
-                                              
 end
 end
