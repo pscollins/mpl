@@ -38,20 +38,19 @@ sig
    (* An (undirected) edge whose nodes are `Var.t`s, where `u` and `v` are
    connected by an edge if `u` is a `Var.t` that appears on the RHS of the
    definition of `v` (or vice-versa) *)
-   structure UseDefGraph = struct
-   structure G = DirectedGraph
-     type graph = Var.t G.t
+   structure UseDefGraph: sig
+     type graph
      type t = {
         (* Underlying digraph *)
         graph: graph,
         (* Accessors to map from `Var.t`s to graph nodes (and vice-versa) *)
-        getNode: Var.t -> G.Node.t,
-        getVar: G.Node.t -> Var.t
+        getNode: Var.t -> unit DirectedGraph.Node.t,
+        getVar: unit DirectedGraph.Node.t -> Var.t
      }
      (* Constructs a new (empty) graph *)
      val new: unit -> t
      (* Adds a new (undirected) edge to the graph *)
-     (* val addEdge: t -> (Var.t * Var.t) -> unit *)
+     val addEdge: t -> (Var.t * Var.t) -> unit
    end
 
   (* Rewrite passes defined below *)

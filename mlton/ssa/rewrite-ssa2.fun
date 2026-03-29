@@ -15,16 +15,16 @@ fun doExtract (stmt: Statement.t,
    in
       ()
    end
-   val _ = walk (stmt, collectVar) 
-in 
+   val _ = walk (stmt, collectVar)
+in
    !acc
 end
-                                                    
+
 fun extractUses (stmt: Statement.t): VarSet.t =
     doExtract (stmt, Statement.foreachUse)
 
 fun extractDefs (stmt: Statement.t): VarSet.t = let
-   fun extractVar (v: Var.t, t: Type.t): Var.t = v
+   fun extractVar (v: Var.t, _: Type.t): Var.t = v
    fun forEachDefVarOnly (s: Statement.t, f: Var.t -> unit) =
        Statement.foreachDef (s, f o extractVar)
 in
@@ -33,44 +33,41 @@ end
 
 
 fun getDefIndex (stmts: Statement.t vector, v: Var.t): int option = let
-   fun isMatch (s: Statement.t): bool = let
-      val vars = extractDefs s
-   in
+   fun isMatch (s: Statement.t): bool =
       VarSet.contains (extractDefs s, v)
-   end
 in
    Vector.index (stmts, isMatch)
 end
 
-structure UseDefGraph = struct 
+structure UseDefGraph = struct
+structure G = DirectedGraph
+type graph = unit G.t
+type t = {
+   graph: graph,
+   getNode: Var.t -> unit G.Node.t,
+   getVar: unit G.Node.t -> Var.t
+}
 
-fun new () = let 
+fun new () = let
    val graph: graph = G.new ()
-   fun {get = getVar, set = setVar} =
+   val {get = getVar, set = setVar, ...} =
        Property.getSetOnce (G.Node.plist,
                             Property.initRaise ("useDefGraph", G.Node.layout))
-   fun mkNode (v: Var.t): Var.t G.Node.t = let
+   fun makeNode (v: Var.t) = let
       val node = G.newNode graph
       val _ = setVar (node, v)
    in
       node
    end
    val {get = getNode, ...} =
-       Property.get (Var.plist, Property.initFun newNode)
+       Property.get (Var.plist, Property.initFun makeNode)
 in
    {graph = graph,
     getNode = getNode,
     getVar = getVar}
 end
 
-(* fun getDependenciesDownwards *)
-(*         (stmts: Statement.t vector, v: Var.t): Statement.t list = let *)
-(*    val wantVars = ref (VarSet.singleton v) *)
-
-(*    fun processStmt (s: Statement.t, wantVars: Var *)
-(*    fun getDependenciesIn (stmts: Statement.t vector, *)
-(*                           wantVars: VarSet.t) *)
-
-                         
+fun addEdge (g: t) (u: Var.t, v: Var.t): unit = ()
+end
 
 end
