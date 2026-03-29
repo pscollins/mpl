@@ -307,4 +307,11 @@ in
               main = main}
 end
 
+fun isolateSubgraph (p: Program.t, v: Var.t): Program.t = let
+   val graph = UseDefGraph.fromProgram p
+   val vars = UseDefGraph.findReachable (graph, v)
+in
+   trimProgram (p, vars)
+end
+
 end

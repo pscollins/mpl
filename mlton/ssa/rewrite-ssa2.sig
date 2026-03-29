@@ -91,5 +91,10 @@ sig
 
   (* Rewrite passes defined below *)
 
+   (* Given a `Program.t` and a target `Var.t`, trims the `Program.t` to contain
+   only `Var.t`s that are connected to the target by a data dependency
+   (according to the rules of `UseDefGraph`, above). *)
+   val isolateSubgraph: (Program.t * Var.t) -> Program.t
+
   (* TODO(pscolins): Add rewrites *)
 end
