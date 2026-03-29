@@ -103,6 +103,14 @@ in
    !prevDefs
 end
 
+
+fun vectorToSet (vs: Var.t vector): VarSet.t = let
+   fun doAdd (v: Var.t, varSet: VarSet.t) =
+       VarSet.add (varSet, v)
+in
+   Vector.fold (vs, VarSet.empty, doAdd)
+end
+
 (* Returns a mapping from `Func.t` (i.e. labels) to `Function.t` objects *)
 fun buildFuncMapping (p: Program.t): (Func.t -> Function.t) = let
    val Program.T {functions, ...} = p
@@ -129,11 +137,28 @@ in
    getBlock
 end
 
-fun vectorToSet (vs: Var.t vector): VarSet.t = let
-   fun doAdd (v: Var.t, varSet: VarSet.t) =
-       VarSet.add (varSet, v)
+(* Builds a mapping from function labels to all possible return values *)
+fun buildReturnMapping (p: Program.t): (Func.t -> VarSet.t) = let
+   val Program.T {functions, ...} = p
+   val {get = getReturns, set = setReturns, ...} =
+       Property.getSetOnce
+           (Func.plist, Property.initRaise ("return lookup", Func.layout))
+   fun extractBlockReturns (b: Block.t): VarSet.t = let
+      val Block.T {transfer, ...} = b
+   in
+      case transfer of
+          Transfer.Return rets => vectorToSet rets
+        | _ => VarSet.empty
+   end
+   fun addBlockReturns (b: Block.t, vs: VarSet.t): VarSet.t =
+       VarSet.union (vs, extractBlockReturns b)
+   fun extractFuncReturns (f: Function.t) =
+       Vector.fold (Function.blocks f, VarSet.empty, addBlockReturns)
+   fun addFunc f =
+       setReturns (Function.name f, extractFuncReturns f)
+   val _ = List.foreach (functions, addFunc)
 in
-   Vector.fold (vs, VarSet.empty, doAdd)
+   getReturns
 end
 
 local
@@ -185,10 +210,21 @@ fun getTransferDefs
      (* TODO(pscollins): Handle the other cases *)
      |  _ => VarSet.empty
 
+(* Special handling for the data dependency edges between return values and
+function calls *)
+fun getCallEdges (funcToReturns: Func.t -> VarSet.t,
+                  labelToBlock: Label.t -> Block.t,
+                  transfer: Transfer.t): (VarSet.t * VarSet.t) =
+    case transfer of
+        Transfer.Call {func, return = Return.NonTail {cont, ...}, ...} =>
+        (funcToReturns func, getBlockArgs (labelToBlock cont))
+        | _  => (VarSet.empty, VarSet.empty)
+
 fun fromProgram (program: Program.t): t = let
    val g as {graph, getNode, getVar} = new()
    val doAddEdge = addEdge g
    val funcToFunction = buildFuncMapping program
+   val funcToReturns = buildReturnMapping program
    val labelToBlock = buildLabelMapping program
    fun getTransferUseDefs (t: Transfer.t) =
        (getTransferUses t, getTransferDefs (funcToFunction,
@@ -207,13 +243,14 @@ fun fromProgram (program: Program.t): t = let
    fun addStatement (stmt: Statement.t) =
        addEdges (extractUses stmt, extractDefsForUseDefGraph stmt)
    fun addBlock (b: Block.t) = let
-      (* TODO(pscollins): args, transfer *)
       val Block.T {statements, transfer, ...} = b
    in
       (* Add bindings for each statement *)
       Vector.foreach (statements, addStatement);
       (* Add bindings for the transfer out of this block *)
-      addEdges (getTransferUseDefs transfer)
+      addEdges (getTransferUseDefs transfer);
+      (* Special case to handle dataflow through function returns *)
+      addEdges (getCallEdges (funcToReturns, labelToBlock, transfer))
    end
    fun addFunction (f: Function.t) =
        Vector.foreach (Function.blocks f, addBlock)
