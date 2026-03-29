@@ -24,14 +24,14 @@ sig
    val getDefIndex: (Statement.t vector * Var.t) -> int option
 
 
-   (* (* *)
+   (* *)
    (* Executes the following steps: *)
 
    (*   1. Finds the `Statement.t` that defines the given `Var.t`, if any *)
    (*   2. Recursively walks down the use-def chain that begins at that statement *)
 
    (* returning an empty list if no such statement exists. *)
-   (* *) *)
+   (* *)
    (* val getDependenciesDownwards: *)
    (*     (Statement.t vector * Var.t) -> Statement.t list *)
 
@@ -51,14 +51,9 @@ sig
      (* Constructs a new (empty) graph *)
      val new: unit -> t
      (* Adds a new (undirected) edge to the graph *)
-     val addEdge: t -> (Var.t * Var.t) -> unit
+     (* val addEdge: t -> (Var.t * Var.t) -> unit *)
    end
 
-  (* val getDependencyGraphDownward: (Block.t * Var.t) -> *)
-  (*                                 Statement.t list *)
-
-  (* val extractSubgraphDownward: (Block.t * Var.t) -> *)
-  (*                              Statement.t list *)
   (* Rewrite passes defined below *)
 
   (* TODO(pscolins): Add rewrites *)
