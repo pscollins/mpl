@@ -78,7 +78,10 @@ sig
        * A block with formal parameter `v1` is called with argument `v2`
 
      * `v1` is connected to `v2` by a "return" relationship, e.g.:
-       * TODO(pscollins): How would this work?
+
+       * `v1` is marked the argument to a `Transfer.Return`, and `v2` is an
+         argument to the `Block.t` that corresponds to the `cont` argument of
+         the `Return.t` for some `Transfer.Call`.
      *)
      val fromProgram: Program.t -> t
    end
