@@ -103,9 +103,58 @@ in
    !prevDefs
 end
 
+(* Returns a mapping from `Func.t` (i.e. labels) to `Function.t` objects *)
+fun buildFuncMapping (p: Program.t): (Func.t -> Function.t) = let
+   val {functions, ...} = program
+   val {get = getFunction, set = setFunction, ...} =
+       Property.getSetOnce
+           (Func.plist, Property.initRaise ("function lookup", Func.layout))
+   fun addFunc f =
+       setFunction (Function.name f, f)
+   val _ = List.foreach (functions, addFunc)
+in
+   getFunction
+end
+
+fun vectorToSet (vs: Var.t vector): VarSet.t =
+    Vector.fold (vs, VarSet.empty, VarSet.add)
+
+(* Extracts the arguments of `f` as a `VarSet.t` *)
+fun getArgs (f: Function.t): VarSet.t = let
+   val {args, ...} = Function.dest f 
+   fun addArg (a: Var.t * Type.t, vs: VarSet.t): VarSet.t = let
+      val (var, _) = a
+   in
+      VarSet.add (vs, a)
+   end
+in
+   Vector.fold (args, VarSet.empty addArg)
+end
+
+(* Returns the set of variables "used" by a `Transfer.t` *)
+fun getTransferUses (transfer: Transfer.t): VarSet.t =
+    (* TODO(pscollins): Handle the other cases *)
+    case transfer of
+        Call {args, ...} => vectorToSet (args)
+     |  _ => VarSet.empty
+
+(* Returns the set of variables "defined" by `Transfer.t` (considiering
+call-arguments as "definitons," since a call binds the arguments to the formal
+paramters *)
+fun getTransferDefs
+        (transfer: Transfer.t,
+         funcToFunction: Func.t -> Function.t): VarSet.t =
+    case transfer of
+        Call {func, ...} =>
+        getArgs (funcToFunction func)
+     (* TODO(pscollins): Handle the other cases *)
+        |  _ => VarSet.empty
+
 fun fromProgram (program: Program.t): t = let
    val g as {graph, getNode, getVar} = new()
    val doAddEdge = addEdge g
+   val funcToFunction = buildFuncMapping program
+   fun getTransferUses (t: Transfer.t) = 
    fun addEdges (froms: VarSet.t, tos: VarSet.t) = let
       fun addEdgesForSource (from: Var.t) = let
          fun addEdgeToSink (to: Var.t) =
