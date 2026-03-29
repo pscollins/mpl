@@ -86,7 +86,7 @@ sig
 
    (* Given a collection of "watched variables" and a `Program.t`, deletes every
    `Statement.t` in the `Program.t` that does not refer to any `Var.t` in the
-   collection *)
+   collection. *)
    val trimProgram: (Program.t * VarSet.t) -> Program.t
 
   (* Rewrite passes defined below *)

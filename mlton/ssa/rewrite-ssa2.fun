@@ -266,6 +266,45 @@ in
 end
 end
 
-fun trimProgram (p: Program.t, wantVars: VarSet.t): Program.t = p
-                            
+fun trimProgram (p: Program.t, wantVars: VarSet.t): Program.t = let
+   val Program.T {datatypes, functions, globals, main} = p
+   fun keepStmt (s: Statement.t) = let
+      val sVars = VarSet.union (extractUses s, extractDefs s)
+   in
+      (not o VarSet.areDisjoint) (sVars, wantVars)
+   end
+   fun filterStmts (ss: Statement.t vector): Statement.t vector =
+       Vector.keepAll (ss, keepStmt)
+   fun filterArgs (args: (Var.t * Type.t) vector) = let
+      fun keepArg (v, _) = VarSet.contains (wantVars, v)
+   in
+      Vector.keepAll (args, keepArg)
+   end
+   fun filterBlock (b: Block.t) = let
+      val Block.T {args, label, statements, transfer} = b
+   in
+      Block.T {args = filterArgs args,
+               label = label,
+               statements = filterStmts statements,
+               transfer = transfer}
+   end
+   fun filterFunction (f: Function.t) = let
+      val {args, blocks, inline, name, raises, returns, start} =
+          Function.dest f
+   in
+      Function.new {args = filterArgs args,
+                    blocks = Vector.map (blocks, filterBlock),
+                    inline = inline,
+                    name = name,
+                    raises = raises,
+                    returns = returns,
+                    start= start}
+   end
+in
+   Program.T {datatypes = datatypes,
+              functions = List.map (functions, filterFunction),
+              globals = filterStmts globals,
+              main = main}
+end
+
 end
