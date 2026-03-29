@@ -67,7 +67,18 @@ in
     getVar = getVar}
 end
 
-fun addEdge (g: t) (u: Var.t, v: Var.t): unit = ()
+fun addEdge (g: t) (u: Var.t, v: Var.t): unit = let
+   val {graph, getNode, ...} = g
+   val u' = getNode u
+   val v' = getNode v
+   fun doAdd (from, to) =
+       G.addEdge (graph, {from=from, to=to})
+   val _ = doAdd (u', v')
+   val _ = doAdd (v', u')
+in
+   ()
+end
+
 end
 
 end

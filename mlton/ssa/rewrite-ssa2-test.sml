@@ -71,6 +71,10 @@ in
    val _ = assert ("getVar n2 is v2", fn () => Var.equals (getVar n2, v2))
    val _ = assert ("n1 and n2 are different", fn () => not (DirectedGraph.Node.equals (n1, n2)))
    val _ = assert ("getNode v1 is idempotent", fn () => DirectedGraph.Node.equals (getNode v1, n1))
+
+   val _ = UseDefGraph.addEdge {graph = graph, getNode = getNode, getVar = getVar} (v1, v2)
+   val _ = assert ("edge v1 -> v2 added", fn () => DirectedGraph.Node.hasEdge {from = n1, to = n2})
+   val _ = assert ("edge v2 -> v1 added", fn () => DirectedGraph.Node.hasEdge {from = n2, to = n1})
 end
 
 val _ = print "All RewriteSsa2 tests passed!\n"
