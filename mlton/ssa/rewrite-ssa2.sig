@@ -51,6 +51,8 @@ sig
      val new: unit -> t
      (* Adds a new (undirected) edge to the graph *)
      val addEdge: t -> (Var.t * Var.t) -> unit
+     (* Finds all of the `Var.t`s reachable from the provided `Var.t` *)
+     val findReachable: (t * Var.t) -> VarSet.t
    end
 
   (* Rewrite passes defined below *)

@@ -77,4 +77,32 @@ in
    val _ = assert ("edge v2 -> v1 added", fn () => DirectedGraph.Node.hasEdge {from = n2, to = n1})
 end
 
+local
+   val g = UseDefGraph.new ()
+   val v1 = Var.newNoname ()
+   val v2 = Var.newNoname ()
+   val v3 = Var.newNoname ()
+   val _ = UseDefGraph.addEdge g (v1, v2)
+   val _ = UseDefGraph.addEdge g (v2, v3)
+   val reachable = UseDefGraph.findReachable (g, v1)
+in
+   val _ = assert ("findReachable contains v1", fn () => VarSet.contains (reachable, v1))
+   val _ = assert ("findReachable contains v2", fn () => VarSet.contains (reachable, v2))
+   val _ = assert ("findReachable contains v3", fn () => VarSet.contains (reachable, v3))
+end
+
+local
+   val g = UseDefGraph.new ()
+   val v1 = Var.newNoname ()
+   val v2 = Var.newNoname ()
+   val v3 = Var.newNoname ()
+   val v4 = Var.newNoname ()
+   val _ = UseDefGraph.addEdge g (v1, v2)
+   val _ = UseDefGraph.addEdge g (v1, v3)
+   val _ = UseDefGraph.addEdge g (v3, v4)
+   val reachable = UseDefGraph.findReachable (g, v1)
+in
+   val _ = assert ("v4 is reachable from v1", fn () => VarSet.contains (reachable, v4))
+end
+
 val _ = print "All RewriteSsa2 tests passed!\n"

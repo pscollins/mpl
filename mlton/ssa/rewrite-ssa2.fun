@@ -79,6 +79,9 @@ in
    ()
 end
 
+fun findReachable ({graph,  getNode, getVar}: t, root: Var.t) =
+    VarSet.empty
+
 end
 
 end
