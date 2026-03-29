@@ -264,6 +264,8 @@ fun fromProgram (program: Program.t): t = let
 in
    addProgram program; g
 end
-
 end
+
+fun trimProgram (p: Program.t, wantVars: VarSet.t): Program.t = p
+                            
 end

@@ -270,6 +270,111 @@ in
               fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v3))
    end
 
+   (* trimProgram Test Case 1: Empty program stays empty *)
+   val _ = let
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val trimmed = trimProgram (prog, VarSet.empty)
+      val Program.T {functions, ...} = trimmed
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("trimProgram Case 1: Empty program stays empty",
+              fn () => Vector.length statements = 0)
+   end
+
+   (* trimProgram Test Case 2: Statement is NOT deleted if it refers to a watched variable *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val stmt = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val trimmed = trimProgram (prog, VarSet.singleton v1)
+      val Program.T {functions, ...} = trimmed
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("trimProgram Case 2: Statement NOT deleted if it refers to v1 (in exp)",
+              fn () => Vector.length statements = 1)
+   end
+
+   (* trimProgram Test Case 3: Statement IS deleted if it does NOT refer to any watched variable *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val stmt = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val v3 = Var.newNoname ()
+      val trimmed = trimProgram (prog, VarSet.singleton v3)
+      val Program.T {functions, ...} = trimmed
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("trimProgram Case 3: Statement IS deleted if it doesn't refer to v3",
+              fn () => Vector.length statements = 0)
+   end
+
+   (* trimProgram Test Case 4: Globals are trimmed *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val stmt = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [stmt], main = mainFunc}
+      val v3 = Var.newNoname ()
+      val trimmed = trimProgram (prog, VarSet.singleton v3)
+      val Program.T {globals, ...} = trimmed
+   in
+      assert ("trimProgram Case 4: Global IS deleted if it doesn't refer to v3",
+              fn () => Vector.length globals = 0)
+   end
+
+   (* trimProgram Test Case 5: Mix of kept and deleted statements *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val v4 = Var.newNoname ()
+      val stmt1 = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val stmt2 = Statement.Bind {exp = Exp.Var v3, ty = unitTy, var = SOME v4}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt1, stmt2],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val trimmed = trimProgram (prog, VarSet.singleton v1)
+      val Program.T {functions, ...} = trimmed
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("trimProgram Case 5: stmt1 kept, stmt2 deleted",
+              fn () => Vector.length statements = 1)
+   end
+
 end
 
 val _ = print "All RewriteSsa2 tests passed!\n"
