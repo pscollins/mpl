@@ -1,6 +1,7 @@
 structure Atoms = Atoms ()
 structure Ssa2 = Ssa2 (open Atoms)
 structure ParseSsa2 = ParseSsa2 (Ssa2)
+structure RewriteSsa2 = RewriteSsa2 (Ssa2)
 
 local
    open Ssa2
@@ -17,23 +18,25 @@ local
       end
 
    fun usage () =
-      (print "Usage: rewrite-ir --infile=$INFILE --outfile=$OUTFILE\n";
+      (print "Usage: rewrite-ir --infile=$INFILE --outfile=$OUTFILE [--isolate_subgraph=$SSA_VALUE]\n";
        OS.Process.exit OS.Process.failure)
 
    val args = CommandLine.arguments ()
    
-   fun parseArgs (args, infile, outfile) =
+   fun parseArgs (args, infile, outfile, isolateVar) =
       case args of
-         [] => (infile, outfile)
+         [] => (infile, outfile, isolateVar)
        | arg :: args =>
          if String.hasPrefix (arg, {prefix = "--infile="}) then
-            parseArgs (args, SOME (String.substring (arg, 9, size arg - 9)), outfile)
+            parseArgs (args, SOME (String.substring (arg, 9, size arg - 9)), outfile, isolateVar)
          else if String.hasPrefix (arg, {prefix = "--outfile="}) then
-            parseArgs (args, infile, SOME (String.substring (arg, 10, size arg - 10)))
+            parseArgs (args, infile, SOME (String.substring (arg, 10, size arg - 10)), isolateVar)
+         else if String.hasPrefix (arg, {prefix = "--isolate_subgraph="}) then
+            parseArgs (args, infile, outfile, SOME (String.substring (arg, 19, size arg - 19)))
          else
-            parseArgs (args, infile, outfile)
+            parseArgs (args, infile, outfile, isolateVar)
 
-   val (infile, outfile) = parseArgs (args, NONE, NONE)
+   val (infile, outfile, isolateVar) = parseArgs (args, NONE, NONE, NONE)
 
    val infile =
       case infile of
@@ -51,6 +54,28 @@ local
    val _ = print "Parsing SSA2...\n"
    val program = ParseSsa2.parseString input
    
+   fun findVar (p: Program.t, s: string): Var.t option =
+      let
+         val res = ref NONE
+         val _ = Program.foreachVar (p, fn (v, _) =>
+            if Var.toString v = s then res := SOME v else ())
+      in
+         !res
+      end
+
+   val program =
+      case isolateVar of
+         NONE => program
+       | SOME vStr =>
+         (case findVar (program, vStr) of
+             NONE => (print ("Could not find variable " ^ vStr ^ " in program.\n"); program)
+           | SOME v =>
+             let
+                val _ = print ("Isolating subgraph for " ^ vStr ^ "...\n")
+             in
+                RewriteSsa2.isolateSubgraph (program, v)
+             end)
+
    val _ = print "Converting back to string...\n"
    val output = programToString program
    
