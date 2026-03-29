@@ -105,4 +105,171 @@ in
    val _ = assert ("v4 is reachable from v1", fn () => VarSet.contains (reachable, v4))
 end
 
+local
+   (* Helpers for building programs *)
+   fun makeProgram {datatypes, functions, globals, main} =
+      Program.T {datatypes = Vector.fromList datatypes,
+                 functions = functions,
+                 globals = Vector.fromList globals,
+                 main = main}
+
+   fun makeFunction {name, args, start, blocks, returns} =
+      Function.new {name = name,
+                    args = Vector.fromList args,
+                    start = start,
+                    blocks = Vector.fromList blocks,
+                    returns = SOME (Vector.fromList returns),
+                    raises = NONE,
+                    inline = InlineAttr.Auto}
+
+   fun makeBlock {label, args, statements, transfer} =
+      Block.T {label = label,
+               args = Vector.fromList args,
+               statements = Vector.fromList statements,
+               transfer = transfer}
+
+   val unitTy = Type.unit
+in
+
+   (* Test Rule 1: Bind (v2 = exp(v1)) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val stmt = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Rule 1: Bind v2 = exp(v1) implies v1 <-> v2",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v2))
+   end
+
+   (* Test Rule 2: Update (v1.offset = v2) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val stmt = Statement.Update {base = Base.Object v1, offset = 0, value = v2, writeBarrier = false}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Rule 2: Update v1.offset = v2 implies v1 <-> v2",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v2))
+   end
+
+   (* Test Rule 3: Function arguments (fun f(v1); call f(v2)) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val fName = Func.newNoname ()
+      val fStart = Label.newNoname ()
+      val fBlock = makeBlock {label = fStart, args = [], statements = [],
+                              transfer = Transfer.Return (Vector.new0 ())}
+      val fFunc = makeFunction {name = fName, args = [(v1, unitTy)], start = fStart,
+                                blocks = [fBlock], returns = []}
+
+      val mainFunc = Func.newNoname ()
+      val mainStart = Label.newNoname ()
+      val mainBlock = makeBlock {label = mainStart, args = [], statements = [],
+                                 transfer = Transfer.Call {args = Vector.fromList [v2],
+                                                           func = fName,
+                                                           inline = InlineAttr.Auto,
+                                                           return = Return.Tail}}
+      val mainFuncObj = makeFunction {name = mainFunc, args = [], start = mainStart,
+                                      blocks = [mainBlock], returns = []}
+
+      val prog = makeProgram {datatypes = [], functions = [fFunc, mainFuncObj],
+                              globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Rule 3: fun f(v1) called with f(v2) implies v1 <-> v2",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v2))
+   end
+
+   (* Test Rule 4: Block arguments (L(v1); goto L(v2)) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val nextLabel = Label.newNoname ()
+      val startBlock = makeBlock {label = startLabel, args = [], statements = [],
+                                  transfer = Transfer.Goto {args = Vector.fromList [v2],
+                                                            dst = nextLabel}}
+      val nextBlock = makeBlock {label = nextLabel, args = [(v1, unitTy)], statements = [],
+                                 transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [startBlock, nextBlock], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Rule 4: Label L(v1) called with goto L(v2) implies v1 <-> v2",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v2))
+   end
+
+   (* Test Rule 5: Return relationship (fun f() returns (v1); call f() returns to L(v2)) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val fName = Func.newNoname ()
+      val fStart = Label.newNoname ()
+      val fBlock = makeBlock {label = fStart, args = [], statements = [],
+                              transfer = Transfer.Return (Vector.fromList [v1])}
+      val fFunc = makeFunction {name = fName, args = [], start = fStart,
+                                blocks = [fBlock], returns = [unitTy]}
+
+      val mainFunc = Func.newNoname ()
+      val mainStart = Label.newNoname ()
+      val contLabel = Label.newNoname ()
+      val mainBlock = makeBlock {label = mainStart, args = [], statements = [],
+                                 transfer = Transfer.Call {args = Vector.new0 (),
+                                                           func = fName,
+                                                           inline = InlineAttr.Auto,
+                                                           return = Return.NonTail {cont = contLabel,
+                                                                                    handler = Handler.Caller}}}
+      val contBlock = makeBlock {label = contLabel, args = [(v2, unitTy)], statements = [],
+                                 transfer = Transfer.Return (Vector.new0 ())}
+      val mainFuncObj = makeFunction {name = mainFunc, args = [], start = mainStart,
+                                      blocks = [mainBlock, contBlock], returns = []}
+
+      val prog = makeProgram {datatypes = [], functions = [fFunc, mainFuncObj],
+                              globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Rule 5: fun f() return(v1) called with cont L(v2) implies v1 <-> v2",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v2))
+   end
+
+   (* Test Case 6: Transitivity (v1 <-> v2 <-> v3) *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val stmt1 = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val stmt2 = Statement.Bind {exp = Exp.Var v2, ty = unitTy, var = SOME v3}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt1, stmt2],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val g = UseDefGraph.fromProgram prog
+   in
+      assert ("Transitivity: v1 <-> v2 <-> v3 implies v1 <-> v3",
+              fn () => VarSet.contains (UseDefGraph.findReachable (g, v1), v3))
+   end
+
+end
+
 val _ = print "All RewriteSsa2 tests passed!\n"
