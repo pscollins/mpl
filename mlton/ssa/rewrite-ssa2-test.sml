@@ -375,6 +375,127 @@ in
               fn () => Vector.length statements = 1)
    end
 
+   (* isolateSubgraph Test Case 1: Simple chain, unrelated stmt removed *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val v4 = Var.newNoname ()
+      val stmt1 = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val stmt2 = Statement.Bind {exp = Exp.Var v3, ty = unitTy, var = SOME v4}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt1, stmt2],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val isolated = isolateSubgraph (prog, v1)
+      val Program.T {functions, ...} = isolated
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("isolateSubgraph Case 1: stmt1 kept (dependency), stmt2 deleted",
+              fn () => Vector.length statements = 1)
+   end
+
+   (* isolateSubgraph Test Case 2: Chain of dependencies *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val stmt1 = Statement.Bind {exp = Exp.Var v1, ty = unitTy, var = SOME v2}
+      val stmt2 = Statement.Bind {exp = Exp.Var v2, ty = unitTy, var = SOME v3}
+      val mainFunc = Func.newNoname ()
+      val startLabel = Label.newNoname ()
+      val block = makeBlock {label = startLabel, args = [], statements = [stmt1, stmt2],
+                             transfer = Transfer.Return (Vector.new0 ())}
+      val func = makeFunction {name = mainFunc, args = [], start = startLabel,
+                               blocks = [block], returns = []}
+      val prog = makeProgram {datatypes = [], functions = [func], globals = [], main = mainFunc}
+      val isolated = isolateSubgraph (prog, v3)
+      val Program.T {functions, ...} = isolated
+      val func0 = List.nth (functions, 0)
+      val Block.T {statements, ...} = Vector.sub (Function.blocks func0, 0)
+   in
+      assert ("isolateSubgraph Case 2: all chain stmts kept",
+              fn () => Vector.length statements = 2)
+   end
+
+   (* isolateSubgraph Test Case 3: Through function call *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val fName = Func.newNoname ()
+      val fStart = Label.newNoname ()
+      val fBlock = makeBlock {label = fStart, args = [], statements = [],
+                              transfer = Transfer.Return (Vector.new0 ())}
+      val fFunc = makeFunction {name = fName, args = [(v1, unitTy)], start = fStart,
+                                blocks = [fBlock], returns = []}
+
+      val mainFunc = Func.newNoname ()
+      val mainStart = Label.newNoname ()
+      val stmt = Statement.Bind {exp = Exp.Var v2, ty = unitTy, var = SOME v3}
+      val mainBlock = makeBlock {label = mainStart, args = [], statements = [stmt],
+                                 transfer = Transfer.Call {args = Vector.fromList [v2],
+                                                           func = fName,
+                                                           inline = InlineAttr.Auto,
+                                                           return = Return.Tail}}
+      val mainFuncObj = makeFunction {name = mainFunc, args = [], start = mainStart,
+                                      blocks = [mainBlock], returns = []}
+
+      val prog = makeProgram {datatypes = [], functions = [fFunc, mainFuncObj],
+                              globals = [], main = mainFunc}
+      val isolated = isolateSubgraph (prog, v1)
+      val Program.T {functions, ...} = isolated
+      val mainFuncObj' = List.peek (functions, fn f => Func.equals (Function.name f, mainFunc))
+      val mainBlock' = Vector.sub (Function.blocks (valOf mainFuncObj'), 0)
+      val Block.T {statements, ...} = mainBlock'
+   in
+      assert ("isolateSubgraph Case 3: v2 statement kept because of call to f(v1)",
+              fn () => Vector.length statements = 1)
+   end
+
+   (* isolateSubgraph Test Case 4: Through return *)
+   val _ = let
+      val v1 = Var.newNoname ()
+      val v2 = Var.newNoname ()
+      val v3 = Var.newNoname ()
+      val fName = Func.newNoname ()
+      val fStart = Label.newNoname ()
+      val fBlock = makeBlock {label = fStart, args = [], statements = [],
+                              transfer = Transfer.Return (Vector.fromList [v1])}
+      val fFunc = makeFunction {name = fName, args = [], start = fStart,
+                                blocks = [fBlock], returns = [unitTy]}
+
+      val mainFunc = Func.newNoname ()
+      val mainStart = Label.newNoname ()
+      val contLabel = Label.newNoname ()
+      val mainBlock = makeBlock {label = mainStart, args = [], statements = [],
+                                 transfer = Transfer.Call {args = Vector.new0 (),
+                                                           func = fName,
+                                                           inline = InlineAttr.Auto,
+                                                           return = Return.NonTail {cont = contLabel,
+                                                                                    handler = Handler.Caller}}}
+      val stmt = Statement.Bind {exp = Exp.Var v2, ty = unitTy, var = SOME v3}
+      val contBlock = makeBlock {label = contLabel, args = [(v2, unitTy)], statements = [stmt],
+                                 transfer = Transfer.Return (Vector.new0 ())}
+      val mainFuncObj = makeFunction {name = mainFunc, args = [], start = mainStart,
+                                      blocks = [mainBlock, contBlock], returns = []}
+
+      val prog = makeProgram {datatypes = [], functions = [fFunc, mainFuncObj],
+                              globals = [], main = mainFunc}
+      val isolated = isolateSubgraph (prog, v1)
+      val Program.T {functions, ...} = isolated
+      val mainFuncObj' = List.peek (functions, fn f => Func.equals (Function.name f, mainFunc))
+      val contBlock' = Vector.sub (Function.blocks (valOf mainFuncObj'), 1)
+      val Block.T {statements, ...} = contBlock'
+   in
+      assert ("isolateSubgraph Case 4: stmt kept because v2 is connected to v1 via return",
+              fn () => Vector.length statements = 1)
+   end
+
 end
 
 val _ = print "All RewriteSsa2 tests passed!\n"
