@@ -42,12 +42,35 @@ in
    Vector.index (stmts, isMatch)
 end
 
-fun getDependenciesDownwards
-        (stmts: Statement.t vector, v: Var.t): Statement.t list = let
-   val wantVars = ref (VarSet.singleton v)
-                      
-   fun processStmt (s: Statement.t, wantVars: Var
-   fun getDependenciesIn (stmts: Statement.t vector,
-                          wantVars: VarSet.t)
+structure UseDefGraph = struct 
+
+fun new () = let 
+   val graph: graph = G.new ()
+   fun {get = getVar, set = setVar} =
+       Property.getSetOnce (G.Node.plist,
+                            Property.initRaise ("useDefGraph", G.Node.layout))
+   fun mkNode (v: Var.t): Var.t G.Node.t = let
+      val node = G.newNode graph
+      val _ = setVar (node, v)
+   in
+      node
+   end
+   val {get = getNode, ...} =
+       Property.get (Var.plist, Property.initFun newNode)
+in
+   {graph = graph,
+    getNode = getNode,
+    getVar = getVar}
+end
+
+(* fun getDependenciesDownwards *)
+(*         (stmts: Statement.t vector, v: Var.t): Statement.t list = let *)
+(*    val wantVars = ref (VarSet.singleton v) *)
+
+(*    fun processStmt (s: Statement.t, wantVars: Var *)
+(*    fun getDependenciesIn (stmts: Statement.t vector, *)
+(*                           wantVars: VarSet.t) *)
+
+                         
 
 end

@@ -24,16 +24,16 @@ sig
    val getDefIndex: (Statement.t vector * Var.t) -> int option
 
 
-   (*
-   Executes the following steps:
+   (* (* *)
+   (* Executes the following steps: *)
 
-     1. Finds the `Statement.t` that defines the given `Var.t`, if any
-     2. Recursively walks down the use-def chain that begins at that statement
+   (*   1. Finds the `Statement.t` that defines the given `Var.t`, if any *)
+   (*   2. Recursively walks down the use-def chain that begins at that statement *)
 
-   returning an empty list if no such statement exists.
-   *)
-   val getDependenciesDownwards:
-       (Statement.t vector * Var.t) -> Statement.t list
+   (* returning an empty list if no such statement exists. *)
+   (* *) *)
+   (* val getDependenciesDownwards: *)
+   (*     (Statement.t vector * Var.t) -> Statement.t list *)
 
    (* An (undirected) edge whose nodes are `Var.t`s, where `u` and `v` are
    connected by an edge if `u` is a `Var.t` that appears on the RHS of the
