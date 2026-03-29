@@ -105,7 +105,7 @@ end
 
 (* Returns a mapping from `Func.t` (i.e. labels) to `Function.t` objects *)
 fun buildFuncMapping (p: Program.t): (Func.t -> Function.t) = let
-   val {functions, ...} = program
+   val Program.T {functions, ...} = p
    val {get = getFunction, set = setFunction, ...} =
        Property.getSetOnce
            (Func.plist, Property.initRaise ("function lookup", Func.layout))
@@ -116,8 +116,12 @@ in
    getFunction
 end
 
-fun vectorToSet (vs: Var.t vector): VarSet.t =
-    Vector.fold (vs, VarSet.empty, VarSet.add)
+fun vectorToSet (vs: Var.t vector): VarSet.t = let
+   fun doAdd (v: Var.t, varSet: VarSet.t) =
+       VarSet.add (varSet, v)
+in
+   Vector.fold (vs, VarSet.empty, doAdd)
+end
 
 (* Extracts the arguments of `f` as a `VarSet.t` *)
 fun getArgs (f: Function.t): VarSet.t = let
@@ -125,27 +129,27 @@ fun getArgs (f: Function.t): VarSet.t = let
    fun addArg (a: Var.t * Type.t, vs: VarSet.t): VarSet.t = let
       val (var, _) = a
    in
-      VarSet.add (vs, a)
+      VarSet.add (vs, var)
    end
 in
-   Vector.fold (args, VarSet.empty addArg)
+   Vector.fold (args, VarSet.empty, addArg)
 end
 
 (* Returns the set of variables "used" by a `Transfer.t` *)
 fun getTransferUses (transfer: Transfer.t): VarSet.t =
     (* TODO(pscollins): Handle the other cases *)
     case transfer of
-        Call {args, ...} => vectorToSet (args)
+        Transfer.Call {args, ...} => vectorToSet (args)
      |  _ => VarSet.empty
 
 (* Returns the set of variables "defined" by `Transfer.t` (considiering
 call-arguments as "definitons," since a call binds the arguments to the formal
 paramters *)
 fun getTransferDefs
-        (transfer: Transfer.t,
-         funcToFunction: Func.t -> Function.t): VarSet.t =
+        (funcToFunction: Func.t -> Function.t,
+         transfer: Transfer.t): VarSet.t =
     case transfer of
-        Call {func, ...} =>
+        Transfer.Call {func, ...} =>
         getArgs (funcToFunction func)
      (* TODO(pscollins): Handle the other cases *)
         |  _ => VarSet.empty
@@ -154,7 +158,8 @@ fun fromProgram (program: Program.t): t = let
    val g as {graph, getNode, getVar} = new()
    val doAddEdge = addEdge g
    val funcToFunction = buildFuncMapping program
-   fun getTransferUses (t: Transfer.t) = 
+   fun getTransferUseDefs (t: Transfer.t) =
+       (getTransferUses t, getTransferDefs (funcToFunction, t))
    fun addEdges (froms: VarSet.t, tos: VarSet.t) = let
       fun addEdgesForSource (from: Var.t) = let
          fun addEdgeToSink (to: Var.t) =
@@ -169,9 +174,12 @@ fun fromProgram (program: Program.t): t = let
        addEdges (extractUses stmt, extractDefsForUseDefGraph stmt)
    fun addBlock (b: Block.t) = let
       (* TODO(pscollins): args, transfer *)
-      val Block.T {statements, ...} = b
+      val Block.T {statements, transfer, ...} = b
    in
-       Vector.foreach (statements, addStatement)
+      (* Add bindings for each statement *)
+      Vector.foreach (statements, addStatement);
+      (* Add bindings for the transfer out of this block *)
+      addEdges (getTransferUseDefs transfer)
    end
    fun addFunction (f: Function.t) =
        Vector.foreach (Function.blocks f, addBlock)
