@@ -91,7 +91,52 @@ in
    !seen
 end
 
-fun fromProgram (program: Program.t): t = new()
+(* Special case for `UseDefGraph`, which wants to include the `base` of an
+`Update` statement as a "def" *)
+fun extractDefsForUseDefGraph (stmt: Statement.t) = let
+   val prevDefs = ref (extractDefs stmt)
+   val _ = case stmt of
+               Statement.Update {base, ...} =>
+               prevDefs := (VarSet.add (!prevDefs, Base.object base))
+            |  _ =>  ()
+in
+   !prevDefs
+end
 
+fun fromProgram (program: Program.t): t = let
+   val g as {graph, getNode, getVar} = new()
+   val doAddEdge = addEdge g
+   fun addEdges (froms: VarSet.t, tos: VarSet.t) = let
+      fun addEdgesForSource (from: Var.t) = let
+         fun addEdgeToSink (to: Var.t) =
+             doAddEdge (from, to)
+      in
+         VarSet.foreach (tos, addEdgeToSink)
+      end
+   in
+      VarSet.foreach (froms, addEdgesForSource)
+   end
+   fun addStatement (stmt: Statement.t) =
+       addEdges (extractUses stmt, extractDefsForUseDefGraph stmt)
+   fun addBlock (b: Block.t) = let
+      (* TODO(pscollins): args, transfer *)
+      val Block.T {statements, ...} = b
+   in
+       Vector.foreach (statements, addStatement)
+   end
+   fun addFunction (f: Function.t) =
+       Vector.foreach (Function.blocks f, addBlock)
+   fun addProgram (p: Program.t) = let
+      val Program.T {functions, globals, ...} = p
+      val _ = List.foreach (functions, addFunction)
+      val _ = Vector.foreach (globals, addStatement)
+   in
+      ()
+   end
+in
+   addProgram program; g
+end
+
+                                              
 end
 end
