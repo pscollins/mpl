@@ -203,6 +203,7 @@ local
       val _ = (print "Layout for Test 4:\n"; print s4; print "\n")
       val p4' = ParseSsa.parseString s4
       val s4' = layoutToString p4'
+      val _ = print (String.concat ["GOT: \n", s4, "\n"])
       
       val _ = assertEqual (s4, s4', "Round-trip layout mismatch in Test 4")
       val _ = print "Test 4 passed\n"
