@@ -1,10 +1,14 @@
 MLTON := mlton
 
 .PHONY: unittest
-unittest: parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin rewrite-ir rewrite-ssa2
+unittest: parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin rewrite-ir rewrite-ssa2
 
 rewrite-ir: rewrite-ir.mlb rewrite-ir.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
+
+parse-ssa-test.bin: parse-ssa-test.mlb parse-ssa-test.sml $(wildcard *.fun *.sig)
+	$(MLTON) -output $@ $<
+	./$@
 
 parse-ssa2-test.bin: parse-ssa2-test.mlb parse-ssa2-test.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<

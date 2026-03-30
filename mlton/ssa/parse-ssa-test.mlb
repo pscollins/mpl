@@ -1,0 +1,7 @@
+local
+   ../../lib/mlton/sources.mlb
+   ../atoms/sources.mlb
+   sources.mlb
+   parse-ssa-test.sml
+in
+end
