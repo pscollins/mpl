@@ -1,0 +1,4 @@
+Error: lit-tests/scratch/repro-crash.sml 1.20-1.33.
+  Undefined structure: ForkJoin.
+Error: lit-tests/scratch/repro-crash.sml 2.57-2.68.
+  Undefined structure: ForkJoin.
