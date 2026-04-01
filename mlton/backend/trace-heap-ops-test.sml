@@ -935,7 +935,7 @@ local
       val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
    in () end
 
-   (* Test 7: Trace_noHeap without destination should raise Fail *)
+   (* Test 7: Trace_noHeap without destination should NOT raise Fail *)
    val _ = let
       val _ = print "Test 7: Trace_noHeap without destination\n"
       val v2 = newVar ()
@@ -944,8 +944,14 @@ local
          dst = NONE,
          prim = Prim.Trace_noHeap
       }
-      val raised = (TraceHeapOps.maybeElideNoHeap s; false) handle Fail _ => true
-      val _ = assert (raised, "Should raise Fail for Trace_noHeap without destination")
+      val res = TraceHeapOps.maybeElideNoHeap s
+      val _ = assert (Option.isSome res, "Should elide Trace_noHeap even without destination")
+      val s' = Option.valOf res
+      val _ = case s' of
+                  Statement.Bind {dst = (var, ty), src, ...} =>
+                  (assert (String.hasPrefix (Var.toString var, {prefix = "dummy"}), "Should have a dummy destination variable");
+                   assert (Layout.toString (Operand.layout src) = Layout.toString (Operand.layout (Operand.Var {ty = #2 v2, var = #1 v2})), "Source should be the prim argument"))
+                | _ => assert (false, "Should have been elided to a Bind statement")
    in () end
 
    (* Test 8: Variety of IR constructs (SetExnStackLocal, etc.) *)
@@ -1083,7 +1089,7 @@ local
       val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
    in () end
 
-   (* Test 7: Trace_heapOK without destination should raise Fail *)
+   (* Test 7: Trace_heapOK without destination should NOT raise Fail *)
    val _ = let
       val _ = print "Test 7: Trace_heapOK without destination\n"
       val v2 = newVar ()
@@ -1092,8 +1098,14 @@ local
          dst = NONE,
          prim = Prim.Trace_heapOK
       }
-      val raised = (TraceHeapOps.maybeElideHeapOk s; false) handle Fail _ => true
-      val _ = assert (raised, "Should raise Fail for Trace_heapOK without destination")
+      val res = TraceHeapOps.maybeElideHeapOk s
+      val _ = assert (Option.isSome res, "Should elide Trace_heapOK even without destination")
+      val s' = Option.valOf res
+      val _ = case s' of
+                  Statement.Bind {dst = (var, ty), src, ...} =>
+                  (assert (String.hasPrefix (Var.toString var, {prefix = "dummy"}), "Should have a dummy destination variable");
+                   assert (Layout.toString (Operand.layout src) = Layout.toString (Operand.layout (Operand.Var {ty = #2 v2, var = #1 v2})), "Source should be the prim argument"))
+                | _ => assert (false, "Should have been elided to a Bind statement")
    in () end
 
    (* Test 8: Variety of IR constructs (SetExnStackLocal, etc.) *)
@@ -1230,7 +1242,7 @@ local
       val _ = assert (Option.isNone res, "Should NOT elide Profile statement")
    in () end
 
-   (* Test 7: Trace_noTuple without destination should raise Fail *)
+   (* Test 7: Trace_noTuple without destination should NOT raise Fail *)
    val _ = let
       val _ = print "Test 7: Trace_noTuple without destination\n"
       val v2 = newVar ()
@@ -1239,8 +1251,14 @@ local
          dst = NONE,
          prim = Prim.Trace_noTuple
       }
-      val raised = (TraceHeapOps.maybeElideNoTuple s; false) handle Fail _ => true
-      val _ = assert (raised, "Should raise Fail for Trace_noTuple without destination")
+      val res = TraceHeapOps.maybeElideNoTuple s
+      val _ = assert (Option.isSome res, "Should elide Trace_noTuple even without destination")
+      val s' = Option.valOf res
+      val _ = case s' of
+                  Statement.Bind {dst = (var, ty), src, ...} =>
+                  (assert (String.hasPrefix (Var.toString var, {prefix = "dummy"}), "Should have a dummy destination variable");
+                   assert (Layout.toString (Operand.layout src) = Layout.toString (Operand.layout (Operand.Var {ty = #2 v2, var = #1 v2})), "Source should be the prim argument"))
+                | _ => assert (false, "Should have been elided to a Bind statement")
    in () end
 
    val _ = print "TraceHeapOps.maybeElideNoTuple tests finished.\n"
@@ -1675,9 +1693,9 @@ local
       val _ = assert (raised, "Forbidden tuple op via alias should have raised an error")
    in () end
 
-   (* Test: Trace_noHeap with NONE dst should trigger Error.bug *)
+   (* Test: Trace_noHeap with NONE dst should no longer trigger Error.bug *)
    val _ = let
-      val _ = print "Test: Trace_noHeap with NONE dst (repro for Error.bug)\n"
+      val _ = print "Test: Trace_noHeap with NONE dst (verify bug is fixed)\n"
       val v1 = newVar ()
       val s = Statement.PrimApp {
          args = Vector.fromList [Operand.Var {ty = #2 v1, var = #1 v1}],
@@ -1695,7 +1713,14 @@ local
           profileInfo = NONE,
           statics = Vector.new0 ()
       }
-      val _ = TraceHeapOps.transform p
+      val p' = TraceHeapOps.transform p
+      val Program.T {main, ...} = p'
+      val Block.T {statements, ...} = Vector.sub (Function.blocks main, 0)
+      val _ = assert (Vector.length statements = 1, "Should have 1 statement")
+      val _ = case Vector.sub (statements, 0) of
+                  Statement.Bind {dst = (var, _), ...} =>
+                  assert (String.hasPrefix (Var.toString var, {prefix = "dummy"}), "Should have been transformed to a Bind with dummy dst")
+                | _ => assert (false, "Should have been transformed to a Bind statement")
    in () end
 
    val _ = print "TraceHeapOps.transform tests finished.\n"
