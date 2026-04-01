@@ -10,6 +10,7 @@ struct
   fun myWorkerId ()  = MLton.Parallel.processorNumber ()
 
   fun die strfn = OS.Process.exit OS.Process.failure
+  fun die' () = OS.Process.exit OS.Process.failure
 
   type gcstate = MLton.Pointer.t
   val gcstate = _prim "GC_state": unit -> gcstate;
@@ -110,21 +111,8 @@ struct
    * STATS
    *)
 
-  val numSpawns = Array.array (P, 0)
   val numEagerSpawns = Array.array (P, 0)
-  val numHeartbeats = Array.array (P, 0)
-  val numSkippedHeartbeats = Array.array (P, 0)
-  val numSteals = Array.array (P, 0)
-  val numSlowJoins = Array.array (P, 0)
-  val numFastJoins = Array.array (P, 0)
 
-  fun incrementNumSpawns () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numSpawns, p)
-    in
-      arrayUpdate (numSpawns, p, c+1)
-    end
 
   fun addEagerSpawns d =
     let
@@ -134,96 +122,9 @@ struct
       arrayUpdate (numEagerSpawns, p, c+d)
     end
 
-  fun incrementNumHeartbeats () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numHeartbeats, p)
-    in
-      arrayUpdate (numHeartbeats, p, c+1)
-    end
-
-  fun incrementNumSkippedHeartbeats () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numSkippedHeartbeats, p)
-    in
-      arrayUpdate (numSkippedHeartbeats, p, c+1)
-    end
-
-  fun incrementNumSteals () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numSteals, p)
-    in
-      arrayUpdate (numSteals, p, c+1)
-    end
-
-  fun incrementNumSlowJoins () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numSlowJoins, p)
-    in
-      arrayUpdate (numSlowJoins, p, c+1)
-      (* MLton.Parallel.arrayFetchAndAdd (numSlowJoins, p) 1 *)
-    end
-
-  fun incrementNumFastJoins () =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numFastJoins, p)
-    in
-      (* MLton.Parallel.arrayFetchAndAdd (numFastJoins, p) 1 *)
-      arrayUpdate (numFastJoins, p, c+1)
-    end
-
-  fun numSpawnsSoFar () =
-    Array.foldl op+ 0 numSpawns
-
-  fun numEagerSpawnsSoFar () =
-    Array.foldl op+ 0 numEagerSpawns
-
-  fun numHeartbeatsSoFar () =
-    Array.foldl op+ 0 numHeartbeats
-
-  fun numSkippedHeartbeatsSoFar () =
-    Array.foldl op+ 0 numSkippedHeartbeats
-
-  fun numStealsSoFar () =
-    Array.foldl op+ 0 numSteals
-
-  fun numSlowJoinsSoFar () =
-    Array.foldl op+ 0 numSlowJoins
-
-  fun numFastJoinsSoFar () =
-    Array.foldl op+ 0 numFastJoins
-
-  (** ========================================================================
-    * TIMERS
-    *)
-
-  structure IdleTimer = CumulativePerProcTimer(val timerName = "idle")
-  structure WorkTimer = CumulativePerProcTimer(val timerName = "work")
-
   (** ========================================================================
     * MAXIMUM FORK DEPTHS
     *)
-
-  val maxForkDepths = Array.array (P, 0)
-
-  fun maxForkDepthSoFar () =
-    Array.foldl Int.max 0 maxForkDepths
-
-  fun recordForkDepth d =
-    let
-      val p = myWorkerId ()
-    in
-      if arraySub (maxForkDepths, p) >= d then
-        ()
-      else
-        ( (*print ("max increased: " ^ Int.toString d ^ "\n")*) ()
-        ; arrayUpdate (maxForkDepths, p, d)
-        )
-    end
 
   (* ========================================================================
    * CHILD TASK PROTOTYPE THREAD
@@ -232,28 +133,6 @@ struct
    * the prototype thread, which immediately pulls a task out of the
    * current worker's task-box and then executes it.
    *)
-
-  local
-    val amOriginal = ref true
-    val taskBoxes = Array.array (P, NONE)
-    fun upd i x = HM.arrayUpdateNoBarrier (taskBoxes, i, x)
-    fun sub i = HM.arraySubNoBarrier (taskBoxes, i)
-  in
-  val _ = Thread.copyCurrent ()
-  val prototypeThread : Thread.p =
-    if !amOriginal then
-      (amOriginal := false; Thread.savedPre ())
-    else
-      case sub (myWorkerId ()) of
-        NONE => die (fn _ => "scheduler bug: task box is empty")
-      | SOME t =>
-          ( upd (myWorkerId ()) NONE
-          ; t () handle _ => ()
-          ; die (fn _ => "scheduler bug: child task didn't exit properly")
-          )
-  fun setTaskBox p t =
-    upd p (SOME t)
-  end
 
   (* ========================================================================
    * SCHEDULER LOCAL DATA
@@ -303,14 +182,6 @@ struct
 
   fun communicate () = ()
 
-  fun queueSize () =
-    let
-      val myId = myWorkerId ()
-      val {queue, ...} = vectorSub (workerLocalData, myId)
-    in
-      Queue.size queue
-    end
-
   fun push (x): unit =
     let
       val myId = myWorkerId ()
@@ -319,13 +190,7 @@ struct
       Queue.pushBot queue x
     end
 
-  fun clear () =
-    let
-      val myId = myWorkerId ()
-      val {queue, ...} = vectorSub (workerLocalData, myId)
-    in
-       ()
-    end
+  fun clear () = ()
 
   fun pop (): task option =
     let
@@ -453,7 +318,7 @@ struct
 
         val result =
             if popDiscard () then
-               let 
+               let
                   val _ = HH.joinIntoParentBeforeFastClone
                               {thread=thread, newDepth=depth, tidLeft=tidRight, tidRight=tidRight}
                in
