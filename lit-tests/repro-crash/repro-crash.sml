@@ -494,115 +494,15 @@ struct
     fun maybeSpawn youngestOptimization (interruptedLeftThread: Thread.t) : bool =
         (doSpawn youngestOptimization interruptedLeftThread ; true)
 
-    fun doSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint =
-      let
-        val _ = Thread.atomicBegin ()
-        val thread = Thread.current ()
-        val _ = assertTokenInvariants thread "doSpawnFunc"
 
-        val gcj =
-          if allowCGC then spawnGC thread else NONE
-
-        val _ = assertAtomic "spawn after spawnGC" 1
-
-        val depth = HH.getDepth thread
-
-        val _ = dbgmsg'' (fn _ => "spawning at depth " ^ Int.toString depth)
-
-        (* We use a ref here instead of using rightSideThread directly.
-         * The rightSideThread is a Thread.p (it doesn't have a heap yet).
-         * The thief will convert it into a Thread.t and give it a heap,
-         * and then write it into this slot. *)
-        val rightSideThreadSlot = ref (NONE: Thread.t option)
-        val rightSideResult = ref (NONE: 'a Result.t option)
-        val incounter = ref 2
-
-        val tidParent = DE.decheckGetTid thread
-        val (tidLeft, tidRight) = DE.decheckFork ()
-
-        val half = Heartbeat.halfOfCurrent ()
-        val _ = Heartbeat.consumeSpare half
-
-        fun g' () =
-          let
-            val () = DE.copySyncDepthsFromThread (thread, Thread.current (), depth+1)
-            val () = DE.decheckSetTid tidRight
-            val () = HH.forceLeftHeap(myWorkerId(), Thread.current ())
-            val _ = Heartbeat.addSpare half
-            val _ = Thread.atomicEnd()
-
-            val gr = Result.result g
-
-            val _ = Thread.atomicBegin ()
-            val t = Thread.current ()
-          in
-            rightSideThreadSlot := SOME t;
-            rightSideResult := SOME gr;
-
-            if decrementHitsZero incounter then
-              ( ()
-              ; setQueueDepth (myWorkerId ()) depth
-                (** Atomic 1 *)
-              ; Thread.atomicBegin ()
-
-                (** Atomic 2 *)
-
-                (** (When sibling is resumed, it needs to be atomic 1.
-                  * Switching threads is implicit atomicEnd(), so we need
-                  * to be at atomic2
-                  *)
-              ; assertAtomic "rightside switch-to-left" 2
-              ; threadSwitchEndAtomic thread
-              )
-            else
-              ( assertAtomic "rightside before returnToSched" 1
-              ; returnToSchedEndAtomic ()
-              )
-          end
-
-        (* double check... hopefully correct, not off by one? *)
-        val _ = push (NormalTask (g', tidParent, depth))
-        val _ = HH.setDepth (thread, depth + 1)
-
-        (* NOTE: off-by-one on purpose. Runtime depths start at 1. *)
-        val _ = recordForkDepth depth
-
-        val _ = incrementNumSpawns ()
-        val _ = traceSchedSpawn ()
-
-        val _ = DE.decheckSetTid tidLeft
-        val _ = assertAtomic "spawn done" 1
-        val _ = Thread.atomicEnd ()
-      in
-        J { leftSideThread = thread
-          , rightSideThread = rightSideThreadSlot
-          , rightSideResult = rightSideResult
-          , incounter = incounter
-          , tidRight = tidRight
-          , spareHeartbeatsGiven = half
-          , tokenPolicy = TokenPolicyFair
-          , gcj = gcj
-          }
-      end
-
-
-    fun maybeSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint option =
-      let
-        val depth = HH.getDepth (Thread.current ())
-      in
-        if depth >= Queue.capacity orelse not (depthOkayForDECheck depth) then
-          NONE
-        else
-          NONE
-      end
-
+    fun maybeSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint option = NONE
 
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
         (J {rightSideThread, rightSideResult, incounter, tidRight, gcj, spareHeartbeatsGiven, tokenPolicy, ...} : 'a joinpoint)
         : 'a Result.t option
-      =
+      = 
       let
         val _ = assertAtomic "syncEndAtomic begin" 1
 
