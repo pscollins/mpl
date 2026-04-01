@@ -1,0 +1,2 @@
+mkdir -p bin
+cd bin && /home/patrick/code/mpl/build/bin/mpl -default-type int64 -default-type word64  -output minimize.bin ../standalone-sched.mlb
