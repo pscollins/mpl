@@ -4,6 +4,28 @@ ann
 in
   $(SML_LIB)/basis/basis.mlb
   $(SML_LIB)/basis/mlton.mlb
-  $(SML_LIB)/basis/fork-join.mlb
+  $(SML_LIB)/basis/mpl.mlb
+  $(SML_LIB)/basis/unsafe.mlb
+  
+  local
+    $(SML_LIB)/basis/build/sources.mlb
+  in
+    structure Primitive
+    structure ArrayExtra = Array
+    structure ArraySliceExtra = ArraySlice
+    functor Int_ChooseFromInt
+  end
+
+  $(SML_LIB)/basis/schedulers/spork/CumulativePerProcTimer.sml
+  $(SML_LIB)/basis/schedulers/spork/SimpleRandom.sml
+  $(SML_LIB)/basis/schedulers/spork/DequeABP.sml
+  $(SML_LIB)/basis/schedulers/spork/Result.sml
+  
+  ann "exnDecElab app" in
+    $(SML_LIB)/basis/schedulers/spork/Universal.sml
+  end
+
+  $(SML_LIB)/basis/schedulers/spork/Heartbeat.sml
+
   standalone-sched.sml
 end
