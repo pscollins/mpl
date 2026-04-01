@@ -39,14 +39,6 @@ struct
       __inline_always__ primSporkFair' (body, (), spwn, (), seq, sync, exnseq, exnsync)
   
   val primForkThreadAndSetData = _prim "spork_forkThreadAndSetData": Thread.t * 'a -> Thread.p;
-  val primForkThreadAndSetData_youngest = _prim "spork_forkThreadAndSetData_youngest": Thread.t * 'a -> Thread.p;
-
-  val findNextPromotableFrame =
-    _import "GC_HH_findNextPromotableFrame" runtime private: gcstate * bool * Thread.t -> bool;
-  val findNextPromotableFrame =
-      (fn __inline_always__ ({youngestOptimization}, p) =>
-          findNextPromotableFrame (gcstate (), youngestOptimization, p))
-      : {youngestOptimization: bool} * Thread.t -> bool;
 
   fun assertAtomic msg x = ()
 
@@ -59,25 +51,7 @@ struct
 
   structure DE = MLton.Thread.Disentanglement
 
-  local
-    (** See MAX_FORK_DEPTH in runtime/gc/decheck.c *)
-    val maxDisetanglementCheckDepth = DE.decheckMaxDepth ()
-  in
-  fun depthOkayForDECheck depth =
-    case maxDisetanglementCheckDepth of
-      (* in this case, there is no entanglement detection, so no problem *)
-      NONE => true
-
-      (* entanglement checks are active, and the max depth is m *)
-    | SOME m => depth < m
-  end
-
-
-  fun faa (r, d) = MLton.Parallel.fetchAndAdd r d
-  fun casRef r (old, new) =
-    (MLton.Parallel.compareAndSwap r (old, new) = old)
-  fun decrementHitsZero (x : int ref) : bool =
-    faa (x, ~1) = 1
+  fun decrementHitsZero (x : int ref) : bool = true
 
   datatype gc_joinpoint =
     GCJ of {gcTaskData: gctask_data option, tidRight: Word64.word}
@@ -472,94 +446,22 @@ struct
         : 'a Result.t option
       = 
       let
-        val _ = assertAtomic "syncEndAtomic begin" 1
-
         val thread = Thread.current ()
         val depth = HH.getDepth thread
-        val newDepth = depth-1
-        val tidLeft = DE.decheckGetTid thread
+        val _ = decrementHitsZero incounter
+        val _ = HM.refDerefNoBarrier rightSideThread
 
         val result =
-          (* Might seem like a space leak here, because we don't clean up the
-           * thread that was spawned and added to the deque. But this is okay:
-           * the thread hasn't been stolen, so it hasn't yet been converted
-           * into a full thread. (The discarded thread is located in the current
-           * heap, not in some other heap, so it will be garbage-collected
-           * appropriately.)
-           *)
-          if popDiscard () then
-            let val _ = dbgmsg'' (fn _ => "popDiscard success at depth " ^ Int.toString depth)
-                (* promote chunks into parent, update depth->newDepth, update
-                 * decheck state by joining tidLeft and tidRight.
-                 *)
-                val _ = HH.joinIntoParentBeforeFastClone
-                          {thread=thread, newDepth=newDepth, tidLeft=tidLeft, tidRight=tidRight}
-                val _ = traceSchedJoinFast ()
-                val _ = Thread.atomicEnd ()
-                val _ = doClearSuspects (thread, newDepth)
-                val _ = if newDepth <> 1 then () else HH.updateBytesPinnedEntangledWatermark ()
-                val _ = Heartbeat.zero
-                val _ = incrementNumFastJoins ()
-            in
-              NONE
-            end
-          else
-            ( if decrementHitsZero incounter then
-                ()
-              else
-                ( ()
-                  (** Atomic 1 *)
-                ; assertAtomic "syncEndAtomic before returnToSched" 1
-                ; returnToSchedEndAtomic ()
-                ; assertAtomic "syncEndAtomic after returnToSched" 1
-                )
-
-            ; case HM.refDerefNoBarrier rightSideThread of
-                NONE => die (fn _ => "scheduler bug: join failed")
-              | SOME rightSideThread =>
-                  let
-                    val tidRight = DE.decheckGetTid rightSideThread
-
-                    (* merge the two threads, promote chunks into parent, 
-                     * update depth->newDepth, update the decheck state
-                     *)
-                    val _ = HH.joinIntoParent
-                      { thread = thread
-                      , rightSideThread = rightSideThread
-                      , newDepth = newDepth
-                      , tidLeft = tidLeft
-                      , tidRight = tidRight
-                      }
-
-                    val _ = incrementNumSlowJoins ()
-
-                    val _ = traceSchedJoin ()
-
-                    (* SAM_NOTE: TODO: we really ought to make this part of
-                     * the HH.joinIntoParent call, above. Is that possible?
-                     *)
-                    val _ = setQueueDepth (myWorkerId ()) newDepth
-
-                    val result = 
-                      case HM.refDerefNoBarrier rightSideResult of
-                        NONE => die (fn _ => "scheduler bug: join failed: missing result")
-                      | SOME gr =>
-                          ( ()
-                          ; assertAtomic "syncEndAtomic after merge" 1
-                          ; Thread.atomicEnd ()
-                          ; gr
-                          )
-                  in
-                    doClearSuspects (thread, newDepth);
-                    if newDepth <> 1 then () else HH.updateBytesPinnedEntangledWatermark ();
-                    SOME result
-                  end
-            )
-        val _ = case gcj of
-                    NONE => ()
-                  | SOME gcj => ()
+            if popDiscard () then
+               let 
+                  val _ = HH.joinIntoParentBeforeFastClone
+                              {thread=thread, newDepth=depth, tidLeft=tidRight, tidRight=tidRight}
+               in
+                  NONE
+               end
+            else NONE
       in
-        result
+        NONE
       end
 
     fun simpleParFork (f: unit -> unit, g: unit -> unit) : unit =
