@@ -231,33 +231,15 @@ struct
             val gcTaskTuple = (interruptedThread, heapId)
             val gcTaskData = SOME gcTaskTuple
             val gcTask = GCTask gcTaskTuple
-            val cont_arr1 = ref NONE
-            val cont_arr2 = ref NONE
-            val cont_arr3 = ref (SOME (fn _ => (gcTask, gcTaskData))) (* a hack, I hope it works. *)
-
-            (** The above could trigger a local GC and invalidate the hh
-              * identifier... :'(
-              *)
-            val _ = heapId := HH.getRoot thread
+            val _ = push gcTask
           in
-            if not (HH.registerCont (cont_arr1, cont_arr2, cont_arr3, thread)) then
-              NONE
-            else
-              let
-                val (tidLeft, tidRight) = DE.decheckFork ()
-                val _ = push gcTask
-                val _ = HH.setDepth (thread, depth + 1)
-                val _ = DE.decheckSetTid tidLeft
-                val _ = HH.forceLeftHeap(myWorkerId(), thread)
-              in
-                SOME (GCJ {gcTaskData = gcTaskData, tidRight = tidRight})
-              end
+             NONE
           end
       end
 
 
     (* runs in signal handler *)
-    fun doSpawn {youngestOptimization: bool} (interruptedLeftThread: Thread.t) : unit =
+    fun doSpawn (interruptedLeftThread: Thread.t) : unit =
       let
         val gcj = spawnGC interruptedLeftThread
         val _ = assertAtomic "spawn after spawnGC" 1
@@ -277,7 +259,6 @@ struct
         val (tidLeft, tidRight) = DE.decheckFork ()
 
         val giveTokens = Heartbeat.halfOfCurrent ()
-        val _ = Heartbeat.consumeSpare giveTokens
         val jp =
           J { leftSideThread = interruptedLeftThread
             , rightSideThread = rightSideThreadSlot
@@ -299,8 +280,7 @@ struct
 
     (* runs in signal handler *)
     fun maybeSpawn youngestOptimization (interruptedLeftThread: Thread.t) : bool =
-        (doSpawn youngestOptimization interruptedLeftThread ; true)
-
+        (doSpawn interruptedLeftThread ; true)
 
     fun maybeSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint option = NONE
 
