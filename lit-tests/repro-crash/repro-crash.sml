@@ -425,32 +425,6 @@ struct
       end
 
 
-    fun syncGC doClearSuspects (GCJ {gcTaskData, tidRight}) =
-      let
-        val _ = Thread.atomicBegin ()
-        val thread = Thread.current ()
-        val depth = HH.getDepth thread
-        val newDepth = depth-1
-      in
-        (* This can be reused here... the name isn't appropriate in this
-         * context, but the functionality is the same:
-         *   - promote chunks into parent
-         *   - update depth->newDepth
-         *   - update decheck state by joining tidLeft and tidRight.
-         *)
-        HH.joinIntoParentBeforeFastClone
-          { thread = thread
-          , newDepth = newDepth
-          , tidLeft = DE.decheckGetTid thread
-          , tidRight = tidRight
-          };
-
-        assertAtomic "syncGC done" 1;
-        Thread.atomicEnd ();
-
-        doClearSuspects (thread, newDepth)
-      end
-
     (* runs in signal handler *)
     fun doSpawn {youngestOptimization: bool} (interruptedLeftThread: Thread.t) : unit =
       let
@@ -494,9 +468,6 @@ struct
 
         (* this sets the join for both threads (left and right) *)
         val rightSideThread =
-          if youngestOptimization then
-            primForkThreadAndSetData_youngest (interruptedLeftThread, jp)
-          else
             primForkThreadAndSetData (interruptedLeftThread, jp)
 
         (* determine how many heartbeats given to rhs from difference vs before *)
@@ -521,19 +492,7 @@ struct
 
     (* runs in signal handler *)
     fun maybeSpawn youngestOptimization (interruptedLeftThread: Thread.t) : bool =
-      let
-        val depth = HH.getDepth (Thread.current ())
-      in
-        if depth >= Queue.capacity orelse not (depthOkayForDECheck depth) then
-          false
-        else if not (findNextPromotableFrame (youngestOptimization, interruptedLeftThread)) then
-          false
-        else
-          ( doSpawn youngestOptimization interruptedLeftThread
-          ; true
-          )
-      end
-
+        (doSpawn youngestOptimization interruptedLeftThread ; true)
 
     fun doSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint =
       let
@@ -634,7 +593,7 @@ struct
         if depth >= Queue.capacity orelse not (depthOkayForDECheck depth) then
           NONE
         else
-          SOME (doSpawnFunc {allowCGC=allowCGC} g)
+          NONE
       end
 
 
@@ -730,7 +689,7 @@ struct
             )
         val _ = case gcj of
                     NONE => ()
-                  | SOME gcj => syncGC doClearSuspects gcj;
+                  | SOME gcj => ()
       in
         result
       end
