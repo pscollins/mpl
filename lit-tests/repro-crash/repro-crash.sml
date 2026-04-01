@@ -9,10 +9,7 @@ struct
   val P = 1
   fun myWorkerId ()  = MLton.Parallel.processorNumber ()
 
-  fun die strfn =
-    ( print (Int.toString (myWorkerId ()) ^ ": " ^ strfn () ^ "\n")
-    ; OS.Process.exit OS.Process.failure
-    )
+  fun die strfn = OS.Process.exit OS.Process.failure
 
 
   type gcstate = MLton.Pointer.t
@@ -21,12 +18,6 @@ struct
   datatype TokenPolicy =
       TokenPolicyFair (* 0w0 *)
 
-  val traceSchedIdleEnter = _import "GC_Trace_schedIdleEnter" private: gcstate -> unit; o gcstate
-  val traceSchedIdleLeave = _import "GC_Trace_schedIdleLeave" private: gcstate -> unit; o gcstate
-  val traceSchedWorkEnter = _import "GC_Trace_schedWorkEnter" private: gcstate -> unit; o gcstate
-  val traceSchedWorkLeave = _import "GC_Trace_schedWorkLeave" private: gcstate -> unit; o gcstate
-  val traceSchedSleepEnter = _import "GC_Trace_schedSleepEnter" private: gcstate -> unit; o gcstate
-  val traceSchedSleepLeave = _import "GC_Trace_schedSleepLeave" private: gcstate -> unit; o gcstate
   val traceSchedSpawn = _import "GC_Trace_schedSpawn" private: gcstate -> unit; o gcstate
   val traceSchedJoin = _import "GC_Trace_schedJoin" private: gcstate -> unit; o gcstate
   val traceSchedJoinFast = _import "GC_Trace_schedJoinFast" private: gcstate -> unit; o gcstate
@@ -354,7 +345,7 @@ struct
       Queue.size queue
     end
 
-  fun push x =
+  fun push (x): unit =
     let
       val myId = myWorkerId ()
       val {queue, ...} = vectorSub (workerLocalData, myId)
@@ -367,10 +358,10 @@ struct
       val myId = myWorkerId ()
       val {queue, ...} = vectorSub (workerLocalData, myId)
     in
-      Queue.clear queue
+       ()
     end
 
-  fun pop () =
+  fun pop (): task option =
     let
       val myId = myWorkerId ()
       val {queue, ...} = vectorSub (workerLocalData, myId)
@@ -383,14 +374,7 @@ struct
       NONE => false
     | SOME _ => true
 
-  fun returnToSchedEndAtomic () =
-    let
-      val myId = myWorkerId ()
-      val {schedThread, ...} = vectorSub (workerLocalData, myId)
-      val _ = dbgmsg'' (fn _ => "return to sched")
-    in
-      threadSwitchEndAtomic (Option.valOf (HM.refDerefNoBarrier schedThread))
-    end
+  fun returnToSchedEndAtomic () = ()
 
   (* ========================================================================
    * SPORK JOIN
@@ -448,20 +432,6 @@ struct
         val depth = HH.getDepth thread
         val newDepth = depth-1
       in
-        if popDiscard() then
-          ( ()
-          ; dbgmsg' (fn _ => "switching to do some GC stuff")
-          ; setGCTask (myWorkerId ()) gcTaskData (* This communicates with the scheduler thread *)
-          ; push (Continuation (thread, newDepth))
-          ; assertAtomic "syncGC before returnToSched" 1
-          ; returnToSchedEndAtomic ()
-          ; assertAtomic "syncGC after returnToSched" 1
-          ; dbgmsg' (fn _ => "back from GC stuff")
-          )
-        else
-          ( setQueueDepth (myWorkerId ()) newDepth
-          );
-
         (* This can be reused here... the name isn't appropriate in this
          * context, but the functionality is the same:
          *   - promote chunks into parent
@@ -765,75 +735,6 @@ struct
         result
       end
 
-    (* ===================================================================
-     * handler fn definitions
-     *)
-
-    fun heartbeatHandler (thread: Thread.t) =
-      let
-        (* NOTE: we can't assert the token invariants here! We can only do
-         * so after the heartbeatHandler finishes. It's possible for the
-         * token invariants to be briefly violated, in which case the
-         * handler restores them.
-         *)
-
-        val hadEnoughToSpawnBefore = Heartbeat.enoughToSpawn ()
-
-        val _ = Heartbeat.addSpare Heartbeat.tokensPerBeat
-
-        fun loop i =
-          if
-            Heartbeat.enoughToSpawn ()
-            andalso maybeSpawn {youngestOptimization = false} thread
-          then
-            loop (i+1)
-          else
-            i
-
-        val numSpawned = loop 0
-
-        val _ = assertTokenInvariants thread "heartbeatHandler"
-        val _ =
-          (* If the hearbeat handler intervenes immediately before the eager
-           * check at each `par`, then there should be exactly one spawn.
-           *)
-          if hadEnoughToSpawnBefore andalso numSpawned > 1 then
-            die (fn _ => "scheduler bug: more than one eager fork was missed")
-          else
-            ()
-      in
-        incrementNumHeartbeats ()
-      end
-
-
-    fun doIfArgIsNotSchedulerThread (f: Thread.t -> unit) (arg: Thread.t) =
-      case getSchedThread () of
-        NONE => ()
-      | SOME t =>
-          if MLton.eq (arg, t) then ()
-          else f arg
-
-
-    (** itimer is used to deliver signals regularly. sigusr1 is used to relay
-      * these to all processes
-      *)
-    val _ =
-      if P > Heartbeat.relayerThreshold then () else
-        MLton.Signal.setHandler
-          ( MLton.Itimer.signal MLton.Itimer.Real
-          , MLton.Signal.Handler.inspectInterrupted
-              (doIfArgIsNotSchedulerThread heartbeatHandler)
-          )
-
-    val _ = MLton.Signal.setHandler
-      ( Posix.Signal.usr1
-      , MLton.Signal.Handler.inspectInterrupted
-          (doIfArgIsNotSchedulerThread heartbeatHandler)
-      )
-
-
-    (* =======================================================================
-     *)
 
 
     fun simpleParFork (f: unit -> unit, g: unit -> unit) : unit =
@@ -998,31 +899,17 @@ struct
 
         fun __inline_always__ sync' (bodyr: 'a, jp: Universal.t joinpoint): 'c =
           let
-            val _ = dbgmsg'' (fn _ => "hello from sync continuation")
-            val _ = Thread.atomicBegin ()
-            val _ = #assertAtomic (sched_package ()) "sync continuation" 1
             val spwnrOpt = #syncEndAtomic (sched_package ()) jp
-            val bodyr' = bodyr
           in
             case spwnrOpt of
               (* spwn was unstolen *)
-                NONE => unstolen bodyr'
-              (* spwn was stolen and synced in syncEndAtomic *)
-              | SOME spwnr =>
-                case project (Result.extractResult spwnr) of
-                    SOME r => sync (bodyr', r)
-                  | NONE => (#error (sched_package ())
-                                    "scheduler bug: spork sync: failed project right-side result";
-                             raise SchedulerError)
+                _ => unstolen bodyr
           end
 
         fun __inline_always__ exnseq' (e: exn): 'c = raise e
 
         fun __inline_always__ exnsync' (e: exn, jp: Universal.t joinpoint): 'c =
-            let val _ = dbgmsg'' (fn _ => "hello from exn sync continuation")
-                val _ = Thread.atomicBegin ()
-                val _ = #assertAtomic (sched_package ()) "exn sync continuation" 1
-                val _ = #syncEndAtomic (sched_package ()) jp
+            let val _ = #syncEndAtomic (sched_package ()) jp
             in
               raise e
             end
@@ -1031,8 +918,7 @@ struct
       end
 
     fun __inline_always__ spork
-                          {tokenPolicy: TokenPolicy,
-                           body: unit -> 'a,
+                          {body: unit -> 'a,
                            spwn: unit -> 'b,
                            seq: 'a -> 'c,
                            sync: 'a * 'b -> 'c,
@@ -1044,13 +930,10 @@ struct
 end
 structure ForkJoin0 =
 struct
-  datatype TokenPolicy = datatype Scheduler.TokenPolicy
-
   val spork = Scheduler.SporkJoin.spork
 
   fun par (f: unit -> 'a, g: unit -> 'b): 'a * 'b =
       spork {
-        tokenPolicy = TokenPolicyFair,
         body = f,
         spwn = g,
         seq  = fn a => (a, g ()),
