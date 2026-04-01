@@ -11,7 +11,6 @@ struct
 
   fun die strfn = OS.Process.exit OS.Process.failure
 
-
   type gcstate = MLton.Pointer.t
   val gcstate = _prim "GC_state": unit -> gcstate;
 
@@ -25,13 +24,6 @@ struct
   structure Queue = DequeABP (*ArrayQueue*)
   structure Thread = MLton.Thread.Basic
 
-  val nextPromotionTokenPolicy =
-    _import "GC_HH_getNextPromotionTokenPolicy" runtime private: gcstate * Thread.t -> Word32.word;
-  val nextPromotionTokenPolicy =
-    (fn __inline_always__ thread => case nextPromotionTokenPolicy (gcstate (), thread) of
-                  0w0 => TokenPolicyFair
-                | w => die (fn _ => "Unknown token policy " ^ Word32.toString w))
-  
   val primSporkFair' =
       _prim "spork_fair"
         : ('aa -> 'ar)		(* body     *)
@@ -434,8 +426,6 @@ struct
         val thread = Thread.current ()
         val depth = HH.getDepth thread
 
-        val _ = dbgmsg'' (fn _ => "spawning at depth " ^ Int.toString depth)
-
         (* We use a ref here instead of using rightSideThread directly.
          * The rightSideThread is a Thread.p (it doesn't have a heap yet).
          * The thief will convert it into a Thread.t and give it a heap,
@@ -447,14 +437,8 @@ struct
         val tidParent = DE.decheckGetTid thread
         val (tidLeft, tidRight) = DE.decheckFork ()
 
-        val _ = Heartbeat.consumeSpare Heartbeat.spawnCost
-
-        val tokenPolicy = nextPromotionTokenPolicy interruptedLeftThread
-        val giveTokens = case tokenPolicy of
-                             TokenPolicyFair => Heartbeat.halfOfCurrent ()
+        val giveTokens = Heartbeat.halfOfCurrent ()
         val _ = Heartbeat.consumeSpare giveTokens
-        (* val spareBefore = currentSpareHeartbeatTokens () *)
-        (* val spareHB = ref 0w0 *)
         val jp =
           J { leftSideThread = interruptedLeftThread
             , rightSideThread = rightSideThreadSlot
@@ -462,29 +446,13 @@ struct
             , incounter = incounter
             , tidRight = tidRight
             , spareHeartbeatsGiven = giveTokens
-            , tokenPolicy = tokenPolicy
+            , tokenPolicy = TokenPolicyFair
             , gcj = gcj
             }
 
         (* this sets the join for both threads (left and right) *)
         val rightSideThread =
             primForkThreadAndSetData (interruptedLeftThread, jp)
-
-        (* determine how many heartbeats given to rhs from difference vs before *)
-        (* val _ = spareHB := spareBefore - currentSpareHeartbeatTokens () *)
-
-        (* double check... hopefully correct, not off by one? *)
-        val _ = push (NewThread (rightSideThread, tidParent, depth))
-        val _ = HH.setDepth (thread, depth + 1)
-
-        (* NOTE: off-by-one on purpose. Runtime depths start at 1. *)
-        val _ = recordForkDepth depth
-
-        val _ = incrementNumSpawns ()
-        val _ = traceSchedSpawn ()
-
-        val _ = DE.decheckSetTid tidLeft
-        val _ = assertAtomic "spawn done" 1
       in
         ()
       end
@@ -611,9 +579,8 @@ struct
 
     and maybeParClearSuspectsAtDepth (t, d) = ()
 
-  
-    val sched_package_data = ref
-      { syncEndAtomic = syncEndAtomic maybeParClearSuspectsAtDepth
+    fun sched_package () = 
+        { syncEndAtomic = syncEndAtomic maybeParClearSuspectsAtDepth
       , maybeSpawn = maybeSpawn
       , setQueueDepth = setQueueDepth
       , returnToSchedEndAtomic = returnToSchedEndAtomic
@@ -622,10 +589,6 @@ struct
       , assertAtomic = assertAtomic
       , error = (fn s => die (fn _ => s)) : string -> unit
       }
-
-    fun sched_package () = !sched_package_data
-
-    exception SchedulerError
 
     (* ===================================================================
      * spork definition
@@ -698,19 +661,11 @@ struct
               ; #setQueueDepth (sched_package ()) (myWorkerId ()) depth
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
-
-                (** Atomic 2 *)
-
-                (** (When sibling is resumed, it needs to be atomic 1.
-                  * Switching threads is implicit atomicEnd(), so we need
-                  * to be at atomic2
-                  *)
               ; #assertAtomic (sched_package ()) "spork rightside switch-to-left" 2
               ; threadSwitchEndAtomic (#leftSideThread jp)
               )
             else
-              ( dbgmsg'' (fn _ => "rightside synchronize: back to sched")
-              ; #assertAtomic (sched_package ()) "spork rightside before returnToSched" 1
+              ( #assertAtomic (sched_package ()) "spork rightside before returnToSched" 1
               ; #returnToSchedEndAtomic (sched_package ()) ()
               )
           end
