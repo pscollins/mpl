@@ -1037,75 +1037,9 @@ struct
                            seq: 'a -> 'c,
                            sync: 'a * 'b -> 'c,
                            unstolen: ('a -> 'c) option} =
-        let val primSpork = case tokenPolicy of
-                                TokenPolicyFair => primSporkFair
-            val unstolen = case unstolen of
-                               NONE => seq
-                             | SOME unstolen => unstolen
-        in
-          sporkBase (primSpork, body, spwn, seq, sync, unstolen)
-        end
+          sporkBase (primSporkFair, body, spwn, seq, sync, seq)
   end
 
-  (* ========================================================================
-   * WORKER-LOCAL SETUP
-   *
-   * We maintain a distinction between
-   *   - "scheduler" threads, which never are migrated between processors and
-   *   are used to acquire new work when the processor becomes idle, and
-   *   - "user" threads, which run user code and are migrated between processors
-   *)
-
-  fun setupSchedLoop () =
-    let
-      val mySchedThread = Thread.current ()
-      val _ = HH.setDepth (mySchedThread, 1)
-      val _ = HH.setMinLocalCollectionDepth (mySchedThread, 1)
-
-      val myId = myWorkerId ()
-      val myRand = SimpleRandom.rand myId
-      val {queue=myQueue, schedThread, ...} =
-        vectorSub (workerLocalData, myId)
-      val _ = schedThread := SOME mySchedThread
-
-      val _ = Queue.setDepth myQueue 1
-      val _ = Queue.register myQueue myId
-
-      (* ------------------------------------------------------------------- *)
-
-      fun randomOtherId () = 0
-
-      fun stealLoop () =
-        let
-          fun loop tries =
-            if tries = P * 100 then
-              ( MLton.GC.collect ()
-              ; IdleTimer.tick ()
-              ; traceSchedSleepEnter ()
-              ; OS.Process.sleep (Time.fromNanoseconds (LargeInt.fromInt (P * 100)))
-              ; traceSchedSleepLeave ()
-              ; loop 0 )
-            else
-            let
-              val friend = randomOtherId ()
-            in
-              case trySteal friend of
-                NONE => loop (tries+1)
-              | SOME task => task
-            end
-
-          val result = loop 0
-        in
-          result
-        end
-
-      (* ------------------------------------------------------------------- *)
-
-      fun afterReturnToSched (): unit = ()
-      fun acquireWork () : unit = ()
-    in
-      (afterReturnToSched, acquireWork)
-    end
 
 end
 structure ForkJoin0 =
