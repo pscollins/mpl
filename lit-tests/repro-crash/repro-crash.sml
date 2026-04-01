@@ -20,8 +20,6 @@ struct
 
   datatype TokenPolicy =
       TokenPolicyFair (* 0w0 *)
-    | TokenPolicyKeep (* 0w1 *)
-    | TokenPolicyGive (* 0w2 *)
 
   val traceSchedIdleEnter = _import "GC_Trace_schedIdleEnter" private: gcstate -> unit; o gcstate
   val traceSchedIdleLeave = _import "GC_Trace_schedIdleLeave" private: gcstate -> unit; o gcstate
@@ -41,8 +39,6 @@ struct
   val nextPromotionTokenPolicy =
     (fn __inline_always__ thread => case nextPromotionTokenPolicy (gcstate (), thread) of
                   0w0 => TokenPolicyFair
-                | 0w1 => TokenPolicyKeep
-                | 0w2 => TokenPolicyGive
                 | w => die (fn _ => "Unknown token policy " ^ Word32.toString w))
   
   val primSporkFair' =
@@ -56,34 +52,8 @@ struct
         * (exn -> 'c)		(* exn seq  *)
         * (exn * 'd -> 'c)	(* exn sync *)
         -> 'c;
-  val primSporkKeep' =
-      _prim "spork_keep"
-        : ('aa -> 'ar)		(* body     *)
-        * 'aa			(* body arg *)
-        * ('ba * 'd -> 'br)	(* spwn     *)
-        * 'ba			(* spwn arg *)
-        * ('ar -> 'c)		(* seq      *)
-        * ('ar * 'd -> 'c)	(* sync     *)
-        * (exn -> 'c)		(* exn seq  *)
-        * (exn * 'd -> 'c)	(* exn sync *)
-        -> 'c;
-  val primSporkGive' =
-      _prim "spork_give"
-        : ('aa -> 'ar)		(* body     *)
-        * 'aa			(* body arg *)
-        * ('ba * 'd -> 'br)	(* spwn     *)
-        * 'ba			(* spwn arg *)
-        * ('ar -> 'c)		(* seq      *)
-        * ('ar * 'd -> 'c)	(* sync     *)
-        * (exn -> 'c)		(* exn seq  *)
-        * (exn * 'd -> 'c)	(* exn sync *)
-        -> 'c;
   fun __inline_always__ primSporkFair (body, spwn, seq, sync, exnseq, exnsync) =
       __inline_always__ primSporkFair' (body, (), spwn, (), seq, sync, exnseq, exnsync)
-  fun __inline_always__ primSporkKeep (body, spwn, seq, sync, exnseq, exnsync) =
-      __inline_always__ primSporkKeep' (body, (), spwn, (), seq, sync, exnseq, exnsync)
-  fun __inline_always__ primSporkGive (body, spwn, seq, sync, exnseq, exnsync) =
-      __inline_always__ primSporkGive' (body, (), spwn, (), seq, sync, exnseq, exnsync)
   
   val primForkThreadAndSetData = _prim "spork_forkThreadAndSetData": Thread.t * 'a -> Thread.p;
   val primForkThreadAndSetData_youngest = _prim "spork_forkThreadAndSetData_youngest": Thread.t * 'a -> Thread.p;
@@ -538,8 +508,6 @@ struct
         val tokenPolicy = nextPromotionTokenPolicy interruptedLeftThread
         val giveTokens = case tokenPolicy of
                              TokenPolicyFair => Heartbeat.halfOfCurrent ()
-                           | TokenPolicyKeep => Heartbeat.zero
-                           | TokenPolicyGive => Heartbeat.currentSpare ()
         val _ = Heartbeat.consumeSpare giveTokens
         (* val spareBefore = currentSpareHeartbeatTokens () *)
         (* val spareHB = ref 0w0 *)
@@ -733,9 +701,7 @@ struct
                 val _ = Thread.atomicEnd ()
                 val _ = doClearSuspects (thread, newDepth)
                 val _ = if newDepth <> 1 then () else HH.updateBytesPinnedEntangledWatermark ()
-                val _ = case tokenPolicy of
-                            TokenPolicyGive => Heartbeat.addSpare spareHeartbeatsGiven
-                          | _ => Heartbeat.zero
+                val _ = Heartbeat.zero
                 val _ = incrementNumFastJoins ()
             in
               NONE
@@ -1073,8 +1039,6 @@ struct
                            unstolen: ('a -> 'c) option} =
         let val primSpork = case tokenPolicy of
                                 TokenPolicyFair => primSporkFair
-                              | TokenPolicyGive => primSporkGive
-                              | TokenPolicyKeep => primSporkKeep
             val unstolen = case unstolen of
                                NONE => seq
                              | SOME unstolen => unstolen
@@ -1110,9 +1074,6 @@ struct
       (* ------------------------------------------------------------------- *)
 
       fun randomOtherId () = 0
-        (* let val other = SimpleRandom.boundedInt (0, P-1) myRand *)
-        (* in if other < myId then other else other+1 *)
-        (* end *)
 
       fun stealLoop () =
         let
@@ -1140,137 +1101,8 @@ struct
 
       (* ------------------------------------------------------------------- *)
 
-      fun afterReturnToSched () =
-        case getGCTask myId of
-          NONE => ( dbgmsg'' (fn _ => "back in sched; no GC task"); () )
-        | SOME (thread, hh) =>
-            ( dbgmsg'' (fn _ => "back in sched; found GC task")
-            ; setGCTask myId NONE
-            (* ; print ("afterReturnToSched: found GC task\n") *)
-            ; traceSchedIdleLeave ()
-            ; traceSchedWorkEnter ()
-            ; IdleTimer.stop ()
-            ; WorkTimer.start ()
-            ; HH.collectThreadRoot (thread, !hh)
-            (* ; print ("afterReturnToSched: done with GC\n") *)
-            ; case pop () of
-                NONE =>
-                  ( WorkTimer.stop ()
-                  ; IdleTimer.start ()
-                  ; traceSchedWorkLeave ()
-                  ; traceSchedIdleEnter ()
-                  )
-              | SOME (Continuation (thread, _)) =>
-                  ( ()
-                  ; dbgmsg'' (fn _ => "resume task thread")
-                  ; Thread.atomicBegin ()
-                  ; Thread.atomicBegin ()
-                  ; assertAtomic "afterReturnToSched before thread switch" 2
-                  ; threadSwitchEndAtomic thread
-                  ; WorkTimer.stop ()
-                  ; IdleTimer.start ()
-                  ; traceSchedWorkLeave ()
-                  ; traceSchedIdleEnter ()
-                  ; afterReturnToSched ()
-                  )
-              | SOME _ =>
-                  die (fn _ => "bug: Scheduler.afterReturnToSched: impossible")
-            )
-
-      fun acquireWork () : unit =
-        let
-          val task = stealLoop ()
-          val _ = incrementNumSteals ()
-        in
-          case task of
-            GCTask (thread, hh) =>
-              ( dbgmsg'' (fn _ => "starting GCTask")
-              ; traceSchedIdleLeave ()
-              ; traceSchedWorkEnter ()
-              ; IdleTimer.stop ()
-              ; WorkTimer.start ()
-              ; HH.collectThreadRoot (thread, !hh)
-              ; WorkTimer.stop ()
-              ; IdleTimer.start ()
-              ; traceSchedWorkLeave ()
-              ; traceSchedIdleEnter ()
-              ; acquireWork ()
-              )
-          | Continuation (thread, depth) =>
-              ( ()
-              ; dbgmsg'' (fn _ => "stole continuation (" ^ Int.toString depth ^ ")")
-              (* ; dbgmsg' (fn _ => "resume task thread") *)
-              ; Queue.setDepth myQueue depth
-              ; traceSchedIdleLeave ()
-              ; traceSchedWorkEnter ()
-              ; IdleTimer.stop ()
-              ; WorkTimer.start ()
-              ; Thread.atomicBegin ()
-              ; Thread.atomicBegin ()
-              ; assertAtomic "acquireWork before thread switch" 2
-              ; threadSwitchEndAtomic thread
-              ; WorkTimer.stop ()
-              ; IdleTimer.start ()
-              ; traceSchedWorkLeave ()
-              ; traceSchedIdleEnter ()
-              ; afterReturnToSched ()
-              ; Queue.setDepth myQueue 1
-              ; acquireWork ()
-              )
-          | NormalTask (taskFn, tidParent, depth) =>
-              let
-                val taskThread = Thread.copy prototypeThread
-              in
-                if depth >= 1 then () else
-                  die (fn _ => "scheduler bug: acquired with depth " ^ Int.toString depth);
-                Queue.setDepth myQueue (depth+1);
-                HH.moveNewThreadToDepth (taskThread, tidParent, depth);
-                HH.setDepth (taskThread, depth+1);
-                setTaskBox myId taskFn;
-                traceSchedIdleLeave ();
-                traceSchedWorkEnter ();
-                IdleTimer.stop ();
-                WorkTimer.start ();
-                Thread.atomicBegin ();
-                Thread.atomicBegin ();
-                assertAtomic "acquireWork before thread switch" 2;
-                threadSwitchEndAtomic taskThread;
-                WorkTimer.stop ();
-                IdleTimer.start ();
-                traceSchedWorkLeave ();
-                traceSchedIdleEnter ();
-                afterReturnToSched ();
-                Queue.setDepth myQueue 1;
-                acquireWork ()
-              end
-          | NewThread (thread, tidParent, depth) =>
-              let
-                val taskThread = Thread.copy thread
-              in
-                if depth >= 1 then () else
-                  die (fn _ => "scheduler bug: acquired with depth " ^ Int.toString depth);
-                Queue.setDepth myQueue (depth+1);
-                HH.moveNewThreadToDepth (taskThread, tidParent, depth);
-                HH.setDepth (taskThread, depth+1);
-                (* setTaskBox myId t; *)
-                traceSchedIdleLeave ();
-                traceSchedWorkEnter ();
-                IdleTimer.stop ();
-                WorkTimer.start ();
-                Thread.atomicBegin ();
-                Thread.atomicBegin ();
-                assertAtomic "acquireWork before thread switch" 2;
-                threadSwitchEndAtomic taskThread;
-                WorkTimer.stop ();
-                IdleTimer.start ();
-                traceSchedWorkLeave ();
-                traceSchedIdleEnter ();
-                afterReturnToSched ();
-                Queue.setDepth myQueue 1;
-                acquireWork ()
-              end
-        end
-
+      fun afterReturnToSched (): unit = ()
+      fun acquireWork () : unit = ()
     in
       (afterReturnToSched, acquireWork)
     end
