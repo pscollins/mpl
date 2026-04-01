@@ -5,36 +5,15 @@ struct
   fun arrayUpdate (a, i, x) = Array.update (a, i, x)
   fun vectorSub (v, i) = Vector.sub (v, i)
 
-  val maxCCDepth = MPL.GC.getControlMaxCCDepth ()
-  val P = MLton.Parallel.numberOfProcessors
-  val myWorkerId = MLton.Parallel.processorNumber
+  val maxCCDepth = 1
+  val P = 1
+  fun myWorkerId ()  = MLton.Parallel.processorNumber ()
 
   fun die strfn =
     ( print (Int.toString (myWorkerId ()) ^ ": " ^ strfn () ^ "\n")
     ; OS.Process.exit OS.Process.failure
     )
-    
-  fun search key args =
-    case args of
-      [] => NONE
-    | x :: args' =>
-        if key = x
-        then SOME args'
-        else search key args'
 
-  fun parseFlag key =
-    case search ("--" ^ key) (CommandLine.arguments ()) of
-      NONE => false
-    | SOME _ => true
-
-  fun parseInt key default =
-    case search ("-" ^ key) (CommandLine.arguments ()) of
-      NONE => default
-    | SOME [] => die (fn _ => "Missing argument of \"-" ^ key ^ "\" ")
-    | SOME (s :: _) =>
-        case Int.fromString s of
-          NONE => die (fn _ => "Cannot parse integer from \"-" ^ key ^ " " ^ s ^ "\"")
-        | SOME x => x
 
   type gcstate = MLton.Pointer.t
   val gcstate = _prim "GC_state": unit -> gcstate;
@@ -116,13 +95,7 @@ struct
           findNextPromotableFrame (gcstate (), youngestOptimization, p))
       : {youngestOptimization: bool} * Thread.t -> bool;
 
-  fun assertAtomic msg x =
-    let
-      val ass = Word32.toInt (Thread.atomicState ())
-    in
-      if ass = x then ()
-      else die (fn _ => "scheduler bug: " ^ msg ^ ": atomic " ^ Int.toString ass ^ " but expected " ^ Int.toString x)
-    end
+  fun assertAtomic msg x = ()
 
   val threadSwitchEndAtomic = Thread.switchTo
 
@@ -182,64 +155,17 @@ struct
 
   val printLock : Word32.word ref = ref 0w0
   val _ = MLton.Parallel.Deprecated.lockInit printLock
-  fun dbgmsg m =
-    if not doDebugMsg then () else
-    let
-      val p = myWorkerId ()
-      val _ = MLton.Parallel.Deprecated.takeLock printLock
-      val msg = String.concat ["[", Int.toString p, "] ", m(), "\n"]
-    in
-      ( TextIO.output (TextIO.stdErr, msg)
-      ; TextIO.flushOut TextIO.stdErr
-      ; MLton.Parallel.Deprecated.releaseLock printLock
-      )
-    end
+  fun dbgmsg m = ()
 
-  fun dbgmsg' m =
-    let
-      val p = myWorkerId ()
-      (* val _ = MLton.Parallel.Deprecated.takeLock printLock *)
-      val msg = String.concat ["[", Int.toString p, "] ", m(), "\n"]
-    in
-      ( TextIO.output (TextIO.stdErr, msg)
-      ; TextIO.flushOut TextIO.stdErr
-      (* ; MLton.Parallel.Deprecated.releaseLock printLock *)
-      )
-    end
-
+  fun dbgmsg' m = ()
   fun dbgmsg' _ = ()
 
 
-  fun dbgmsg''' m =
-    let
-      val p = myWorkerId ()
-      (* val _ = MLton.Parallel.Deprecated.takeLock printLock *)
-      val msg = String.concat ["[", Int.toString p, "] ", m(), "\n"]
-    in
-      ( TextIO.output (TextIO.stdErr, msg)
-      ; TextIO.flushOut TextIO.stdErr
-      (* ; MLton.Parallel.Deprecated.releaseLock printLock *)
-      )
-    end
+  fun dbgmsg''' m = ()
 
   fun dbgmsg'' _ = ()
-  (* fun dbgmsg'' m = dbgmsg''' m *)
 
-  fun assertTokenInvariants thread msg =
-    let
-      val depth = HH.getDepth (Thread.current ())
-      val notOkay =
-        depth < Queue.capacity
-        andalso depthOkayForDECheck depth
-        andalso Heartbeat.enoughToSpawn ()
-        andalso HH.canForkThread thread
-    in
-      if notOkay then
-        die (fn _ => "scheduler bug: " ^ msg ^ ": assertTokenInvariants: thread at depth " ^ Int.toString depth ^ " can fork but has tokens")
-      else
-        ()
-    end
-
+  fun assertTokenInvariants thread msg = ()
   (* ========================================================================
    * TASKS
    *)
@@ -1349,90 +1275,6 @@ struct
       (afterReturnToSched, acquireWork)
     end
 
-  (* ========================================================================
-   * INITIALIZATION
-   *)
-
-  fun sched () =
-    let
-      val (_, acquireWork) = setupSchedLoop ()
-    in
-      traceSchedIdleEnter ();
-      IdleTimer.start ();
-      acquireWork ();
-      die (fn _ => "scheduler bug: scheduler exited acquire-work loop")
-    end
-  val _ = MLton.Parallel.registerProcessorFunction sched
-
-  val originalThread = Thread.current ()
-  val _ =
-    if HH.getDepth originalThread = 0 then ()
-    else die (fn _ => "scheduler bug: root depth <> 0")
-  val _ = HH.setDepth (originalThread, 1)
-
-  (* implicitly attaches worker child heaps *)
-  val _ = MLton.Parallel.initializeProcessors ()
-
-  (* Copy the current thread in order to create a scheduler thread.
-   * First, the `then` branch is executed by the original thread. Then we
-   * switch to the fresh scheduler thread, which executes the `else` branch.
-   * Finally, the scheduler switches back to the original thread, so that
-   * it can continue exiting the main program. *)
-  val amOriginal = ref true
-  val _ = Thread.copyCurrent ()
-  val _ =
-    if !amOriginal then
-      let
-        val schedThread = Thread.copy (Thread.savedPre ())
-        (* val schedHeap = HH.newHeap () *)
-      in
-        amOriginal := false;
-        setQueueDepth (myWorkerId ()) 1;
-        Thread.atomicBegin ();
-        threadSwitchEndAtomic schedThread
-      end
-    else
-      let
-        val (afterReturnToSched, acquireWork) = setupSchedLoop ()
-      in
-        traceSchedWorkEnter ();
-        WorkTimer.start ();
-        Thread.atomicBegin ();
-        threadSwitchEndAtomic originalThread;
-        WorkTimer.stop ();
-        IdleTimer.start ();
-        traceSchedWorkLeave ();
-        traceSchedIdleEnter ();
-        afterReturnToSched ();
-        setQueueDepth (myWorkerId ()) 1;
-        acquireWork ();
-        die (fn _ => "scheduler bug: scheduler exited acquire-work loop")
-      end
-
-
-  val _ =
-    if P > Heartbeat.relayerThreshold then () else
-      MLton.Itimer.set (MLton.Itimer.Real,
-        { interval = Time.fromMicroseconds Heartbeat.interval
-        , value = Time.fromMicroseconds Heartbeat.interval
-        })
-
-
-  (* This might look silly, but don't remove it! See here:
-   *   https://github.com/MPLLang/mpl/issues/190
-   * We have to ensure that there is always at least one use of spork_getData
-   * in the program, otherwise the data argument of spork_forkThreadAndSetData
-   * will be optimized away, causing the compiler to crash because it doesn't
-   * know how to pass a useless argument to the corresponding runtime func.
-   *)
-  val () = SporkJoin.spork {
-        tokenPolicy = TokenPolicyFair,
-        body = fn () => (),
-        spwn = fn () => (),
-        seq  = fn () => (),
-        sync = fn ((), ()) => (),
-        unstolen = NONE
-      }
 end
 structure ForkJoin0 =
 struct
@@ -1476,17 +1318,6 @@ struct
       ArrayExtra.Raw.unsafeToArray a
     end
 
-  val maxForkDepthSoFar = Scheduler.maxForkDepthSoFar
-  val numSpawnsSoFar = Scheduler.numSpawnsSoFar
-  val numEagerSpawnsSoFar = Scheduler.numEagerSpawnsSoFar
-  val numHeartbeatsSoFar = Scheduler.numHeartbeatsSoFar
-  val numSkippedHeartbeatsSoFar = Scheduler.numSkippedHeartbeatsSoFar
-  val numStealsSoFar = Scheduler.numStealsSoFar
-
-  val idleTimeSoFar = Scheduler.IdleTimer.cumulative
-  val workTimeSoFar = Scheduler.WorkTimer.cumulative
-
-  fun communicate () = ()
 end
 val x = Array.sub (ForkJoin0.alloc 1: int array, 0)
 fun f n = if n = 0 then () else (MLton.Trace.noTuple x; ForkJoin0.par (fn _ => f (n-1), fn _ => ()); ())
