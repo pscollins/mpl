@@ -135,12 +135,24 @@ fun isForbiddenTupleOp (vs: VarSet.t) (s: Statement.t): bool =
                   vs s
 
 local
-   fun getDst (dst: (Var.t * Type.t) option): Var.t * Type.t =
-       case dst of
-           SOME dst' => dst'
-         | _ => Error.bug "Missing `dst` for Trace_{noHeap,heapOk}"
+   fun buildDst (arg: Operand.t,
+                 dst: (Var.t * Type.t) option): Var.t * Type.t = let
+      fun buildDummyDst () = let
+         val newVar = Var.newString "dummy"
+      in
+         (newVar, Operand.ty arg)
+      end
+   in
+      case dst of
+          (* When the prim result has a user, we get a non-NONE `dst` and we
+           elide the prim by binding the prim argument to it *)
+          SOME dst' => dst'
+        (* Otherwise, we build a dummy binding to a new variable of the
+            appropriate type *)
+        | NONE  => buildDummyDst()
+   end
    fun buildBind (arg: Operand.t, dst: (Var.t * Type.t) option) =
-       Statement.Bind {dst = getDst dst,
+       Statement.Bind {dst = buildDst (arg, dst),
                        pinned = false,
                        src = arg}
    fun buildBindFromStmt (Statement.PrimApp {args, dst, ...}) =

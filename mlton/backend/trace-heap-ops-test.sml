@@ -1675,6 +1675,29 @@ local
       val _ = assert (raised, "Forbidden tuple op via alias should have raised an error")
    in () end
 
+   (* Test: Trace_noHeap with NONE dst should trigger Error.bug *)
+   val _ = let
+      val _ = print "Test: Trace_noHeap with NONE dst (repro for Error.bug)\n"
+      val v1 = newVar ()
+      val s = Statement.PrimApp {
+         args = Vector.fromList [Operand.Var {ty = #2 v1, var = #1 v1}],
+         dst = NONE,
+         prim = Prim.Trace_noHeap
+      }
+      val l = Label.newNoname ()
+      val b = mkBlock (l, [s], Transfer.Return (Vector.new0 ()))
+      val f = mkFunction (Func.newNoname (), l, [b])
+      val p = Program.T {
+          functions = [],
+          handlesSignals = false,
+          main = f,
+          objectTypes = Vector.new0 (),
+          profileInfo = NONE,
+          statics = Vector.new0 ()
+      }
+      val _ = TraceHeapOps.transform p
+   in () end
+
    val _ = print "TraceHeapOps.transform tests finished.\n"
 
    val _ = print "Running TraceHeapOps.collectForbiddenHeapVars tests...\n"
