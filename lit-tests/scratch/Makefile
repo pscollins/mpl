@@ -7,5 +7,9 @@ test: repro-crash.mlb
 	mkdir -p bin
 	cd bin && $(MPL) $(MPL_FLAGS) $(EXTRA_MPL_FLAGS) -output minimize.bin ../repro-crash.mlb
 
+standalone: standalone-sched.mlb
+	mkdir -p bin
+	cd bin && $(MPL) $(MPL_FLAGS) $(EXTRA_MPL_FLAGS) -output minimize.bin ../standalone-sched.mlb
+
 clean:
 	rm -rf bin
