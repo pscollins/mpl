@@ -594,8 +594,6 @@ struct
         result
       end
 
-
-
     fun simpleParFork (f: unit -> unit, g: unit -> unit) : unit =
       case maybeSpawnFunc {allowCGC = false} g of
         NONE => (f (); g ())
@@ -611,43 +609,7 @@ struct
               | SOME gr => Result.extractResult gr
           end
 
-    and maybeParClearSuspectsAtDepth (t, d) =
-      if HH.numSuspectsAtDepth (t, d) <= 10000 then
-        HH.clearSuspectsAtDepth (t, d)
-      else
-        let
-          val cs = HH.takeClearSetAtDepth (t, d)
-          val count = HH.numChunksInClearSet cs
-          (* val _ = print ("maybeParClearSuspectsAtDepth: " ^ Int.toString count ^ " chunks\n") *)
-          val grainSize = 20
-          val numGrains = 1 + (count-1) div grainSize
-          val results = ArrayExtra.alloc numGrains
-          fun start i = i*grainSize
-          fun stop i = Int.min (grainSize + start i, count)
-
-          fun processLoop i j =
-            if j-i = 1 then
-              Array.update (results, i, HH.processClearSetGrain (cs, start i, stop i))
-            else
-              let
-                val mid = i + (j-i) div 2
-              in
-                simpleParFork
-                  (fn () => processLoop i mid,
-                   fn () => processLoop mid j)
-              end
-
-          fun commitLoop i =
-            if i >= numGrains then () else
-            ( HH.commitFinishedClearSetGrain (t, Array.sub (results, i))
-            ; commitLoop (i+1)
-            )
-        in
-          processLoop 0 numGrains;
-          commitLoop 0;
-          HH.deleteClearSet cs;
-          maybeParClearSuspectsAtDepth (t, d) (* need to go again, just in case *)
-        end
+    and maybeParClearSuspectsAtDepth (t, d) = ()
 
   
     val sched_package_data = ref
