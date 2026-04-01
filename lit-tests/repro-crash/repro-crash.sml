@@ -1109,10 +1109,10 @@ struct
 
       (* ------------------------------------------------------------------- *)
 
-      fun randomOtherId () =
-        let val other = SimpleRandom.boundedInt (0, P-1) myRand
-        in if other < myId then other else other+1
-        end
+      fun randomOtherId () = 0
+        (* let val other = SimpleRandom.boundedInt (0, P-1) myRand *)
+        (* in if other < myId then other else other+1 *)
+        (* end *)
 
       fun stealLoop () =
         let
@@ -1292,10 +1292,13 @@ struct
         unstolen = NONE
       }
 
-  val fork = par
-
   fun parfor grain (i, j) f =
-      let fun for (i, j) f = if i >= j then () else (f i; for (i+1, j) f) in
+      let
+         fun for (i, j) f =
+             if i >= j then
+                ()
+             else (f i; for (i+1, j) f)
+      in
         if j - i <= grain then
           for (i, j) f
         else
