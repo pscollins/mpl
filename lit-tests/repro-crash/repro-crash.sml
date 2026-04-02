@@ -66,7 +66,6 @@ struct
       { leftSideThread: Thread.t
       , rightSideThread: Thread.t option ref
       , rightSideResult: 'a Result.t option ref
-      , incounter: int ref
       , tidRight: Word64.word
       }
 
@@ -177,7 +176,6 @@ struct
           J { leftSideThread = interruptedLeftThread
             , rightSideThread = rightSideThreadSlot
             , rightSideResult = rightSideResult
-            , incounter = incounter
             , tidRight = tidRight
             }
 
@@ -204,7 +202,6 @@ struct
       let
         val thread = Thread.current ()
         val depth = HH.getDepth thread
-        val _ = HM.refDerefNoBarrier rightSideThread
 
         val result =
             if popDiscard () then
@@ -269,11 +266,12 @@ struct
             val spwnr = Result.result (inject o spwn)
 
             val depth' = HH.getDepth (Thread.current ())
+            val incounter = ref 2
           in
             #rightSideThread jp := SOME thread;
             #rightSideResult jp := SOME spwnr;
 
-            if decrementHitsZero (#incounter jp) then
+            if decrementHitsZero (incounter) then
               ( ()
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
