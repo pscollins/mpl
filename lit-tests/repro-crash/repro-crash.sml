@@ -65,7 +65,6 @@ struct
     J of
       { leftSideThread: Thread.t
       , rightSideThread: Thread.t option ref
-      , rightSideResult: 'a Result.t option ref
       , tidRight: Word64.word
       }
 
@@ -175,7 +174,6 @@ struct
         val jp =
           J { leftSideThread = interruptedLeftThread
             , rightSideThread = rightSideThreadSlot
-            , rightSideResult = rightSideResult
             , tidRight = tidRight
             }
 
@@ -196,7 +194,7 @@ struct
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, rightSideResult, tidRight, ...} : 'a joinpoint)
+        (J {rightSideThread, tidRight, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
       let
@@ -268,19 +266,7 @@ struct
             val depth' = HH.getDepth (Thread.current ())
             val incounter = ref 2
           in
-            #rightSideThread jp := SOME thread;
-            #rightSideResult jp := SOME spwnr;
-
-            if decrementHitsZero (incounter) then
-              ( ()
-                (** Atomic 1 *)
-              ; Thread.atomicBegin ()
-              ; #assertAtomic (sched_package) "spork rightside switch-to-left" 2
-              )
-            else
-              ( #assertAtomic (sched_package) "spork rightside before returnToSched" 1
-              ; #returnToSchedEndAtomic (sched_package) ()
-              )
+            #rightSideThread jp := SOME thread
           end
 
         fun __inline_always__ seq' (bodyr: 'a): 'c =
