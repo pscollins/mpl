@@ -68,7 +68,6 @@ struct
       , rightSideResult: 'a Result.t option ref
       , incounter: int ref
       , tidRight: Word64.word
-      , spareHeartbeatsGiven: Heartbeat.token_count
       }
 
 
@@ -164,7 +163,6 @@ struct
     fun doSpawn (interruptedLeftThread: Thread.t) : unit =
       let
         val gcj = push GCTask
-        val _ = assertAtomic "spawn after spawnGC" 1
 
         val thread = Thread.current ()
         val depth = HH.getDepth thread
@@ -180,14 +178,12 @@ struct
         val tidParent = DE.decheckGetTid thread
         val (tidLeft, tidRight) = DE.decheckFork ()
 
-        val giveTokens = Heartbeat.halfOfCurrent ()
         val jp =
           J { leftSideThread = interruptedLeftThread
             , rightSideThread = rightSideThreadSlot
             , rightSideResult = rightSideResult
             , incounter = incounter
             , tidRight = tidRight
-            , spareHeartbeatsGiven = giveTokens
             }
 
         (* this sets the join for both threads (left and right) *)
@@ -247,8 +243,8 @@ struct
      * spork definition
      *)
 
-    fun __inline_always__ tryPromoteNow yo =
-        (#maybeSpawn (sched_package) yo (Thread.current ());
+    fun __inline_always__ tryPromoteNow () =
+        (#maybeSpawn (sched_package) {youngestOptimization=true} (Thread.current ());
           ())
 
     type ('a, 'c) sporkT =
@@ -270,7 +266,7 @@ struct
         val (inject, project) = Universal.embed ()
 
         fun __inline_always__ body' (): 'a =
-            ((if not (Heartbeat.enoughToSpawn ()) then () else tryPromoteNow {youngestOptimization = true});
+            ((if not (true) then () else tryPromoteNow ());
              body ())
 
         fun spwn' ((), J jp): unit =
