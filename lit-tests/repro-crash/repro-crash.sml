@@ -80,11 +80,7 @@ struct
   (* In the case of NormalTask and NewThread, the Word64 is the decheck id that
    * we should use for the chunks allocated for these tasks.
    *)
-  datatype task =
-    NormalTask of (unit -> unit) * Word64.word * int
-  | NewThread of Thread.p * Word64.word * int
-  | Continuation of Thread.t * int
-  | GCTask of gctask_data
+  datatype task = GCTask 
 
   (* ========================================================================
    * STATS
@@ -164,34 +160,10 @@ struct
   structure SporkJoin =
   struct
 
-    fun spawnGC interruptedThread : gc_joinpoint option =
-      let
-        val thread = Thread.current ()
-        val depth = HH.getDepth thread
-      in
-        if depth > maxCCDepth then
-          NONE
-        else
-          let
-            (** SAM_NOTE: atomic begin/end not needed here, becuase this is
-              * already run in signal handler.
-              *)
-
-            val heapId = ref (HH.getRoot thread)
-            val gcTaskTuple = (interruptedThread, heapId)
-            val gcTaskData = SOME gcTaskTuple
-            val gcTask = GCTask gcTaskTuple
-            val _ = push gcTask
-          in
-             NONE
-          end
-      end
-
-
     (* runs in signal handler *)
     fun doSpawn (interruptedLeftThread: Thread.t) : unit =
       let
-        val gcj = spawnGC interruptedLeftThread
+        val gcj = push GCTask
         val _ = assertAtomic "spawn after spawnGC" 1
 
         val thread = Thread.current ()
@@ -235,7 +207,7 @@ struct
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, rightSideResult, incounter, tidRight, spareHeartbeatsGiven, ...} : 'a joinpoint)
+        (J {rightSideThread, rightSideResult, incounter, tidRight, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
       let
