@@ -85,7 +85,6 @@ struct
    * STATS
    *)
 
-  fun addEagerSpawns (d: int) = ()
 
   (** ========================================================================
     * MAXIMUM FORK DEPTHS
@@ -122,10 +121,6 @@ struct
 
   fun getGCTask p =
     ! (#gcTask (vectorSub (workerLocalData, p)))
-
-  fun setQueueDepth p d: unit = ()
-
-  fun communicate () = ()
 
   fun push (x): unit =
     let
@@ -231,11 +226,8 @@ struct
     val sched_package = 
         { syncEndAtomic = syncEndAtomic maybeParClearSuspectsAtDepth
         , maybeSpawn = maybeSpawn
-        , setQueueDepth = setQueueDepth
         , returnToSchedEndAtomic = returnToSchedEndAtomic
-        , addEagerSpawns = addEagerSpawns
         , assertAtomic = assertAtomic
-        , error = (fn s => die (fn _ => s)) : string -> unit
       }
 
     (* ===================================================================
@@ -284,7 +276,6 @@ struct
 
             if decrementHitsZero (#incounter jp) then
               ( ()
-              ; #setQueueDepth (sched_package) (myWorkerId ()) depth
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
               ; #assertAtomic (sched_package) "spork rightside switch-to-left" 2
