@@ -9,8 +9,9 @@ struct
   val P = 1
   fun myWorkerId ()  = MLton.Parallel.processorNumber ()
 
-  fun die strfn = OS.Process.exit OS.Process.failure
-  fun die' () = OS.Process.exit OS.Process.failure
+  exception Die
+  fun die strfn = raise Die 
+  fun die' () = raise Die
 
   type gcstate = MLton.Pointer.t
   val gcstate = _prim "GC_state": unit -> gcstate;
@@ -74,15 +75,6 @@ struct
       }
 
 
-  (* ========================================================================
-   * DEBUGGING
-   *)
-
-  val doDebugMsg = false
-
-  val printLock : Word32.word ref = ref 0w0
-  val _ = MLton.Parallel.Deprecated.lockInit printLock
-
   fun assertTokenInvariants thread msg = ()
   (* ========================================================================
    * TASKS
@@ -101,16 +93,7 @@ struct
    * STATS
    *)
 
-  val numEagerSpawns = Array.array (P, 0)
-
-
-  fun addEagerSpawns d =
-    let
-      val p = myWorkerId ()
-      val c = arraySub (numEagerSpawns, p)
-    in
-      arrayUpdate (numEagerSpawns, p, c+d)
-    end
+  fun addEagerSpawns (d: int) = ()
 
   (** ========================================================================
     * MAXIMUM FORK DEPTHS
