@@ -317,14 +317,8 @@ struct
      *)
 
     fun __inline_always__ tryPromoteNow yo =
-      (if
-          Heartbeat.enoughToSpawn () andalso
-          #maybeSpawn (sched_package) yo (Thread.current ())
-        then
-          ()
-        else
-          ()
-      )
+        (#maybeSpawn (sched_package) yo (Thread.current ());
+          ())
 
     type ('a, 'c) sporkT =
            (unit -> 'a)
