@@ -103,22 +103,18 @@ struct
   type worker_local_data =
     { queue : task Queue.t
     , schedThread : Thread.t option ref
-    , gcTask: gctask_data option ref
     }
 
   fun wldInit p : worker_local_data =
     { queue = Queue.new ()
     , schedThread = ref NONE
-    , gcTask = ref NONE
     }
 
   val workerLocalData = Vector.tabulate (P, wldInit)
 
-  fun setGCTask p data =
-    #gcTask (vectorSub (workerLocalData, p)) := data
+  fun setGCTask p data = ()
 
-  fun getGCTask p =
-    ! (#gcTask (vectorSub (workerLocalData, p)))
+  fun getGCTask p = NONE
 
   fun push (x): unit =
     let
@@ -240,14 +236,18 @@ struct
          * (exn * Universal.t joinpoint -> 'c)
          -> 'c
 
-    fun __inline_always__ sporkBase (primSpork: ('a, 'c) sporkT,
-                                     body: unit -> 'a,
-                                     spwn: unit -> 'b,
-                                     seq: 'a -> 'c,
-                                     sync: 'a * 'b -> 'c,
-                                     unstolen: 'a -> 'c): 'c =
-      let
-        val (inject, project) = Universal.embed ()
+    fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
+        let
+           fun dummySpwn(): 'b = raise Die
+           fun dummySeq (x: 'a): 'c = raise Die
+           val spwn = dummySpwn
+           val seq = dummySeq
+           fun dummySync (x: 'a, y: 'b): 'c = raise Die
+           val sync = dummySync
+           val unstolen = dummySeq
+           val primSpork = primSporkFair
+           fun dummyBody (): 'a = raise Die
+         val (inject, project) = Universal.embed ()
 
         fun __inline_always__ body' (): 'a =
             ((if not (true) then () else tryPromoteNow ());
@@ -270,7 +270,7 @@ struct
           let
             val spwnrOpt = #syncEndAtomic (sched_package) jp
           in
-             unstolen bodyr
+             raise Die
           end
 
         fun __inline_always__ exnseq' (e: exn): 'c = raise e
@@ -278,7 +278,7 @@ struct
         fun __inline_always__ exnsync' (e: exn, jp: Universal.t joinpoint): 'c =
             let val _ = #syncEndAtomic (sched_package) jp
             in
-              raise e
+              raise Die
             end
       in
         __inline_always__ primSpork (body', spwn', seq', sync', exnseq', exnsync')
@@ -290,13 +290,7 @@ struct
                            seq: 'a -> 'c,
                            sync: 'a * 'b -> 'c,
                            unstolen: ('a -> 'c) option} =
-        let
-           fun dummySpwn(): 'b = raise Die
-           fun dummySeq (x: 'a): 'c = raise Die
-           fun dummySync (x: 'a, y: 'b): 'c = raise Die
-        in
-          sporkBase (primSporkFair, body, dummySpwn, dummySeq, dummySync, dummySeq)
-        end
+          sporkBase body
   end
 
 
