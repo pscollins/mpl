@@ -300,20 +300,6 @@ struct
         NONE
       end
 
-    fun simpleParFork (f: unit -> unit, g: unit -> unit) : unit =
-      case maybeSpawnFunc {allowCGC = false} g of
-        NONE => (f (); g ())
-      | SOME gj =>
-          let
-            val fr = Result.result f
-            val _ = Thread.atomicBegin ()
-            val gro = syncEndAtomic maybeParClearSuspectsAtDepth gj
-          in
-            Result.extractResult fr;
-            case gro of
-                NONE => g ()
-              | SOME gr => Result.extractResult gr
-          end
 
     and maybeParClearSuspectsAtDepth (t, d) = ()
 
@@ -364,26 +350,18 @@ struct
 
         fun __inline_always__ body' (): 'a =
             ((if not (Heartbeat.enoughToSpawn ()) then () else tryPromoteNow {youngestOptimization = true});
-             __inline_always__ body ())
+             body ())
 
         fun spwn' ((), J jp): unit =
           let
             val _ = #assertAtomic (sched_package ()) "spork rightside begin" 1
-            val () = DE.decheckSetTid (#tidRight jp)
 
             val thread = Thread.current ()
             val depth = HH.getDepth thread
 
-            val _ = Thread.atomicEnd()
-
             val spwnr = Result.result (inject o spwn)
 
-            val _ = Thread.atomicBegin ()
             val depth' = HH.getDepth (Thread.current ())
-            val _ =
-              if depth = depth' then ()
-              else #error (sched_package ()) ("scheduler bug: rightide depth mismatch: " ^ Int.toString depth ^ " vs " ^ Int.toString depth')
-            val _ = #assertAtomic (sched_package ()) "spork rightside begin synchronize" 1
           in
             #rightSideThread jp := SOME thread;
             #rightSideResult jp := SOME spwnr;
