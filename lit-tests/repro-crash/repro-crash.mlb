@@ -24,7 +24,5 @@ in
     $(SML_LIB)/basis/schedulers/spork/Universal.sml
   end
 
-  $(SML_LIB)/basis/schedulers/spork/Heartbeat.sml
-
   repro-crash.sml
 end

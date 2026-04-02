@@ -233,7 +233,6 @@ struct
         , maybeSpawn = maybeSpawn
         , setQueueDepth = setQueueDepth
         , returnToSchedEndAtomic = returnToSchedEndAtomic
-        , tryConsumeSpareHeartbeats = Heartbeat.consumeSpare
         , addEagerSpawns = addEagerSpawns
         , assertAtomic = assertAtomic
         , error = (fn s => die (fn _ => s)) : string -> unit
