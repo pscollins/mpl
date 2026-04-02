@@ -301,15 +301,15 @@ struct
 
     and maybeParClearSuspectsAtDepth (t, d) = ()
 
-    fun sched_package () = 
+    val sched_package = 
         { syncEndAtomic = syncEndAtomic maybeParClearSuspectsAtDepth
-      , maybeSpawn = maybeSpawn
-      , setQueueDepth = setQueueDepth
-      , returnToSchedEndAtomic = returnToSchedEndAtomic
-      , tryConsumeSpareHeartbeats = Heartbeat.consumeSpare
-      , addEagerSpawns = addEagerSpawns
-      , assertAtomic = assertAtomic
-      , error = (fn s => die (fn _ => s)) : string -> unit
+        , maybeSpawn = maybeSpawn
+        , setQueueDepth = setQueueDepth
+        , returnToSchedEndAtomic = returnToSchedEndAtomic
+        , tryConsumeSpareHeartbeats = Heartbeat.consumeSpare
+        , addEagerSpawns = addEagerSpawns
+        , assertAtomic = assertAtomic
+        , error = (fn s => die (fn _ => s)) : string -> unit
       }
 
     (* ===================================================================
@@ -320,9 +320,9 @@ struct
       ( Thread.atomicBegin ()
       ; if
           Heartbeat.enoughToSpawn () andalso
-          #maybeSpawn (sched_package ()) yo (Thread.current ())
+          #maybeSpawn (sched_package) yo (Thread.current ())
         then
-          #addEagerSpawns (sched_package ()) 1
+          #addEagerSpawns (sched_package) 1
         else
           ()
       ; Thread.atomicEnd ()
@@ -352,7 +352,7 @@ struct
 
         fun spwn' ((), J jp): unit =
           let
-            val _ = #assertAtomic (sched_package ()) "spork rightside begin" 1
+            val _ = #assertAtomic (sched_package) "spork rightside begin" 1
 
             val thread = Thread.current ()
             val depth = HH.getDepth thread
@@ -366,15 +366,15 @@ struct
 
             if decrementHitsZero (#incounter jp) then
               ( ()
-              ; #setQueueDepth (sched_package ()) (myWorkerId ()) depth
+              ; #setQueueDepth (sched_package) (myWorkerId ()) depth
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
-              ; #assertAtomic (sched_package ()) "spork rightside switch-to-left" 2
+              ; #assertAtomic (sched_package) "spork rightside switch-to-left" 2
               ; threadSwitchEndAtomic (#leftSideThread jp)
               )
             else
-              ( #assertAtomic (sched_package ()) "spork rightside before returnToSched" 1
-              ; #returnToSchedEndAtomic (sched_package ()) ()
+              ( #assertAtomic (sched_package) "spork rightside before returnToSched" 1
+              ; #returnToSchedEndAtomic (sched_package) ()
               )
           end
 
@@ -383,7 +383,7 @@ struct
 
         fun __inline_always__ sync' (bodyr: 'a, jp: Universal.t joinpoint): 'c =
           let
-            val spwnrOpt = #syncEndAtomic (sched_package ()) jp
+            val spwnrOpt = #syncEndAtomic (sched_package) jp
           in
             case spwnrOpt of
               (* spwn was unstolen *)
@@ -393,7 +393,7 @@ struct
         fun __inline_always__ exnseq' (e: exn): 'c = raise e
 
         fun __inline_always__ exnsync' (e: exn, jp: Universal.t joinpoint): 'c =
-            let val _ = #syncEndAtomic (sched_package ()) jp
+            let val _ = #syncEndAtomic (sched_package) jp
             in
               raise e
             end
