@@ -10,7 +10,7 @@ struct
   fun myWorkerId ()  = MLton.Parallel.processorNumber ()
 
   exception Die
-  fun die strfn = raise Die 
+  fun die strfn = raise Die
   fun die' () = raise Die
 
   type gcstate = MLton.Pointer.t
@@ -44,8 +44,6 @@ struct
 
   fun assertAtomic msg x = ()
 
-  val threadSwitchEndAtomic = Thread.switchTo
-
   structure HM = MLton.HM
   structure HH = MLton.Thread.HierarchicalHeap
   type hh_address = Word64.word
@@ -71,7 +69,6 @@ struct
       , incounter: int ref
       , tidRight: Word64.word
       , spareHeartbeatsGiven: Heartbeat.token_count
-      , gcj: gc_joinpoint option
       }
 
 
@@ -131,27 +128,7 @@ struct
   fun getGCTask p =
     ! (#gcTask (vectorSub (workerLocalData, p)))
 
-  fun getSchedThread () =
-    let
-      val myId = myWorkerId ()
-      val {schedThread, ...} = vectorSub (workerLocalData, myId)
-    in
-      HM.refDerefNoBarrier schedThread
-    end
-
-  fun setQueueDepth p d =
-    let
-      val {queue, ...} = vectorSub (workerLocalData, p)
-    in
-      Queue.setDepth queue d
-    end
-
-  fun trySteal p =
-    let
-      val {queue, ...} = vectorSub (workerLocalData, p)
-    in
-      Queue.tryPopTop queue
-    end
+  fun setQueueDepth p d: unit = ()
 
   fun communicate () = ()
 
@@ -239,7 +216,6 @@ struct
             , incounter = incounter
             , tidRight = tidRight
             , spareHeartbeatsGiven = giveTokens
-            , gcj = gcj
             }
 
         (* this sets the join for both threads (left and right) *)
@@ -259,7 +235,7 @@ struct
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, rightSideResult, incounter, tidRight, gcj, spareHeartbeatsGiven, ...} : 'a joinpoint)
+        (J {rightSideThread, rightSideResult, incounter, tidRight, spareHeartbeatsGiven, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
       let
@@ -345,7 +321,6 @@ struct
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
               ; #assertAtomic (sched_package) "spork rightside switch-to-left" 2
-              ; threadSwitchEndAtomic (#leftSideThread jp)
               )
             else
               ( #assertAtomic (sched_package) "spork rightside before returnToSched" 1
