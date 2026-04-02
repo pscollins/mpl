@@ -317,15 +317,13 @@ struct
      *)
 
     fun __inline_always__ tryPromoteNow yo =
-      ( Thread.atomicBegin ()
-      ; if
+      (if
           Heartbeat.enoughToSpawn () andalso
           #maybeSpawn (sched_package) yo (Thread.current ())
         then
-          #addEagerSpawns (sched_package) 1
+          ()
         else
           ()
-      ; Thread.atomicEnd ()
       )
 
     type ('a, 'c) sporkT =
