@@ -70,7 +70,6 @@ struct
       , incounter: int ref
       , tidRight: Word64.word
       , spareHeartbeatsGiven: Heartbeat.token_count
-      , tokenPolicy: TokenPolicy
       , gcj: gc_joinpoint option
       }
 
@@ -257,7 +256,6 @@ struct
             , incounter = incounter
             , tidRight = tidRight
             , spareHeartbeatsGiven = giveTokens
-            , tokenPolicy = TokenPolicyFair
             , gcj = gcj
             }
 
@@ -278,7 +276,7 @@ struct
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, rightSideResult, incounter, tidRight, gcj, spareHeartbeatsGiven, tokenPolicy, ...} : 'a joinpoint)
+        (J {rightSideThread, rightSideResult, incounter, tidRight, gcj, spareHeartbeatsGiven, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
       let
