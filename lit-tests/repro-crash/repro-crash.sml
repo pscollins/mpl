@@ -198,13 +198,12 @@ struct
     (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, rightSideResult, incounter, tidRight, ...} : 'a joinpoint)
+        (J {rightSideThread, rightSideResult, tidRight, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
       let
         val thread = Thread.current ()
         val depth = HH.getDepth thread
-        val _ = decrementHitsZero incounter
         val _ = HM.refDerefNoBarrier rightSideThread
 
         val result =
