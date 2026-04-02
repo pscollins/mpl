@@ -165,8 +165,6 @@ struct
          * The thief will convert it into a Thread.t and give it a heap,
          * and then write it into this slot. *)
         val rightSideThreadSlot = ref (NONE: Thread.t option)
-        val rightSideResult = ref (NONE: Universal.t Result.t option)
-        val incounter = ref 2
 
         val tidParent = DE.decheckGetTid thread
         val (tidLeft, tidRight) = DE.decheckFork ()
@@ -199,13 +197,14 @@ struct
       = 
       let
         val thread = Thread.current ()
-        val depth = HH.getDepth thread
+        val dummyTid = Word64.fromInt 0
 
         val result =
             if popDiscard () then
                let
                   val _ = HH.joinIntoParentBeforeFastClone
-                              {thread=thread, newDepth=depth, tidLeft=tidRight, tidRight=tidRight}
+                              {thread=thread, newDepth=1,
+                               tidLeft=dummyTid, tidRight=tidRight}
                in
                   NONE
                end
@@ -259,12 +258,7 @@ struct
             val _ = #assertAtomic (sched_package) "spork rightside begin" 1
 
             val thread = Thread.current ()
-            val depth = HH.getDepth thread
-
             val spwnr = Result.result (inject o spwn)
-
-            val depth' = HH.getDepth (Thread.current ())
-            val incounter = ref 2
           in
             #rightSideThread jp := SOME thread
           end
@@ -276,9 +270,7 @@ struct
           let
             val spwnrOpt = #syncEndAtomic (sched_package) jp
           in
-            case spwnrOpt of
-              (* spwn was unstolen *)
-                _ => unstolen bodyr
+             unstolen bodyr
           end
 
         fun __inline_always__ exnseq' (e: exn): 'c = raise e
@@ -298,7 +290,13 @@ struct
                            seq: 'a -> 'c,
                            sync: 'a * 'b -> 'c,
                            unstolen: ('a -> 'c) option} =
-          sporkBase (primSporkFair, body, spwn, seq, sync, seq)
+        let
+           fun dummySpwn(): 'b = raise Die
+           fun dummySeq (x: 'a): 'c = raise Die
+           fun dummySync (x: 'a, y: 'b): 'c = raise Die
+        in
+          sporkBase (primSporkFair, body, dummySpwn, dummySeq, dummySync, dummySeq)
+        end
   end
 
 
