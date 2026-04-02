@@ -83,15 +83,6 @@ struct
 
   val printLock : Word32.word ref = ref 0w0
   val _ = MLton.Parallel.Deprecated.lockInit printLock
-  fun dbgmsg m = ()
-
-  fun dbgmsg' m = ()
-  fun dbgmsg' _ = ()
-
-
-  fun dbgmsg''' m = ()
-
-  fun dbgmsg'' _ = ()
 
   fun assertTokenInvariants thread msg = ()
   (* ========================================================================
@@ -382,11 +373,7 @@ struct
 
             val thread = Thread.current ()
             val depth = HH.getDepth thread
-            val _ = dbgmsg'' (fn _ => "rightside begin at depth " ^ Int.toString depth)
 
-            val _ = HH.forceLeftHeap(myWorkerId(), thread)
-            val _ = Heartbeat.addSpare (#spareHeartbeatsGiven jp)
-            val _ = #assertAtomic (sched_package ()) "spork rightSide before execute" 1
             val _ = Thread.atomicEnd()
 
             val spwnr = Result.result (inject o spwn)
@@ -396,7 +383,6 @@ struct
             val _ =
               if depth = depth' then ()
               else #error (sched_package ()) ("scheduler bug: rightide depth mismatch: " ^ Int.toString depth ^ " vs " ^ Int.toString depth')
-            val _ = dbgmsg'' (fn _ => "rightside done! at depth " ^ Int.toString depth')
             val _ = #assertAtomic (sched_package ()) "spork rightside begin synchronize" 1
           in
             #rightSideThread jp := SOME thread;
@@ -404,7 +390,6 @@ struct
 
             if decrementHitsZero (#incounter jp) then
               ( ()
-              ; dbgmsg'' (fn _ => "rightside synchronize: become left")
               ; #setQueueDepth (sched_package ()) (myWorkerId ()) depth
                 (** Atomic 1 *)
               ; Thread.atomicBegin ()
@@ -494,6 +479,7 @@ struct
     end
 
 end
+
 val x = Array.sub (ForkJoin0.alloc 1: int array, 0)
 fun f n = if n = 0 then () else (MLton.Trace.noTuple x; ForkJoin0.par (fn _ => f (n-1), fn _ => ()); ())
 val _ = f 1
