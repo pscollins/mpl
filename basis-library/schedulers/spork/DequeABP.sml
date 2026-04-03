@@ -23,10 +23,6 @@ sig
 
   (* returns NONE if deque is empty *)
   val popBot : 'a t -> 'a option
-  val tryPopTop : 'a t -> 'a option
-
-  val size : 'a t -> int
-  val numResets : 'a t -> int
 end =
 struct
 
@@ -148,13 +144,6 @@ struct
       val {idx, ...} = TagIdx.unpack (!top)
     in
       thisBot - idx
-    end
-
-  fun numResets ({top, ...} : 'a t) =
-    let
-      val {tag, ...} = TagIdx.unpack (!top)
-    in
-      Word64.toInt tag
     end
 
 end
