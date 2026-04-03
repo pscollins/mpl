@@ -16,8 +16,6 @@ in
     functor Int_ChooseFromInt
   end
 
-  $(SML_LIB)/basis/schedulers/spork/CumulativePerProcTimer.sml
-  $(SML_LIB)/basis/schedulers/spork/DequeABP.sml
   $(SML_LIB)/basis/schedulers/spork/Result.sml
   
   ann "exnDecElab app" in

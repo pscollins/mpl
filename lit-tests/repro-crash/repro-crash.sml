@@ -3,7 +3,6 @@
 structure Queue :
 sig
   type 'a t
-  exception Full
 
   val new : unit -> 'a t
 
@@ -17,35 +16,26 @@ struct
 
   val capacity = 1
 
-  fun myWorkerId () =
-    MLton.Parallel.processorNumber ()
-
   fun die strfn =
     (print (strfn () ^ "\n"))
 
-  val capacityStr = Int.toString capacity
   fun exceededCapacityError () =
     die (fn _ => "Scheduler error: exceeded max fork depth (1)")
 
   type gcstate = MLton.Pointer.t
-  val gcstate = _prim "GC_state": unit -> gcstate;
   val ABP_deque_push_bot = _import "ABP_deque_push_bot" runtime private: gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> bool;
   val ABP_deque_try_pop_bot = _import "ABP_deque_try_pop_bot" runtime private: gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> 'a option;
-  val ABP_deque_try_pop_top = _import "ABP_deque_try_pop_top" runtime private: gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> 'a option;
-  val ABP_deque_set_depth = _import "ABP_deque_set_depth" runtime private: gcstate * Word32.word ref * Word32.word ref * 'a option array * Word32.word -> unit;
-
 
   type 'a t = {}
 
-  exception Full
-
   fun new () = {}
+  val kNull = MLton.Pointer.null 
 
   fun pushBot (q as {}) x = let
      val kConst = ref (0w32: Word32.word)
      val data' = Array.array (1, NONE)
   in
-     if ABP_deque_push_bot (gcstate (), kConst, kConst, data', SOME x) then ()
+     if ABP_deque_push_bot (kNull, kConst, kConst, data', SOME x) then ()
      else exceededCapacityError ()
   end
 
@@ -53,7 +43,7 @@ struct
      val kConst = ref (0w32: Word32.word)
      val data' = Array.array (1, NONE)
   in
-     ABP_deque_try_pop_bot (gcstate (), kConst, kConst, data', NONE)
+     ABP_deque_try_pop_bot (kNull, kConst, kConst, data', NONE)
   end
 
 end
@@ -143,69 +133,19 @@ struct
 
 
   fun assertTokenInvariants thread msg = ()
-  (* ========================================================================
-   * TASKS
-   *)
-
-  (* In the case of NormalTask and NewThread, the Word64 is the decheck id that
-   * we should use for the chunks allocated for these tasks.
-   *)
   datatype task = GCTask 
-
-  (* ========================================================================
-   * STATS
-   *)
-
-
-  (** ========================================================================
-    * MAXIMUM FORK DEPTHS
-    *)
-
-  (* ========================================================================
-   * CHILD TASK PROTOTYPE THREAD
-   *
-   * this widget makes it possible to create new "user" threads by copying
-   * the prototype thread, which immediately pulls a task out of the
-   * current worker's task-box and then executes it.
-   *)
-
-  (* ========================================================================
-   * SCHEDULER LOCAL DATA
-   *)
-
-  type worker_local_data =
-    { queue : task Queue.t
-    , schedThread : Thread.t option ref
-    }
-
-  fun wldInit (): worker_local_data =
-    { queue = Queue.new ()
-    , schedThread = ref NONE
-    }
-
-  val workerLocalData = ref (wldInit ())
 
   fun setGCTask p data = ()
 
   fun getGCTask p = NONE
 
   fun push (x): unit =
-    let
-      val myId = myWorkerId ()
-      val {queue, ...} = !workerLocalData
-    in
-      Queue.pushBot queue x
-    end
+      Queue.pushBot (Queue.new()) x
 
   fun clear () = ()
 
   fun pop (): task option =
-    let
-      val myId = myWorkerId ()
-      val {queue, ...} = !workerLocalData
-    in
-      Queue.popBot queue
-    end
+     Queue.popBot (Queue.new())
 
   fun popDiscard () =
     case pop () of
@@ -381,23 +321,15 @@ struct
         unstolen = NONE
       }
 
-  fun parfor grain (i, j) f =
+  fun parfor (i, j) f =
       let
-         fun for (i, j) f =
-             if i >= j then
-                ()
-             else (f i; for (i+1, j) f)
+         fun for (i, j) f = ()
       in
-        if j - i <= grain then
+        if i =j then
           for (i, j) f
         else
-          let
-            val mid = i + (j-i) div 2
-          in
-            par (fn _ => parfor grain (i, mid) f,
-                 fn _ => parfor grain (mid, j) f)
-          ; ()
-          end
+           (par (fn _ => parfor (i, 0) f,
+                 fn _ => parfor (0, j) f); ())
       end
 
   fun alloc n =
@@ -405,7 +337,7 @@ struct
       val a = ArrayExtra.Raw.alloc n
       val _ =
         if ArrayExtra.Raw.uninitIsNop a then ()
-        else parfor 10000 (0, n) (fn i => ArrayExtra.Raw.unsafeUninit (a, i))
+        else parfor (0, n) (fn i => ArrayExtra.Raw.unsafeUninit (a, i))
     in
       ArrayExtra.Raw.unsafeToArray a
     end
