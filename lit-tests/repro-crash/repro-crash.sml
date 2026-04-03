@@ -1,17 +1,4 @@
-(* non-resizing concurrent deque for work-stealing.
- * hard-coded capacity, see below. *)
-structure Queue :
-sig
-  type 'a t
-
-  val new : unit -> 'a t
-
-  (* raises Full if at capacity *)
-  val pushBot : 'a t -> 'a -> unit
-
-  (* returns NONE if deque is empty *)
-  val popBot : 'a t -> 'a option
-end =
+structure Queue =
 struct
 
   val capacity = 1
@@ -51,14 +38,6 @@ end
 structure Scheduler =
 struct
 
-  fun arraySub (a, i) = Array.sub (a, i)
-  fun arrayUpdate (a, i, x) = Array.update (a, i, x)
-  fun vectorSub (v, i) = Vector.sub (v, i)
-
-  val maxCCDepth = 1
-  val P = 1
-  fun myWorkerId ()  = MLton.Parallel.processorNumber ()
-
   exception Die
   fun die strfn = raise Die
   fun die' () = raise Die
@@ -66,28 +45,7 @@ struct
   type gcstate = MLton.Pointer.t
   val gcstate = _prim "GC_state": unit -> gcstate;
 
-  datatype TokenPolicy =
-      TokenPolicyFair (* 0w0 *)
-
-  val traceSchedSpawn = _import "GC_Trace_schedSpawn" private: gcstate -> unit; o gcstate
-  val traceSchedJoin = _import "GC_Trace_schedJoin" private: gcstate -> unit; o gcstate
-  val traceSchedJoinFast = _import "GC_Trace_schedJoinFast" private: gcstate -> unit; o gcstate
-
-  (* structure Queue = DequeABP (*ArrayQueue*) *)
   structure Thread = MLton.Thread.Basic
-
-  (* structure Queue = struct *)
-  (* type 'a t = 'a option ref *)
-
-  (* fun new () =  *)
-  (*    ref (NONE) *)
-
-  (* fun pushBot (q: 'a t) (x: 'a) =  *)
-  (*     q := (SOME x) *)
-
-  (* fun popBot (q: 'a t) =  *)
-  (*     !q *)
-  (* end *)
 
   val primSporkFair' =
       _prim "spork_fair"
@@ -105,24 +63,9 @@ struct
   
   val primForkThreadAndSetData = _prim "spork_forkThreadAndSetData": Thread.t * 'a -> Thread.p;
 
-  fun assertAtomic msg x = ()
-
-  structure HM = MLton.HM
   structure HH = MLton.Thread.HierarchicalHeap
-  type hh_address = Word64.word
-  type gctask_data = Thread.t * (hh_address ref)
 
   structure DE = MLton.Thread.Disentanglement
-
-  fun decrementHitsZero (x : int ref) : bool = true
-
-  datatype gc_joinpoint =
-    GCJ of {gcTaskData: gctask_data option, tidRight: Word64.word}
-    (** The fact that the gcTaskData is an option here is a questionable
-      * hack... the data will always be SOME. But unwrapping it may affect
-      * how many allocations occur when spawning a gc task, which in turn
-      * affects the GC snapshot, which is already murky.
-      *)
 
   datatype 'a joinpoint =
     J of
@@ -132,17 +75,10 @@ struct
       }
 
 
-  fun assertTokenInvariants thread msg = ()
   datatype task = GCTask 
-
-  fun setGCTask p data = ()
-
-  fun getGCTask p = NONE
 
   fun push (x): unit =
       Queue.pushBot (Queue.new()) x
-
-  fun clear () = ()
 
   fun pop (): task option =
      Queue.popBot (Queue.new())
@@ -152,16 +88,9 @@ struct
       NONE => false
     | SOME _ => true
 
-  fun returnToSchedEndAtomic () = ()
-
-  (* ========================================================================
-   * SPORK JOIN
-   *)
-
   structure SporkJoin =
   struct
 
-    (* runs in signal handler *)
     fun doSpawn (interruptedLeftThread: Thread.t) : unit =
       let
         val gcj = push GCTask
@@ -169,10 +98,6 @@ struct
         val thread = Thread.current ()
         val depth = HH.getDepth thread
 
-        (* We use a ref here instead of using rightSideThread directly.
-         * The rightSideThread is a Thread.p (it doesn't have a heap yet).
-         * The thief will convert it into a Thread.t and give it a heap,
-         * and then write it into this slot. *)
         val rightSideThreadSlot = ref (NONE: Thread.t option)
 
         val tidParent = DE.decheckGetTid thread
@@ -184,7 +109,6 @@ struct
             , tidRight = tidRight
             }
 
-        (* this sets the join for both threads (left and right) *)
         val rightSideThread =
             primForkThreadAndSetData (interruptedLeftThread, jp)
       in
@@ -192,35 +116,20 @@ struct
       end
 
 
-    (* runs in signal handler *)
     fun maybeSpawn youngestOptimization (interruptedLeftThread: Thread.t) : bool =
         (doSpawn interruptedLeftThread ; true)
 
-    fun maybeSpawnFunc {allowCGC: bool} (g: unit -> 'a) : 'a joinpoint option = NONE
-
-    (** Must be called in an atomic section. Implicit atomicEnd() *)
     fun syncEndAtomic
         (doClearSuspects: Thread.t * int -> unit)
-        (J {rightSideThread, tidRight, ...} : 'a joinpoint)
+        (J {tidRight, ...} : 'a joinpoint)
         : 'a Result.t option
       = 
-      let
-        val thread = Thread.current ()
-        val dummyTid = Word64.fromInt 0
-
-        val result =
-            if popDiscard () then
-               let
-                  val _ = HH.joinIntoParentBeforeFastClone
-                              {thread=thread, newDepth=1,
-                               tidLeft=dummyTid, tidRight=tidRight}
-               in
-                  NONE
-               end
-            else NONE
-      in
-        NONE
-      end
+      (if popDiscard () then
+          HH.joinIntoParentBeforeFastClone
+            {thread=Thread.current (), newDepth=1,
+             tidLeft=Word64.fromInt 0, tidRight=tidRight}
+       else ();
+       NONE)
 
 
     and maybeParClearSuspectsAtDepth (t, d) = ()
@@ -228,81 +137,36 @@ struct
     val sched_package = 
         { syncEndAtomic = syncEndAtomic maybeParClearSuspectsAtDepth
         , maybeSpawn = maybeSpawn
-        , returnToSchedEndAtomic = returnToSchedEndAtomic
-        , assertAtomic = assertAtomic
+        , returnToSchedEndAtomic = ()
+        , assertAtomic = fn _ => fn _ => ()
       }
-
-    (* ===================================================================
-     * spork definition
-     *)
 
     fun __inline_always__ tryPromoteNow () =
         (#maybeSpawn (sched_package) {youngestOptimization=true} (Thread.current ());
           ())
 
-    type ('a, 'c) sporkT =
-           (unit -> 'a)
-         * (unit * Universal.t joinpoint -> unit)
-         * ('a -> 'c)
-         * ('a * Universal.t joinpoint -> 'c)
-         * (exn -> 'c)
-         * (exn * Universal.t joinpoint -> 'c)
-         -> 'c
-
     fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
-        let
-           fun dummySpwn(): 'b = raise Die
-           fun dummySeq (x: 'a): 'c = raise Die
-           val spwn = dummySpwn
-           val seq = dummySeq
-           fun dummySync (x: 'a, y: 'b): 'c = raise Die
-           val sync = dummySync
-           val unstolen = dummySeq
-           val primSpork = primSporkFair
-           fun dummyBody (): 'a = raise Die
-         val (inject, project) = Universal.embed ()
-
+      let
         fun __inline_always__ body' (): 'a =
-            ((if not (true) then () else tryPromoteNow ());
-             body ())
+            (tryPromoteNow (); body ())
 
         fun spwn' ((), J jp): unit =
-          let
-            val _ = #assertAtomic (sched_package) "spork rightside begin" 1
+            #rightSideThread jp := SOME (Thread.current ())
 
-            val thread = Thread.current ()
-            val spwnr = Result.result (inject o spwn)
-          in
-            #rightSideThread jp := SOME thread
-          end
-
-        fun __inline_always__ seq' (bodyr: 'a): 'c =
-            __inline_always__ seq bodyr
+        fun __inline_always__ seq' (bodyr: 'a): 'c = raise Die
 
         fun __inline_always__ sync' (bodyr: 'a, jp: Universal.t joinpoint): 'c =
-          let
-            val spwnrOpt = #syncEndAtomic (sched_package) jp
-          in
-             raise Die
-          end
+            (#syncEndAtomic (sched_package) jp; raise Die)
 
         fun __inline_always__ exnseq' (e: exn): 'c = raise e
 
         fun __inline_always__ exnsync' (e: exn, jp: Universal.t joinpoint): 'c =
-            let val _ = #syncEndAtomic (sched_package) jp
-            in
-              raise Die
-            end
+            (#syncEndAtomic (sched_package) jp; raise Die)
       in
-        __inline_always__ primSpork (body', spwn', seq', sync', exnseq', exnsync')
+        primSporkFair (body', spwn', seq', sync', exnseq', exnsync')
       end
 
-    fun __inline_always__ spork
-                          {body: unit -> 'a,
-                           spwn: unit -> 'b,
-                           seq: 'a -> 'c,
-                           sync: 'a * 'b -> 'c,
-                           unstolen: ('a -> 'c) option} =
+    fun __inline_always__ spork {body, spwn, seq, sync, unstolen} =
           sporkBase body
   end
 
