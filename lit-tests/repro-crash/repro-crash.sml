@@ -105,12 +105,12 @@ struct
     , schedThread : Thread.t option ref
     }
 
-  fun wldInit p : worker_local_data =
+  fun wldInit (): worker_local_data =
     { queue = Queue.new ()
     , schedThread = ref NONE
     }
 
-  val workerLocalData = Vector.tabulate (P, wldInit)
+  val workerLocalData = ref (wldInit ())
 
   fun setGCTask p data = ()
 
@@ -119,7 +119,7 @@ struct
   fun push (x): unit =
     let
       val myId = myWorkerId ()
-      val {queue, ...} = vectorSub (workerLocalData, myId)
+      val {queue, ...} = !workerLocalData
     in
       Queue.pushBot queue x
     end
@@ -129,7 +129,7 @@ struct
   fun pop (): task option =
     let
       val myId = myWorkerId ()
-      val {queue, ...} = vectorSub (workerLocalData, myId)
+      val {queue, ...} = !workerLocalData
     in
       Queue.popBot queue
     end
