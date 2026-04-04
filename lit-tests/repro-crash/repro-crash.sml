@@ -6,11 +6,7 @@ library code *)
 
 structure Queue =
 struct
-   val capacity = 1
-
    fun exceededCapacityError () = print "Full\n"
-
-   type gcstate = MLton.Pointer.t
 
    val ABP_deque_push_bot =
       _import "ABP_deque_push_bot2" runtime private: 'a option -> bool;
@@ -57,9 +53,9 @@ struct
    struct
       val joinIntoParentBeforeFastClone' =
          _import "GC_HH_joinIntoParentBeforeFastClone2" runtime private:
-         Word32.word * Word64.word * Word64.word -> unit;
-      fun joinIntoParentBeforeFastClone {newDepth, tidLeft, tidRight} =
-         joinIntoParentBeforeFastClone' (Word32.fromInt newDepth, tidLeft, tidRight)
+         Word64.word -> unit;
+      fun joinIntoParentBeforeFastClone {tidRight} =
+         joinIntoParentBeforeFastClone' (tidRight)
    end
 
    structure DE =
@@ -116,8 +112,6 @@ struct
          if popDiscard () then
             HH.joinIntoParentBeforeFastClone
                {
-                  newDepth=1,
-                  tidLeft=Word64.fromInt 0,
                   tidRight=tidRight
                }
          else
