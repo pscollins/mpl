@@ -54,7 +54,13 @@ struct
 
    val primSporkFair' =
       _prim "spork_fair" :
-         ('aa -> 'ar) * 'aa * ('ba * 'd -> 'br) * 'ba * ('ar -> 'c) * ('ar * 'd -> 'c) * (exn -> 'c) * (exn * 'd -> 'c) -> 'c;
+      ('aa -> 'ar)
+      * 'aa
+      * ('ba * 'd -> 'br)
+      * 'ba * ('ar -> 'c)
+      * ('ar * 'd -> 'c)
+      * (exn -> 'c)
+      * (exn * 'd -> 'c) -> 'c;
 
    fun __inline_always__ primSporkFair (body, spwn, seq, sync, exnseq, exnsync) =
       __inline_always__ primSporkFair' (body, (), spwn, (), seq, sync, exnseq, exnsync)
