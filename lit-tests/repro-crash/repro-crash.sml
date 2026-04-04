@@ -13,11 +13,11 @@ struct
    type gcstate = MLton.Pointer.t
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot" runtime private:
+      _import "ABP_deque_push_bot2" runtime private:
          gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> bool;
 
    val ABP_deque_try_pop_bot =
-      _import "ABP_deque_try_pop_bot" runtime private:
+      _import "ABP_deque_try_pop_bot2" runtime private:
          gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> 'a option;
 
    val kNull = MLton.Pointer.null
@@ -68,7 +68,7 @@ struct
    structure HH =
    struct
       val joinIntoParentBeforeFastClone' =
-         _import "GC_HH_joinIntoParentBeforeFastClone" runtime private:
+         _import "GC_HH_joinIntoParentBeforeFastClone2" runtime private:
          gcstate * Thread.t * Word32.word * Word64.word * Word64.word -> unit;
       fun joinIntoParentBeforeFastClone {thread, newDepth, tidLeft, tidRight} =
          joinIntoParentBeforeFastClone' (MLton.Pointer.null, thread, Word32.fromInt newDepth, tidLeft, tidRight)
@@ -76,7 +76,7 @@ struct
 
    structure DE =
    struct
-      val decheckFork' = _import "GC_HH_decheckFork" runtime private:
+      val decheckFork' = _import "GC_HH_decheckFork2" runtime private:
          gcstate * Word64.word ref * Word64.word ref -> unit;
       fun decheckFork () =
          let
