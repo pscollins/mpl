@@ -11,21 +11,19 @@ fun exceededCapacityError () = print "Full\n"
 
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" runtime private: task option -> bool;
+      _import "ABP_deque_push_bot2" runtime private: task -> bool;
 
    val ABP_deque_try_pop_bot =
       _import "ABP_deque_try_pop_bot2" runtime private:
-         task option -> task option;
-
-   val kNull = MLton.Pointer.null
+         task -> task;
 
    fun pushBot (x: task): unit =
-       if ABP_deque_push_bot (SOME x) then
+       if ABP_deque_push_bot (x) then
           ()
        else
           exceededCapacityError ()
 
-   fun popBot (): task option = ABP_deque_try_pop_bot (NONE)
+   fun popBot (): task option = SOME (ABP_deque_try_pop_bot (GCTask))
 end
 
 structure Scheduler =
