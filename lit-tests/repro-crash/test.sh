@@ -1,3 +1,7 @@
+# This script attempts to compile the bug-reproducer contained in this directory
+# and prints `PASS` if the reproducer still exercises the case that we are
+# trying to debug (good!) and prints `FAIL` otherwise (bad!)
+
 cd $(dirname $0)
 TEMPFILE=$(mktemp)
 make clean
