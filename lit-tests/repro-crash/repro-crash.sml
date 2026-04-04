@@ -88,11 +88,11 @@ struct
          gcstate * Word64.word ref * Word64.word ref -> unit;
       fun decheckFork () =
          let
-            val left = ref (0w0: Word64.word)
-            val right = ref (0w0: Word64.word)
+            val kConst = 0w0: Word64.word
+            val left = ref (kConst)
          in
-            decheckFork' (gcstate (), left, right);
-            (!left, !right)
+            decheckFork' (gcstate (), left, left);
+            (!left)
          end
    end
 
@@ -119,7 +119,7 @@ struct
          val _ = push GCTask
          val thread = Thread.current ()
          val rightSideThreadSlot = ref (NONE: Thread.t option)
-         val (_, tidRight) = DE.decheckFork ()
+         val tidRight = DE.decheckFork ()
          val jp = J
             {
                leftSideThread = interruptedLeftThread,
