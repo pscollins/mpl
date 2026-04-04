@@ -8,9 +8,7 @@ structure Queue =
 struct
    val capacity = 1
 
-   fun die strfn = (print (strfn () ^ "\n"))
-
-   fun exceededCapacityError () = die (fn _ => "Full")
+   fun exceededCapacityError () = print "Full\n"
 
    type gcstate = MLton.Pointer.t
 
@@ -22,13 +20,9 @@ struct
       _import "ABP_deque_try_pop_bot" runtime private:
          gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> 'a option;
 
-   type 'a t = {}
-
-   fun new () = {}
-
    val kNull = MLton.Pointer.null
 
-   fun pushBot (q as {}) x =
+   fun pushBot x =
       let
          val kConst = ref (0w32: Word32.word)
          val data' = Array.array (1, NONE)
@@ -39,7 +33,7 @@ struct
             exceededCapacityError ()
       end
 
-   fun popBot (q as {}) =
+   fun popBot () =
       let
          val kConst = ref (0w32: Word32.word)
          val data' = Array.array (1, NONE)
@@ -105,9 +99,9 @@ struct
 
    datatype task = GCTask
 
-   fun push (x): unit = Queue.pushBot (Queue.new()) x
+   fun push (x): unit = Queue.pushBot x
 
-   fun pop (): task option = Queue.popBot (Queue.new())
+   fun pop (): task option = Queue.popBot ()
 
    fun popDiscard () =
       case pop () of
