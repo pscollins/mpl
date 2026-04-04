@@ -4,55 +4,20 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
-(* --- Layer 0: Direct FFI Imports (Mirroring PrimitiveFFI) --- *)
-structure PrimitiveFFI = struct
-   (* C_Fd_t = int, String8_t = string, C_Int_t = int, C_Size_t = word, C_SSize_t = int *)
-   val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
-end
-
-(* --- Layer 1: PrimIO --- *)
-signature PRIM_IO = sig
+structure StreamIOExtra = struct
    type vector = string
    datatype writer = WR of {
       writeVec: {buf: vector, i: int, sz: int option} -> int,
       name: string,
       chunkSize: int
    }
-   type writer_type = writer
-end
 
-structure TextPrimIO : PRIM_IO = struct
-   type vector = string
-   datatype writer = WR of {
-      writeVec: {buf: vector, i: int, sz: int option} -> int,
-      name: string,
-      chunkSize: int
-   }
-   type writer_type = writer
-end
-
-(* --- Layer 2: StreamIO (Buffering and state management) --- *)
-signature STREAM_IO = sig
-   type vector
-   type writer
-   type outstream
-   datatype buffer_mode = NO_BUF | LINE_BUF | BLOCK_BUF
-   val mkOutstream: writer * buffer_mode -> outstream
-   val output: outstream * vector -> unit
-   val flushOut: outstream -> unit
-end
-
-functor StreamIOExtra (P: PRIM_IO) : STREAM_IO 
-  where type vector = P.vector 
-  where type writer = P.writer_type = struct
-   type vector = P.vector
-   type writer = P.writer_type
    datatype buf = Buf of {array: char array, size: int ref}
    datatype buffer_mode = NO_BUF | LINE_BUF | BLOCK_BUF
    datatype state = Active | Closed
 
    datatype outstream = Out of {
-      writer: P.writer_type,
+      writer: writer,
       buf: buf option,
       mode: buffer_mode,
       state: state ref
@@ -60,7 +25,7 @@ functor StreamIOExtra (P: PRIM_IO) : STREAM_IO
 
    fun mkOutstream (writer, mode) =
       let
-         val P.WR {chunkSize, ...} = writer
+         val WR {chunkSize, ...} = writer
          val buf = case mode of
                       NO_BUF => NONE
                     | _ => SOME (Buf {array = Array.array (chunkSize, #"\000"),
@@ -69,7 +34,7 @@ functor StreamIOExtra (P: PRIM_IO) : STREAM_IO
          Out {writer = writer, buf = buf, mode = mode, state = ref Active}
       end
 
-   fun flushOut (Out {writer as P.WR {writeVec, ...}, buf, state, ...}) =
+   fun flushOut (Out {writer as WR {writeVec, ...}, buf, state, ...}) =
       case (!state, buf) of
          (Active, SOME (Buf {array, size})) =>
             if !size > 0 then
@@ -82,7 +47,7 @@ functor StreamIOExtra (P: PRIM_IO) : STREAM_IO
             else ()
        | _ => ()
 
-   fun output (os as Out {writer as P.WR {writeVec, ...}, buf, mode, state, ...}, v) =
+   fun output (os as Out {writer as WR {writeVec, ...}, buf, mode, state, ...}, v) =
       if !state = Closed then raise Fail "Closed stream"
       else case buf of
          NONE => (ignore (writeVec {buf = v, i = 0, sz = NONE}))
@@ -104,13 +69,12 @@ end
 
 (* --- Layer 4: TextIO Implementation --- *)
 structure MyTextIO = struct
-   structure SIO = StreamIOExtra(TextPrimIO)
-   
+   structure SIO = StreamIOExtra
    type outstream = SIO.outstream ref
    fun output (os, v) = SIO.output (!os, v)
-   fun flushOut os = SIO.flushOut (!os)
+   val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
-   val mkWriter = fn fd => TextPrimIO.WR {
+   val mkWriter = fn fd => SIO.WR {
       name = "<stdout>",
       chunkSize = 4096,
       writeVec = fn {buf, i, sz} =>
@@ -118,13 +82,13 @@ structure MyTextIO = struct
             val len = case sz of NONE => Word.fromInt (String.size buf - i)
                                | SOME n => Word.fromInt n
          in
-            PrimitiveFFI.writeChar8Vec (fd, buf, i, len)
+            writeChar8Vec (fd, buf, i, len)
          end
    }
 
    val stdOut = ref (SIO.mkOutstream (mkWriter 1, SIO.LINE_BUF))
 
-   fun print s = (output (stdOut, s); flushOut stdOut)
+   fun print s = (output (stdOut, s); ())
 end
 
 (* --- Layer 5: Top-level --- *)
@@ -134,7 +98,7 @@ val my_print = MyTextIO.print
 val GCTask = Word32.fromInt 0
 structure Queue =
 struct
-fun exceededCapacityError () = my_print "Full\n"
+  fun exceededCapacityError () = my_print "Full\n"
 
 
    val ABP_deque_push_bot =
