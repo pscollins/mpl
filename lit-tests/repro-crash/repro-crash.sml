@@ -4,7 +4,6 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
-type task = Word32.word
 val GCTask = Word32.fromInt 0
 structure Queue =
 struct
@@ -12,19 +11,19 @@ fun exceededCapacityError () = print "Full\n"
 
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" private: task -> bool;
+      _import "ABP_deque_push_bot2" private: Word32.word -> bool;
 
    val ABP_deque_try_pop_bot =
       _import "ABP_deque_try_pop_bot2" private:
-         task -> task;
+         Word32.word -> Word32.word;
 
-   fun pushBot (x: task): unit =
+   fun pushBot (x: Word32.word): unit =
        if ABP_deque_push_bot (x) then
           ()
        else
           exceededCapacityError ()
 
-   fun popBot (): task option = SOME (ABP_deque_try_pop_bot (GCTask))
+   fun popBot (): Word32.word option = SOME (ABP_deque_try_pop_bot (GCTask))
 end
 
 structure Scheduler =
@@ -83,7 +82,7 @@ struct
 
    fun push (x): unit = Queue.pushBot x
 
-   fun pop (): task option = Queue.popBot ()
+   fun pop (): Word32.word option = Queue.popBot ()
 
    fun popDiscard () =
       case pop () of
@@ -162,7 +161,7 @@ struct
       end
 end
 
-val x = Array.sub (ForkJoin0.alloc 1: int array, 0)
+val x = Array.sub (ForkJoin0.alloc 1: Word16.word array, 0)
 
 fun f n =
    if n = 0 then
