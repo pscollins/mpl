@@ -162,15 +162,14 @@ struct
          primSporkFair (body', spwn', seq', sync', exnseq', exnsync')
       end
 
-   fun __inline_always__ spork {body, spwn, seq, sync, unstolen} = sporkBase body
+   fun __inline_always__ spork body = sporkBase body
 end
 
 structure ForkJoin0 =
 struct
    val spork = Scheduler.spork
 
-   fun par (f, g) =
-      spork { body = f, spwn = g, seq = fn a => (a, g ()), sync = fn ab => ab, unstolen = NONE }
+   fun par (f, g) = spork f
 
    fun parfor (i, j) f =
       if i = j then
