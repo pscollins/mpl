@@ -73,8 +73,35 @@ struct
 
    val primForkThreadAndSetData = _prim "spork_forkThreadAndSetData": Thread.t * 'a -> Thread.p;
 
-   structure HH = MLton.Thread.HierarchicalHeap
-   structure DE = MLton.Thread.Disentanglement
+   structure HH =
+   struct
+      val getDepth' = _import "GC_HH_getDepth" runtime private: Thread.t -> Word32.word;
+      fun getDepth t = Word32.toInt (getDepth' t)
+
+      val joinIntoParentBeforeFastClone' =
+         _import "GC_HH_joinIntoParentBeforeFastClone" runtime private:
+         gcstate * Thread.t * Word32.word * Word64.word * Word64.word -> unit;
+      fun joinIntoParentBeforeFastClone {thread, newDepth, tidLeft, tidRight} =
+         joinIntoParentBeforeFastClone' (gcstate (), thread, Word32.fromInt newDepth, tidLeft, tidRight)
+   end
+
+   structure DE =
+   struct
+      val decheckGetTid' = _import "GC_HH_decheckGetTid" runtime private:
+         gcstate * Thread.t -> Word64.word;
+      fun decheckGetTid thread = decheckGetTid' (gcstate (), thread)
+
+      val decheckFork' = _import "GC_HH_decheckFork" runtime private:
+         gcstate * Word64.word ref * Word64.word ref -> unit;
+      fun decheckFork () =
+         let
+            val left = ref (0w0: Word64.word)
+            val right = ref (0w0: Word64.word)
+         in
+            decheckFork' (gcstate (), left, right);
+            (!left, !right)
+         end
+   end
 
    datatype 'a joinpoint = J of
       {
