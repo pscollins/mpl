@@ -54,7 +54,7 @@ struct
       val joinIntoParentBeforeFastClone' =
          _import "GC_HH_joinIntoParentBeforeFastClone2" private:
          Word64.word -> unit;
-      fun joinIntoParentBeforeFastClone {tidRight} =
+      fun joinIntoParentBeforeFastClone tidRight =
          joinIntoParentBeforeFastClone' (tidRight)
    end
 
@@ -84,10 +84,6 @@ struct
 
    fun pop (): Word32.word option = Queue.popBot ()
 
-   fun popDiscard () =
-      case pop () of
-         NONE => false
-       | SOME _ => true
 
    fun doSpawn () : unit =
       let
@@ -107,15 +103,8 @@ struct
       end
 
    fun syncEndAtomic (tidRight) : unit =
-      (
-         if popDiscard () then
             HH.joinIntoParentBeforeFastClone
-               {
-                  tidRight=tidRight
-               }
-         else
-            ()
-      )
+                tidRight
 
    fun __inline_always__ tryPromoteNow (): unit = doSpawn ()
 
