@@ -103,7 +103,7 @@ struct
 
    fun maybeSpawn _ (t: Thread.t) = (doSpawn t ; true)
 
-   fun syncEndAtomic _ (J {tidRight, ...} : 'a joinpoint) : 'b option =
+   fun syncEndAtomic _ (J {tidRight, ...} : 'a joinpoint) : unit =
       (
          if popDiscard () then
             HH.joinIntoParentBeforeFastClone
@@ -114,16 +114,14 @@ struct
                   tidRight=tidRight
                }
          else
-            ();
-         NONE
+            ()
       )
 
    val sched_package =
       {
          syncEndAtomic = syncEndAtomic (fn _ => ()),
          maybeSpawn = maybeSpawn,
-         returnToSchedEndAtomic = (),
-         assertAtomic = fn _ => fn _ => ()
+         returnToSchedEndAtomic = ()
       }
 
    fun __inline_always__ tryPromoteNow () =
