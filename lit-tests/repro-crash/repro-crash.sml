@@ -1,3 +1,9 @@
+(* This file reproduces a missed flattening bug in the compiler (which causes
+the assertion corresponding to `Trace.noTuple` to fail)
+
+TODO(pscollins): Make this file self contained by inlining all of the relevant
+library code *)
+
 structure Queue =
 struct
    val capacity = 1
