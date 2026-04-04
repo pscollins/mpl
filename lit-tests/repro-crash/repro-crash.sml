@@ -143,13 +143,13 @@ structure ForkJoin0 =
 struct
    val spork = Scheduler.spork
 
-   fun par (f, g) = spork f
+   fun par f = spork f
 
    fun parfor (i, j) f =
       if i = j then
          ()
       else
-         (par (fn _ => parfor (i, 0) f, fn _ => parfor (0, j) f); ())
+         (par (fn _ => parfor (i, 0) f))
 
    fun alloc n =
       let
@@ -170,6 +170,6 @@ fun f n =
    if n = 0 then
       ()
    else
-      (MLton.Trace.noTuple x; ForkJoin0.par (fn _ => f (n-1), fn _ => ()); ())
+      (MLton.Trace.noTuple x; ForkJoin0.par (fn _ => f (n-1)); ())
 
 val _ = f 1
