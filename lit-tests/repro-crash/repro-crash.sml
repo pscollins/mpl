@@ -94,17 +94,11 @@ struct
    val ABP_deque_push_bot =
       _import "ABP_deque_push_bot2" private: Word32.word -> bool;
 
-   val ABP_deque_try_pop_bot =
-      _import "ABP_deque_try_pop_bot2" private:
-         Word32.word -> Word32.word;
-
    fun pushBot (x: Word32.word): unit =
        if ABP_deque_push_bot (x) then
           ()
        else
           exceededCapacityError ()
-
-   fun popBot (): Word32.word option = SOME (ABP_deque_try_pop_bot (GCTask))
 end
 
 structure Scheduler =
@@ -130,29 +124,20 @@ struct
 
    val primForkThreadAndSetData = _prim "spork_forkThreadAndSetData": Thread.t * 'a -> Thread.p;
 
-   structure HH =
-   struct
-      val joinIntoParentBeforeFastClone' =
-         _import "GC_HH_joinIntoParentBeforeFastClone2" private:
-         Word64.word -> unit;
-      fun joinIntoParentBeforeFastClone tidRight =
-         joinIntoParentBeforeFastClone' (tidRight)
-   end
+   val joinIntoParentBeforeFastClone' =
+      _import "GC_HH_joinIntoParentBeforeFastClone2" private:
+      Word64.word -> unit;
 
-   structure DE =
-   struct
-      val decheckFork' = _import "GC_HH_decheckFork2" private:
-         Word64.word ref -> unit;
-      fun decheckFork () =
-         let
-            val kConst = 0w0: Word64.word
-            val left = ref (kConst)
-            val left = ref (kConst)
-         in
-            decheckFork' (left);
-            (!left)
-         end
-   end
+   val decheckFork' = _import "GC_HH_decheckFork2" private:
+      Word64.word ref -> unit;
+   fun decheckFork () =
+      let
+         val kConst = 0w0: Word64.word
+         val left = ref (kConst)
+      in
+         decheckFork' (left);
+         (!left)
+      end
 
    datatype 'a joinpoint = J of
       {
@@ -163,15 +148,13 @@ struct
 
    fun push (x): unit = Queue.pushBot x
 
-   fun pop (): Word32.word option = Queue.popBot ()
-
 
    fun doSpawn () : unit =
       let
          val _ = push GCTask
          val thread = Thread.current ()
          val rightSideThreadSlot = ref (NONE: Thread.t option)
-         val tidRight = DE.decheckFork ()
+         val tidRight = decheckFork ()
          val jp = J
             {
                leftSideThread = thread,
@@ -184,7 +167,7 @@ struct
       end
 
    fun syncEndAtomic (tidRight) : unit =
-            HH.joinIntoParentBeforeFastClone
+            joinIntoParentBeforeFastClone'
                 tidRight
 
    fun __inline_always__ tryPromoteNow (): unit = doSpawn ()
