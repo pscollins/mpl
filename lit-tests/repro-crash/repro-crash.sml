@@ -5,9 +5,8 @@ TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
 structure StreamIOExtra = struct
-   type vector = string
    datatype writer = WR of {
-      writeVec: {buf: vector, i: int, sz: int option} -> int,
+      writeVec: {buf: string, i: int, sz: int option} -> int,
       name: string,
       chunkSize: int
    }
@@ -70,8 +69,7 @@ end
 (* --- Layer 4: TextIO Implementation --- *)
 structure MyTextIO = struct
    structure SIO = StreamIOExtra
-   type outstream = SIO.outstream ref
-   fun output (os, v) = SIO.output (!os, v)
+   fun output' (os, v) = SIO.output (!os, v)
    val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
    val mkWriter = fn fd => SIO.WR {
@@ -88,7 +86,7 @@ structure MyTextIO = struct
 
    val stdOut = ref (SIO.mkOutstream (mkWriter 1, SIO.LINE_BUF))
 
-   fun print s = (output (stdOut, s); ())
+   fun print s = (output' (stdOut, s); ())
 end
 
 (* --- Layer 5: Top-level --- *)
