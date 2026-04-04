@@ -75,9 +75,6 @@ struct
 
    structure HH =
    struct
-      val getDepth' = _import "GC_HH_getDepth" runtime private: Thread.t -> Word32.word;
-      fun getDepth t = Word32.toInt (getDepth' t)
-
       val joinIntoParentBeforeFastClone' =
          _import "GC_HH_joinIntoParentBeforeFastClone" runtime private:
          gcstate * Thread.t * Word32.word * Word64.word * Word64.word -> unit;
@@ -87,10 +84,6 @@ struct
 
    structure DE =
    struct
-      val decheckGetTid' = _import "GC_HH_decheckGetTid" runtime private:
-         gcstate * Thread.t -> Word64.word;
-      fun decheckGetTid thread = decheckGetTid' (gcstate (), thread)
-
       val decheckFork' = _import "GC_HH_decheckFork" runtime private:
          gcstate * Word64.word ref * Word64.word ref -> unit;
       fun decheckFork () =
@@ -125,9 +118,7 @@ struct
       let
          val _ = push GCTask
          val thread = Thread.current ()
-         val _ = HH.getDepth thread
          val rightSideThreadSlot = ref (NONE: Thread.t option)
-         val _ = DE.decheckGetTid thread
          val (_, tidRight) = DE.decheckFork ()
          val jp = J
             {
@@ -164,7 +155,7 @@ struct
       }
 
    fun __inline_always__ tryPromoteNow (): unit =
-      (#maybeSpawn (sched_package) (Thread.current ()); ())
+      (doSpawn (Thread.current ()); ())
 
    fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
       let
