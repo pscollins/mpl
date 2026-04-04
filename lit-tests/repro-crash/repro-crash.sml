@@ -13,8 +13,7 @@ struct
    type gcstate = MLton.Pointer.t
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" runtime private:
-         gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> bool;
+      _import "ABP_deque_push_bot2" runtime private: 'a option -> bool;
 
    val ABP_deque_try_pop_bot =
       _import "ABP_deque_try_pop_bot2" runtime private:
@@ -27,7 +26,7 @@ struct
          val kConst = ref (0w32: Word32.word)
          val data' = Array.array (1, NONE)
       in
-         if ABP_deque_push_bot (kNull, kConst, kConst, data', SOME x) then
+         if ABP_deque_push_bot (SOME x) then
             ()
          else
             exceededCapacityError ()

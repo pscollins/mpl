@@ -2,12 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-bool ABP_deque_push_bot2(
-                        __attribute__ ((unused)) void* s,
-                        __attribute__ ((unused)) void* top_op,
-                        void* bot_op,
-                        void* data_op,
-                        void* elem_to_push_op)
+bool ABP_deque_push_bot2(void* elem_to_push_op)
 {
   return true;
 }
