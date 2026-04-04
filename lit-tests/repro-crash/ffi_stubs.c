@@ -7,11 +7,7 @@ bool ABP_deque_push_bot2(void* elem_to_push_op)
   return true;
 }
 
-void* ABP_deque_try_pop_bot2(void* s,
-                             void* top_op,
-                             void* bot_op,
-                             void* data_op,
-                             void* fail_value) {
+void* ABP_deque_try_pop_bot2(void* fail_value) {
   return NULL;
 }
 

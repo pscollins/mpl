@@ -17,28 +17,17 @@ struct
 
    val ABP_deque_try_pop_bot =
       _import "ABP_deque_try_pop_bot2" runtime private:
-         gcstate * Word32.word ref * Word32.word ref * 'a option array * 'a option -> 'a option;
+         'a option -> 'a option;
 
    val kNull = MLton.Pointer.null
 
    fun pushBot x =
-      let
-         val kConst = ref (0w32: Word32.word)
-         val data' = Array.array (1, NONE)
-      in
-         if ABP_deque_push_bot (SOME x) then
-            ()
-         else
-            exceededCapacityError ()
-      end
+       if ABP_deque_push_bot (SOME x) then
+          ()
+       else
+          exceededCapacityError ()
 
-   fun popBot () =
-      let
-         val kConst = ref (0w32: Word32.word)
-         val data' = Array.array (1, NONE)
-      in
-         ABP_deque_try_pop_bot (kNull, kConst, kConst, data', NONE)
-      end
+   fun popBot () = ABP_deque_try_pop_bot (NONE)
 end
 
 structure Scheduler =
