@@ -57,9 +57,9 @@ struct
    struct
       val joinIntoParentBeforeFastClone' =
          _import "GC_HH_joinIntoParentBeforeFastClone2" runtime private:
-         gcstate * Thread.t * Word32.word * Word64.word * Word64.word -> unit;
-      fun joinIntoParentBeforeFastClone {thread, newDepth, tidLeft, tidRight} =
-         joinIntoParentBeforeFastClone' (MLton.Pointer.null, thread, Word32.fromInt newDepth, tidLeft, tidRight)
+         Word32.word * Word64.word * Word64.word -> unit;
+      fun joinIntoParentBeforeFastClone {newDepth, tidLeft, tidRight} =
+         joinIntoParentBeforeFastClone' (Word32.fromInt newDepth, tidLeft, tidRight)
    end
 
    structure DE =
@@ -116,7 +116,6 @@ struct
          if popDiscard () then
             HH.joinIntoParentBeforeFastClone
                {
-                  thread=Thread.current (),
                   newDepth=1,
                   tidLeft=Word64.fromInt 0,
                   tidRight=tidRight
