@@ -4,26 +4,28 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
+datatype task = GCTask
 structure Queue =
 struct
-   fun exceededCapacityError () = print "Full\n"
+fun exceededCapacityError () = print "Full\n"
+
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" runtime private: 'a option -> bool;
+      _import "ABP_deque_push_bot2" runtime private: task option -> bool;
 
    val ABP_deque_try_pop_bot =
       _import "ABP_deque_try_pop_bot2" runtime private:
-         'a option -> 'a option;
+         task option -> task option;
 
    val kNull = MLton.Pointer.null
 
-   fun pushBot x =
+   fun pushBot (x: task): unit =
        if ABP_deque_push_bot (SOME x) then
           ()
        else
           exceededCapacityError ()
 
-   fun popBot () = ABP_deque_try_pop_bot (NONE)
+   fun popBot (): task option = ABP_deque_try_pop_bot (NONE)
 end
 
 structure Scheduler =
@@ -79,8 +81,6 @@ struct
          rightSideThread: Thread.t option ref,
          tidRight: Word64.word
       }
-
-   datatype task = GCTask
 
    fun push (x): unit = Queue.pushBot x
 
