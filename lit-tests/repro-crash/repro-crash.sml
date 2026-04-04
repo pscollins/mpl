@@ -101,7 +101,7 @@ struct
          ()
       end
 
-   fun maybeSpawn _ (t: Thread.t) = (doSpawn t ; true)
+   fun maybeSpawn (t: Thread.t) = (doSpawn t ; true)
 
    fun syncEndAtomic _ (J {tidRight, ...} : 'a joinpoint) : unit =
       (
@@ -124,8 +124,8 @@ struct
          returnToSchedEndAtomic = ()
       }
 
-   fun __inline_always__ tryPromoteNow () =
-      (#maybeSpawn (sched_package) {youngestOptimization=true} (Thread.current ()); ())
+   fun __inline_always__ tryPromoteNow (): unit =
+      (#maybeSpawn (sched_package) (Thread.current ()); ())
 
    fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
       let
