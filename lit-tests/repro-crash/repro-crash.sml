@@ -48,8 +48,6 @@ struct
 
    type gcstate = MLton.Pointer.t
 
-   val gcstate = _prim "GC_state": unit -> gcstate;
-
    structure Thread = MLton.Thread.Basic
 
    val primSporkFair' =
@@ -73,7 +71,7 @@ struct
          _import "GC_HH_joinIntoParentBeforeFastClone" runtime private:
          gcstate * Thread.t * Word32.word * Word64.word * Word64.word -> unit;
       fun joinIntoParentBeforeFastClone {thread, newDepth, tidLeft, tidRight} =
-         joinIntoParentBeforeFastClone' (gcstate (), thread, Word32.fromInt newDepth, tidLeft, tidRight)
+         joinIntoParentBeforeFastClone' (MLton.Pointer.null, thread, Word32.fromInt newDepth, tidLeft, tidRight)
    end
 
    structure DE =
@@ -85,7 +83,7 @@ struct
             val kConst = 0w0: Word64.word
             val left = ref (kConst)
          in
-            decheckFork' (gcstate (), left, left);
+            decheckFork' (MLton.Pointer.null, left, left);
             (!left)
          end
    end
@@ -125,7 +123,7 @@ struct
          ()
       end
 
-   fun syncEndAtomic (J {tidRight, ...} : 'a joinpoint) : unit =
+   fun syncEndAtomic (tidRight) : unit =
       (
          if popDiscard () then
             HH.joinIntoParentBeforeFastClone
@@ -145,13 +143,13 @@ struct
    fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
       let
          fun body' (): 'a = (tryPromoteNow (); body ())
-         fun spwn' ((), J jp): unit = #rightSideThread jp := SOME (Thread.current ())
+         fun spwn' ((), J {rightSideThread, ...}): unit = rightSideThread := NONE
          fun seq' (bodyr: 'a): 'c = raise Die
-         fun sync' (bodyr: 'a, jp: int joinpoint): 'c =
-            (syncEndAtomic jp; raise Die)
+         fun sync' (bodyr: 'a, J {tidRight, ...}: int joinpoint): 'c =
+            (syncEndAtomic tidRight; raise Die)
          fun exnseq' (e: exn): 'c = raise e
-         fun exnsync' (e: exn, jp: int joinpoint): 'c =
-            (syncEndAtomic jp; raise Die)
+         fun exnsync' (e: exn, J {tidRight, ...}: int joinpoint): 'c =
+            (syncEndAtomic tidRight; raise Die)
       in
          primSporkFair (body', spwn', seq', sync', exnseq', exnsync')
       end
