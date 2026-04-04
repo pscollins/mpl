@@ -131,9 +131,7 @@ struct
          ()
       end
 
-   fun maybeSpawn (t: Thread.t) = (doSpawn t ; true)
-
-   fun syncEndAtomic _ (J {tidRight, ...} : 'a joinpoint) : unit =
+   fun syncEndAtomic (J {tidRight, ...} : 'a joinpoint) : unit =
       (
          if popDiscard () then
             HH.joinIntoParentBeforeFastClone
@@ -147,13 +145,6 @@ struct
             ()
       )
 
-   val sched_package =
-      {
-         syncEndAtomic = syncEndAtomic (fn _ => ()),
-         maybeSpawn = maybeSpawn,
-         returnToSchedEndAtomic = ()
-      }
-
    fun __inline_always__ tryPromoteNow (): unit =
       (doSpawn (Thread.current ()); ())
 
@@ -163,10 +154,10 @@ struct
          fun spwn' ((), J jp): unit = #rightSideThread jp := SOME (Thread.current ())
          fun seq' (bodyr: 'a): 'c = raise Die
          fun sync' (bodyr: 'a, jp: int joinpoint): 'c =
-            (#syncEndAtomic (sched_package) jp; raise Die)
+            (syncEndAtomic jp; raise Die)
          fun exnseq' (e: exn): 'c = raise e
          fun exnsync' (e: exn, jp: int joinpoint): 'c =
-            (#syncEndAtomic (sched_package) jp; raise Die)
+            (syncEndAtomic jp; raise Die)
       in
          primSporkFair (body', spwn', seq', sync', exnseq', exnsync')
       end
