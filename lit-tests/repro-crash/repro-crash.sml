@@ -4,17 +4,18 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
-datatype task = GCTask
+type task = Word32.word
+val GCTask = Word32.fromInt 0
 structure Queue =
 struct
 fun exceededCapacityError () = print "Full\n"
 
 
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" runtime private: task -> bool;
+      _import "ABP_deque_push_bot2" private: task -> bool;
 
    val ABP_deque_try_pop_bot =
-      _import "ABP_deque_try_pop_bot2" runtime private:
+      _import "ABP_deque_try_pop_bot2" private:
          task -> task;
 
    fun pushBot (x: task): unit =
