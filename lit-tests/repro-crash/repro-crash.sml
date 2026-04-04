@@ -4,7 +4,13 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
-(* --- Layer 4: TextIO Implementation --- *)
+(* Minimal print implementation to reproduce the bug
+
+IMPORTANT: When minimizing this program for debugging, DO NOT replace this
+structure with a call to the built-in `print` function -- the built-in function
+is much more complicated (from the compiler perspective) than this one; doing
+this substitution would hurt our progress towards the goal.
+ *)
 structure MyTextIO = struct
 datatype writer = WR of {
       writeVec: {buf: string, i: int, sz: int option} -> int
