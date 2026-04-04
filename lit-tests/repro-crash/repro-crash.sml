@@ -4,16 +4,17 @@ the assertion corresponding to `Trace.noTuple` to fail)
 TODO(pscollins): Make this file self contained by inlining all of the relevant
 library code *)
 
-structure StreamIOExtra = struct
-   datatype writer = WR of {
-      writeVec: {buf: string, i: int, sz: int option} -> int,
-      name: string,
-      chunkSize: int
+(* --- Layer 4: TextIO Implementation --- *)
+structure MyTextIO = struct
+datatype writer = WR of {
+      writeVec: {buf: string, i: int, sz: int option} -> int
    }
 
+   val chunkSize = 1024
+
    datatype buf = Buf of {array: char array, size: int ref}
-   datatype buffer_mode = NO_BUF | LINE_BUF | BLOCK_BUF
-   datatype state = Active | Closed
+   datatype buffer_mode = LINE_BUF
+   datatype state = Closed
 
    datatype outstream = Out of {
       writer: writer,
@@ -22,71 +23,56 @@ structure StreamIOExtra = struct
       state: state ref
    }
 
-   fun mkOutstream (writer, mode) =
+   fun mkOutstream (writer) =
       let
-         val WR {chunkSize, ...} = writer
-         val buf = case mode of
-                      NO_BUF => NONE
-                    | _ => SOME (Buf {array = Array.array (chunkSize, #"\000"),
-                                     size = ref 0})
+         val buf = SOME (Buf {array = Array.array (chunkSize, #"\000"),
+                              size = ref 0})
       in
-         Out {writer = writer, buf = buf, mode = mode, state = ref Active}
+         Out {writer = writer, buf = buf, mode = LINE_BUF, state = ref Closed}
       end
 
    fun flushOut (Out {writer as WR {writeVec, ...}, buf, state, ...}) =
       case (!state, buf) of
-         (Active, SOME (Buf {array, size})) =>
-            if !size > 0 then
-               let
-                  val v = Array.vector array
-                  val _ = writeVec {buf = v, i = 0, sz = SOME (!size)}
-               in
-                  size := 0
-               end
-            else ()
+         (_, SOME (Buf {array, ...})) =>
+         let
+            val v = Array.vector array
+            val _ = writeVec {buf = v, i = 0, sz = SOME (0)}
+         in
+            ()
+         end
        | _ => ()
-
    fun output (os as Out {writer as WR {writeVec, ...}, buf, mode, state, ...}, v) =
-      if !state = Closed then raise Fail "Closed stream"
-      else case buf of
-         NONE => (ignore (writeVec {buf = v, i = 0, sz = NONE}))
-       | SOME (Buf {array, size}) =>
-            let
-               val len = String.size v
-               val current = !size
-            in
-               if current + len < Array.length array then
-                  (Array.copyVec {src = v, dst = array, di = current};
-                   size := current + len;
-                   if mode = LINE_BUF andalso CharVector.exists (fn c => c = #"\n") v 
-                   then flushOut os else ())
-               else
-                  (flushOut os;
-                   ignore (writeVec {buf = v, i = 0, sz = NONE}))
-            end
-end
-
-(* --- Layer 4: TextIO Implementation --- *)
-structure MyTextIO = struct
-   structure SIO = StreamIOExtra
-   fun output' (os, v) = SIO.output (!os, v)
+       if !state = Closed then raise Fail "Closed stream"
+       else case buf of
+                NONE => (ignore (writeVec {buf = v, i = 0, sz = NONE}))
+              | SOME (Buf {array, ...}) =>
+                let
+                   val len = String.size v
+                   val current = 1
+                in
+                   if current + len < Array.length array then
+                      (Array.copyVec {src = v, dst = array, di = current};
+                       if mode = LINE_BUF andalso CharVector.exists (fn c => c = #"\n") v 
+                       then flushOut os else ())
+                   else
+                      (flushOut os;
+                       ignore (writeVec {buf = v, i = 0, sz = NONE}))
+                end
+   fun output' (os, v) = output (!os, v)
    val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
-   val mkWriter = fn fd => SIO.WR {
-      name = "<stdout>",
-      chunkSize = 4096,
+   val mkWriter = fn fd => WR {
       writeVec = fn {buf, i, sz} =>
          let
-            val len = case sz of NONE => Word.fromInt (String.size buf - i)
-                               | SOME n => Word.fromInt n
+            val len = Word.fromInt (String.size buf - i)
          in
             writeChar8Vec (fd, buf, i, len)
          end
    }
 
-   val stdOut = ref (SIO.mkOutstream (mkWriter 1, SIO.LINE_BUF))
+   val stdOut = ref (mkOutstream (mkWriter 1))
 
-   fun print s = (output' (stdOut, s); ())
+   fun print s = output' (stdOut, s)
 end
 
 (* --- Layer 5: Top-level --- *)
