@@ -61,13 +61,14 @@ struct
    structure DE =
    struct
       val decheckFork' = _import "GC_HH_decheckFork2" runtime private:
-         gcstate * Word64.word ref * Word64.word ref -> unit;
+         Word64.word ref -> unit;
       fun decheckFork () =
          let
             val kConst = 0w0: Word64.word
             val left = ref (kConst)
+            val left = ref (kConst)
          in
-            decheckFork' (MLton.Pointer.null, left, left);
+            decheckFork' (left);
             (!left)
          end
    end
