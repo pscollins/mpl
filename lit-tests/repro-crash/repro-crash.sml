@@ -52,7 +52,7 @@ struct
    structure HH =
    struct
       val joinIntoParentBeforeFastClone' =
-         _import "GC_HH_joinIntoParentBeforeFastClone2" runtime private:
+         _import "GC_HH_joinIntoParentBeforeFastClone2" private:
          Word64.word -> unit;
       fun joinIntoParentBeforeFastClone {tidRight} =
          joinIntoParentBeforeFastClone' (tidRight)
@@ -60,7 +60,7 @@ struct
 
    structure DE =
    struct
-      val decheckFork' = _import "GC_HH_decheckFork2" runtime private:
+      val decheckFork' = _import "GC_HH_decheckFork2" private:
          Word64.word ref -> unit;
       fun decheckFork () =
          let
@@ -91,7 +91,7 @@ struct
          NONE => false
        | SOME _ => true
 
-   fun doSpawn (interruptedLeftThread: Thread.t) : unit =
+   fun doSpawn () : unit =
       let
          val _ = push GCTask
          val thread = Thread.current ()
@@ -99,11 +99,11 @@ struct
          val tidRight = DE.decheckFork ()
          val jp = J
             {
-               leftSideThread = interruptedLeftThread,
+               leftSideThread = thread,
                rightSideThread = rightSideThreadSlot,
                tidRight = tidRight
             }
-         val _ = primForkThreadAndSetData (interruptedLeftThread, jp)
+         val _ = primForkThreadAndSetData (thread, jp)
       in
          ()
       end
@@ -119,8 +119,7 @@ struct
             ()
       )
 
-   fun __inline_always__ tryPromoteNow (): unit =
-      (doSpawn (Thread.current ()); ())
+   fun __inline_always__ tryPromoteNow (): unit = doSpawn ()
 
    fun __inline_always__ sporkBase (body: unit -> 'a): 'c =
       let
