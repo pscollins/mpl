@@ -11,18 +11,16 @@ structure with a call to the built-in `print` function -- the built-in function
 is much more complicated (from the compiler perspective) than this one; doing
 this substitution would hurt our progress towards the goal.
  *)
-structure MyTextIO = struct
-datatype writer = WR of {
-      writeVec: unit -> int
-   }
 
-   val chunkSize = 1024
+exception Die
+structure MyTextIO = struct
+   val chunkSize = 1
 
    datatype buf = Buf of {array: char array}
    datatype state = Closed
 
    datatype outstream = Out of {
-      buf: buf option,
+      buf: buf,
       state: state ref
    }
    val writeChar8Vec = _import "writeChar8Vec2" private : unit -> unit;
@@ -32,26 +30,22 @@ datatype writer = WR of {
 
    fun mkOutstream () =
       let
-         val buf = SOME (Buf {array = Array.array (chunkSize, #"a")})
+         val buf = Buf {array = Array.array (chunkSize, #"a")}
       in
          Out {buf = buf, state = ref Closed}
       end
 
-   fun flushOut (Out {buf, state, ...}) =
-      case (!state, buf) of
-         (_, SOME (Buf {...})) =>
-         let
-            val array' = Array.array (chunkSize, 0)
-            val _ = doWrite()
-         in
-            ()
-         end
-       | _ => ()
+   fun flushOut (Out {buf = Buf {...}, ...}) =
+       let
+          val array' = Array.array (chunkSize, 0)
+       in
+          doWrite()
+       end
+
    fun output (os as Out {buf, state, ...}) =
        if !state = Closed then raise Fail "Closed stream"
        else case buf of
-                NONE => (doWrite())
-              | SOME (Buf {array, ...}) =>
+                (Buf {array, ...}) =>
                 let
                    val v = ""
                    val len = String.size v
@@ -65,23 +59,17 @@ datatype writer = WR of {
                       (flushOut os;
                        doWrite())
                 end
-   fun output' (os) = output (!os)
-
    val stdOut = ref (mkOutstream ())
 
-   fun print () = output' (stdOut)
+   fun print () = output (!stdOut)
 end
 
-(* --- Layer 5: Top-level --- *)
 val my_print = MyTextIO.print
 
 
 val GCTask = Word32.fromInt 0
 structure Queue =
 struct
-  fun exceededCapacityError () = my_print()
-
-
    val ABP_deque_push_bot =
       _import "ABP_deque_push_bot2" private: Word32.word -> bool;
 
@@ -89,12 +77,11 @@ struct
        if ABP_deque_push_bot (x) then
           ()
        else
-          exceededCapacityError ()
+          my_print ()
 end
 
 structure Scheduler =
 struct
-   exception Die
 
    type gcstate = MLton.Pointer.t
 
