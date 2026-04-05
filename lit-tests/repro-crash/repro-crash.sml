@@ -67,14 +67,13 @@ end
 val my_print = MyTextIO.print
 
 
-val GCTask = Word32.fromInt 0
 structure Queue =
 struct
    val ABP_deque_push_bot =
-      _import "ABP_deque_push_bot2" private: Word32.word -> bool;
+      _import "ABP_deque_push_bot2" private: unit -> bool;
 
-   fun pushBot (x: Word32.word): unit =
-       if ABP_deque_push_bot (x) then
+   fun pushBot (): unit =
+       if ABP_deque_push_bot () then
           ()
        else
           my_print ()
@@ -124,12 +123,12 @@ struct
          tidRight: Word64.word
       }
 
-   fun push (x): unit = Queue.pushBot x
+   fun push (): unit = Queue.pushBot ()
 
 
    fun doSpawn () : unit =
       let
-         val _ = push GCTask
+         val _ = push ()
          val thread = Thread.current ()
          val rightSideThreadSlot = ref (NONE: Thread.t option)
          val tidRight = decheckFork ()
