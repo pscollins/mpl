@@ -23,34 +23,36 @@ datatype writer = WR of {
    datatype state = Closed
 
    datatype outstream = Out of {
-      writer: writer,
       buf: buf option,
       mode: buffer_mode,
       state: state ref
    }
+   val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
-   fun mkOutstream (writer) =
+fun doWrite() = (writeChar8Vec (1, "", 1, Word.fromInt 1); ())
+
+   fun mkOutstream () =
       let
          val buf = SOME (Buf {array = Array.array (chunkSize, #"\000"),
                               size = ref 0})
       in
-         Out {writer = writer, buf = buf, mode = LINE_BUF, state = ref Closed}
+         Out {buf = buf, mode = LINE_BUF, state = ref Closed}
       end
 
-   fun flushOut (Out {writer as WR {writeVec, ...}, buf, state, ...}) =
+   fun flushOut (Out {buf, state, ...}) =
       case (!state, buf) of
          (_, SOME (Buf {array, ...})) =>
          let
             val v = Array.vector array
-            val _ = writeVec {}
+            val _ = doWrite()
          in
             ()
          end
        | _ => ()
-   fun output (os as Out {writer as WR {writeVec, ...}, buf, mode, state, ...}, v) =
+   fun output (os as Out {buf, mode, state, ...}, v) =
        if !state = Closed then raise Fail "Closed stream"
        else case buf of
-                NONE => (ignore (writeVec {}))
+                NONE => (doWrite())
               | SOME (Buf {array, ...}) =>
                 let
                    val len = String.size v
@@ -58,25 +60,15 @@ datatype writer = WR of {
                 in
                    if current + len < Array.length array then
                       (Array.copyVec {src = v, dst = array, di = current};
-                       if mode = LINE_BUF andalso CharVector.exists (fn c => c = #"\n") v 
+                       if CharVector.exists (fn c => c = #"\n") v
                        then flushOut os else ())
                    else
                       (flushOut os;
-                       ignore (writeVec {}))
+                       doWrite())
                 end
    fun output' (os, v) = output (!os, v)
-   val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
-   val mkWriter = fn fd => WR {
-      writeVec = fn {} =>
-         let
-            val len = Word.fromInt 1
-         in
-            writeChar8Vec (1, "", 1, len)
-         end
-   }
-
-   val stdOut = ref (mkOutstream (mkWriter 1))
+   val stdOut = ref (mkOutstream ())
 
    fun print s = output' (stdOut, s)
 end
