@@ -24,19 +24,18 @@ datatype writer = WR of {
 
    datatype outstream = Out of {
       buf: buf option,
-      mode: buffer_mode,
       state: state ref
    }
-   val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
+   val writeChar8Vec = _import "writeChar8Vec2" private : unit -> unit;
 
-fun doWrite() = (writeChar8Vec (1, "", 1, Word.fromInt 1); ())
+   fun doWrite() = writeChar8Vec()
 
    fun mkOutstream () =
       let
          val buf = SOME (Buf {array = Array.array (chunkSize, #"\000"),
                               size = ref 0})
       in
-         Out {buf = buf, mode = LINE_BUF, state = ref Closed}
+         Out {buf = buf, state = ref Closed}
       end
 
    fun flushOut (Out {buf, state, ...}) =
@@ -49,7 +48,7 @@ fun doWrite() = (writeChar8Vec (1, "", 1, Word.fromInt 1); ())
             ()
          end
        | _ => ()
-   fun output (os as Out {buf, mode, state, ...}) =
+   fun output (os as Out {buf, state, ...}) =
        if !state = Closed then raise Fail "Closed stream"
        else case buf of
                 NONE => (doWrite())
