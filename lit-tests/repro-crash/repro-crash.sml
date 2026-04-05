@@ -49,12 +49,13 @@ fun doWrite() = (writeChar8Vec (1, "", 1, Word.fromInt 1); ())
             ()
          end
        | _ => ()
-   fun output (os as Out {buf, mode, state, ...}, v) =
+   fun output (os as Out {buf, mode, state, ...}) =
        if !state = Closed then raise Fail "Closed stream"
        else case buf of
                 NONE => (doWrite())
               | SOME (Buf {array, ...}) =>
                 let
+                   val v = ""
                    val len = String.size v
                    val current = 1
                 in
@@ -66,11 +67,11 @@ fun doWrite() = (writeChar8Vec (1, "", 1, Word.fromInt 1); ())
                       (flushOut os;
                        doWrite())
                 end
-   fun output' (os, v) = output (!os, v)
+   fun output' (os) = output (!os)
 
    val stdOut = ref (mkOutstream ())
 
-   fun print s = output' (stdOut, s)
+   fun print () = output' (stdOut)
 end
 
 (* --- Layer 5: Top-level --- *)
@@ -80,7 +81,7 @@ val my_print = MyTextIO.print
 val GCTask = Word32.fromInt 0
 structure Queue =
 struct
-  fun exceededCapacityError () = my_print "Full\n"
+  fun exceededCapacityError () = my_print()
 
 
    val ABP_deque_push_bot =
