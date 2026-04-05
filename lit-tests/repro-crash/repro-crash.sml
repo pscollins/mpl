@@ -42,10 +42,9 @@ structure MyTextIO = struct
           doWrite()
        end
 
-   fun output (os as Out {buf, state, ...}) =
-       if !state = Closed then raise Fail "Closed stream"
-       else case buf of
-                (Buf {array, ...}) =>
+   fun output (os as Out {buf = Buf {array, ...}, state, ...}) =
+       if !state = Closed andalso false then raise Die
+       else
                 let
                    val v = ""
                    val len = String.size v

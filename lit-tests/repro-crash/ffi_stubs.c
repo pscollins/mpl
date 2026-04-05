@@ -21,4 +21,6 @@ void GC_HH_joinIntoParentBeforeFastClone2(
 
 void GC_HH_decheckFork2(void* s, uint64_t *left, uint64_t *right) { }
 
+void writeChar8Vec2() { }
+
 
