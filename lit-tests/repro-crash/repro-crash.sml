@@ -18,8 +18,7 @@ datatype writer = WR of {
 
    val chunkSize = 1024
 
-   datatype buf = Buf of {array: char array, size: int ref}
-   datatype buffer_mode = LINE_BUF
+   datatype buf = Buf of {array: char array}
    datatype state = Closed
 
    datatype outstream = Out of {
@@ -27,22 +26,22 @@ datatype writer = WR of {
       state: state ref
    }
    val writeChar8Vec = _import "writeChar8Vec2" private : unit -> unit;
+  (* val writeChar8Vec = _import "writeChar8Vec2" private pure: unit -> unit; *)
 
    fun doWrite() = writeChar8Vec()
 
    fun mkOutstream () =
       let
-         val buf = SOME (Buf {array = Array.array (chunkSize, #"\000"),
-                              size = ref 0})
+         val buf = SOME (Buf {array = Array.array (chunkSize, #"a")})
       in
          Out {buf = buf, state = ref Closed}
       end
 
    fun flushOut (Out {buf, state, ...}) =
       case (!state, buf) of
-         (_, SOME (Buf {array, ...})) =>
+         (_, SOME (Buf {...})) =>
          let
-            val v = Array.vector array
+            val array' = Array.array (chunkSize, 0)
             val _ = doWrite()
          in
             ()
@@ -56,10 +55,10 @@ datatype writer = WR of {
                 let
                    val v = ""
                    val len = String.size v
-                   val current = 1
+                   val array' = Array.array (chunkSize, #"a")
                 in
-                   if current + len < Array.length array then
-                      (Array.copyVec {src = v, dst = array, di = current};
+                   if 1 < Array.length array then
+                      (Array.copyVec {src = v, dst = array', di = 1};
                        if CharVector.exists (fn c => c = #"\n") v
                        then flushOut os else ())
                    else
