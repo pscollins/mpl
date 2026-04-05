@@ -13,7 +13,7 @@ this substitution would hurt our progress towards the goal.
  *)
 structure MyTextIO = struct
 datatype writer = WR of {
-      writeVec: {buf: string, i: int, sz: int option} -> int
+      writeVec: unit -> int
    }
 
    val chunkSize = 1024
@@ -42,7 +42,7 @@ datatype writer = WR of {
          (_, SOME (Buf {array, ...})) =>
          let
             val v = Array.vector array
-            val _ = writeVec {buf = v, i = 0, sz = SOME (0)}
+            val _ = writeVec {}
          in
             ()
          end
@@ -50,7 +50,7 @@ datatype writer = WR of {
    fun output (os as Out {writer as WR {writeVec, ...}, buf, mode, state, ...}, v) =
        if !state = Closed then raise Fail "Closed stream"
        else case buf of
-                NONE => (ignore (writeVec {buf = v, i = 0, sz = NONE}))
+                NONE => (ignore (writeVec {}))
               | SOME (Buf {array, ...}) =>
                 let
                    val len = String.size v
@@ -62,17 +62,17 @@ datatype writer = WR of {
                        then flushOut os else ())
                    else
                       (flushOut os;
-                       ignore (writeVec {buf = v, i = 0, sz = NONE}))
+                       ignore (writeVec {}))
                 end
    fun output' (os, v) = output (!os, v)
    val writeChar8Vec = _import "Posix_IO_writeChar8Vec" private : int * string * int * word -> int;
 
    val mkWriter = fn fd => WR {
-      writeVec = fn {buf, i, sz} =>
+      writeVec = fn {} =>
          let
-            val len = Word.fromInt (String.size buf - i)
+            val len = Word.fromInt 1
          in
-            writeChar8Vec (fd, buf, i, len)
+            writeChar8Vec (1, "", 1, len)
          end
    }
 
