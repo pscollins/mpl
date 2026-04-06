@@ -44,7 +44,12 @@ structure Rep =
                                        Layout.str " because it is Top"])))
          in
             case Type.deTupleOpt t of
-               NONE => (makeTop r; r)
+               NONE => 
+                  (Control.diagnostics (fn display =>
+                      display (Layout.seq [Layout.str "Don't flatten ", msg (),
+                                           Layout.str " (not a tuple type)"]))
+                   ; makeTop r
+                   ; r)
              | SOME _ => r
          end
 
@@ -70,14 +75,16 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          Property.getSetOnce
          (Con.plist, Property.initRaise ("Flatten.conInfo", Con.layout))
       val conArgs = #args o conInfo
-      val {get = funcInfo: Func.t -> {args: Rep.t vector,
+      val {get = funcInfo: Func.t -> {argNames: Var.t vector,
+                                      args: Rep.t vector,
                                       returns: Rep.t vector option,
                                       raises: Rep.t vector option},
            set = setFuncInfo, ...} =
          Property.getSetOnce
          (Func.plist, Property.initRaise ("Flatten.funcInfo", Func.layout))
       val funcArgs = #args o funcInfo
-      val {get = labelInfo: Label.t -> {args: Rep.t vector},
+      val {get = labelInfo: Label.t -> {argNames: Var.t vector,
+                                        args: Rep.t vector},
            set = setLabelInfo, ...} =
          Property.getSetOnce
          (Label.plist, Property.initRaise ("Flatten.labelInfo", Label.layout))
@@ -110,18 +117,22 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
       val fromFormals = fn xtys => Vector.map (xtys, fromFormal)
       val varRep = #rep o varInfo
       val varTuple = #tuple o varInfo
-      fun coerce (x: Var.t, r: Rep.t) =
+      fun coerce (x: Var.t, r: Rep.t, msgTo: unit -> Layout.t) =
          let
             val _ =
                Rep.addHandler (varRep x, fn () =>
                   Control.diagnostics (fn display =>
                      display (Layout.seq [Layout.str "Propagating Top from ",
-                                          Var.layout x])))
+                                          Var.layout x,
+                                          Layout.str " to ",
+                                          msgTo ()])))
          in
             Rep.coerce (varRep x, r)
          end
-      fun coerces (xs: Var.t vector, rs: Rep.t vector) =
-         Vector.foreach2 (xs, rs, coerce)
+      fun coerces (xs: Var.t vector, rs: Rep.t vector, msgTo: int -> Layout.t) =
+         Vector.foreach (Vector.zip (Vector.zip (xs, rs), 
+                                     Vector.tabulate (Vector.length xs, fn i => i)),
+                         fn ((x, r), i) => coerce (x, r, fn () => msgTo i))
 
       val _ =
          Vector.foreach
@@ -139,7 +150,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          (functions, fn f =>
           let val {args, name, raises, returns, ...} = Function.dest f
           in 
-            setFuncInfo (name, {args = fromFormals args,
+            setFuncInfo (name, {argNames = Vector.map (args, #1),
+                                args = fromFormals args,
                                 returns = Option.map (returns, fn ts =>
                                                       Rep.fromTypes (ts, fn i =>
                                                                      Layout.seq
@@ -175,7 +187,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                    setVarInfo (var, {rep = r,
                                      tuple = ref (SOME xs)})
                 end)
-          | ConApp {con, args} => coerces (args, conArgs con)
+          | ConApp {con, args} =>
+               coerces (args, conArgs con, fn i =>
+                        Layout.seq [Con.layout con, Layout.str " arg ", Int.layout i])
           | Var x => setVarInfo (valOf var, varInfo x)
           | _ => ()
       val _ = Vector.foreach (globals, doitStatement)
@@ -204,7 +218,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
           in
              Vector.foreach
              (blocks, fn Block.T {label, args, statements, ...} =>
-              (setLabelInfo (label, {args = fromFormals args})
+              (setLabelInfo (label, {argNames = Vector.map (args, #1),
+                                     args = fromFormals args})
                ; Vector.foreach (statements, doitStatement)))
              ; Vector.foreach
                (blocks, fn Block.T {transfer, ...} =>
@@ -212,27 +227,44 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                    Return xs =>
                       (case returns of
                           NONE => Error.bug "Flatten.flatten: return mismatch"
-                        | SOME rs => coerces (xs, rs))
+                        | SOME rs =>
+                             coerces (xs, rs, fn i =>
+                                      Layout.seq [Func.layout name,
+                                                  Layout.str " return ",
+                                                  Int.layout i]))
                  | Raise xs =>
                       (case raises of
                           NONE => Error.bug "Flatten.flatten: raise mismatch"
-                        | SOME rs => coerces (xs, rs))
+                        | SOME rs =>
+                             coerces (xs, rs, fn i =>
+                                      Layout.seq [Func.layout name,
+                                                  Layout.str " raise ",
+                                                  Int.layout i]))
                  | Call {func, args, return, ...} =>
                       let
-                        val {args = funcArgs, 
+                        val {argNames = funcArgNames,
+                             args = funcArgs, 
                              returns = funcReturns,
                              raises = funcRaises} =
                           funcInfo func
-                        val _ = coerces (args, funcArgs)
+                        val _ =
+                           coerces (args, funcArgs, fn i =>
+                                    Var.layout (Vector.sub (funcArgNames, i)))
                         fun unifyReturns () =
                            case (funcReturns, returns) of
                               (SOME rs, SOME rs') => 
-                                 unify (rs, rs', fn () => Layout.str "return")
+                                 unify (rs, rs', fn () =>
+                                        Layout.seq [Func.layout func,
+                                                    Layout.str " return to ",
+                                                    Func.layout name])
                             | _ => ()           
                         fun unifyRaises () =
                            case (funcRaises, raises) of
                               (SOME rs, SOME rs') => 
-                                 unify (rs, rs', fn () => Layout.str "raise")
+                                 unify (rs, rs', fn () =>
+                                        Layout.seq [Func.layout func,
+                                                    Layout.str " raise to ",
+                                                    Func.layout name])
                             | _ => ()
                       in
                         case return of
@@ -240,21 +272,56 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                          | Return.NonTail {cont, handler} =>
                               (Option.app 
                                (funcReturns, fn rs =>
-                                unify (rs, labelArgs cont, fn () => Layout.str "return"))
+                                unify (rs, labelArgs cont, fn () =>
+                                       Layout.seq [Func.layout func,
+                                                   Layout.str " return to ",
+                                                   Label.layout cont]))
                                ; case handler of
                                     Handler.Caller => unifyRaises ()
                                   | Handler.Dead => ()
                                   | Handler.Handle handler =>
                                        Option.app
                                        (funcRaises, fn rs =>
-                                        unify (rs, labelArgs handler, fn () => Layout.str "raise")))
+                                        unify (rs, labelArgs handler, fn () =>
+                                               Layout.seq [Func.layout func,
+                                                           Layout.str " raise to ",
+                                                           Label.layout handler])))
                          | Return.Tail => (unifyReturns (); unifyRaises ())
                       end
-                 | Goto {dst, args} => coerces (args, labelArgs dst)
+                 | Goto {dst, args} =>
+                      let
+                        val {argNames = labelArgNames, args = labelArgs} =
+                           labelInfo dst
+                      in
+                        coerces (args, labelArgs, fn i =>
+                                 Var.layout (Vector.sub (labelArgNames, i)))
+                      end
                  | Case {cases = Cases.Con cases, ...} =>
                       Vector.foreach
                       (cases, fn (con, label) =>
-                       Rep.coerces (conArgs con, labelArgs label))
+                       let
+                          val rs1 = conArgs con
+                          val rs2 = labelArgs label
+                       in
+                          Vector.foreach2 (rs1, rs2, fn (r1, r2) =>
+                             let
+                                val _ = Rep.addHandler (r1, fn () =>
+                                   Control.diagnostics (fn display =>
+                                      display (Layout.seq [Layout.str "Propagating Top from ",
+                                                           Con.layout con,
+                                                           Layout.str " to ",
+                                                           Label.layout label])))
+                                val _ = Rep.addHandler (r2, fn () =>
+                                   Control.diagnostics (fn display =>
+                                      display (Layout.seq [Layout.str "Propagating Top from ",
+                                                           Label.layout label,
+                                                           Layout.str " to ",
+                                                           Con.layout con])))
+                             in
+                                Rep.coerce (r1, r2)
+                                ; Rep.coerce (r2, r1)
+                             end)
+                       end)
                  | _ => ())
           end)
       val _ =
@@ -263,15 +330,19 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
           List.foreach
           (functions, fn f => 
            let 
-              val name = Function.name f
-              val {args, raises, returns} = funcInfo name
+              val {args = formals, name, ...} = Function.dest f
+              val {args, raises, returns, ...} = funcInfo name
               open Layout
            in 
               display
               (seq [Func.layout name,
                     str " ",
                     record
-                    [("args", Vector.layout Rep.layout args),
+                    [("args", Vector.layout (fn ((x, _), r) =>
+                                                seq [Var.layout x,
+                                                     str ": ",
+                                                     Rep.layout r])
+                                            (Vector.zip (formals, args))),
                      ("returns", Option.layout (Vector.layout Rep.layout) returns),
                      ("raises", Option.layout (Vector.layout Rep.layout) raises)]])
            end))
@@ -316,7 +387,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          let
             val {args, inline, name, raises, returns, start, ...} =
                Function.dest f
-            val {args = argsReps, returns = returnsReps, raises = raisesReps} = 
+            val {args = argsReps, returns = returnsReps, raises = raisesReps, ...} = 
               funcInfo name
 
             val newBlocks = ref []
