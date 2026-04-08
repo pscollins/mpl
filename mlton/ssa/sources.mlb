@@ -40,6 +40,8 @@ local
    restore.fun
 
    ssa-transform.sig
+   pre-flatten.sig
+   pre-flatten.fun
    ssa2-transform.sig
    common-arg.fun
    common-block.fun
@@ -98,6 +100,7 @@ local
    ssa-to-ssa2.sig
    ssa-to-ssa2.fun
 in
+   signature PRE_FLATTEN
    signature SSA
    signature SSA2
    signature SSA_TREE
@@ -106,6 +109,7 @@ in
    signature PARSE_SSA2
    signature REWRITE_SSA2
 
+   functor PreFlatten
    functor Ssa
    functor Ssa2
    functor SsaTree

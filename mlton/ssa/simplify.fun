@@ -21,6 +21,7 @@ structure Contify = Contify (S)
 structure DropSpork = DropSpork (S)
 structure DuplicateGlobals = DuplicateGlobals (S)
 structure Flatten = Flatten (S)
+structure PreFlatten = PreFlatten (S)
 structure Inline = Inline (S)
 structure IntroduceLoops = IntroduceLoops (S)
 structure KnownCase = KnownCase (S)
@@ -103,6 +104,7 @@ val ssaPassesDefault =
    {name = "introduceLoops3", doit = IntroduceLoops.transform, execute = true} ::
    {name = "loopInvariant3", doit = LoopInvariant.transform, execute = true} ::
    {name = "localRef", doit = LocalRef.transform, execute = true} ::
+   {name = "preFlatten", doit = PreFlatten.transform, execute = true} ::
    {name = "flatten", doit = Flatten.transform, execute = true} ::
    {name = "localFlatten3", doit = LocalFlatten.transform, execute = true} ::
    {name = "combineConversions", doit = CombineConversions.transform, execute = true} ::
@@ -234,6 +236,7 @@ local
                  ("constantPropagation", ConstantPropagation.transform),
                  ("contify", Contify.transform),
                  ("duplicateGlobals", DuplicateGlobals.transform),
+                 ("preFlatten", PreFlatten.transform),
                  ("flatten", Flatten.transform),
                  ("introduceLoops", IntroduceLoops.transform),
                  ("knownCase", KnownCase.transform),
