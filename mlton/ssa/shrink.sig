@@ -17,5 +17,8 @@ signature SHRINK =
 
       val shrinkFunction: 
          {globals: Statement.t vector} -> Function.t -> Function.t
+
+      (* General-purpose simplification/optimization pass: runs constant
+      folding, dead code elimination, etc. *)
       val shrink: Program.t -> Program.t
    end

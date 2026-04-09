@@ -17,5 +17,6 @@ signature RESTORE =
 
       val restoreFunction: 
          {globals: Statement.t vector} -> Function.t -> Function.t
+      (* Puts `Program.t` back into SSA form *)
       val restore: Program.t -> Program.t
    end
