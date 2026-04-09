@@ -15,9 +15,29 @@ type walker = {
    statement: Statement.t -> unit
 }
 
-fun doWalk (w: walker, p: Program.t) =
-    (* TODO(pscollins): Implement *)
-    ()
+fun doWalk (w: walker, p: Program.t) = let 
+   val {beforeFunc, afterFunc, beforeBlock, afterBlock, statement}
+       = w
+   val Program.T {globals, ...} = p
+   fun noop() = ()
+   fun doWalkBlock (b: Block.t) = let
+      val _ = beforeBlock b
+      val _ = Vector.foreach (Block.statements b, statement)
+      val _ = afterBlock b
+   in
+      noop
+   end
+   fun doWalkFunc (f: Function.t) = let
+      val _ = beforeFunc f
+      val _ = Function.dfs (f, doWalkBlock)
+      val _ = afterFunc f
+   in
+      noop
+   end
+in
+   Vector.foreach (globals, statement);
+   Program.dfs (p, doWalkFunc)
+end
 
 fun transform (p: Program.t): Program.t =
     p
