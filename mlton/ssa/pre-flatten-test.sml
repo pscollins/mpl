@@ -210,6 +210,7 @@ local
       val f1Name = Func.fromString "f1"
       val f1L1 = Label.fromString "f1L1"
       val f1L2 = Label.fromString "f1L2"
+      val f2Name = Func.fromString "f2"
       val v1 = Var.fromString "v1"
       val s1 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME v1}
       val b1 = Block.T {
@@ -222,7 +223,12 @@ local
          args = Vector.new0 (),
          label = f1L2,
          statements = Vector.new0 (),
-         transfer = Transfer.Return (Vector.new0 ())
+         transfer = Transfer.Call {
+            args = Vector.new0 (),
+            func = f2Name,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
       }
       val f1 = Function.new {
          args = Vector.new0 (),
@@ -234,7 +240,6 @@ local
          start = f1L1
       }
       
-      val f2Name = Func.fromString "f2"
       val f2L1 = Label.fromString "f2L1"
       val v2 = Var.fromString "v2"
       val s2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME v2}
