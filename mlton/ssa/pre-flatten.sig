@@ -1,4 +1,24 @@
 signature PRE_FLATTEN =
-   sig
-      include SSA_TRANSFORM
-   end
+sig
+   (* Exports:
+        val transform: Program.t -> Program.t
+    *)
+   include SSA_TRANSFORM
+
+   (* General IR manipulation utilities, exposed for testing *)
+   type walker = {
+      (* Hook to execute before visiting a function body *)
+      beforeFunc: Function.t -> unit,
+      (* Hook to execute after visiting a function body *)
+      afterFunc: Function.t -> unit,
+      (* Hook to execute before visiting a block body *)
+      beforeBlock: Block.t -> unit,
+      (* Hook to execute after visiting a block body *)
+      afterBlock: Block.t -> unit,
+      (* Hook to execute when visiting a statement *)
+      statement: Statement.t -> unit
+   }
+   val doWalk: (walker * Program.t) -> unit
+
+               
+end
