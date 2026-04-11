@@ -118,6 +118,21 @@ in
     | binds => buildNewFunc binds
 end
 
+datatype varChoice =
+         PreserveVar
+         | FlattenTupleVar of Var.t vector
+
+type varChoiceManager = {
+   getVarTagProp: Var.t -> varChoice,
+   setVarTagProp: Var.t * varChoice -> unit,
+   destroyVarTagProps: unit -> unit
+}
+
+fun newVarChoiceManager () = raise Fail "TODO"
+fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = raise Fail "TODO"
+fun getVarChoice (vt: varChoiceManager, v: Var.t) = raise Fail "TODO"
+fun destroyVarChoiceManager (vt: varChoiceManager) = raise Fail "TODO"
+
 
 fun transform (p: Program.t): Program.t =
     p

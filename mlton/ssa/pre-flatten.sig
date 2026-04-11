@@ -55,6 +55,32 @@ sig
    `argChoice` must be compatible with the function args (i.e. same count and
    applicable types): if not, error.
     *)
-
    val buildFlattenedFunction: (Function.t * argChoice vector) -> Function.t
+
+
+   (* Flattening decision for a particular `Var.t` *)
+   datatype varChoice =
+            (* Don't flatten *)
+            PreserveVar
+            (* Flatten: carries the parent `Var.t`s to flatten-through *)
+          | FlattenTupleVar of Var.t vector
+
+   (* Type to manage tagging `Var.t`s with their flattening decision *)
+   type varChoiceManager
+   (* Creates a new `varChoiceManager` *)
+   val newVarChoiceManager: unit -> varChoiceManager
+   (* Sets the `varChoice` for any `Var.t`s in `Statement.t`:
+
+     Flattenable `Var.t`s are of the form:
+
+       var := tuple(p1, p2, p3) -> FlattenTupleVar ([p1, p2, p3])
+
+     All other `Var.t`s are marked `PreserveVar`.
+    *)
+   val chooseVarsInStatement: (varChoiceManager * Statement.t) -> unit
+   (* Returns the choice for the provided `Var.t` *)
+   val getVarChoice: (varChoiceManager * Var.t) -> varChoice
+   (* Cleans up state associated with the provided `varChoiceManager` *)
+   val destroyVarChoiceManager: varChoiceManager -> unit
+
 end
