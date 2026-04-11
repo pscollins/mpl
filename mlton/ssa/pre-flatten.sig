@@ -98,4 +98,34 @@ sig
    `Var.t`s  in the program. *)
    val newVarChoicesForProgram: Program.t -> varChoiceManager
 
+   (* Manages mapping `Func.t`s to their flattened equivalents  *)
+   type functionManager
+
+   (* Creates a new `functionManager` over all of the `Func.t`s in the provided
+   program. *)
+   val newFunctionManager: Program.t -> functionManager
+
+   (* Returns a `Func.t` that satisfies the given flattening decision:
+
+      * If the flattening decision is NoOp, returns the input `Func.t`
+      * If the flattening decision is `Valid`, returns a `Func.t` that has been
+        flattened accordingly, adding it to the list of pending new functions
+      * If the flattening decision is `Invalid`, crash.
+
+      Crashes if the provided `Func.t` was not a part of the original
+      `Program.t`: newly-returned `Func.t`s are not added to the mapping.
+    *)
+   val getOrCreateFunc: (functionManager *
+                        Func.t *
+                        argChoice vector) -> Func.t
+
+   (* Returns the collection of `Function.t`s backing the newly-created
+   `Func.t`s from calls to `getOrCreateFunc`, clearing the list of "pending new
+   functions" as a side effect (i.e. for two consecutive calls, the second call
+   will always return emtpy.) *)
+   val extractNewFunctions: functionManager -> Function.t list
+   (* Cleans up state associated with this object. If the list of pending new
+   functions is not empty, error. *)
+   val destroyFunctionManager: functionManager -> unit
+
 end

@@ -227,6 +227,18 @@ in
    vcm
 end
 
+type functionManager = {}
+
+fun newFunctionManager (p: Program.t) = raise Fail "TODO"
+fun getOrCreateFunc
+        (fm: functionManager,
+         f: Func.t, choices: argChoice vector) =
+    raise Fail "TODO"
+
+fun extractNewFunctions (fm: functionManager) = raise Fail "TODO"
+
+fun destroyFunctionManager (fm: functionManager) = raise Fail "TODO"
+
 fun transform (p: Program.t): Program.t =
     p
 end
