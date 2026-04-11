@@ -40,6 +40,17 @@ in
     statement = statementF}
 end
 
+fun beforeFunctionWalker (beforeFunc: Function.t -> unit): walker = let
+   val {afterFunc, beforeBlock, afterBlock, statement, ...} = defaultWalker
+in
+   {beforeFunc = beforeFunc,
+    afterFunc = afterFunc,
+    beforeBlock = beforeBlock,
+    afterBlock = afterBlock,
+    statement = statement}
+end
+
+
 fun doWalk (w: walker, p: Program.t) = let 
    val {beforeFunc, afterFunc, beforeBlock, afterBlock, statement}
        = w
@@ -227,13 +238,37 @@ in
    vcm
 end
 
-type functionManager = {}
+type functionManager = {
+   getFunc: Func.t -> Function.t,
+   setFlattenedFunc: (Func.t, argChoice vector, Function.t) -> unit,
+   getOrCreateFlattenedFunc: (Func.t, argChoice vector) -> Function.t,
+   pendingFuncs: Function.t list ref,
+   destroyFlattenedFuncs: unit -> unit,
+}
 
-fun newFunctionManager (p: Program.t) = raise Fail "TODO"
+fun newFunctionManager (p: Program.t) = let 
+   val pendingFuncs: Function.t list ref = ref []
+   val {get=getFunc, set=setFunc, dest=destroyFuncs} =
+       Property.destGetSetOnce (Func.plist,
+                                Property.initRaise ("function lookup", Func.layout))
+
+   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
+   val funcMappingWalker = beforeFunctionWalker addFuncToMapping
+   (* First, collect Func.t -> Function mappings *)
+   val _ = doWalk funcMappingWalker
+in
+end
 fun getOrCreateFunc
         (fm: functionManager,
-         f: Func.t, choices: argChoice vector) =
-    raise Fail "TODO"
+         f: Func.t, choices: argChoice vector) = let
+   val original = getFunc f
+   fun getOrCreateFlattened
+in
+   case checkFlatteningChoice (original, choices) of
+       NoOp => f
+     | Valid => getOrCreateFlattened()
+     | Invalid => Error.bug "Invalid flattening decision"
+end
 
 fun extractNewFunctions (fm: functionManager) = raise Fail "TODO"
 
