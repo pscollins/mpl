@@ -40,8 +40,13 @@ in
 end
 
 type typedVar = Var.t * Type.t
-fun flattenTupleVar (tv: typedVar): (typedVar vector) option =
-    NONE
+fun flattenTupleVar (var, ty): (typedVar vector) option = let
+   fun buildVar (t: Type.t): typedVar = (Var.newString "flattened", t)
+   fun buildVars (ts: Type.t vector): typedVar vector =
+       Vector.map (ts, buildVar)
+in
+   Option.map (Type.deTupleOpt ty, buildVars)
+end
 
 fun transform (p: Program.t): Program.t =
     p
