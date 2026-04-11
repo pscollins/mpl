@@ -322,5 +322,80 @@ local
       
       val _ = print "Test 6 passed\n"
    in () end
+
+   (* Test 7: buildBindBlock *)
+   val _ = let
+      val _ = print "Test 7: buildBindBlock\n"
+      val toVar = Var.fromString "t"
+      val f1 = Var.fromString "f1"
+      val f2 = Var.fromString "f2"
+      val binds = Vector.fromList [PreFlatten.BindTuple {to = (toVar, Type.unit), froms = Vector.fromList [f1, f2]}]
+      val targetLabel = Label.fromString "target"
+      
+      val block = PreFlatten.buildBindBlock (binds, targetLabel)
+      val Block.T {args, label = _, statements, transfer} = block
+      
+      val _ = assert (Vector.length args = 0, "buildBindBlock block should have no args")
+      val _ = assert (Vector.length statements = 1, "buildBindBlock should have 1 statement")
+      
+      val s0 = Vector.sub (statements, 0)
+      val Statement.T {exp, var, ...} = s0
+      val _ = 
+         case var of
+            SOME v => assert (Var.equals (v, toVar), "statement var mismatch")
+          | NONE => (print "statement should have a var\n"; OS.Process.exit OS.Process.failure)
+          
+      val _ = 
+         case exp of
+            Exp.Tuple vs =>
+               let
+                  val _ = assert (Vector.length vs = 2, "tuple exp should have 2 args")
+                  val _ = assert (Var.equals (Vector.sub (vs, 0), f1), "tuple arg 1 mismatch")
+                  val _ = assert (Var.equals (Vector.sub (vs, 1), f2), "tuple arg 2 mismatch")
+               in () end
+          | _ => (print "exp should be a tuple\n"; OS.Process.exit OS.Process.failure)
+          
+      val _ = 
+         case transfer of
+            Transfer.Goto {args, dst} =>
+               let
+                  val _ = assert (Vector.length args = 0, "goto should have no args")
+                  val _ = assert (Label.equals (dst, targetLabel), "goto dst mismatch")
+               in () end
+          | _ => (print "transfer should be a goto\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 7 passed\n"
+   in () end
+
+   (* Test 8: buildBindBlock with multiple binds *)
+   val _ = let
+      val _ = print "Test 8: buildBindBlock with multiple binds\n"
+      val t1 = Var.fromString "t1"
+      val f1 = Var.fromString "f1"
+      val t2 = Var.fromString "t2"
+      val f2 = Var.fromString "f2"
+      val f3 = Var.fromString "f3"
+      val binds = Vector.fromList [
+         PreFlatten.BindTuple {to = (t1, Type.unit), froms = Vector.fromList [f1]},
+         PreFlatten.BindTuple {to = (t2, Type.unit), froms = Vector.fromList [f2, f3]}
+      ]
+      val targetLabel = Label.fromString "target2"
+      
+      val block = PreFlatten.buildBindBlock (binds, targetLabel)
+      val Block.T {statements, ...} = block
+      
+      val _ = assert (Vector.length statements = 2, "buildBindBlock should have 2 statements")
+      val _ = print "Test 8 passed\n"
+   in () end
+
+   (* Test 9: buildBindBlock with empty binds *)
+   val _ = let
+      val _ = print "Test 9: buildBindBlock with empty binds\n"
+      val targetLabel = Label.fromString "target3"
+      val block = PreFlatten.buildBindBlock (Vector.new0 (), targetLabel)
+      val Block.T {statements, ...} = block
+      val _ = assert (Vector.length statements = 0, "buildBindBlock should have 0 statements")
+      val _ = print "Test 9 passed\n"
+   in () end
 in
 end

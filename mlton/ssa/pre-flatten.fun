@@ -49,11 +49,25 @@ in
 end
 
 
-datatype bind = BindTuple of {to: Var.t, froms: Var.t vector}
+datatype bind = BindTuple of {to: typedVar, froms: Var.t vector}
 
-fun buildBindBlock (binds: bind list, goto: Label.t): Block.t =
-    raise Fail "TODO"
-    
+fun buildBindBlock (binds: bind vector, goto: Label.t): Block.t = let
+   fun mkStmt (bind): Statement.t =
+       case bind of
+           BindTuple {to=(toVar, toType), froms=froms} =>
+           Statement.T {exp = Exp.Tuple froms,
+                        ty = toType,
+                        var = SOME toVar}
+
+   (* We'll rely on the fact that the first block in a function can't have
+      args  *)
+   val gotoTransfer = Transfer.Goto {args = Vector.new0(), dst = goto}
+in
+   Block.T {args = Vector.new0(),
+            label = Label.newString "forBind",
+            statements = Vector.map (binds, mkStmt),
+            transfer = gotoTransfer}
+end
 
 
 fun transform (p: Program.t): Program.t =

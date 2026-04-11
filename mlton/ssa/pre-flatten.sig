@@ -33,6 +33,6 @@ sig
             (* Reverse binding corresponding to flattening a tuple: `to` is the
             name for the tuple type, `froms` are the components of the tuple, in
             order. *)
-            BindTuple of {to: Var.t, froms: Var.t vector}
-   val buildBindBlock: bind list * Label.t -> Block.t
+            BindTuple of {to: typedVar, froms: Var.t vector}
+   val buildBindBlock: bind vector * Label.t -> Block.t
 end
