@@ -72,8 +72,51 @@ end
 datatype argChoice =
             Preserve
           | FlattenTuple
-fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) =
-    raise Fail "TODO"
+
+fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
+   val needBinds: (bind list) ref = ref []
+   fun addBind (bind) = let
+      val newBinds = bind::(!needBinds)
+   in
+      needBinds := newBinds
+   end
+   fun extractVar (var, ty) = var
+  (* Adds the 'reverse binding' `typleVar = tuple(flattendVars)`
+     to `needBinds` and returns `flattendVars` *)
+   fun addFlattenedBind (tupleVar, flattenedVars) = let
+      val bind = BindTuple {to = tupleVar,
+                            froms = Vector.map (flattenedVars, extractVar)}
+      val _ = addBind bind
+   in
+      flattenedVars
+   end
+   fun doFlatten typedVar =
+       case flattenTupleVar typedVar of
+           SOME flattenedVars => addFlattenedBind (typedVar, flattenedVars)
+         | NONE => Error.bug "Tried to flatten non-tuple type!"
+   fun applyChoice (typedVar, choice): typedVar vector =
+       case choice of
+           Preserve => Vector.new1 typedVar
+         | FlattenTuple => doFlatten typedVar
+   val {args, blocks, inline, name, raises, returns, start} =
+       Function.dest f
+   val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
+   fun buildNewFunc binds = let
+      val newBlock = buildBindBlock (Vector.fromList binds, start)
+   in
+      Function.new {args = newArgs,
+                    blocks = Vector.concat [Vector.new1 newBlock, blocks],
+                    inline = inline,
+                    name = name,
+                    raises = raises,
+                    returns = returns,
+                    start = Block.label newBlock}
+   end
+in
+   case !needBinds of
+       [] => Error.bug "No-op flattening decision"
+    | binds => buildNewFunc binds
+end
 
 
 fun transform (p: Program.t): Program.t =
