@@ -285,5 +285,42 @@ local
       val _ = assertEqualStrings (expected, getLog (), "doWalk sequence mismatch in Test 5")
       val _ = print "Test 5 passed\n"
    in () end
+
+   (* Test 6: flattenTupleVar *)
+   val _ = let
+      val _ = print "Test 6: flattenTupleVar\n"
+      
+      val t1 = Type.bool
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+      
+      val v = Var.fromString "v"
+      
+      val _ = print "Test 6a: flattening a 2-tuple\n"
+      val res = PreFlatten.flattenTupleVar (v, tTuple)
+      val _ = 
+         case res of
+            NONE => (print "flattenTupleVar returned NONE for tuple type\n"; OS.Process.exit OS.Process.failure)
+          | SOME vts =>
+               let
+                  val _ = assert (Vector.length vts = 2, "flattenTupleVar result length mismatch")
+                  val (v1, t1') = Vector.sub (vts, 0)
+                  val (v2, t2') = Vector.sub (vts, 1)
+                  val _ = assert (Type.equals (t1, t1'), "flattenTupleVar type 1 mismatch")
+                  val _ = assert (Type.equals (t2, t2'), "flattenTupleVar type 2 mismatch")
+                  val _ = assert (not (Var.equals (v1, v)), "flattenTupleVar var 1 should be fresh")
+                  val _ = assert (not (Var.equals (v2, v)), "flattenTupleVar var 2 should be fresh")
+                  val _ = assert (not (Var.equals (v1, v2)), "flattenTupleVar vars should be distinct")
+               in () end
+               
+      val _ = print "Test 6b: flattening a non-tuple\n"
+      val resNonTuple = PreFlatten.flattenTupleVar (v, t1)
+      val _ = 
+         case resNonTuple of
+            NONE => ()
+          | SOME _ => (print "flattenTupleVar should return NONE for non-tuple type\n"; OS.Process.exit OS.Process.failure)
+      
+      val _ = print "Test 6 passed\n"
+   in () end
 in
 end
