@@ -167,6 +167,8 @@ in
    destroyVarChoiceProps()
 end
 
+fun newVarChoicesForProgram (p: Program.t) = raise Fail "TODO"
+
 fun transform (p: Program.t): Program.t =
     p
 end

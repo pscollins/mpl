@@ -84,5 +84,8 @@ sig
    val getVarChoice: (varChoiceManager * Var.t) -> varChoice
    (* Cleans up state associated with the provided `varChoiceManager` *)
    val destroyVarChoiceManager: varChoiceManager -> unit
+   (* Returns a `varChoiceManager` that carries flattening choices for all
+   `Var.t`s  in the program. *)
+   val newVarChoicesForProgram: Program.t -> varChoiceManager
 
 end
