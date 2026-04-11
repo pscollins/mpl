@@ -506,5 +506,87 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 12 passed\n"
    in () end
+
+   (* Test 13: newVarChoicesForProgram *)
+   val _ = let
+      val _ = print "Test 13: newVarChoicesForProgram\n"
+      
+      val g1 = Var.fromString "g1"
+      val g2 = Var.fromString "g2"
+      val gt = Var.fromString "gt"
+      (* gt = (g1, g2) *)
+      val gs1 = Statement.T {exp = Exp.Tuple (Vector.fromList [g1, g2]), ty = Type.unit, var = SOME gt}
+      val gs2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME g1}
+      
+      val mainFunc = Func.fromString "main13"
+      val mainLabel = Label.fromString "L13"
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val vt = Var.fromString "vt"
+      (* vt = (v1, v2) *)
+      val s1 = Statement.T {exp = Exp.Tuple (Vector.fromList [v1, v2]), ty = Type.unit, var = SOME vt}
+      val s2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME v1}
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.fromList [gs1, gs2],
+         main = mainFunc
+      }
+      
+      val vcm = PreFlatten.newVarChoicesForProgram p
+      
+      val choiceGt = PreFlatten.getVarChoice (vcm, gt)
+      val _ = 
+         case choiceGt of
+            PreFlatten.FlattenTupleVar vs =>
+               let
+                  val _ = assert (Vector.length vs = 2, "gt should have 2 components")
+                  val _ = assert (Var.equals (Vector.sub (vs, 0), g1), "gt component 0 mismatch")
+                  val _ = assert (Var.equals (Vector.sub (vs, 1), g2), "gt component 1 mismatch")
+               in () end
+          | _ => (print "gt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
+
+      val choiceVt = PreFlatten.getVarChoice (vcm, vt)
+      val _ = 
+         case choiceVt of
+            PreFlatten.FlattenTupleVar vs =>
+               let
+                  val _ = assert (Vector.length vs = 2, "vt should have 2 components")
+                  val _ = assert (Var.equals (Vector.sub (vs, 0), v1), "vt component 0 mismatch")
+                  val _ = assert (Var.equals (Vector.sub (vs, 1), v2), "vt component 1 mismatch")
+               in () end
+          | _ => (print "vt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
+
+      val choiceG1 = PreFlatten.getVarChoice (vcm, g1)
+      val _ = 
+         case choiceG1 of
+            PreFlatten.PreserveVar => ()
+          | _ => (print "g1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
+
+      val choiceV1 = PreFlatten.getVarChoice (vcm, v1)
+      val _ = 
+         case choiceV1 of
+            PreFlatten.PreserveVar => ()
+          | _ => (print "v1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 13 passed\n"
+   in () end
 in
 end

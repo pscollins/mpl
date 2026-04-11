@@ -15,6 +15,31 @@ type walker = {
    statement: Statement.t -> unit
 }
 
+val defaultWalker = let
+   fun noop (x: 'a) = ()
+   (* Work around type system restriction *)
+   val noopF: Function.t -> unit = noop
+   val noopB: Block.t -> unit = noop
+   val noopS: Statement.t -> unit = noop
+in
+   {beforeFunc = noopF,
+    afterFunc = noopF,
+    beforeBlock = noopB,
+    afterBlock = noopB,
+    statement = noopS}
+end
+
+fun statementWalker (statementF: Statement.t -> unit): walker = let
+   val {beforeFunc, afterFunc, beforeBlock, afterBlock,
+        ...} = defaultWalker
+in
+   {beforeFunc = beforeFunc,
+    afterFunc = afterFunc,
+    beforeBlock = beforeBlock,
+    afterBlock = afterBlock,
+    statement = statementF}
+end
+
 fun doWalk (w: walker, p: Program.t) = let 
    val {beforeFunc, afterFunc, beforeBlock, afterBlock, statement}
        = w
@@ -167,7 +192,15 @@ in
    destroyVarChoiceProps()
 end
 
-fun newVarChoicesForProgram (p: Program.t) = raise Fail "TODO"
+fun newVarChoicesForProgram (p: Program.t) = let
+   val vcm = newVarChoiceManager ()
+   fun doStatement (s: Statement.t) =
+       chooseVarsInStatement (vcm, s)
+   val walker = statementWalker doStatement
+   val _ = doWalk (walker, p)
+in
+   vcm
+end
 
 fun transform (p: Program.t): Program.t =
     p
