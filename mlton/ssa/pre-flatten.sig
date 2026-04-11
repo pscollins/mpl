@@ -20,5 +20,10 @@ sig
    }
    val doWalk: (walker * Program.t) -> unit
 
-               
+   type typedVar = Var.t * Type.t
+   (* If the provided `typedVar` is a tuple type, returns a sequence of
+   `typedVar`s that correspond to fresh `Var.t`s bound to the constituent types
+   of the tuple. Otherwise, returns NONE.
+    *)
+   val flattenTupleVar: typedVar -> (typedVar vector) option
 end

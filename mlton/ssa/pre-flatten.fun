@@ -39,6 +39,10 @@ in
    Program.dfs (p, doWalkFunc)
 end
 
+type typedVar = Var.t * Type.t
+fun flattenTupleVar (tv: typedVar): (typedVar vector) option =
+    NONE
+
 fun transform (p: Program.t): Program.t =
     p
 end

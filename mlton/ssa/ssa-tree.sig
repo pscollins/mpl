@@ -175,6 +175,7 @@ signature SSA_TREE =
          sig
             type t
 
+            (* Clones this object with fresh names *)
             val alphaRename: t -> t
             val blocks: t -> Block.t vector
             (* clear the plists for all bound variables and labels that appear
