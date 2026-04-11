@@ -239,40 +239,88 @@ in
 end
 
 type functionManager = {
-   getFunc: Func.t -> Function.t,
-   setFlattenedFunc: (Func.t, argChoice vector, Function.t) -> unit,
-   getOrCreateFlattenedFunc: (Func.t, argChoice vector) -> Function.t,
+   getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Function.t,
    pendingFuncs: Function.t list ref,
-   destroyFlattenedFuncs: unit -> unit,
+   destroyFunctionManagerState: unit -> unit
 }
 
 fun newFunctionManager (p: Program.t) = let 
    val pendingFuncs: Function.t list ref = ref []
+   fun appendFunc (f: Function.t) = let
+      val newPendingFuncs = f::(!pendingFuncs)
+   in
+      pendingFuncs := newPendingFuncs
+   end
+   (* First, collect Func.t -> Function mappings *)
    val {get=getFunc, set=setFunc, dest=destroyFuncs} =
        Property.destGetSetOnce (Func.plist,
                                 Property.initRaise ("function lookup", Func.layout))
-
    fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
    val funcMappingWalker = beforeFunctionWalker addFuncToMapping
-   (* First, collect Func.t -> Function mappings *)
    val _ = doWalk funcMappingWalker
-in
-end
-fun getOrCreateFunc
-        (fm: functionManager,
-         f: Func.t, choices: argChoice vector) = let
-   val original = getFunc f
-   fun getOrCreateFlattened
-in
-   case checkFlatteningChoice (original, choices) of
+
+   (* Next, set up a hook to create new flattened functions when necessary
+
+   createFlattenedFunc builds a new verison of the provided Func.t, flattened
+   according to the provided decision, and adds it to the list of pending new
+   functions *)
+   fun createFlattenedFunc
+           (originalName: Func.t, choices: argChoice vector): Function.t = let
+      val original = getFunc f
+      fun doBuildFlattenedFunction() = let
+         val flattenedFunction = buildFlattenedFunction (original, argChoice)
+         val _ = appendFunc flattenedFunction
+      in
+         f
+      end
+   in
+      case checkFlatteningChoice (original, choices) of
        NoOp => f
      | Valid => getOrCreateFlattened()
      | Invalid => Error.bug "Invalid flattening decision"
+   end
+
+   (* Use createFlattenedFunc as the initializer for the "find function under
+   flattening decision" property list*)
+   val {get=getOrCreateFlattenedFunc, dest=destroyFlattenedFuncs,
+        ...} = Property.destGetSetOnce
+                   (Func.plist,
+                    Property.initFun createFlattendFunc)
+   fun destroyFunctionManagerState() = let
+      val _ = destroyFlattenedFuncs()
+      val _ = destroyFuncs()
+   in
+      ()
+   end
+in
+   {getOrCreateFlattenedFunc = getOrCreateFlattenedFunc,
+    pendingFuncs = pendingFuncs,
+    destroyFunctionManagerState = destroyFunctionManagerState}
 end
 
-fun extractNewFunctions (fm: functionManager) = raise Fail "TODO"
+fun getOrCreateFunc
+        (fm: functionManager,
+         f: Func.t, choices: argChoice vector) = let
+   val {getOrCreateFlattenedFunc, ...} = fm
+in
+   getOrCreateFlattenedFunc (f, choices)
+end
 
-fun destroyFunctionManager (fm: functionManager) = raise Fail "TODO"
+fun extractNewFunctions (fm: functionManager) = let
+   val {pendingFuncs, ...} = fm
+   val currFuncs = !pendingFuncs
+   val _ = pendingFuncs := []
+in
+   currFuncs
+end
+
+fun destroyFunctionManager (fm: functionManager) = let
+   val {pendingFuncs, destroyFunctionManagerState} = fm
+in
+   case !pendingFuncs of
+       [] => destroyFunctionManagerState ()
+     | funcs => Error.bug "Tried to destroy nonempty `fm`"
+end
 
 fun transform (p: Program.t): Program.t =
     p
