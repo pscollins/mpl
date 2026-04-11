@@ -447,5 +447,64 @@ local
        | NONE => (print "Start block not found\n"; OS.Process.exit OS.Process.failure)
       val _ = print "Test 10 passed\n"
    in () end
+
+   (* Test 11: varChoiceManager lifecycle and default choice *)
+   val _ = let
+      val _ = print "Test 11: varChoiceManager lifecycle and default choice\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+      val v = Var.fromString "v11"
+      val choice = PreFlatten.getVarChoice (vcm, v)
+      val _ = 
+         case choice of
+            PreFlatten.PreserveVar => ()
+          | _ => (print "Default choice should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 11 passed\n"
+   in () end
+
+   (* Test 12: chooseVarsInStatement *)
+   val _ = let
+      val _ = print "Test 12: chooseVarsInStatement\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+      
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val vTuple = Var.fromString "vt"
+      
+      val sTuple = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [v1, v2]),
+         ty = Type.unit, (* Type doesn't strictly matter for chooseVarsInStatement logic as described *)
+         var = SOME vTuple
+      }
+      
+      val sNonTuple = Statement.T {
+         exp = Exp.unit,
+         ty = Type.unit,
+         var = SOME v1
+      }
+      
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sTuple)
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sNonTuple)
+      
+      val choiceTuple = PreFlatten.getVarChoice (vcm, vTuple)
+      val _ = 
+         case choiceTuple of
+            PreFlatten.FlattenTupleVar vs =>
+               let
+                  val _ = assert (Vector.length vs = 2, "FlattenTupleVar should have 2 vars")
+                  val _ = assert (Var.equals (Vector.sub (vs, 0), v1), "FlattenTupleVar var 0 mismatch")
+                  val _ = assert (Var.equals (Vector.sub (vs, 1), v2), "FlattenTupleVar var 1 mismatch")
+               in () end
+          | _ => (print "vt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
+          
+      val choiceNonTuple = PreFlatten.getVarChoice (vcm, v1)
+      val _ = 
+         case choiceNonTuple of
+            PreFlatten.PreserveVar => ()
+          | _ => (print "v1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
+          
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 12 passed\n"
+   in () end
 in
 end

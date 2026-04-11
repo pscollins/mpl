@@ -123,16 +123,42 @@ datatype varChoice =
          | FlattenTupleVar of Var.t vector
 
 type varChoiceManager = {
-   getVarTagProp: Var.t -> varChoice,
-   setVarTagProp: Var.t * varChoice -> unit,
-   destroyVarTagProps: unit -> unit
+   getVarChoiceProp: Var.t -> varChoice,
+   setVarChoiceProp: Var.t * varChoice -> unit,
+   destroyVarChoiceProps: unit -> unit
 }
 
-fun newVarChoiceManager () = raise Fail "TODO"
-fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = raise Fail "TODO"
-fun getVarChoice (vt: varChoiceManager, v: Var.t) = raise Fail "TODO"
-fun destroyVarChoiceManager (vt: varChoiceManager) = raise Fail "TODO"
+fun newVarChoiceManager () = let
+   (* TODO(pscollins): Consider making "missing" into an error *)
+   val {get, set, destroy} = Property.destGetSetOnce (Var.plist,
+                                                      Property.initConst PreserveVar)
+in
+   {getVarChoiceProp = get,
+    setVarChoiceProp = set,
+    destroyVarChoiceProps = destroy}
+end
 
+fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
+   val {setVarChoiceProp, ...} = vt
+   val Statement.T {exp, ty, var=maybeVar} = s
+in
+   case (exp, maybeVar) of
+       (Exp.Tuple parents, SOME var) =>
+       setVarChoiceProp (var, FlattenTupleVar parents)
+    | _ => ()
+end
+
+fun getVarChoice (vt: varChoiceManager, v: Var.t) = let
+   val {getVarChoiceProp, ...} = vt
+in
+   getVarChoiceProp v
+end
+
+fun destroyVarChoiceManager (vt: varChoiceManager) = let
+   val {destroyVarChoiceProps, ...} = vt
+in
+   destroyVarChoiceProps()
+end
 
 fun transform (p: Program.t): Program.t =
     p
