@@ -69,6 +69,12 @@ in
             transfer = gotoTransfer}
 end
 
+datatype argChoice =
+            Preserve
+          | FlattenTuple
+fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) =
+    raise Fail "TODO"
+
 
 fun transform (p: Program.t): Program.t =
     p

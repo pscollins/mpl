@@ -35,4 +35,26 @@ sig
             order. *)
             BindTuple of {to: typedVar, froms: Var.t vector}
    val buildBindBlock: bind vector * Label.t -> Block.t
+
+   (* Describes how to modify each argument in `buildFlattenedFunction`  *)
+   datatype argChoice =
+            (* No modification: keep the existing argument *)
+            Preserve
+            (* Flatten a tuple argument into its constituent parts *)
+          | FlattenTuple
+
+   (* Given a `Function.t` and a set of flattening decisions for each argument,
+   returns the (partially)-flattened function, i.e. given:
+
+      {f (ab: (bool * bool), c: int): ..., [FlattenTuple]}
+
+   Returns the modified function:
+
+      f (a: bool, b: bool, c: int): ab = tuple (a, b); ....
+
+   `argChoice` must be compatible with the function args (i.e. same count and
+   applicable types): if not, error.
+    *)
+
+   val buildFlattenedFunction: (Function.t * argChoice vector) -> Function.t
 end
