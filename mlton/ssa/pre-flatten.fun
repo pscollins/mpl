@@ -141,10 +141,17 @@ end
 fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
    val {setVarChoiceProp, ...} = vt
    val Statement.T {exp, ty, var=maybeVar} = s
+   fun getDecisionFromParents (parents: Var.t vector) =
+       (* `unit` is represented by an empty tuple that we don't want to flatten
+       through *)
+       if Vector.isEmpty parents then
+          PreserveVar
+       else
+          FlattenTupleVar parents
 in
    case (exp, maybeVar) of
        (Exp.Tuple parents, SOME var) =>
-       setVarChoiceProp (var, FlattenTupleVar parents)
+       setVarChoiceProp (var, getDecisionFromParents parents)
     | _ => ()
 end
 

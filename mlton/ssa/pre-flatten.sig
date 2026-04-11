@@ -62,7 +62,9 @@ sig
    datatype varChoice =
             (* Don't flatten *)
             PreserveVar
-            (* Flatten: carries the parent `Var.t`s to flatten-through *)
+
+            (* Flatten: carries the parent `Var.t`s to flatten-through.
+            `parents` is guaranteed to be non-empty. *)
           | FlattenTupleVar of Var.t vector
 
    (* Type to manage tagging `Var.t`s with their flattening decision *)
