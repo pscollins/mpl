@@ -48,6 +48,14 @@ in
    Option.map (Type.deTupleOpt ty, buildVars)
 end
 
+
+datatype bind = BindTuple of {to: Var.t, froms: Var.t vector}
+
+fun buildBindBlock (binds: bind list, goto: Label.t): Block.t =
+    raise Fail "TODO"
+    
+
+
 fun transform (p: Program.t): Program.t =
     p
 end
