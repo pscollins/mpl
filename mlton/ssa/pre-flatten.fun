@@ -147,8 +147,26 @@ datatype flatteningChoiceType =
            NoOp
          | Valid
          | Invalid
-fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) =
-    raise Fail "TODO"
+fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
+   val {args, ...} = Function.dest f
+   fun checkFlatten (typedVar) =
+       case flattenTupleVar typedVar of
+           SOME _ => true
+         | NONE => false
+   fun checkChoice (typedVar, choice) =
+       case choice of
+           Preserve => true
+         | FlattenTuple => checkFlatten (typedVar)
+   val isNoop = Vector.forall (choices, fn c => c = Preserve)
+   val validChoice = if isNoop then NoOp else Valid
+in
+   if (Vector.length args) = (Vector.length choices) andalso
+      Vector.forall2 (args, choices, checkChoice) then
+      validChoice
+   else
+      Invalid
+
+end
 
 datatype varChoice =
          PreserveVar

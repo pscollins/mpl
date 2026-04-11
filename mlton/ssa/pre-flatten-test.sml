@@ -588,5 +588,58 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 13 passed\n"
    in () end
+
+   (* Test 14: checkFlatteningChoice *)
+   val _ = let
+      val _ = print "Test 14: checkFlatteningChoice\n"
+      val fName = Func.fromString "f14"
+      val l1 = Label.fromString "L14"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+      
+      val f = Function.new {
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(v1, t1), (v2, tTuple)],
+            label = l1,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+
+      val _ = print "Test 14a: NoOp choice\n"
+      val resNoOp = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.Preserve])
+      val _ = case resNoOp of
+         PreFlatten.NoOp => ()
+       | _ => (print "Expected NoOp\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 14b: Valid choice\n"
+      val resValid = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val _ = case resValid of
+         PreFlatten.Valid => ()
+       | _ => (print "Expected Valid\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 14c: Invalid choice (arity mismatch)\n"
+      val resInvalidArity = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve])
+      val _ = case resInvalidArity of
+         PreFlatten.Invalid => ()
+       | _ => (print "Expected Invalid due to arity\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 14d: Invalid choice (flattening a non-tuple)\n"
+      val resInvalidNonTuple = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple, PreFlatten.Preserve])
+      val _ = case resInvalidNonTuple of
+         PreFlatten.Invalid => ()
+       | _ => (print "Expected Invalid due to non-tuple flattening\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 14 passed\n"
+   in () end
 in
 end
