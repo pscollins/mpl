@@ -398,21 +398,24 @@ local
       val _ = print "Test 9 passed\n"
    in () end
 
-   (* Test 10: buildFlattenedFunction with Preserve *)
+   (* Test 10: buildFlattenedFunction with Preserve and FlattenTuple *)
    val _ = let
-      val _ = print "Test 10: buildFlattenedFunction with Preserve\n"
+      val _ = print "Test 10: buildFlattenedFunction with Preserve and FlattenTuple\n"
       val fName = Func.fromString "f10"
       val l1 = Label.fromString "L10"
       val v1 = Var.fromString "v1"
       val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
       val b1 = Block.T {
-         args = Vector.fromList [(v1, t1)],
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
          label = l1,
          statements = Vector.new0 (),
          transfer = Transfer.Return (Vector.fromList [v1])
       }
       val f = Function.new {
-         args = Vector.fromList [(v1, t1)],
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
          blocks = Vector.fromList [b1],
          inline = InlineAttr.Auto,
          name = fName,
@@ -421,43 +424,13 @@ local
          start = l1
       }
       
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Preserve])
-      val {args, name, ...} = Function.dest res
-      val _ = assert (Func.equals (name, fName), "Function name mismatch")
-      val _ = assert (Vector.length args = 1, "Function args length mismatch")
-      val _ = print "Test 10 passed\n"
-   in () end
-
-   (* Test 11: buildFlattenedFunction with FlattenTuple *)
-   val _ = let
-      val _ = print "Test 11: buildFlattenedFunction with FlattenTuple\n"
-      val fName = Func.fromString "f11"
-      val l1 = Label.fromString "L11"
-      val v1 = Var.fromString "v1"
-      val t1 = Type.bool
-      val t2 = Type.unit
-      val tTuple = Type.tuple (Vector.fromList [t1, t2])
-      val b1 = Block.T {
-         args = Vector.fromList [(v1, tTuple)],
-         label = l1,
-         statements = Vector.new0 (),
-         transfer = Transfer.Return (Vector.new0 ())
-      }
-      val f = Function.new {
-         args = Vector.fromList [(v1, tTuple)],
-         blocks = Vector.fromList [b1],
-         inline = InlineAttr.Auto,
-         name = fName,
-         raises = NONE,
-         returns = SOME (Vector.new0 ()),
-         start = l1
-      }
-      
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.FlattenTuple])
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
       val {args, blocks, start, ...} = Function.dest res
-      val _ = assert (Vector.length args = 2, "Flattened function should have 2 args")
-      val (_, rt1) = Vector.sub (args, 0)
-      val (_, rt2) = Vector.sub (args, 1)
+      val _ = assert (Vector.length args = 3, "Flattened function should have 3 args")
+      val (_, rt0) = Vector.sub (args, 0)
+      val (_, rt1) = Vector.sub (args, 1)
+      val (_, rt2) = Vector.sub (args, 2)
+      val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
       val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
       val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
       
@@ -467,12 +440,12 @@ local
             let
                val found = Vector.exists (statements, fn Statement.T {var, ...} =>
                   case var of
-                     SOME v => Var.equals (v, v1)
+                     SOME v => Var.equals (v, v2)
                    | NONE => false)
-               val _ = assert (found, "Original var v1 not found in statements")
+               val _ = assert (found, "Original var v2 not found in statements")
             in () end
        | NONE => (print "Start block not found\n"; OS.Process.exit OS.Process.failure)
-      val _ = print "Test 11 passed\n"
+      val _ = print "Test 10 passed\n"
    in () end
 in
 end
