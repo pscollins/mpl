@@ -641,5 +641,65 @@ local
 
       val _ = print "Test 14 passed\n"
    in () end
+
+   (* Test 15: functionManager *)
+   val _ = let
+      val _ = print "Test 15: functionManager\n"
+      val fName = Func.fromString "f15"
+      val l1 = Label.fromString "L15"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+      
+      val f = Function.new {
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(v1, t1), (v2, tTuple)],
+            label = l1,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [f],
+         globals = Vector.new0 (),
+         main = fName
+      }
+
+      val fm = PreFlatten.newFunctionManager p
+      
+      val _ = print "Test 15a: getOrCreateFunc NoOp\n"
+      val fNoOp = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.Preserve])
+      val _ = assert (Func.equals (fNoOp, fName), "NoOp should return original Func.t")
+      
+      val _ = print "Test 15b: extractNewFunctions after NoOp\n"
+      val newFuncs0 = PreFlatten.extractNewFunctions fm
+      val _ = assert (List.length newFuncs0 = 0, "No new functions should be extracted after NoOp")
+      
+      val _ = print "Test 15c: getOrCreateFunc Valid\n"
+      val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val _ = assert (not (Func.equals (fFlattened, fName)), "Valid flattening should return new Func.t")
+      
+      val _ = print "Test 15d: extractNewFunctions after Valid\n"
+      val newFuncs1 = PreFlatten.extractNewFunctions fm
+      val _ = assert (List.length newFuncs1 = 1, "One new function should be extracted")
+      val f1 = case newFuncs1 of (x::_) => x | _ => (print "Expected non-empty list\n"; OS.Process.exit OS.Process.failure)
+      val _ = assert (Func.equals (Function.name f1, fFlattened), "Extracted function name mismatch")
+      
+      val _ = print "Test 15e: extractNewFunctions should clear pending\n"
+      val newFuncs2 = PreFlatten.extractNewFunctions fm
+      val _ = assert (List.length newFuncs2 = 0, "extractNewFunctions should clear pending list")
+      
+      val _ = PreFlatten.destroyFunctionManager fm
+      val _ = print "Test 15 passed\n"
+   in () end
 in
 end
