@@ -57,12 +57,22 @@ sig
     *)
    val buildFlattenedFunction: (Function.t * argChoice vector) -> Function.t
 
+   (* Validates the action of the supplied set of choices on the supplied
+   function *)
+   datatype flatteningChoiceType =
+            (* Valid, but no change *)
+              NoOp
+            (* Valid, and corresponds to a real flattening *)
+            | Valid
+            (* Invalid: wrong arity or impossible flatten *)
+            | Invalid
+   val checkFlatteningChoice: (Function.t * argChoice vector) ->
+                              flatteningChoiceType
 
    (* Flattening decision for a particular `Var.t` *)
    datatype varChoice =
             (* Don't flatten *)
             PreserveVar
-
             (* Flatten: carries the parent `Var.t`s to flatten-through.
             `parents` is guaranteed to be non-empty. *)
           | FlattenTupleVar of Var.t vector

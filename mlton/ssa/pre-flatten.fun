@@ -143,6 +143,13 @@ in
     | binds => buildNewFunc binds
 end
 
+datatype flatteningChoiceType =
+           NoOp
+         | Valid
+         | Invalid
+fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) =
+    raise Fail "TODO"
+
 datatype varChoice =
          PreserveVar
          | FlattenTupleVar of Var.t vector
