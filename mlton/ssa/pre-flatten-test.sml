@@ -546,7 +546,7 @@ local
       val t2 = Type.unit
       val tTuple = Type.tuple (Vector.fromList [t1, t2])
       val b1 = Block.T {
-         args = Vector.fromList [(v1, t1), (v2, tTuple)],
+         args = Vector.new0 (),
          label = l1,
          statements = Vector.new0 (),
          transfer = Transfer.Return (Vector.fromList [v1])
@@ -590,7 +590,7 @@ local
             let
                val found = Vector.exists (statements, fn Statement.T {var, ...} =>
                   case var of
-                     SOME v => Var.equals (v, v2)
+                     SOME v => Var.originalName v = "v2"
                    | NONE => false)
                val _ = assert (found, "Original var v2 not found in statements")
             in () end
@@ -753,7 +753,7 @@ local
       val f = Function.new {
          args = Vector.fromList [(v1, t1), (v2, tTuple)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(v1, t1), (v2, tTuple)],
+            args = Vector.new0 (),
             label = l1,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -806,7 +806,7 @@ local
       val f = Function.new {
          args = Vector.fromList [(v1, t1), (v2, tTuple)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(v1, t1), (v2, tTuple)],
+            args = Vector.new0 (),
             label = l1,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -868,7 +868,7 @@ local
       val f = Function.new {
          args = Vector.fromList [(v1, t1)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(v1, t1)],
+            args = Vector.new0 (),
             label = l1,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -882,7 +882,7 @@ local
       val f2 = Function.new {
          args = Vector.fromList [(v1, t1)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(v1, t1)],
+            args = Vector.new0 (),
             label = l1',
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -923,7 +923,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -1008,7 +1008,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -1098,7 +1098,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -1186,7 +1186,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tBool)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tBool)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -1244,7 +1244,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
@@ -1351,7 +1351,7 @@ local
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
-            args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+            args = Vector.new0 (),
             label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
