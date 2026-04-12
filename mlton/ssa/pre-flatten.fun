@@ -156,6 +156,12 @@ datatype argChoice =
             Preserve
           | FlattenTuple
 
+fun newFuncNamedLike (name: Func.t) = let
+   val currName = Func.toString name
+in
+   Func.newString currName
+end
+
 fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
    val needBinds: (bind list) ref = ref []
    fun addBind (bind) = let
@@ -181,7 +187,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
        case choice of
            Preserve => Vector.new1 typedVar
          | FlattenTuple => doFlatten typedVar
-   val {args, blocks, inline, returns, raises, start, ...} =
+   val {args, blocks, inline, name, returns, raises, start} =
        Function.dest f
    val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
    fun buildNewFunc binds = let
@@ -190,7 +196,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
       Function.new {args = newArgs,
                     blocks = Vector.concat [Vector.new1 newBlock, blocks],
                     inline = inline,
-                    name = Func.newString "flattened",
+                    name = newFuncNamedLike name,
                     raises = raises,
                     returns = returns,
                     start = Block.label newBlock}
