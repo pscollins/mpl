@@ -22,7 +22,10 @@ sig
   val pushBot : 'a t -> 'a -> unit
 
   (* returns NONE if deque is empty *)
+  val tryPopTop : 'a t -> 'a option
   val popBot : 'a t -> 'a option
+
+  val size : 'a t -> int
 end =
 struct
 
