@@ -245,7 +245,6 @@ type functionManager = {
 }
 
 fun newFunctionManager (p: Program.t) = let 
-
    (* TODO(pscollins): Since the scheme below doesn't 'follow through'
    already-flattened functions, we'll need to destroy and recreate it after each
    iteration of flattening, which will result in unnecessary flattened
@@ -299,7 +298,7 @@ fun newFunctionManager (p: Program.t) = let
    (* If we already have a flattened version of `f` for `choice`, returns it.
    Otherwise, builds a flattened function for `f` under `choice` and adds it to
    the list of for `f`. *)
-   fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector) = let 
+   fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector) = let
       val flattenedFuncList = getFlattenedFuncList f
       fun flattenedFuncMatches (choices', _) =
           Vector.equals (choices', choices,
