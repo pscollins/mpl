@@ -1,4 +1,4 @@
-(* RUN: mpl-compile -ssa-passes preFlatten -keep-pass preFlatten -stop-pass 'preFlatten.*' %s %t
+(* RUN: mpl-compile -ssa-passes preFlatten -keep-pass 'preFlatten.*' -stop-pass 'preFlatten.*' %s %t
 
    Test that `preFlatten` builds a new flattened version and calls it
 
