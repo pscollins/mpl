@@ -313,7 +313,7 @@ fun newFunctionManager (p: Program.t) = let
          seq [str "getOrCreateFlattenedFunc: looking for ",
               Func.layout f,
               Layout.str " with choices ",
-              Vector.layout (choiceLayout, choices),
+              Vector.layout choiceLayout choices,
               str "\n"]
       end
       fun doLogChoice (newF) = let
