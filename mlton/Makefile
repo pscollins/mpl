@@ -73,16 +73,18 @@ $(eval $(MK_COMMON_GOALS))
 
 ######################################################################
 
+# EXTRA_FLAGS=-const 'Exn.keepHistory true'
+EXTRA_FLAGS=
+# hack above: keep exception history
+
 $(MLTON_OUTPUT): $(MLTON_SOURCES)
 	@echo 'Compiling mlton'
 	"$(RUN_MLTON)" \
 		@MLton $(RUN_MLTON_RUNTIME_XARGS) $(RUN_MLTON_RUNTIME_ARGS) gc-summary -- \
 		$(RUN_MLTON_COMPILE_XARGS) -verbose 2 $(RUN_MLTON_COMPILE_ARGS)	\
 		-target $(TARGET) -output $(MLTON_OUTPUT)			\
+    $(EXTRA_FLAGS) \
 		$(MLTON_MLB)
-#      -const 'Exn.keepHistory true'	\
-# 		$(MLTON_MLB)
-# # hack above: keep exception history
 
 define GEN_TEMPLATE
 ifeq ($$(shell ($$(CAT) $$(subst .sml,_sml.src,$(1)) ; echo $$(foreach VAR,$(2),'$$($$(VAR))'); if [ -e $(1) ]; then $$(CAT) $(1); fi) | $$(SHA1DGST)),$$(shell if [ -e $$(subst .sml,_sml.chk,$(1)) ]; then $$(CAT) $$(subst .sml,_sml.chk,$(1)); fi))
