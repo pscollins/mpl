@@ -89,8 +89,8 @@ fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
       fun buildNewF() = let
          fun selectBlock (oldBlock: Block.t, maybeNewBlock: Block.t option) =
              case maybeNewBlock of
-                 SOME newBlock => (print "TAKE NEW\n"; newBlock)
-               | NONE => (print "TAKE OLD\n"; oldBlock)
+                 SOME newBlock => newBlock
+               | NONE => oldBlock
          val {args, inline, name, raises, returns, start, ...} =
              Function.dest f
       in
@@ -105,8 +105,8 @@ fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
          }
       end
    in
-      if allNone then (print "RETURN OLD\n"; f)
-      else (print "BUILD NEW\n"; buildNewF())
+      if allNone then f
+      else buildNewF()
    end
 in
    Program.T {datatypes = datatypes,
@@ -431,11 +431,12 @@ end
 
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
-   (* val fm = newFunctionManager p *)
-   fun maybeRewriteBlock (b: Block.t): Block.t option = raise Fail "TODO"
+   val fm = newFunctionManager p
+   fun maybeRewriteBlock (b: Block.t): Block.t option =
+      NONE
    val p' = mapBlocks (p, maybeRewriteBlock)
-   (* val _ = destroyFunctionManager fm *)
-   (* val _ = destroyVarChoiceManager vm *)
+   val _ = destroyFunctionManager fm
+   val _ = destroyVarChoiceManager vm
 in
    p'
 end
