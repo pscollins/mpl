@@ -431,9 +431,13 @@ end
 
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
-   val fm = newFunctionManager p
+   (* val fm = newFunctionManager p *)
+   fun maybeRewriteBlock (b: Block.t): Block.t option = raise Fail "TODO"
+   val p' = mapBlocks (p, maybeRewriteBlock)
+   (* val _ = destroyFunctionManager fm *)
+   (* val _ = destroyVarChoiceManager vm *)
 in
-   raise Fail "TODO"
+   p'
 end
 
 fun transform (p: Program.t): Program.t =
