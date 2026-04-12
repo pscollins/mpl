@@ -130,4 +130,23 @@ sig
    functions is not empty, error. *)
    val destroyFunctionManager: functionManager -> unit
 
+
+   (* Runs one iteration of flattening: for each appearance of the sequence:
+
+       x = tuple(t1, t2, ...)
+       f(x, arg2, ...)
+
+      where `f` is defined as:
+
+        f(arg1, arg2, ...):
+          ...
+
+      replaces the call to `f` with an equivalent flattened version, i.e.:
+
+       f_flat(t1, t2, ..., arg2, ...):
+         arg1 = tuple(t1, t2, ...)
+         ...original body of `f`...
+    *)
+   val flattenOnce: Program.t -> Program.t
+
 end

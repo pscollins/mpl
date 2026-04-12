@@ -389,6 +389,8 @@ in
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
 
+fun flattenOnce (p: Program.t) = raise Fail "TODO"
+
 fun transform (p: Program.t): Program.t =
     p
 end
