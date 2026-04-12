@@ -239,7 +239,7 @@ in
 end
 
 type functionManager = {
-   getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Function.t,
+   getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,
    pendingFuncs: Function.t list ref,
    destroyFunctionManagerState: unit -> unit
 }
@@ -298,24 +298,27 @@ fun newFunctionManager (p: Program.t) = let
    (* If we already have a flattened version of `f` for `choice`, returns it.
    Otherwise, builds a flattened function for `f` under `choice` and adds it to
    the list of for `f`. *)
-   fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector) = let
-      val flattenedFuncList = getFlattenedFuncList f
+   fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector): Func.t = let
+      val flattenedFuncList: flattenedFunc list ref = getFlattenedFuncList f
       fun flattenedFuncMatches (choices', _) =
           Vector.equals (choices', choices,
                          fn (l, r) => l = r)
       fun addNewFlattenedFunc () = let
          val newFunc = createFlattenedFunc (f, choices)
          val newF = Function.name newFunc
-         val _ = List.push ((choices, newF), flattenedFuncList)
+         val _ = List.push (flattenedFuncList, (choices, newF))
       in
-         case List.peek (flattenedFuncList,
-                         flattenedFuncMatches)  of
-             (* If we already have a flattened function for `choices`, return it
-             here *)
-             SOME (_, matchedFunc) => matchedFunc
-           (* Otherwise, build a new one *)
-          | _ => addNewFlattenedFunc()
+         newF
       end
+   in
+      case List.peek (!flattenedFuncList,
+                      flattenedFuncMatches)  of
+          (* If we already have a flattened function for `choices`, return it
+             here *)
+          SOME (_, matchedFunc) => matchedFunc
+        (* Otherwise, build a new one *)
+        | _ => addNewFlattenedFunc()
+   end
 
    fun destroyFunctionManagerState() = let
       val _ = destroyFlattenedFuncs()
