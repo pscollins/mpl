@@ -1,0 +1,3260 @@
+(* MLton [mpl] 20260412.174721-g8301ab421-dirty *)
+
+
+(* Datatypes: *)
+datatype lambdas_0 = xEnv_5 | xEnv_4 | xEnv_6 of ((list_0) ref)
+datatype lambdas_1 = xEnv_2
+                   | xEnv_0
+                   | defaultTopLevelHandlerEnv_0 of (((list_0) ref,
+                                                      ((bool) ref,
+                                                       (list_1) ref,
+                                                       (word8) array) tuple) tuple)
+datatype lambdas_2 = xEnv_3
+                   | xEnv_1
+                   | defaultTopLevelSuffixEnv_0 of (((bool) ref,
+                                                     (list_1) ref,
+                                                     (word8) array) tuple)
+datatype list_2 = nil_0 | ::_3 of (((word64, word64) tuple, list_2) tuple)
+datatype list_3 = nil_3 | ::_1 of (((word8) vector, list_3) tuple)
+datatype bufferMode_0 = LINE_BUF_1 of (((word8) array, (word32) ref) tuple)
+                      | BLOCK_BUF_1 of (((word8) array, (word32) ref) tuple)
+datatype buffer_mode_0 = LINE_BUF_0 | BLOCK_BUF_0
+datatype list_4 = nil_7
+                | ::_5 of ((((((word64) ref, (bool) ref) tuple,
+                              ((word64) ref, (bool) ref) tuple) tuple,
+                             (bufferMode_0) ref,
+                             (unit) ref,
+                             (((word64) ref, (bool) ref) tuple,
+                              ((word64) ref, (bool) ref) tuple) tuple) tuple,
+                            list_4) tuple)
+datatype list_5 = nil_2 | ::_4 of (list_5)
+datatype list_6 = nil_4
+                | ::_2 of (((word32, (word8) vector) tuple, list_6) tuple)
+datatype list_1 = nil_6 | ::_6 of (((list_4) ref, list_1) tuple)
+datatype list_7 = nil_1
+                | ::_0 of (((word32, word32, word8, word8) tuple, list_7) tuple)
+datatype list_0 = nil_5 | ::_7 of ((lambdas_0, list_0) tuple)
+datatype t_0 = SOME_0 of (word32)
+datatype bool = false | true
+datatype exn = Io_0 of ((exn, (word8) vector) tuple)
+             | ClosedStream_0
+             | SysErr_0 of (((word8) vector, t_0) tuple)
+             | Fail_0 of ((word8) vector)
+             | Subscript_0
+             | Size_0
+             | Overflow_0
+             | Fail8_0 of ((word8) vector)
+
+
+(* Globals: *)
+val x_0: unit = ()
+val global_0: word32 = 0x0:w32
+val global_1: word32 = 0x80000000:w32
+val global_2: word32 = 0x1:w32
+val global_3: word32 = 0xFFFFFFFF:w32
+val global_4: word64 = 0x0:w64
+val global_5: word32 = 0x3E:w32
+val global_6: word64 = 0xFFFFFFFFFFFFFFFF:w64
+val global_7: word64 = 0x1:w64
+val global_476: (word64, word64) tuple =
+  (global_4 (*0x0:w64*), global_4 (*0x0:w64*))
+val global_8: list_2 = con nil_0
+val global_411: ((word64, word64) tuple, list_2) tuple =
+  (global_476, global_8 (*con nil_0*))
+val global_477: (word64, word64) tuple =
+  (global_4 (*0x0:w64*), global_7 (*0x1:w64*))
+val global_413: ((word64, word64) tuple, list_2) tuple =
+  (global_477, global_8 (*con nil_0*))
+val global_9: word64 = 0x100:w64
+val global_10: word32 = 0x30:w32
+val global_11: word8 = 0x30:w8
+val global_12: word8 = 0x39:w8
+val global_478: (word32, word32, word8, word8) tuple =
+  (global_10 (*0x30:w32*),
+   global_0 (*0x0:w32*),
+   global_12 (*0x39:w8*),
+   global_11 (*0x30:w8*))
+val global_479: (word32, word32, word8, word8) tuple = global_478
+val global_13: word32 = 0x61:w32
+val global_14: word32 = 0xA:w32
+val global_15: word8 = 0x66:w8
+val global_16: word8 = 0x61:w8
+val global_480: (word32, word32, word8, word8) tuple =
+  (global_13 (*0x61:w32*),
+   global_14 (*0xA:w32*),
+   global_15 (*0x66:w8*),
+   global_16 (*0x61:w8*))
+val global_481: (word32, word32, word8, word8) tuple = global_480
+val global_17: word32 = 0x41:w32
+val global_18: word8 = 0x46:w8
+val global_19: word8 = 0x41:w8
+val global_482: (word32, word32, word8, word8) tuple =
+  (global_17 (*0x41:w32*),
+   global_14 (*0xA:w32*),
+   global_18 (*0x46:w8*),
+   global_19 (*0x41:w8*))
+val global_483: (word32, word32, word8, word8) tuple = global_482
+val global_20: list_7 = con nil_1
+val global_21: ((word32, word32, word8, word8) tuple, list_7) tuple =
+  (global_483, global_20 (*con nil_1*))
+val global_22: list_7 = con ::_0 (global_21)
+val global_23: ((word32, word32, word8, word8) tuple, list_7) tuple =
+  (global_481, global_22 (*con ::_0 (global_21)*))
+val global_24: list_7 = con ::_0 (global_23)
+val global_415: ((word32, word32, word8, word8) tuple, list_7) tuple =
+  (global_479, global_24 (*con ::_0 (global_23)*))
+val global_25: word8 = 0x20:w8
+val global_26: word8 = 0x9:w8
+val global_27: word8 = 0xA:w8
+val global_28: word8 = 0x0:w8
+val global_29: word64 = 0x7FFFFFFF:w64
+val global_30: word32 = 0x21:w32
+val global_31: word32 = 0x8:w32
+val global_32: word32 = 0x10:w32
+val global_33: word32 = 0x20:w32
+val global_34: word64 = 0x3B9ACA00:w64
+val global_35: word64 = 0x77359401:w64
+val global_36: cpointer = NULL
+val global_37: (word8) vector = "Unknown error"
+val global_38: (word8) vector = "Thread.atomicEnd"
+val global_419: (word8) vector = global_38 (*"Thread.atomicEnd"*)
+val global_39: word64 = 0x5:w64
+val global_40: (word8) vector = "hello\n"
+val global_41: (word8) vector = "Sequence.Slice.base"
+val global_441: (word8) vector = global_41 (*"Sequence. ... base"*)
+val global_42: word32 = 0x4:w32
+val global_43: list_5 = con nil_2
+val global_44: (word8) vector = "partial write"
+val global_444: (word8) vector = global_44 (*"partial write"*)
+val global_45: word64 = 0x6:w64
+val global_46: (word8) vector = "<stdout>"
+val global_47: (word8) vector = "flushOut"
+val global_48: (word8) vector = ""
+val global_49: word32 = 0x100:w32
+val global_50: (word8) vector = "Sequence.length"
+val global_449: (word8) vector = global_50 (*"Sequence.length"*)
+val global_51: (word8) vector = "MLton.Exit.halt"
+val global_484: (word8) ref = prim Ref_ref[word8] (global_28 (*0x0:w8*))
+val global_52: word8 = 0x1:w8
+val global_53: word64 = 0x10:w64
+val global_54: (word8) vector = "0123456789ABCDEF"
+val global_55: word8 = 0x7E:w8
+val global_56: (word8) vector = "): "
+val global_57: (word8) vector = "exit must have 0 <= status < 256"
+val global_58: list_3 = con nil_3
+val global_59: ((word8) vector, list_3) tuple =
+  (global_57 (*"exit must ...  256"*), global_58 (*con nil_3*))
+val global_60: list_3 = con ::_1 (global_59)
+val global_455: ((word8) vector, list_3) tuple =
+  (global_56 (*"): "*), global_60 (*con ::_1 (global_59)*))
+val global_61: (word8) vector = "MLton.Exit.exit("
+val global_62: (word8) vector = "Top-level suffix raised exception.\n"
+val global_63: (word8) vector = "\" failed with "
+val global_64: (word8) vector = " \""
+val global_65: (word8) vector = "Io: "
+val global_66: (word8) vector = "Fail: "
+val global_67: word32 = 0xD:w32
+val global_68: (word8) vector = "acces"
+val global_485: (word32, (word8) vector) tuple =
+  (global_67 (*0xD:w32*), global_68 (*"acces"*))
+val global_69: word32 = 0x62:w32
+val global_70: (word8) vector = "addrinuse"
+val global_486: (word32, (word8) vector) tuple =
+  (global_69 (*0x62:w32*), global_70 (*"addrinuse"*))
+val global_71: word32 = 0x63:w32
+val global_72: (word8) vector = "addrnotavail"
+val global_487: (word32, (word8) vector) tuple =
+  (global_71 (*0x63:w32*), global_72 (*"addrnotavail"*))
+val global_73: (word8) vector = "afnosupport"
+val global_488: (word32, (word8) vector) tuple =
+  (global_13 (*0x61:w32*), global_73 (*"afnosupport"*))
+val global_74: word32 = 0xB:w32
+val global_75: (word8) vector = "again"
+val global_489: (word32, (word8) vector) tuple =
+  (global_74 (*0xB:w32*), global_75 (*"again"*))
+val global_76: word32 = 0x72:w32
+val global_77: (word8) vector = "already"
+val global_490: (word32, (word8) vector) tuple =
+  (global_76 (*0x72:w32*), global_77 (*"already"*))
+val global_78: word32 = 0x9:w32
+val global_79: (word8) vector = "badf"
+val global_491: (word32, (word8) vector) tuple =
+  (global_78 (*0x9:w32*), global_79 (*"badf"*))
+val global_80: word32 = 0x4A:w32
+val global_81: (word8) vector = "badmsg"
+val global_492: (word32, (word8) vector) tuple =
+  (global_80 (*0x4A:w32*), global_81 (*"badmsg"*))
+val global_82: (word8) vector = "busy"
+val global_493: (word32, (word8) vector) tuple =
+  (global_32 (*0x10:w32*), global_82 (*"busy"*))
+val global_83: word32 = 0x7D:w32
+val global_84: (word8) vector = "canceled"
+val global_494: (word32, (word8) vector) tuple =
+  (global_83 (*0x7D:w32*), global_84 (*"canceled"*))
+val global_85: (word8) vector = "child"
+val global_495: (word32, (word8) vector) tuple =
+  (global_14 (*0xA:w32*), global_85 (*"child"*))
+val global_86: word32 = 0x67:w32
+val global_87: (word8) vector = "connaborted"
+val global_496: (word32, (word8) vector) tuple =
+  (global_86 (*0x67:w32*), global_87 (*"connaborted"*))
+val global_88: word32 = 0x6F:w32
+val global_89: (word8) vector = "connrefused"
+val global_497: (word32, (word8) vector) tuple =
+  (global_88 (*0x6F:w32*), global_89 (*"connrefused"*))
+val global_90: word32 = 0x68:w32
+val global_91: (word8) vector = "connreset"
+val global_498: (word32, (word8) vector) tuple =
+  (global_90 (*0x68:w32*), global_91 (*"connreset"*))
+val global_92: word32 = 0x23:w32
+val global_93: (word8) vector = "deadlk"
+val global_499: (word32, (word8) vector) tuple =
+  (global_92 (*0x23:w32*), global_93 (*"deadlk"*))
+val global_94: word32 = 0x59:w32
+val global_95: (word8) vector = "destaddrreq"
+val global_500: (word32, (word8) vector) tuple =
+  (global_94 (*0x59:w32*), global_95 (*"destaddrreq"*))
+val global_96: (word8) vector = "dom"
+val global_501: (word32, (word8) vector) tuple =
+  (global_30 (*0x21:w32*), global_96 (*"dom"*))
+val global_97: word32 = 0x7A:w32
+val global_98: (word8) vector = "dquot"
+val global_502: (word32, (word8) vector) tuple =
+  (global_97 (*0x7A:w32*), global_98 (*"dquot"*))
+val global_99: word32 = 0x11:w32
+val global_100: (word8) vector = "exist"
+val global_503: (word32, (word8) vector) tuple =
+  (global_99 (*0x11:w32*), global_100 (*"exist"*))
+val global_101: word32 = 0xE:w32
+val global_102: (word8) vector = "fault"
+val global_504: (word32, (word8) vector) tuple =
+  (global_101 (*0xE:w32*), global_102 (*"fault"*))
+val global_103: word32 = 0x1B:w32
+val global_104: (word8) vector = "fbig"
+val global_505: (word32, (word8) vector) tuple =
+  (global_103 (*0x1B:w32*), global_104 (*"fbig"*))
+val global_105: word32 = 0x71:w32
+val global_106: (word8) vector = "hostunreach"
+val global_506: (word32, (word8) vector) tuple =
+  (global_105 (*0x71:w32*), global_106 (*"hostunreach"*))
+val global_107: word32 = 0x2B:w32
+val global_108: (word8) vector = "idrm"
+val global_507: (word32, (word8) vector) tuple =
+  (global_107 (*0x2B:w32*), global_108 (*"idrm"*))
+val global_109: word32 = 0x54:w32
+val global_110: (word8) vector = "ilseq"
+val global_508: (word32, (word8) vector) tuple =
+  (global_109 (*0x54:w32*), global_110 (*"ilseq"*))
+val global_111: word32 = 0x73:w32
+val global_112: (word8) vector = "inprogress"
+val global_509: (word32, (word8) vector) tuple =
+  (global_111 (*0x73:w32*), global_112 (*"inprogress"*))
+val global_113: (word8) vector = "intr"
+val global_510: (word32, (word8) vector) tuple =
+  (global_42 (*0x4:w32*), global_113 (*"intr"*))
+val global_114: word32 = 0x16:w32
+val global_115: (word8) vector = "inval"
+val global_511: (word32, (word8) vector) tuple =
+  (global_114 (*0x16:w32*), global_115 (*"inval"*))
+val global_116: word32 = 0x5:w32
+val global_117: (word8) vector = "io"
+val global_512: (word32, (word8) vector) tuple =
+  (global_116 (*0x5:w32*), global_117 (*"io"*))
+val global_118: word32 = 0x6A:w32
+val global_119: (word8) vector = "isconn"
+val global_513: (word32, (word8) vector) tuple =
+  (global_118 (*0x6A:w32*), global_119 (*"isconn"*))
+val global_120: word32 = 0x15:w32
+val global_121: (word8) vector = "isdir"
+val global_514: (word32, (word8) vector) tuple =
+  (global_120 (*0x15:w32*), global_121 (*"isdir"*))
+val global_122: word32 = 0x28:w32
+val global_123: (word8) vector = "loop"
+val global_515: (word32, (word8) vector) tuple =
+  (global_122 (*0x28:w32*), global_123 (*"loop"*))
+val global_124: word32 = 0x18:w32
+val global_125: (word8) vector = "mfile"
+val global_516: (word32, (word8) vector) tuple =
+  (global_124 (*0x18:w32*), global_125 (*"mfile"*))
+val global_126: word32 = 0x1F:w32
+val global_127: (word8) vector = "mlink"
+val global_517: (word32, (word8) vector) tuple =
+  (global_126 (*0x1F:w32*), global_127 (*"mlink"*))
+val global_128: word32 = 0x5A:w32
+val global_129: (word8) vector = "msgsize"
+val global_518: (word32, (word8) vector) tuple =
+  (global_128 (*0x5A:w32*), global_129 (*"msgsize"*))
+val global_130: word32 = 0x48:w32
+val global_131: (word8) vector = "multihop"
+val global_519: (word32, (word8) vector) tuple =
+  (global_130 (*0x48:w32*), global_131 (*"multihop"*))
+val global_132: word32 = 0x24:w32
+val global_133: (word8) vector = "nametoolong"
+val global_520: (word32, (word8) vector) tuple =
+  (global_132 (*0x24:w32*), global_133 (*"nametoolong"*))
+val global_134: word32 = 0x64:w32
+val global_135: (word8) vector = "netdown"
+val global_521: (word32, (word8) vector) tuple =
+  (global_134 (*0x64:w32*), global_135 (*"netdown"*))
+val global_136: word32 = 0x66:w32
+val global_137: (word8) vector = "netreset"
+val global_522: (word32, (word8) vector) tuple =
+  (global_136 (*0x66:w32*), global_137 (*"netreset"*))
+val global_138: word32 = 0x65:w32
+val global_139: (word8) vector = "netunreach"
+val global_523: (word32, (word8) vector) tuple =
+  (global_138 (*0x65:w32*), global_139 (*"netunreach"*))
+val global_140: word32 = 0x17:w32
+val global_141: (word8) vector = "nfile"
+val global_524: (word32, (word8) vector) tuple =
+  (global_140 (*0x17:w32*), global_141 (*"nfile"*))
+val global_142: word32 = 0x69:w32
+val global_143: (word8) vector = "nobufs"
+val global_525: (word32, (word8) vector) tuple =
+  (global_142 (*0x69:w32*), global_143 (*"nobufs"*))
+val global_144: word32 = 0x3D:w32
+val global_145: (word8) vector = "nodata"
+val global_526: (word32, (word8) vector) tuple =
+  (global_144 (*0x3D:w32*), global_145 (*"nodata"*))
+val global_146: word32 = 0x13:w32
+val global_147: (word8) vector = "nodev"
+val global_527: (word32, (word8) vector) tuple =
+  (global_146 (*0x13:w32*), global_147 (*"nodev"*))
+val global_148: word32 = 0x2:w32
+val global_149: (word8) vector = "noent"
+val global_528: (word32, (word8) vector) tuple =
+  (global_148 (*0x2:w32*), global_149 (*"noent"*))
+val global_150: (word8) vector = "noexec"
+val global_529: (word32, (word8) vector) tuple =
+  (global_31 (*0x8:w32*), global_150 (*"noexec"*))
+val global_151: word32 = 0x25:w32
+val global_152: (word8) vector = "nolck"
+val global_530: (word32, (word8) vector) tuple =
+  (global_151 (*0x25:w32*), global_152 (*"nolck"*))
+val global_153: word32 = 0x43:w32
+val global_154: (word8) vector = "nolink"
+val global_531: (word32, (word8) vector) tuple =
+  (global_153 (*0x43:w32*), global_154 (*"nolink"*))
+val global_155: word32 = 0xC:w32
+val global_156: (word8) vector = "nomem"
+val global_532: (word32, (word8) vector) tuple =
+  (global_155 (*0xC:w32*), global_156 (*"nomem"*))
+val global_157: word32 = 0x2A:w32
+val global_158: (word8) vector = "nomsg"
+val global_533: (word32, (word8) vector) tuple =
+  (global_157 (*0x2A:w32*), global_158 (*"nomsg"*))
+val global_159: word32 = 0x5C:w32
+val global_160: (word8) vector = "noprotoopt"
+val global_534: (word32, (word8) vector) tuple =
+  (global_159 (*0x5C:w32*), global_160 (*"noprotoopt"*))
+val global_161: word32 = 0x1C:w32
+val global_162: (word8) vector = "nospc"
+val global_535: (word32, (word8) vector) tuple =
+  (global_161 (*0x1C:w32*), global_162 (*"nospc"*))
+val global_163: word32 = 0x3F:w32
+val global_164: (word8) vector = "nosr"
+val global_536: (word32, (word8) vector) tuple =
+  (global_163 (*0x3F:w32*), global_164 (*"nosr"*))
+val global_165: word32 = 0x3C:w32
+val global_166: (word8) vector = "nostr"
+val global_537: (word32, (word8) vector) tuple =
+  (global_165 (*0x3C:w32*), global_166 (*"nostr"*))
+val global_167: word32 = 0x26:w32
+val global_168: (word8) vector = "nosys"
+val global_538: (word32, (word8) vector) tuple =
+  (global_167 (*0x26:w32*), global_168 (*"nosys"*))
+val global_169: word32 = 0x6B:w32
+val global_170: (word8) vector = "notconn"
+val global_539: (word32, (word8) vector) tuple =
+  (global_169 (*0x6B:w32*), global_170 (*"notconn"*))
+val global_171: word32 = 0x14:w32
+val global_172: (word8) vector = "notdir"
+val global_540: (word32, (word8) vector) tuple =
+  (global_171 (*0x14:w32*), global_172 (*"notdir"*))
+val global_173: word32 = 0x27:w32
+val global_174: (word8) vector = "notempty"
+val global_541: (word32, (word8) vector) tuple =
+  (global_173 (*0x27:w32*), global_174 (*"notempty"*))
+val global_175: word32 = 0x58:w32
+val global_176: (word8) vector = "notsock"
+val global_542: (word32, (word8) vector) tuple =
+  (global_175 (*0x58:w32*), global_176 (*"notsock"*))
+val global_177: word32 = 0x5F:w32
+val global_178: (word8) vector = "notsup"
+val global_543: (word32, (word8) vector) tuple =
+  (global_177 (*0x5F:w32*), global_178 (*"notsup"*))
+val global_179: word32 = 0x19:w32
+val global_180: (word8) vector = "notty"
+val global_544: (word32, (word8) vector) tuple =
+  (global_179 (*0x19:w32*), global_180 (*"notty"*))
+val global_181: word32 = 0x6:w32
+val global_182: (word8) vector = "nxio"
+val global_545: (word32, (word8) vector) tuple =
+  (global_181 (*0x6:w32*), global_182 (*"nxio"*))
+val global_183: (word8) vector = "opnotsupp"
+val global_546: (word32, (word8) vector) tuple =
+  (global_177 (*0x5F:w32*), global_183 (*"opnotsupp"*))
+val global_184: word32 = 0x4B:w32
+val global_185: (word8) vector = "overflow"
+val global_547: (word32, (word8) vector) tuple =
+  (global_184 (*0x4B:w32*), global_185 (*"overflow"*))
+val global_186: (word8) vector = "perm"
+val global_548: (word32, (word8) vector) tuple =
+  (global_2 (*0x1:w32*), global_186 (*"perm"*))
+val global_187: (word8) vector = "pipe"
+val global_549: (word32, (word8) vector) tuple =
+  (global_33 (*0x20:w32*), global_187 (*"pipe"*))
+val global_188: word32 = 0x47:w32
+val global_189: (word8) vector = "proto"
+val global_550: (word32, (word8) vector) tuple =
+  (global_188 (*0x47:w32*), global_189 (*"proto"*))
+val global_190: word32 = 0x5D:w32
+val global_191: (word8) vector = "protonosupport"
+val global_551: (word32, (word8) vector) tuple =
+  (global_190 (*0x5D:w32*), global_191 (*"protonosupport"*))
+val global_192: word32 = 0x5B:w32
+val global_193: (word8) vector = "prototype"
+val global_552: (word32, (word8) vector) tuple =
+  (global_192 (*0x5B:w32*), global_193 (*"prototype"*))
+val global_194: word32 = 0x22:w32
+val global_195: (word8) vector = "range"
+val global_553: (word32, (word8) vector) tuple =
+  (global_194 (*0x22:w32*), global_195 (*"range"*))
+val global_196: word32 = 0x1E:w32
+val global_197: (word8) vector = "rofs"
+val global_554: (word32, (word8) vector) tuple =
+  (global_196 (*0x1E:w32*), global_197 (*"rofs"*))
+val global_198: word32 = 0x1D:w32
+val global_199: (word8) vector = "spipe"
+val global_555: (word32, (word8) vector) tuple =
+  (global_198 (*0x1D:w32*), global_199 (*"spipe"*))
+val global_200: word32 = 0x3:w32
+val global_201: (word8) vector = "srch"
+val global_556: (word32, (word8) vector) tuple =
+  (global_200 (*0x3:w32*), global_201 (*"srch"*))
+val global_202: word32 = 0x74:w32
+val global_203: (word8) vector = "stale"
+val global_557: (word32, (word8) vector) tuple =
+  (global_202 (*0x74:w32*), global_203 (*"stale"*))
+val global_204: (word8) vector = "time"
+val global_558: (word32, (word8) vector) tuple =
+  (global_5 (*0x3E:w32*), global_204 (*"time"*))
+val global_205: word32 = 0x6E:w32
+val global_206: (word8) vector = "timedout"
+val global_559: (word32, (word8) vector) tuple =
+  (global_205 (*0x6E:w32*), global_206 (*"timedout"*))
+val global_207: word32 = 0x7:w32
+val global_208: (word8) vector = "toobig"
+val global_560: (word32, (word8) vector) tuple =
+  (global_207 (*0x7:w32*), global_208 (*"toobig"*))
+val global_209: word32 = 0x1A:w32
+val global_210: (word8) vector = "txtbsy"
+val global_561: (word32, (word8) vector) tuple =
+  (global_209 (*0x1A:w32*), global_210 (*"txtbsy"*))
+val global_211: (word8) vector = "wouldblock"
+val global_562: (word32, (word8) vector) tuple =
+  (global_74 (*0xB:w32*), global_211 (*"wouldblock"*))
+val global_212: word32 = 0x12:w32
+val global_213: (word8) vector = "xdev"
+val global_563: (word32, (word8) vector) tuple =
+  (global_212 (*0x12:w32*), global_213 (*"xdev"*))
+val global_214: list_6 = con nil_4
+val global_215: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_563, global_214 (*con nil_4*))
+val global_216: list_6 = con ::_2 (global_215)
+val global_217: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_562, global_216 (*con ::_2 ( ... _215)*))
+val global_218: list_6 = con ::_2 (global_217)
+val global_219: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_561, global_218 (*con ::_2 ( ... _217)*))
+val global_220: list_6 = con ::_2 (global_219)
+val global_221: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_560, global_220 (*con ::_2 ( ... _219)*))
+val global_222: list_6 = con ::_2 (global_221)
+val global_223: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_559, global_222 (*con ::_2 ( ... _221)*))
+val global_224: list_6 = con ::_2 (global_223)
+val global_225: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_558, global_224 (*con ::_2 ( ... _223)*))
+val global_226: list_6 = con ::_2 (global_225)
+val global_227: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_557, global_226 (*con ::_2 ( ... _225)*))
+val global_228: list_6 = con ::_2 (global_227)
+val global_229: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_556, global_228 (*con ::_2 ( ... _227)*))
+val global_230: list_6 = con ::_2 (global_229)
+val global_231: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_555, global_230 (*con ::_2 ( ... _229)*))
+val global_232: list_6 = con ::_2 (global_231)
+val global_233: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_554, global_232 (*con ::_2 ( ... _231)*))
+val global_234: list_6 = con ::_2 (global_233)
+val global_235: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_553, global_234 (*con ::_2 ( ... _233)*))
+val global_236: list_6 = con ::_2 (global_235)
+val global_237: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_552, global_236 (*con ::_2 ( ... _235)*))
+val global_238: list_6 = con ::_2 (global_237)
+val global_239: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_551, global_238 (*con ::_2 ( ... _237)*))
+val global_240: list_6 = con ::_2 (global_239)
+val global_241: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_550, global_240 (*con ::_2 ( ... _239)*))
+val global_242: list_6 = con ::_2 (global_241)
+val global_243: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_549, global_242 (*con ::_2 ( ... _241)*))
+val global_244: list_6 = con ::_2 (global_243)
+val global_245: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_548, global_244 (*con ::_2 ( ... _243)*))
+val global_246: list_6 = con ::_2 (global_245)
+val global_247: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_547, global_246 (*con ::_2 ( ... _245)*))
+val global_248: list_6 = con ::_2 (global_247)
+val global_249: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_546, global_248 (*con ::_2 ( ... _247)*))
+val global_250: list_6 = con ::_2 (global_249)
+val global_251: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_545, global_250 (*con ::_2 ( ... _249)*))
+val global_252: list_6 = con ::_2 (global_251)
+val global_253: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_544, global_252 (*con ::_2 ( ... _251)*))
+val global_254: list_6 = con ::_2 (global_253)
+val global_255: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_543, global_254 (*con ::_2 ( ... _253)*))
+val global_256: list_6 = con ::_2 (global_255)
+val global_257: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_542, global_256 (*con ::_2 ( ... _255)*))
+val global_258: list_6 = con ::_2 (global_257)
+val global_259: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_541, global_258 (*con ::_2 ( ... _257)*))
+val global_260: list_6 = con ::_2 (global_259)
+val global_261: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_540, global_260 (*con ::_2 ( ... _259)*))
+val global_262: list_6 = con ::_2 (global_261)
+val global_263: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_539, global_262 (*con ::_2 ( ... _261)*))
+val global_264: list_6 = con ::_2 (global_263)
+val global_265: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_538, global_264 (*con ::_2 ( ... _263)*))
+val global_266: list_6 = con ::_2 (global_265)
+val global_267: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_537, global_266 (*con ::_2 ( ... _265)*))
+val global_268: list_6 = con ::_2 (global_267)
+val global_269: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_536, global_268 (*con ::_2 ( ... _267)*))
+val global_270: list_6 = con ::_2 (global_269)
+val global_271: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_535, global_270 (*con ::_2 ( ... _269)*))
+val global_272: list_6 = con ::_2 (global_271)
+val global_273: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_534, global_272 (*con ::_2 ( ... _271)*))
+val global_274: list_6 = con ::_2 (global_273)
+val global_275: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_533, global_274 (*con ::_2 ( ... _273)*))
+val global_276: list_6 = con ::_2 (global_275)
+val global_277: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_532, global_276 (*con ::_2 ( ... _275)*))
+val global_278: list_6 = con ::_2 (global_277)
+val global_279: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_531, global_278 (*con ::_2 ( ... _277)*))
+val global_280: list_6 = con ::_2 (global_279)
+val global_281: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_530, global_280 (*con ::_2 ( ... _279)*))
+val global_282: list_6 = con ::_2 (global_281)
+val global_283: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_529, global_282 (*con ::_2 ( ... _281)*))
+val global_284: list_6 = con ::_2 (global_283)
+val global_285: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_528, global_284 (*con ::_2 ( ... _283)*))
+val global_286: list_6 = con ::_2 (global_285)
+val global_287: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_527, global_286 (*con ::_2 ( ... _285)*))
+val global_288: list_6 = con ::_2 (global_287)
+val global_289: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_526, global_288 (*con ::_2 ( ... _287)*))
+val global_290: list_6 = con ::_2 (global_289)
+val global_291: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_525, global_290 (*con ::_2 ( ... _289)*))
+val global_292: list_6 = con ::_2 (global_291)
+val global_293: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_524, global_292 (*con ::_2 ( ... _291)*))
+val global_294: list_6 = con ::_2 (global_293)
+val global_295: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_523, global_294 (*con ::_2 ( ... _293)*))
+val global_296: list_6 = con ::_2 (global_295)
+val global_297: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_522, global_296 (*con ::_2 ( ... _295)*))
+val global_298: list_6 = con ::_2 (global_297)
+val global_299: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_521, global_298 (*con ::_2 ( ... _297)*))
+val global_300: list_6 = con ::_2 (global_299)
+val global_301: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_520, global_300 (*con ::_2 ( ... _299)*))
+val global_302: list_6 = con ::_2 (global_301)
+val global_303: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_519, global_302 (*con ::_2 ( ... _301)*))
+val global_304: list_6 = con ::_2 (global_303)
+val global_305: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_518, global_304 (*con ::_2 ( ... _303)*))
+val global_306: list_6 = con ::_2 (global_305)
+val global_307: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_517, global_306 (*con ::_2 ( ... _305)*))
+val global_308: list_6 = con ::_2 (global_307)
+val global_309: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_516, global_308 (*con ::_2 ( ... _307)*))
+val global_310: list_6 = con ::_2 (global_309)
+val global_311: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_515, global_310 (*con ::_2 ( ... _309)*))
+val global_312: list_6 = con ::_2 (global_311)
+val global_313: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_514, global_312 (*con ::_2 ( ... _311)*))
+val global_314: list_6 = con ::_2 (global_313)
+val global_315: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_513, global_314 (*con ::_2 ( ... _313)*))
+val global_316: list_6 = con ::_2 (global_315)
+val global_317: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_512, global_316 (*con ::_2 ( ... _315)*))
+val global_318: list_6 = con ::_2 (global_317)
+val global_319: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_511, global_318 (*con ::_2 ( ... _317)*))
+val global_320: list_6 = con ::_2 (global_319)
+val global_321: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_510, global_320 (*con ::_2 ( ... _319)*))
+val global_322: list_6 = con ::_2 (global_321)
+val global_323: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_509, global_322 (*con ::_2 ( ... _321)*))
+val global_324: list_6 = con ::_2 (global_323)
+val global_325: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_508, global_324 (*con ::_2 ( ... _323)*))
+val global_326: list_6 = con ::_2 (global_325)
+val global_327: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_507, global_326 (*con ::_2 ( ... _325)*))
+val global_328: list_6 = con ::_2 (global_327)
+val global_329: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_506, global_328 (*con ::_2 ( ... _327)*))
+val global_330: list_6 = con ::_2 (global_329)
+val global_331: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_505, global_330 (*con ::_2 ( ... _329)*))
+val global_332: list_6 = con ::_2 (global_331)
+val global_333: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_504, global_332 (*con ::_2 ( ... _331)*))
+val global_334: list_6 = con ::_2 (global_333)
+val global_335: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_503, global_334 (*con ::_2 ( ... _333)*))
+val global_336: list_6 = con ::_2 (global_335)
+val global_337: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_502, global_336 (*con ::_2 ( ... _335)*))
+val global_338: list_6 = con ::_2 (global_337)
+val global_339: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_501, global_338 (*con ::_2 ( ... _337)*))
+val global_340: list_6 = con ::_2 (global_339)
+val global_341: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_500, global_340 (*con ::_2 ( ... _339)*))
+val global_342: list_6 = con ::_2 (global_341)
+val global_343: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_499, global_342 (*con ::_2 ( ... _341)*))
+val global_344: list_6 = con ::_2 (global_343)
+val global_345: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_498, global_344 (*con ::_2 ( ... _343)*))
+val global_346: list_6 = con ::_2 (global_345)
+val global_347: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_497, global_346 (*con ::_2 ( ... _345)*))
+val global_348: list_6 = con ::_2 (global_347)
+val global_349: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_496, global_348 (*con ::_2 ( ... _347)*))
+val global_350: list_6 = con ::_2 (global_349)
+val global_351: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_495, global_350 (*con ::_2 ( ... _349)*))
+val global_352: list_6 = con ::_2 (global_351)
+val global_353: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_494, global_352 (*con ::_2 ( ... _351)*))
+val global_354: list_6 = con ::_2 (global_353)
+val global_355: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_493, global_354 (*con ::_2 ( ... _353)*))
+val global_356: list_6 = con ::_2 (global_355)
+val global_357: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_492, global_356 (*con ::_2 ( ... _355)*))
+val global_358: list_6 = con ::_2 (global_357)
+val global_359: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_491, global_358 (*con ::_2 ( ... _357)*))
+val global_360: list_6 = con ::_2 (global_359)
+val global_361: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_490, global_360 (*con ::_2 ( ... _359)*))
+val global_362: list_6 = con ::_2 (global_361)
+val global_363: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_489, global_362 (*con ::_2 ( ... _361)*))
+val global_364: list_6 = con ::_2 (global_363)
+val global_365: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_488, global_364 (*con ::_2 ( ... _363)*))
+val global_366: list_6 = con ::_2 (global_365)
+val global_367: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_487, global_366 (*con ::_2 ( ... _365)*))
+val global_368: list_6 = con ::_2 (global_367)
+val global_369: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_486, global_368 (*con ::_2 ( ... _367)*))
+val global_370: list_6 = con ::_2 (global_369)
+val global_457: ((word32, (word8) vector) tuple, list_6) tuple =
+  (global_485, global_370 (*con ::_2 ( ... _369)*))
+val global_371: (word8) vector = "<UNKNOWN>"
+val global_372: (word8) vector = "]"
+val global_459: ((word8) vector, list_3) tuple =
+  (global_372 (*"]"*), global_58 (*con nil_3*))
+val global_373: (word8) vector = " ["
+val global_374: (word8) vector = "SysErr: "
+val global_375: (word8) vector = "Fail8"
+val global_376: (word8) vector = "Overflow"
+val global_377: (word8) vector = "Size"
+val global_378: (word8) vector = "Subscript"
+val global_379: (word8) vector = "Fail"
+val global_380: (word8) vector = "SysErr"
+val global_381: (word8) vector = "ClosedStream"
+val global_382: (word8) vector = "Io"
+val global_383: (word8) vector = "\n"
+val global_461: ((word8) vector, list_3) tuple =
+  (global_383 (*"\n"*), global_58 (*con nil_3*))
+val global_384: (word8) vector = "unhandled exception: "
+val global_385: (word8) vector = "Top-level handler raised exception.\n"
+val global_386: (word8) vector = "Fail "
+val global_387: (word8) vector = "unhandled exception in Basis Library"
+val global_388: word64 = 0x4000000000000000:w64
+val global_474: list_5 = global_43 (*con nil_2*)
+val global_389: (word8) vector = "output"
+val global_390: (word8) vector = "toplevel suffix not installed"
+val global_391: (word8) vector = "missing suffix in Basis Library"
+val global_392: (word8) vector = "toplevel handler not installed"
+val global_393: bool = con false
+val global_394: bool = con false
+val global_395: bool = con false
+val global_396: exn = con Overflow_0
+val global_397: exn = con Overflow_0
+val global_398: exn = con Overflow_0
+val global_399: exn = con Overflow_0
+val global_400: exn = con Overflow_0
+val global_401: exn = con Overflow_0
+val global_402: exn = con Overflow_0
+val global_403: exn = con Overflow_0
+val global_404: exn = con Overflow_0
+val global_405: exn = con Overflow_0
+val global_406: exn = con Overflow_0
+val global_407: exn = con Overflow_0
+val global_408: exn = con Overflow_0
+val global_409: exn = con Overflow_0
+val global_410: exn = con Overflow_0
+val global_412: list_2 = con ::_3 (global_411)
+val global_414: list_2 = con ::_3 (global_413)
+val global_416: list_7 = con ::_0 (global_415)
+val global_417: bool = con true
+val global_418: exn = con Size_0
+val global_420: exn = con Fail8_0 (global_419)
+val global_421: exn = con Fail8_0 (global_419)
+val global_422: exn = con Fail8_0 (global_419)
+val global_423: exn = con Fail8_0 (global_419)
+val global_424: exn = con Fail8_0 (global_419)
+val global_425: exn = con Fail8_0 (global_419)
+val global_426: exn = con Fail8_0 (global_419)
+val global_427: exn = con Fail8_0 (global_419)
+val global_428: exn = con Fail8_0 (global_419)
+val global_429: exn = con Fail8_0 (global_419)
+val global_430: exn = con Fail8_0 (global_419)
+val global_431: exn = con Fail8_0 (global_419)
+val global_432: exn = con Fail8_0 (global_419)
+val global_433: exn = con Fail8_0 (global_419)
+val global_434: exn = con Fail8_0 (global_419)
+val global_435: exn = con Fail8_0 (global_419)
+val global_436: exn = con Fail8_0 (global_419)
+val global_437: exn = con Subscript_0
+val global_438: exn = con Subscript_0
+val global_439: exn = con Subscript_0
+val global_440: exn = con Subscript_0
+val global_442: exn = con Fail_0 (global_441)
+val global_443: exn = con Fail_0 (global_441)
+val global_445: exn = con Fail_0 (global_444)
+val global_446: exn = con Fail_0 (global_444)
+val global_447: exn = con ClosedStream_0
+val global_448: exn = con ClosedStream_0
+val global_450: exn = con Fail_0 (global_449)
+val global_451: exn = con Fail_0 (global_449)
+val global_452: list_3 = con nil_3
+val global_453: list_3 = con nil_3
+val global_454: list_3 = con nil_3
+val global_456: list_3 = con ::_1 (global_455)
+val global_458: list_6 = con ::_2 (global_457)
+val global_460: list_3 = con ::_1 (global_459)
+val global_462: list_3 = con ::_1 (global_461)
+val global_463: lambdas_1 = con xEnv_0
+val global_464: lambdas_2 = con xEnv_1
+val global_465: lambdas_1 = con xEnv_2
+val global_466: lambdas_2 = con xEnv_3
+val global_467: list_0 = con nil_5
+val global_468: lambdas_0 = con xEnv_4
+val global_469: list_1 = con nil_6
+val global_470: lambdas_0 = con xEnv_5
+val global_471: list_4 = con nil_7
+val global_472: buffer_mode_0 = con LINE_BUF_0
+val global_473: buffer_mode_0 = con BLOCK_BUF_0
+val global_475: list_5 = con ::_4 (global_474)
+
+
+(* Functions: *)
+fun __inline_never__ main_0 (): {returns = None, raises = None} = L_0 ()
+  block L_0 ()
+    val global_567: (word64) ref = prim Ref_ref[word64] (global_4 (*0x0:w64*))
+    val global_566: (word64) ref = prim Ref_ref[word64] (global_4 (*0x0:w64*))
+    val global_565: (word32) ref = prim Ref_ref[word32] (global_0 (*0x0:w32*))
+    val global_564: (word32) ref = prim Ref_ref[word32] (global_0 (*0x0:w32*))
+    goto loop_0 (global_388 (*0x40000000 ... 0:w64*),
+                 global_7 (*0x1:w64*),
+                 global_412 (*con ::_3 ( ... _411)*))
+  block loop_0 (x_3: word64, x_2: word64, x_1: list_2)
+    val x_4: bool = prim Word64_equal (x_3, global_4 (*0x0:w64*))
+    case x_4 of
+      true => L_2 | false => L_1
+  block L_1 ()
+    val x_6: word64 = prim Word64_add (x_2, global_7 (*0x1:w64*))
+    val x_5: bool = prim WordS64_addCheckP (x_2, global_7 (*0x1:w64*))
+    case x_5 of
+      true => L_4 | false => L_3
+  block L_3 ()
+    val x_9: (word64, word64) tuple = (x_2, x_3)
+    val x_8: ((word64, word64) tuple, list_2) tuple = (x_9, x_1)
+    val x_7: list_2 = con ::_3 (x_8)
+    goto loop_0 (global_4 (*0x0:w64*), x_6, x_7)
+  block L_4 ()
+    goto L_5 (global_410 (*con Overflow_0*), global_465 (*con xEnv_2*))
+  block L_2 ()
+    val x_10: (word64) array = prim Array_alloc[word64] (x_2)
+    goto loop_1 (x_1)
+  block loop_1 (x_11: list_2)
+    case x_11 of
+      nil_0 => L_7 | ::_3 => L_6
+  block L_6 (x_12: ((word64, word64) tuple, list_2) tuple)
+    val x_16: list_2 = #1 (x_12)
+    val x_15: (word64, word64) tuple = #0 (x_12)
+    val x_13: word64 = #1 (x_15)
+    val x_14: word64 = #0 (x_15)
+    val _: unit = prim Array_update[word64] (x_10, x_14, x_13)
+    goto loop_1 (x_16)
+  block L_7 ()
+    val messagers_0: (list_0) ref =
+      prim Ref_ref[list_0] (global_467 (*con nil_5*))
+    goto loop_2 (global_4 (*0x0:w64*))
+  block loop_2 (x_17: word64)
+    val x_18: bool = prim WordS64_lt (x_17, global_9 (*0x100:w64*))
+    case x_18 of
+      true => L_8 | false => loopS_0
+  block loopS_0 ()
+    goto loop_3 (global_4 (*0x0:w64*))
+  block loop_3 (x_19: word64)
+    val x_20: bool = prim WordS64_lt (x_19, global_9 (*0x100:w64*))
+    case x_20 of
+      true => L_9 | false => loopS_1
+  block loopS_1 ()
+    goto loop_4 (global_4 (*0x0:w64*))
+  block loop_4 (x_21: word64)
+    val x_22: bool = prim WordS64_lt (x_21, global_9 (*0x100:w64*))
+    case x_22 of
+      true => L_10 | false => loopS_2
+  block loopS_2 ()
+    goto loop_5 (global_4 (*0x0:w64*))
+  block loop_5 (x_23: word64)
+    val x_24: bool = prim WordS64_lt (x_23, global_9 (*0x100:w64*))
+    case x_24 of
+      true => L_11 | false => loopS_3
+  block loopS_3 ()
+    goto loop_6 (global_4 (*0x0:w64*))
+  block loop_6 (x_25: word64)
+    val x_26: bool = prim WordS64_lt (x_25, global_9 (*0x100:w64*))
+    case x_26 of
+      true => L_13 | false => L_12
+  block L_12 ()
+    val x_28: word64 = 0x21:w64
+    val x_27: (word8) array = prim Array_alloc[word8] (x_28)
+    goto loop_7 (global_4 (*0x0:w64*))
+  block loop_7 (x_29: word64)
+    val x_30: bool = prim WordS64_lt (x_29, x_28)
+    case x_30 of
+      true => L_15 | false => L_14
+  block L_14 ()
+    val x_32: word64 = 0x41:w64
+    val x_31: (word8) array = prim Array_alloc[word8] (x_32)
+    goto loop_8 (global_4 (*0x0:w64*))
+  block loop_8 (x_33: word64)
+    val x_34: bool = prim WordS64_lt (x_33, x_32)
+    case x_34 of
+      true => L_17 | false => L_16
+  block L_16 ()
+    goto loop_9 (global_4 (*0x0:w64*))
+  block loop_9 (x_35: word64)
+    val x_36: bool = prim WordS64_lt (x_35, global_7 (*0x1:w64*))
+    case x_36 of
+      true => L_19 | false => L_18
+  block L_18 ()
+    val x_52: list_0 = prim Ref_deref[list_0] (messagers_0)
+    val x_51: (lambdas_0, list_0) tuple = (global_468 (*con xEnv_4*), x_52)
+    val x_50: list_0 = con ::_7 (x_51)
+    val _: unit = prim Ref_assign[list_0] (messagers_0, x_50)
+    val x_40: (list_1) ref = prim Ref_ref[list_1] (global_469 (*con nil_6*))
+    val x_49: list_0 = prim Ref_deref[list_0] (messagers_0)
+    val x_48: (lambdas_0, list_0) tuple = (global_470 (*con xEnv_5*), x_49)
+    val x_47: list_0 = con ::_7 (x_48)
+    val _: unit = prim Ref_assign[list_0] (messagers_0, x_47)
+    val x_45: list_0 = prim Ref_deref[list_0] (messagers_0)
+    val x_46: lambdas_0 = con xEnv_6 (messagers_0)
+    val x_44: (lambdas_0, list_0) tuple = (x_46, x_45)
+    val x_43: list_0 = con ::_7 (x_44)
+    val _: unit = prim Ref_assign[list_0] (messagers_0, x_43)
+    val openOutstreams_0: (list_4) ref =
+      prim Ref_ref[list_4] (global_471 (*con nil_7*))
+    val x_42: list_1 = prim Ref_deref[list_1] (x_40)
+    val x_41: ((list_4) ref, list_1) tuple = (openOutstreams_0, x_42)
+    val x_39: list_1 = con ::_6 (x_41)
+    val _: unit = prim Ref_assign[list_1] (x_40, x_39)
+    val x_38: word32 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_ProcEnv_isatty} (global_2 (*0x1:w32*))
+    val x_37: bool = prim Word32_equal (x_38, global_0 (*0x0:w32*))
+    case x_37 of
+      true => L_21 | false => L_20
+  block L_20 ()
+    goto L_22 (global_472 (*con LINE_BUF_0*))
+  block L_21 ()
+    goto L_22 (global_473 (*con BLOCK_BUF_0*))
+  block L_22 (x_53: buffer_mode_0)
+    val closed_0: (bool) ref = prim Ref_ref[bool] (global_394 (*con false*))
+    val _: unit = prim Thread_atomicBegin ()
+    val x_55: word32 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_fstat} (global_2 (*0x1:w32*))
+    val x_54: bool = prim Word32_equal (global_3 (*0xFFFFFFFF:w32*), x_55)
+    case x_54 of
+      true => L_24 | false => L_23
+  block L_23 ()
+    val _: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getDev} ()
+    val _: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getINo} ()
+    val x_60: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getMode} ()
+    val x_58: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getNLink} ()
+    val x_59: word32 = prim WordU64_extdToWord32 (x_58)
+    val x_57: word64 = prim WordU32_extdToWord64 (x_59)
+    val x_56: bool = prim Word64_equal (x_58, x_57)
+    case x_56 of
+      true => L_26 | false => L_25
+  block L_25 ()
+    goto L_27 (global_407 (*con Overflow_0*))
+  block L_26 ()
+    val x_61: bool = prim WordS32_lt (x_59, global_0 (*0x0:w32*))
+    case x_61 of
+      true => L_29 | false => L_28
+  block L_28 ()
+    val _: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getUId} ()
+    val _: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Word32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getGId} ()
+    val _: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getSize} ()
+    val x_64: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getATime} ()
+    val x_63: word64 = prim WordS64_rshift (x_64, global_5 (*0x3E:w32*))
+    val x_62: bool = prim Word64_equal (x_63, global_4 (*0x0:w64*))
+    case x_62 of
+      true => L_31 | false => L_30
+  block L_30 ()
+    val x_65: bool = prim Word64_equal (x_63, global_6 (*0xFFFFFFFF ... F:w64*))
+    case x_65 of
+      true => L_31 | false => L_32
+  block L_32 ()
+    val x_66: bool = prim WordS64_lt (x_64, global_4 (*0x0:w64*))
+    case x_66 of
+      true => L_34 | false => L_33
+  block L_33 ()
+    goto loop_10 (x_64,
+                  global_7 (*0x1:w64*),
+                  global_412 (*con ::_3 ( ... _411)*))
+  block L_34 ()
+    val x_67: word64 = prim Word64_neg (x_64)
+    goto loop_10 (x_67,
+                  global_7 (*0x1:w64*),
+                  global_414 (*con ::_3 ( ... _413)*))
+  block loop_10 (x_70: word64, x_69: word64, x_68: list_2)
+    val x_71: bool = prim Word64_equal (x_70, global_4 (*0x0:w64*))
+    case x_71 of
+      true => L_36 | false => L_35
+  block L_35 ()
+    val x_73: word64 = prim Word64_add (x_69, global_7 (*0x1:w64*))
+    val x_72: bool = prim WordS64_addCheckP (x_69, global_7 (*0x1:w64*))
+    case x_72 of
+      true => L_38 | false => L_37
+  block L_37 ()
+    val x_76: (word64, word64) tuple = (x_69, x_70)
+    val x_75: ((word64, word64) tuple, list_2) tuple = (x_76, x_68)
+    val x_74: list_2 = con ::_3 (x_75)
+    goto loop_10 (global_4 (*0x0:w64*), x_73, x_74)
+  block L_38 ()
+    goto L_27 (global_410 (*con Overflow_0*))
+  block L_36 ()
+    val x_77: (word64) array = prim Array_alloc[word64] (x_69)
+    goto loop_11 (x_68)
+  block loop_11 (x_78: list_2)
+    case x_78 of
+      nil_0 => L_40 | ::_3 => L_39
+  block L_39 (x_79: ((word64, word64) tuple, list_2) tuple)
+    val x_83: list_2 = #1 (x_79)
+    val x_82: (word64, word64) tuple = #0 (x_79)
+    val x_80: word64 = #1 (x_82)
+    val x_81: word64 = #0 (x_82)
+    val _: unit = prim Array_update[word64] (x_77, x_81, x_80)
+    goto loop_11 (x_83)
+  block L_40 ()
+    val x_85: (word64) vector = prim Array_toVector[word64] (x_77)
+    val x_84: intInf = prim WordVector_toIntInf (x_85)
+    goto L_41 (x_84)
+  block L_31 ()
+    val x_88: word64 = prim Word64_lshift (x_64, global_2 (*0x1:w32*))
+    val x_87: word64 = prim Word64_orb (x_88, global_7 (*0x1:w64*))
+    val x_86: intInf = prim Word_toIntInf (x_87)
+    goto L_41 (x_86)
+  block L_41 (x_89: intInf)
+    val x_93: word64 = prim IntInf_toWord (x_89)
+    val x_92: word64 = prim Word64_andb (x_93, global_35 (*0x77359401:w64*))
+    val x_91: word64 = prim Word64_andb (x_92, global_7 (*0x1:w64*))
+    val x_90: bool = prim Word64_equal (global_4 (*0x0:w64*), x_91)
+    case x_90 of
+      true => L_43 | false => L_42
+  block L_42 ()
+    val x_97: word64 = prim IntInf_toWord (x_89)
+    val x_95: word64 = prim WordS64_rshift (x_97, global_2 (*0x1:w32*))
+    val x_96: word64 = prim WordS64_mul (x_95, global_34 (*0x3B9ACA00:w64*))
+    val x_94: bool = prim WordS64_mulCheckP (x_95, global_34 (*0x3B9ACA00:w64*))
+    case x_94 of
+      true => L_43 | false => L_44
+  block L_44 ()
+    val x_101: word64 = prim Word64_lshift (x_96, global_2 (*0x1:w32*))
+    val x_100: word64 = prim Word64_orb (x_101, global_7 (*0x1:w64*))
+    val x_99: word64 = prim Word64_xorb (x_100, x_96)
+    val x_98: bool = prim WordS64_lt (x_99, global_4 (*0x0:w64*))
+    case x_98 of
+      true => L_43 | false => L_45
+  block L_43 ()
+    val x_104: word64 = prim IntInf_toWord (x_89)
+    val x_103: word64 = prim Word64_andb (x_104, global_7 (*0x1:w64*))
+    val x_102: bool = prim Word64_equal (global_4 (*0x0:w64*), x_103)
+    case x_102 of
+      true => L_47 | false => L_46
+  block L_46 ()
+    goto L_48 (global_7 (*0x1:w64*))
+  block L_47 ()
+    val x_108: (word64) vector = prim IntInf_toVector (x_89)
+    val x_106: word64 = prim Vector_length[word64] (x_108)
+    val x_107: word64 = prim Word64_sub (x_106, global_7 (*0x1:w64*))
+    val x_105: bool = prim WordS64_subCheckP (x_106, global_7 (*0x1:w64*))
+    case x_105 of
+      true => L_50 | false => L_49
+  block L_49 ()
+    goto L_48 (x_107)
+  block L_48 (x_109: word64)
+    val x_110: bool = prim WordS64_addCheckP (x_109, global_7 (*0x1:w64*))
+    case x_110 of
+      true => L_51 | false => L_45
+  block L_45 ()
+    val x_113: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getMTime} ()
+    val x_112: word64 = prim WordS64_rshift (x_113, global_5 (*0x3E:w32*))
+    val x_111: bool = prim Word64_equal (x_112, global_4 (*0x0:w64*))
+    case x_111 of
+      true => L_53 | false => L_52
+  block L_52 ()
+    val x_114: bool =
+      prim Word64_equal (x_112, global_6 (*0xFFFFFFFF ... F:w64*))
+    case x_114 of
+      true => L_53 | false => L_54
+  block L_54 ()
+    val x_115: bool = prim WordS64_lt (x_113, global_4 (*0x0:w64*))
+    case x_115 of
+      true => L_56 | false => L_55
+  block L_55 ()
+    goto loop_12 (x_113,
+                  global_7 (*0x1:w64*),
+                  global_412 (*con ::_3 ( ... _411)*))
+  block L_56 ()
+    val x_116: word64 = prim Word64_neg (x_113)
+    goto loop_12 (x_116,
+                  global_7 (*0x1:w64*),
+                  global_414 (*con ::_3 ( ... _413)*))
+  block loop_12 (x_119: word64, x_118: word64, x_117: list_2)
+    val x_120: bool = prim Word64_equal (x_119, global_4 (*0x0:w64*))
+    case x_120 of
+      true => L_58 | false => L_57
+  block L_57 ()
+    val x_122: word64 = prim Word64_add (x_118, global_7 (*0x1:w64*))
+    val x_121: bool = prim WordS64_addCheckP (x_118, global_7 (*0x1:w64*))
+    case x_121 of
+      true => L_60 | false => L_59
+  block L_59 ()
+    val x_125: (word64, word64) tuple = (x_118, x_119)
+    val x_124: ((word64, word64) tuple, list_2) tuple = (x_125, x_117)
+    val x_123: list_2 = con ::_3 (x_124)
+    goto loop_12 (global_4 (*0x0:w64*), x_122, x_123)
+  block L_60 ()
+    goto L_27 (global_410 (*con Overflow_0*))
+  block L_58 ()
+    val x_126: (word64) array = prim Array_alloc[word64] (x_118)
+    goto loop_13 (x_117)
+  block loop_13 (x_127: list_2)
+    case x_127 of
+      nil_0 => L_62 | ::_3 => L_61
+  block L_61 (x_128: ((word64, word64) tuple, list_2) tuple)
+    val x_132: list_2 = #1 (x_128)
+    val x_131: (word64, word64) tuple = #0 (x_128)
+    val x_129: word64 = #1 (x_131)
+    val x_130: word64 = #0 (x_131)
+    val _: unit = prim Array_update[word64] (x_126, x_130, x_129)
+    goto loop_13 (x_132)
+  block L_62 ()
+    val x_134: (word64) vector = prim Array_toVector[word64] (x_126)
+    val x_133: intInf = prim WordVector_toIntInf (x_134)
+    goto L_63 (x_133)
+  block L_53 ()
+    val x_137: word64 = prim Word64_lshift (x_113, global_2 (*0x1:w32*))
+    val x_136: word64 = prim Word64_orb (x_137, global_7 (*0x1:w64*))
+    val x_135: intInf = prim Word_toIntInf (x_136)
+    goto L_63 (x_135)
+  block L_63 (x_138: intInf)
+    val x_142: word64 = prim IntInf_toWord (x_138)
+    val x_141: word64 = prim Word64_andb (x_142, global_35 (*0x77359401:w64*))
+    val x_140: word64 = prim Word64_andb (x_141, global_7 (*0x1:w64*))
+    val x_139: bool = prim Word64_equal (global_4 (*0x0:w64*), x_140)
+    case x_139 of
+      true => L_65 | false => L_64
+  block L_64 ()
+    val x_146: word64 = prim IntInf_toWord (x_138)
+    val x_144: word64 = prim WordS64_rshift (x_146, global_2 (*0x1:w32*))
+    val x_145: word64 = prim WordS64_mul (x_144, global_34 (*0x3B9ACA00:w64*))
+    val x_143: bool =
+      prim WordS64_mulCheckP (x_144, global_34 (*0x3B9ACA00:w64*))
+    case x_143 of
+      true => L_65 | false => L_66
+  block L_66 ()
+    val x_150: word64 = prim Word64_lshift (x_145, global_2 (*0x1:w32*))
+    val x_149: word64 = prim Word64_orb (x_150, global_7 (*0x1:w64*))
+    val x_148: word64 = prim Word64_xorb (x_149, x_145)
+    val x_147: bool = prim WordS64_lt (x_148, global_4 (*0x0:w64*))
+    case x_147 of
+      true => L_65 | false => L_67
+  block L_65 ()
+    val x_153: word64 = prim IntInf_toWord (x_138)
+    val x_152: word64 = prim Word64_andb (x_153, global_7 (*0x1:w64*))
+    val x_151: bool = prim Word64_equal (global_4 (*0x0:w64*), x_152)
+    case x_151 of
+      true => L_69 | false => L_68
+  block L_68 ()
+    goto L_70 (global_7 (*0x1:w64*))
+  block L_69 ()
+    val x_157: (word64) vector = prim IntInf_toVector (x_138)
+    val x_155: word64 = prim Vector_length[word64] (x_157)
+    val x_156: word64 = prim Word64_sub (x_155, global_7 (*0x1:w64*))
+    val x_154: bool = prim WordS64_subCheckP (x_155, global_7 (*0x1:w64*))
+    case x_154 of
+      true => L_72 | false => L_71
+  block L_71 ()
+    goto L_70 (x_156)
+  block L_70 (x_158: word64)
+    val x_159: bool = prim WordS64_addCheckP (x_158, global_7 (*0x1:w64*))
+    case x_159 of
+      true => L_73 | false => L_67
+  block L_67 ()
+    val x_162: word64 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_FileSys_Stat_getCTime} ()
+    val x_161: word64 = prim WordS64_rshift (x_162, global_5 (*0x3E:w32*))
+    val x_160: bool = prim Word64_equal (x_161, global_4 (*0x0:w64*))
+    case x_160 of
+      true => L_75 | false => L_74
+  block L_74 ()
+    val x_163: bool =
+      prim Word64_equal (x_161, global_6 (*0xFFFFFFFF ... F:w64*))
+    case x_163 of
+      true => L_75 | false => L_76
+  block L_76 ()
+    val x_164: bool = prim WordS64_lt (x_162, global_4 (*0x0:w64*))
+    case x_164 of
+      true => L_78 | false => L_77
+  block L_77 ()
+    goto loop_14 (x_162,
+                  global_7 (*0x1:w64*),
+                  global_412 (*con ::_3 ( ... _411)*))
+  block L_78 ()
+    val x_165: word64 = prim Word64_neg (x_162)
+    goto loop_14 (x_165,
+                  global_7 (*0x1:w64*),
+                  global_414 (*con ::_3 ( ... _413)*))
+  block loop_14 (x_168: word64, x_167: word64, x_166: list_2)
+    val x_169: bool = prim Word64_equal (x_168, global_4 (*0x0:w64*))
+    case x_169 of
+      true => L_80 | false => L_79
+  block L_79 ()
+    val x_171: word64 = prim Word64_add (x_167, global_7 (*0x1:w64*))
+    val x_170: bool = prim WordS64_addCheckP (x_167, global_7 (*0x1:w64*))
+    case x_170 of
+      true => L_82 | false => L_81
+  block L_81 ()
+    val x_174: (word64, word64) tuple = (x_167, x_168)
+    val x_173: ((word64, word64) tuple, list_2) tuple = (x_174, x_166)
+    val x_172: list_2 = con ::_3 (x_173)
+    goto loop_14 (global_4 (*0x0:w64*), x_171, x_172)
+  block L_82 ()
+    goto L_27 (global_410 (*con Overflow_0*))
+  block L_80 ()
+    val x_175: (word64) array = prim Array_alloc[word64] (x_167)
+    goto loop_15 (x_166)
+  block loop_15 (x_176: list_2)
+    case x_176 of
+      nil_0 => L_84 | ::_3 => L_83
+  block L_83 (x_177: ((word64, word64) tuple, list_2) tuple)
+    val x_181: list_2 = #1 (x_177)
+    val x_180: (word64, word64) tuple = #0 (x_177)
+    val x_178: word64 = #1 (x_180)
+    val x_179: word64 = #0 (x_180)
+    val _: unit = prim Array_update[word64] (x_175, x_179, x_178)
+    goto loop_15 (x_181)
+  block L_84 ()
+    val x_183: (word64) vector = prim Array_toVector[word64] (x_175)
+    val x_182: intInf = prim WordVector_toIntInf (x_183)
+    goto L_85 (x_182)
+  block L_75 ()
+    val x_186: word64 = prim Word64_lshift (x_162, global_2 (*0x1:w32*))
+    val x_185: word64 = prim Word64_orb (x_186, global_7 (*0x1:w64*))
+    val x_184: intInf = prim Word_toIntInf (x_185)
+    goto L_85 (x_184)
+  block L_85 (x_187: intInf)
+    val x_191: word64 = prim IntInf_toWord (x_187)
+    val x_190: word64 = prim Word64_andb (x_191, global_35 (*0x77359401:w64*))
+    val x_189: word64 = prim Word64_andb (x_190, global_7 (*0x1:w64*))
+    val x_188: bool = prim Word64_equal (global_4 (*0x0:w64*), x_189)
+    case x_188 of
+      true => L_87 | false => L_86
+  block L_86 ()
+    val x_195: word64 = prim IntInf_toWord (x_187)
+    val x_193: word64 = prim WordS64_rshift (x_195, global_2 (*0x1:w32*))
+    val x_194: word64 = prim WordS64_mul (x_193, global_34 (*0x3B9ACA00:w64*))
+    val x_192: bool =
+      prim WordS64_mulCheckP (x_193, global_34 (*0x3B9ACA00:w64*))
+    case x_192 of
+      true => L_87 | false => L_88
+  block L_88 ()
+    val x_199: word64 = prim Word64_lshift (x_194, global_2 (*0x1:w32*))
+    val x_198: word64 = prim Word64_orb (x_199, global_7 (*0x1:w64*))
+    val x_197: word64 = prim Word64_xorb (x_198, x_194)
+    val x_196: bool = prim WordS64_lt (x_197, global_4 (*0x0:w64*))
+    case x_196 of
+      true => L_87 | false => L_89
+  block L_87 ()
+    val x_202: word64 = prim IntInf_toWord (x_187)
+    val x_201: word64 = prim Word64_andb (x_202, global_7 (*0x1:w64*))
+    val x_200: bool = prim Word64_equal (global_4 (*0x0:w64*), x_201)
+    case x_200 of
+      true => L_91 | false => L_90
+  block L_90 ()
+    goto L_92 (global_7 (*0x1:w64*))
+  block L_91 ()
+    val x_206: (word64) vector = prim IntInf_toVector (x_187)
+    val x_204: word64 = prim Vector_length[word64] (x_206)
+    val x_205: word64 = prim Word64_sub (x_204, global_7 (*0x1:w64*))
+    val x_203: bool = prim WordS64_subCheckP (x_204, global_7 (*0x1:w64*))
+    case x_203 of
+      true => L_94 | false => L_93
+  block L_93 ()
+    goto L_92 (x_205)
+  block L_92 (x_207: word64)
+    val x_208: bool = prim WordS64_addCheckP (x_207, global_7 (*0x1:w64*))
+    case x_208 of
+      true => L_95 | false => L_89
+  block L_89 ()
+    val x_210: word32 = prim Thread_atomicState ()
+    val x_209: bool = prim Word32_equal (x_210, global_0 (*0x0:w32*))
+    case x_209 of
+      true => L_97 | false => L_96
+  block L_96 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_212: word32 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Word32), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_FileSys_ST_isReg} (x_60)
+    val x_211: bool = prim Word32_equal (x_212, global_0 (*0x0:w32*))
+    case x_211 of
+      true => L_99 | false => L_98
+  block L_98 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_214: word64 =
+      prim CFunction {args = (word32, word64, word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Int64, Int32),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_lseek} (global_2 (*0x1:w32*),
+                                                global_4 (*0x0:w64*),
+                                                global_2 (*0x1:w32*))
+    val x_213: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_214)
+    case x_213 of
+      true => L_101 | false => L_100
+  block L_100 ()
+    val x_216: word32 = prim Thread_atomicState ()
+    val x_215: bool = prim Word32_equal (x_216, global_0 (*0x0:w32*))
+    case x_215 of
+      true => L_103 | false => L_102
+  block L_102 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val _: unit = prim Ref_assign[word64] (global_567, x_214)
+    goto L_104 (global_567)
+  block L_103 ()
+    goto L_5 (global_433 (*con Fail8_ ... _419)*), global_465 (*con xEnv_2*))
+  block L_101 ()
+    val x_219: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_218: word32 = prim Thread_atomicState ()
+    val x_217: bool = prim Word32_equal (x_218, global_0 (*0x0:w32*))
+    case x_217 of
+      true => L_106 | false => L_105
+  block L_105 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_222: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_219)
+    val x_221: cpointer = prim CPointer_fromWord (x_222)
+    val x_220: bool = prim CPointer_equal (x_221, global_36 (*NULL*))
+    case x_220 of
+      true => L_108 | false => L_107
+  block L_107 ()
+    goto loop_16 (global_0 (*0x0:w32*))
+  block loop_16 (x_223: word32)
+    val x_226: cpointer = prim CPointer_fromWord (x_222)
+    val x_225: word64 = prim WordS32_extdToWord64 (x_223)
+    val x_224: word8 = prim CPointer_getWord8 (x_226, x_225)
+    case8 x_224 of
+      0x0:w8 => L_109 | _ => L_110
+  block L_110 ()
+    val x_227: word32 = prim Word32_add (x_223, global_2 (*0x1:w32*))
+    goto loop_16 (x_227)
+  block L_109 ()
+    val x_229: word64 = prim WordS32_extdToWord64 (x_223)
+    val x_228: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_229)
+    case x_228 of
+      true => L_112 | false => L_111
+  block L_111 ()
+    val x_230: (word8) array = prim Array_alloc[word8] (x_229)
+    goto loop_17 (global_4 (*0x0:w64*))
+  block loop_17 (x_231: word64)
+    val x_232: bool = prim WordS64_lt (x_231, x_229)
+    case x_232 of
+      true => L_114 | false => L_113
+  block L_113 ()
+    val x_233: (word8) vector = prim Array_toVector[word8] (x_230)
+    goto L_115 (x_233)
+  block L_114 ()
+    val x_238: word32 = prim WordS64_extdToWord32 (x_231)
+    val x_237: cpointer = prim CPointer_fromWord (x_222)
+    val x_236: word64 = prim WordS32_extdToWord64 (x_238)
+    val x_235: word8 = prim CPointer_getWord8 (x_237, x_236)
+    val _: unit = prim Array_update[word8] (x_230, x_231, x_235)
+    val x_234: word64 = prim Word64_add (x_231, global_7 (*0x1:w64*))
+    goto loop_17 (x_234)
+  block L_112 ()
+    goto L_5 (global_418 (*con Size_0*), global_465 (*con xEnv_2*))
+  block L_108 ()
+    goto L_115 (global_37 (*"Unknown error"*))
+  block L_115 (x_239: (word8) vector)
+    val x_242: t_0 = con SOME_0 (x_219)
+    val x_241: ((word8) vector, t_0) tuple = (x_239, x_242)
+    val x_240: exn = con SysErr_0 (x_241)
+    goto L_5 (x_240, global_465 (*con xEnv_2*))
+  block L_106 ()
+    goto L_5 (global_432 (*con Fail8_ ... _419)*), global_465 (*con xEnv_2*))
+  block L_99 ()
+    goto L_104 (global_566)
+  block L_104 (x_243: (word64) ref)
+    goto loop_18 (global_475 (*con ::_4 ( ... _474)*))
+  block loop_18 (x_244: list_5)
+    case x_244 of
+      nil_2 => L_116 | ::_4 => loop_18
+  block L_116 ()
+    val x_248: ((word64) ref, (bool) ref) tuple = (x_243, closed_0)
+    val x_247: ((word64) ref, (bool) ref) tuple = (x_243, closed_0)
+    val x_249:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      (x_248, x_247)
+    val x_246:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      (x_248, x_247)
+    val x_245: (unit) ref = prim Ref_ref[unit] (x_0 (*()*))
+    case x_53 of
+      BLOCK_BUF_0 => L_118 | LINE_BUF_0 => L_117
+  block L_117 ()
+    val x_251: word64 = 0x1000:w64
+    val x_250: (word8) array = prim Array_alloc[word8] (x_251)
+    goto loop_19 (global_4 (*0x0:w64*))
+  block loop_19 (x_252: word64)
+    val x_253: bool = prim WordS64_lt (x_252, x_251)
+    case x_253 of
+      true => L_120 | false => L_119
+  block L_119 ()
+    val x_255: ((word8) array, (word32) ref) tuple = (x_250, global_565)
+    val x_254: bufferMode_0 = con LINE_BUF_1 (x_255)
+    goto L_121 (x_254)
+  block L_120 ()
+    val _: unit = prim Array_update[word8] (x_250, x_252, global_28 (*0x0:w8*))
+    val x_256: word64 = prim Word64_add (x_252, global_7 (*0x1:w64*))
+    goto loop_19 (x_256)
+  block L_118 ()
+    val x_258: word64 = 0x1000:w64
+    val x_257: (word8) array = prim Array_alloc[word8] (x_258)
+    goto loop_20 (global_4 (*0x0:w64*))
+  block loop_20 (x_259: word64)
+    val x_260: bool = prim WordS64_lt (x_259, x_258)
+    case x_260 of
+      true => L_123 | false => L_122
+  block L_122 ()
+    val x_262: ((word8) array, (word32) ref) tuple = (x_257, global_564)
+    val x_261: bufferMode_0 = con BLOCK_BUF_1 (x_262)
+    goto L_121 (x_261)
+  block L_121 (x_263: bufferMode_0)
+    val x_274: (bufferMode_0) ref = prim Ref_ref[bufferMode_0] (x_263)
+    val x_270:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       (bufferMode_0) ref,
+       (unit) ref,
+       (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple =
+      (x_246, x_274, x_245, x_249)
+    val x_273: list_4 = prim Ref_deref[list_4] (openOutstreams_0)
+    val x_272:
+      (((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+        (bufferMode_0) ref,
+        (unit) ref,
+        (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple,
+       list_4) tuple =
+      (x_270, x_273)
+    val x_271: list_4 = con ::_5 (x_272)
+    val _: unit = prim Ref_assign[list_4] (openOutstreams_0, x_271)
+    val x_268:
+      (((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+        (bufferMode_0) ref,
+        (unit) ref,
+        (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple) ref =
+      prim Ref_ref[((((word64) ref, (bool) ref) tuple,
+                     ((word64) ref, (bool) ref) tuple) tuple,
+                    (bufferMode_0) ref,
+                    (unit) ref,
+                    (((word64) ref, (bool) ref) tuple,
+                     ((word64) ref, (bool) ref) tuple) tuple) tuple] (x_270)
+    val exiting_0: (bool) ref = prim Ref_ref[bool] (global_393 (*con false*))
+    val tuple_1: ((bool) ref, (list_1) ref, (word8) array) tuple =
+      (exiting_0, x_40, x_27)
+    val tuple_0:
+      ((list_0) ref, ((bool) ref, (list_1) ref, (word8) array) tuple) tuple =
+      (messagers_0, tuple_1)
+    val x_269: lambdas_1 = con defaultTopLevelHandlerEnv_0 (tuple_0)
+    val x_267:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       (bufferMode_0) ref,
+       (unit) ref,
+       (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple =
+      prim Ref_deref[((((word64) ref, (bool) ref) tuple,
+                       ((word64) ref, (bool) ref) tuple) tuple,
+                      (bufferMode_0) ref,
+                      (unit) ref,
+                      (((word64) ref, (bool) ref) tuple,
+                       ((word64) ref, (bool) ref) tuple) tuple) tuple] (x_268)
+    val x_265: (bufferMode_0) ref = #1 (x_267)
+    val x_266:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      #0 (x_267)
+    val x_264: bufferMode_0 = prim Ref_deref[bufferMode_0] (x_265)
+    case x_264 of
+      BLOCK_BUF_1 => L_125 | LINE_BUF_1 => L_124
+  block L_124 (x_275: ((word8) array, (word32) ref) tuple)
+    val x_279: (word8) array = #0 (x_275)
+    val x_277: word32 = prim Ref_deref[word32] (global_565)
+    val x_278: word32 = prim Word32_add (x_277, global_181 (*0x6:w32*))
+    val x_276: bool = prim WordS32_addCheckP (x_277, global_181 (*0x6:w32*))
+    case x_276 of
+      true => L_127 | false => L_126
+  block L_126 ()
+    val x_282: word64 = prim Array_length[word8] (x_279)
+    val x_283: word32 = prim WordS64_extdToWord32 (x_282)
+    val x_281: word64 = prim WordS32_extdToWord64 (x_283)
+    val x_280: bool = prim Word64_equal (x_282, x_281)
+    case x_280 of
+      true => L_129 | false => L_128
+  block L_128 ()
+    goto L_130 (global_451 (*con Fail_0 ... _449)*))
+  block L_129 ()
+    val x_284: bool = prim WordS32_lt (x_278, x_283)
+    case x_284 of
+      true => loopS_4 | false => L_131
+  block loopS_4 ()
+    goto loop_21 (global_4 (*0x0:w64*))
+  block loop_21 (x_285: word64)
+    val x_286: bool = prim WordS64_lt (global_39 (*0x5:w64*), x_285)
+    case x_286 of
+      true => L_133 | false => L_132
+  block L_132 ()
+    val x_288: word8 = prim Vector_sub[word8] (global_40 (*"hello\n"*), x_285)
+    val x_287: bool = prim Word8_equal (x_288, global_27 (*0xA:w8*))
+    case x_287 of
+      true => L_131 | false => L_134
+  block L_134 ()
+    val x_289: word64 = prim Word64_add (x_285, global_7 (*0x1:w64*))
+    goto loop_21 (x_289)
+  block L_131 ()
+    val x_290:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_266, x_275)
+    call L_135 (flushBuf_0 (x_290)) handle _ => L_130
+  block L_135 ()
+    call L_136 (put_0 (x_266)) handle _ => L_130
+  block L_133 ()
+    val x_292: word64 = prim WordS32_extdToWord64 (x_277)
+    val x_293: word64 = prim Array_length[word8] (x_279)
+    val x_291: bool = prim WordU64_lt (x_293, x_292)
+    case x_291 of
+      true => L_138 | false => L_137
+  block L_137 ()
+    val x_295: word64 = prim Word64_add (x_292, global_45 (*0x6:w64*))
+    val x_296: word64 = prim Array_length[word8] (x_279)
+    val x_294: bool = prim WordU64_lt (x_296, x_295)
+    case x_294 of
+      true => L_138 | false => L_139
+  block L_139 ()
+    val _: unit =
+      prim Array_copyVector[word8] (x_279,
+                                    x_292,
+                                    global_40 (*"hello\n"*),
+                                    global_4 (*0x0:w64*),
+                                    global_45 (*0x6:w64*))
+    val _: unit = prim Ref_assign[word32] (global_565, x_278)
+    goto L_140 (x_268)
+  block L_138 ()
+    goto L_130 (global_438 (*con Subscript_0*))
+  block L_127 ()
+    goto L_130 (global_397 (*con Overflow_0*))
+  block L_125 (x_297: ((word8) array, (word32) ref) tuple)
+    val x_301: (word8) array = #0 (x_297)
+    val x_299: word32 = prim Ref_deref[word32] (global_564)
+    val x_300: word32 = prim Word32_add (x_299, global_181 (*0x6:w32*))
+    val x_298: bool = prim WordS32_addCheckP (x_299, global_181 (*0x6:w32*))
+    case x_298 of
+      true => L_142 | false => L_141
+  block L_141 ()
+    val x_304: word64 = prim Array_length[word8] (x_301)
+    val x_305: word32 = prim WordS64_extdToWord32 (x_304)
+    val x_303: word64 = prim WordS32_extdToWord64 (x_305)
+    val x_302: bool = prim Word64_equal (x_304, x_303)
+    case x_302 of
+      true => L_144 | false => L_143
+  block L_143 ()
+    goto L_130 (global_450 (*con Fail_0 ... _449)*))
+  block L_144 ()
+    val x_306: bool = prim WordS32_lt (x_300, x_305)
+    case x_306 of
+      true => L_146 | false => L_145
+  block L_145 ()
+    val x_307:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_266, x_297)
+    call L_147 (flushBuf_0 (x_307)) handle _ => L_130
+  block L_147 ()
+    call L_136 (put_0 (x_266)) handle _ => L_130
+  block L_136 ()
+    goto L_140 (x_268)
+  block L_146 ()
+    val x_309: word64 = prim WordS32_extdToWord64 (x_299)
+    val x_310: word64 = prim Array_length[word8] (x_301)
+    val x_308: bool = prim WordU64_lt (x_310, x_309)
+    case x_308 of
+      true => L_149 | false => L_148
+  block L_148 ()
+    val x_312: word64 = prim Word64_add (x_309, global_45 (*0x6:w64*))
+    val x_313: word64 = prim Array_length[word8] (x_301)
+    val x_311: bool = prim WordU64_lt (x_313, x_312)
+    case x_311 of
+      true => L_149 | false => L_150
+  block L_150 ()
+    val _: unit =
+      prim Array_copyVector[word8] (x_301,
+                                    x_309,
+                                    global_40 (*"hello\n"*),
+                                    global_4 (*0x0:w64*),
+                                    global_45 (*0x6:w64*))
+    val _: unit = prim Ref_assign[word32] (global_564, x_300)
+    goto L_140 (x_268)
+  block L_140 (x_314:
+                 (((((word64) ref, (bool) ref) tuple,
+                    ((word64) ref, (bool) ref) tuple) tuple,
+                   (bufferMode_0) ref,
+                   (unit) ref,
+                   (((word64) ref, (bool) ref) tuple,
+                    ((word64) ref, (bool) ref) tuple) tuple) tuple) ref)
+    val x_318:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       (bufferMode_0) ref,
+       (unit) ref,
+       (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple =
+      prim Ref_deref[((((word64) ref, (bool) ref) tuple,
+                       ((word64) ref, (bool) ref) tuple) tuple,
+                      (bufferMode_0) ref,
+                      (unit) ref,
+                      (((word64) ref, (bool) ref) tuple,
+                       ((word64) ref, (bool) ref) tuple) tuple) tuple] (x_314)
+    val x_316: (bufferMode_0) ref = #1 (x_318)
+    val x_317:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      #0 (x_318)
+    val x_315: bufferMode_0 = prim Ref_deref[bufferMode_0] (x_316)
+    case x_315 of
+      BLOCK_BUF_1 => L_152 | LINE_BUF_1 => L_151
+  block L_151 (x_319: ((word8) array, (word32) ref) tuple)
+    val x_320:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_317, x_319)
+    call L_153 (flushBuf_0 (x_320)) handle _ => L_154
+  block L_154 (x_321: exn)
+    goto L_5 (x_321, x_269)
+  block L_152 (x_322: ((word8) array, (word32) ref) tuple)
+    val x_323:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_317, x_322)
+    call L_153 (flushBuf_0 (x_323)) handle _ => L_155
+  block L_155 (x_324: exn)
+    val x_326: (exn, (word8) vector) tuple = (x_324, global_47 (*"flushOut"*))
+    val x_325: exn = con Io_0 (x_326)
+    goto L_5 (x_325, x_269)
+  block L_153 ()
+    call L_156 (exit_0 (tuple_1, global_0 (*0x0:w32*))) handle _ => L_157
+  block L_157 ()
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (global_62 (*"Top-level ... n.\n"*))
+    val _: unit = prim MLton_halt (global_2 (*0x1:w32*))
+    val _: unit = prim MLton_bug (global_51 (*"MLton.Exit.halt"*))
+    bug
+  block L_156 ()
+    bug
+  block L_149 ()
+    goto L_130 (global_437 (*con Subscript_0*))
+  block L_142 ()
+    goto L_130 (global_396 (*con Overflow_0*))
+  block L_130 (x_327: exn)
+    val x_329: (exn, (word8) vector) tuple = (x_327, global_389 (*"output"*))
+    val x_328: exn = con Io_0 (x_329)
+    goto L_5 (x_328, x_269)
+  block L_123 ()
+    val _: unit = prim Array_update[word8] (x_257, x_259, global_28 (*0x0:w8*))
+    val x_330: word64 = prim Word64_add (x_259, global_7 (*0x1:w64*))
+    goto loop_20 (x_330)
+  block L_97 ()
+    goto L_5 (global_436 (*con Fail8_ ... _419)*), global_465 (*con xEnv_2*))
+  block L_95 ()
+    goto L_27 (global_408 (*con Overflow_0*))
+  block L_94 ()
+    goto L_27 (global_409 (*con Overflow_0*))
+  block L_73 ()
+    goto L_27 (global_408 (*con Overflow_0*))
+  block L_72 ()
+    goto L_27 (global_409 (*con Overflow_0*))
+  block L_51 ()
+    goto L_27 (global_408 (*con Overflow_0*))
+  block L_50 ()
+    goto L_27 (global_409 (*con Overflow_0*))
+  block L_29 ()
+    goto L_27 (global_406 (*con Overflow_0*))
+  block L_27 (x_331: exn)
+    val x_333: word32 = prim Thread_atomicState ()
+    val x_332: bool = prim Word32_equal (x_333, global_0 (*0x0:w32*))
+    case x_332 of
+      true => L_159 | false => L_158
+  block L_158 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto L_5 (x_331, global_465 (*con xEnv_2*))
+  block L_159 ()
+    goto L_5 (global_435 (*con Fail8_ ... _419)*), global_465 (*con xEnv_2*))
+  block L_24 ()
+    val x_336: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_335: word32 = prim Thread_atomicState ()
+    val x_334: bool = prim Word32_equal (x_335, global_0 (*0x0:w32*))
+    case x_334 of
+      true => L_161 | false => L_160
+  block L_160 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_339: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_336)
+    val x_338: cpointer = prim CPointer_fromWord (x_339)
+    val x_337: bool = prim CPointer_equal (x_338, global_36 (*NULL*))
+    case x_337 of
+      true => L_163 | false => L_162
+  block L_162 ()
+    goto loop_22 (global_0 (*0x0:w32*))
+  block loop_22 (x_340: word32)
+    val x_343: cpointer = prim CPointer_fromWord (x_339)
+    val x_342: word64 = prim WordS32_extdToWord64 (x_340)
+    val x_341: word8 = prim CPointer_getWord8 (x_343, x_342)
+    case8 x_341 of
+      0x0:w8 => L_164 | _ => L_165
+  block L_165 ()
+    val x_344: word32 = prim Word32_add (x_340, global_2 (*0x1:w32*))
+    goto loop_22 (x_344)
+  block L_164 ()
+    val x_346: word64 = prim WordS32_extdToWord64 (x_340)
+    val x_345: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_346)
+    case x_345 of
+      true => L_167 | false => L_166
+  block L_166 ()
+    val x_347: (word8) array = prim Array_alloc[word8] (x_346)
+    goto loop_23 (global_4 (*0x0:w64*))
+  block loop_23 (x_348: word64)
+    val x_349: bool = prim WordS64_lt (x_348, x_346)
+    case x_349 of
+      true => L_169 | false => L_168
+  block L_168 ()
+    val x_350: (word8) vector = prim Array_toVector[word8] (x_347)
+    goto L_170 (x_350)
+  block L_169 ()
+    val x_355: word32 = prim WordS64_extdToWord32 (x_348)
+    val x_354: cpointer = prim CPointer_fromWord (x_339)
+    val x_353: word64 = prim WordS32_extdToWord64 (x_355)
+    val x_352: word8 = prim CPointer_getWord8 (x_354, x_353)
+    val _: unit = prim Array_update[word8] (x_347, x_348, x_352)
+    val x_351: word64 = prim Word64_add (x_348, global_7 (*0x1:w64*))
+    goto loop_23 (x_351)
+  block L_167 ()
+    goto L_5 (global_418 (*con Size_0*), global_465 (*con xEnv_2*))
+  block L_163 ()
+    goto L_170 (global_37 (*"Unknown error"*))
+  block L_170 (x_356: (word8) vector)
+    val x_359: t_0 = con SOME_0 (x_336)
+    val x_358: ((word8) vector, t_0) tuple = (x_356, x_359)
+    val x_357: exn = con SysErr_0 (x_358)
+    goto L_5 (x_357, global_465 (*con xEnv_2*))
+  block L_161 ()
+    goto L_5 (global_434 (*con Fail8_ ... _419)*), global_465 (*con xEnv_2*))
+  block L_5 (x_361: exn, x_360: lambdas_1)
+    case x_360 of
+      xEnv_2 => L_173 | xEnv_0 => L_172 | defaultTopLevelHandlerEnv_0 => L_171
+  block L_171 (env_0:
+                 ((list_0) ref, ((bool) ref, (list_1) ref, (word8) array) tuple) tuple)
+    val exnMessage_0: (list_0) ref = #0 (env_0)
+    val exit_1: ((bool) ref, (list_1) ref, (word8) array) tuple = #1 (env_0)
+    call L_174 (exnMessage_1 (exnMessage_0, x_361)) handle _ => L_175
+  block L_174 (x_362: (word8) vector)
+    val x_366: ((word8) vector, list_3) tuple =
+      (x_362, global_462 (*con ::_1 ( ... _461)*))
+    val x_365: list_3 = con ::_1 (x_366)
+    val x_364: ((word8) vector, list_3) tuple =
+      (global_384 (*"unhandled ... on: "*), x_365)
+    val x_363: list_3 = con ::_1 (x_364)
+    call print_0 (concat_0 (x_363)) handle _ => L_175
+  block print_0 (x_367: (word8) vector)
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (x_367)
+    call L_176 (exit_0 (exit_1, global_2 (*0x1:w32*))) handle _ => L_175
+  block L_175 ()
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (global_385 (*"Top-level ... n.\n"*))
+    val _: unit = prim MLton_halt (global_2 (*0x1:w32*))
+    val _: unit = prim MLton_bug (global_51 (*"MLton.Exit.halt"*))
+    bug
+  block L_176 ()
+    bug
+  block L_172 ()
+    val _: unit = prim MLton_bug (global_392 (*"toplevel  ... lled"*))
+    bug
+  block L_173 ()
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (global_384 (*"unhandled ... on: "*))
+    case x_361 of
+      Fail8_0 => L_177 | _ => L_178
+  block L_178 ()
+    case x_361 of
+      Io_0 => L_186
+    | ClosedStream_0 => L_185
+    | SysErr_0 => L_184
+    | Fail_0 => L_183
+    | Subscript_0 => L_182
+    | Size_0 => L_181
+    | Overflow_0 => L_180
+    | Fail8_0 => L_179
+  block L_179 (x_368: (word8) vector)
+    goto print_1 (global_375 (*"Fail8"*))
+  block L_180 ()
+    goto print_1 (global_376 (*"Overflow"*))
+  block L_181 ()
+    goto print_1 (global_377 (*"Size"*))
+  block L_182 ()
+    goto print_1 (global_378 (*"Subscript"*))
+  block L_183 (x_369: (word8) vector)
+    goto print_1 (global_379 (*"Fail"*))
+  block L_184 (x_370: ((word8) vector, t_0) tuple)
+    goto print_1 (global_380 (*"SysErr"*))
+  block L_185 ()
+    goto print_1 (global_381 (*"ClosedStream"*))
+  block L_186 (x_371: (exn, (word8) vector) tuple)
+    goto print_1 (global_382 (*"Io"*))
+  block print_1 (x_372: (word8) vector)
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (x_372)
+    goto print_2 ()
+  block L_177 (x_373: (word8) vector)
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (global_386 (*"Fail "*))
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (x_373)
+    goto print_2 ()
+  block print_2 ()
+    val _: unit =
+      prim CFunction {args = ((word8) vector),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Objptr), res = None},
+                      return = unit,
+                      symbolScope = private,
+                      target = Stdio_print} (global_383 (*"\n"*))
+    val _: unit = prim MLton_bug (global_387 (*"unhandled ... rary"*))
+    bug
+  block L_19 ()
+    val x_374: word64 = prim Word64_add (x_35, global_7 (*0x1:w64*))
+    goto loop_9 (x_374)
+  block L_17 ()
+    val _: unit = prim Array_update[word8] (x_31, x_33, global_28 (*0x0:w8*))
+    val x_375: word64 = prim Word64_add (x_33, global_7 (*0x1:w64*))
+    goto loop_8 (x_375)
+  block L_15 ()
+    val _: unit = prim Array_update[word8] (x_27, x_29, global_28 (*0x0:w8*))
+    val x_376: word64 = prim Word64_add (x_29, global_7 (*0x1:w64*))
+    goto loop_7 (x_376)
+  block L_13 ()
+    val x_377: word64 = prim Word64_add (x_25, global_7 (*0x1:w64*))
+    goto loop_6 (x_377)
+  block L_11 ()
+    val x_379: word32 = prim WordS64_extdToWord32 (x_23)
+    val x_378: word8 = prim WordS32_extdToWord8 (x_379)
+    goto loop_24 (global_416 (*con ::_0 ( ... _415)*))
+  block loop_24 (x_380: list_7)
+    case x_380 of
+      nil_1 => L_188 | ::_0 => L_187
+  block L_187 (x_381: ((word32, word32, word8, word8) tuple, list_7) tuple)
+    val x_384: list_7 = #1 (x_381)
+    val x_383: (word32, word32, word8, word8) tuple = #0 (x_381)
+    val cmax_0: word8 = #2 (x_383)
+    val cmin_0: word8 = #3 (x_383)
+    val x_382: bool = prim WordU8_lt (x_378, cmin_0)
+    case x_382 of
+      true => L_190 | false => L_189
+  block L_189 ()
+    val x_385: bool = prim WordU8_lt (cmax_0, x_378)
+    case x_385 of
+      true => L_190 | false => L_188
+  block L_190 ()
+    goto loop_24 (x_384)
+  block L_188 ()
+    val x_386: word64 = prim Word64_add (x_23, global_7 (*0x1:w64*))
+    goto loop_5 (x_386)
+  block L_10 ()
+    val x_387: word64 = prim Word64_add (x_21, global_7 (*0x1:w64*))
+    goto loop_4 (x_387)
+  block L_9 ()
+    val x_388: word64 = prim Word64_add (x_19, global_7 (*0x1:w64*))
+    goto loop_3 (x_388)
+  block L_8 ()
+    val x_389: word64 = prim Word64_add (x_17, global_7 (*0x1:w64*))
+    goto loop_2 (x_389)
+fun exnMessage_1 (env_1: (list_0) ref, x_390: exn):
+  {returns = Some ((word8) vector), raises = Some ()} =
+L_191 ()
+  block L_191 ()
+    val x_391: list_0 = prim Ref_deref[list_0] (env_1)
+    goto loop_25 (x_391)
+  block loop_25 (x_392: list_0)
+    case x_392 of
+      nil_5 => L_193 | ::_7 => L_192
+  block L_192 (x_393: (lambdas_0, list_0) tuple)
+    val x_395: list_0 = #1 (x_393)
+    val x_394: lambdas_0 = #0 (x_393)
+    case x_394 of
+      xEnv_5 => L_196 | xEnv_4 => L_195 | xEnv_6 => L_194
+  block L_194 (env_2: (list_0) ref)
+    case x_390 of
+      Io_0 => L_197 | _ => L_198
+  block L_198 ()
+    goto loop_25 (x_395)
+  block L_197 (x_396: (exn, (word8) vector) tuple)
+    val x_398: (word8) vector = #1 (x_396)
+    val x_397: exn = #0 (x_396)
+    call L_199 (exnMessage_1 (env_2, x_397)) handle _ => raise
+  block L_199 (x_399: (word8) vector)
+    val x_411: ((word8) vector, list_3) tuple =
+      (x_399, global_454 (*con nil_3*))
+    val x_410: list_3 = con ::_1 (x_411)
+    val x_409: ((word8) vector, list_3) tuple =
+      (global_63 (*"\" failed with "*), x_410)
+    val x_408: list_3 = con ::_1 (x_409)
+    val x_407: ((word8) vector, list_3) tuple =
+      (global_46 (*"<stdout>"*), x_408)
+    val x_406: list_3 = con ::_1 (x_407)
+    val x_405: ((word8) vector, list_3) tuple = (global_64 (*" \""*), x_406)
+    val x_404: list_3 = con ::_1 (x_405)
+    val x_403: ((word8) vector, list_3) tuple = (x_398, x_404)
+    val x_402: list_3 = con ::_1 (x_403)
+    val x_401: ((word8) vector, list_3) tuple = (global_65 (*"Io: "*), x_402)
+    val x_400: list_3 = con ::_1 (x_401)
+    call tail concat_0 (x_400)
+  block L_195 ()
+    case x_390 of
+      Fail_0 => L_200 | _ => L_201
+  block L_201 ()
+    goto loop_25 (x_395)
+  block L_200 (x_412: (word8) vector)
+    val x_416: ((word8) vector, list_3) tuple =
+      (x_412, global_453 (*con nil_3*))
+    val x_415: list_3 = con ::_1 (x_416)
+    val x_414: ((word8) vector, list_3) tuple = (global_66 (*"Fail: "*), x_415)
+    val x_413: list_3 = con ::_1 (x_414)
+    call tail concat_0 (x_413)
+  block L_196 ()
+    case x_390 of
+      SysErr_0 => L_202 | _ => L_203
+  block L_203 ()
+    goto loop_25 (x_395)
+  block L_202 (x_417: ((word8) vector, t_0) tuple)
+    val x_419: t_0 = #1 (x_417)
+    val x_418: (word8) vector = #0 (x_417)
+    case x_419 of
+      SOME_0 => L_204
+  block L_204 (x_420: word32)
+    goto loop_26 (global_458 (*con ::_2 ( ... _457)*))
+  block loop_26 (x_421: list_6)
+    case x_421 of
+      nil_4 => L_206 | ::_2 => L_205
+  block L_205 (x_422: ((word32, (word8) vector) tuple, list_6) tuple)
+    val x_425: list_6 = #1 (x_422)
+    val x_424: (word32, (word8) vector) tuple = #0 (x_422)
+    val m_0: word32 = #0 (x_424)
+    val x_423: bool = prim Word32_equal (x_420, m_0)
+    case x_423 of
+      true => L_208 | false => L_207
+  block L_207 ()
+    goto loop_26 (x_425)
+  block L_208 ()
+    val x_426: (word8) vector = #1 (x_424)
+    goto L_209 (x_426)
+  block L_206 ()
+    goto L_209 (global_371 (*"<UNKNOWN>"*))
+  block L_209 (x_427: (word8) vector)
+    val x_431: ((word8) vector, list_3) tuple =
+      (x_427, global_460 (*con ::_1 ( ... _459)*))
+    val x_430: list_3 = con ::_1 (x_431)
+    val x_429: ((word8) vector, list_3) tuple = (global_373 (*" ["*), x_430)
+    val x_428: list_3 = con ::_1 (x_429)
+    call L_210 (concat_0 (x_428)) handle _ => raise
+  block L_210 (x_432: (word8) vector)
+    val x_438: ((word8) vector, list_3) tuple =
+      (x_432, global_452 (*con nil_3*))
+    val x_437: list_3 = con ::_1 (x_438)
+    val x_436: ((word8) vector, list_3) tuple = (x_418, x_437)
+    val x_435: list_3 = con ::_1 (x_436)
+    val x_434: ((word8) vector, list_3) tuple =
+      (global_374 (*"SysErr: "*), x_435)
+    val x_433: list_3 = con ::_1 (x_434)
+    call tail concat_0 (x_433)
+  block L_193 ()
+    case x_390 of
+      Io_0 => L_218
+    | ClosedStream_0 => L_217
+    | SysErr_0 => L_216
+    | Fail_0 => L_215
+    | Subscript_0 => L_214
+    | Size_0 => L_213
+    | Overflow_0 => L_212
+    | Fail8_0 => L_211
+  block L_211 (x_439: (word8) vector)
+    return (global_375 (*"Fail8"*))
+  block L_212 ()
+    return (global_376 (*"Overflow"*))
+  block L_213 ()
+    return (global_377 (*"Size"*))
+  block L_214 ()
+    return (global_378 (*"Subscript"*))
+  block L_215 (x_440: (word8) vector)
+    return (global_379 (*"Fail"*))
+  block L_216 (x_441: ((word8) vector, t_0) tuple)
+    return (global_380 (*"SysErr"*))
+  block L_217 ()
+    return (global_381 (*"ClosedStream"*))
+  block L_218 (x_442: (exn, (word8) vector) tuple)
+    return (global_382 (*"Io"*))
+fun exit_0 (env_3: ((bool) ref, (list_1) ref, (word8) array) tuple,
+            x_443: word32):
+  {returns = None, raises = Some ()} =
+L_219 ()
+  block L_219 ()
+    val exiting_1: (bool) ref = #0 (env_3)
+    val atExit_0: (list_1) ref = #1 (env_3)
+    val x_445: (word8) array = #2 (env_3)
+    val x_444: bool = prim Ref_deref[bool] (exiting_1)
+    case x_444 of
+      true => L_221 | false => L_220
+  block L_220 ()
+    val _: unit = prim Ref_assign[bool] (exiting_1, global_417 (*con true*))
+    val x_446: bool = prim WordS32_lt (x_443, global_0 (*0x0:w32*))
+    case x_446 of
+      true => L_223 | false => L_222
+  block L_222 ()
+    val x_447: bool = prim WordS32_lt (x_443, global_49 (*0x100:w32*))
+    case x_447 of
+      true => L_224 | false => L_223
+  block L_224 ()
+    val x_448: list_1 = prim Ref_deref[list_1] (atExit_0)
+    goto loop_27 (x_448)
+  block loop_27 (x_449: list_1)
+    case x_449 of
+      nil_6 => L_226 | ::_6 => L_225
+  block L_225 (x_450: ((list_4) ref, list_1) tuple)
+    val x_453: list_1 = #1 (x_450)
+    val x_452: (list_4) ref = #0 (x_450)
+    val x_451: list_4 = prim Ref_deref[list_4] (x_452)
+    goto loop_28 (x_451)
+  block loop_28 (x_454: list_4)
+    case x_454 of
+      nil_7 => L_228 | ::_5 => L_227
+  block L_227 (x_455:
+                 (((((word64) ref, (bool) ref) tuple,
+                    ((word64) ref, (bool) ref) tuple) tuple,
+                   (bufferMode_0) ref,
+                   (unit) ref,
+                   (((word64) ref, (bool) ref) tuple,
+                    ((word64) ref, (bool) ref) tuple) tuple) tuple,
+                  list_4) tuple)
+    val x_460: list_4 = #1 (x_455)
+    val x_459:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       (bufferMode_0) ref,
+       (unit) ref,
+       (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple) tuple =
+      #0 (x_455)
+    val x_457: (bufferMode_0) ref = #1 (x_459)
+    val x_458:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      #0 (x_459)
+    val x_456: bufferMode_0 = prim Ref_deref[bufferMode_0] (x_457)
+    case x_456 of
+      BLOCK_BUF_1 => L_230 | LINE_BUF_1 => L_229
+  block L_229 (x_461: ((word8) array, (word32) ref) tuple)
+    val x_462:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_458, x_461)
+    call L_231 (flushBuf_0 (x_462)) handle _ => L_232
+  block L_232 (x_463: exn)
+    goto loop_27 (x_453)
+  block L_230 (x_464: ((word8) array, (word32) ref) tuple)
+    val x_465:
+      ((((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple,
+       ((word8) array, (word32) ref) tuple) tuple =
+      (x_458, x_464)
+    call L_231 (flushBuf_0 (x_465)) handle _ => L_233
+  block L_233 (x_466: exn)
+    goto loop_27 (x_453)
+  block L_231 ()
+    goto loop_28 (x_460)
+  block L_228 ()
+    goto loop_27 (x_453)
+  block L_226 ()
+    val _: unit = prim MLton_halt (x_443)
+    val _: unit = prim MLton_bug (global_51 (*"MLton.Exit.halt"*))
+    bug
+  block L_223 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_468: word8 = prim Ref_deref[word8] (global_484)
+    val x_467: bool = prim Word8_equal (x_468, global_28 (*0x0:w8*))
+    case x_467 of
+      true => L_235 | false => L_234
+  block L_234 ()
+    goto L_236 (global_395 (*con false*))
+  block L_235 ()
+    val x_470: word8 =
+      prim Ref_cas[word8] (global_484,
+                           global_28 (*0x0:w8*),
+                           global_52 (*0x1:w8*))
+    val x_469: bool = prim Word8_equal (global_28 (*0x0:w8*), x_470)
+    goto L_236 (x_469)
+  block L_236 (x_471: bool)
+    case x_471 of
+      true => L_238 | false => L_237
+  block L_237 ()
+    val x_473: word32 = prim Thread_atomicState ()
+    val x_472: bool = prim Word32_equal (x_473, global_0 (*0x0:w32*))
+    case x_472 of
+      true => L_240 | false => L_239
+  block L_239 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_475: word64 = 0x21:w64
+    val x_474: (word8) array = prim Array_alloc[word8] (x_475)
+    goto loop_29 (global_4 (*0x0:w64*))
+  block loop_29 (x_476: word64)
+    val x_477: bool = prim WordS64_lt (x_476, x_475)
+    case x_477 of
+      true => L_242 | false => L_241
+  block L_241 ()
+    goto L_243 (x_474)
+  block L_242 ()
+    val _: unit = prim Array_update[word8] (x_474, x_476, global_28 (*0x0:w8*))
+    val x_478: word64 = prim Word64_add (x_476, global_7 (*0x1:w64*))
+    goto loop_29 (x_478)
+  block L_240 ()
+    raise ()
+  block L_238 ()
+    val x_480: word32 = prim Thread_atomicState ()
+    val x_479: bool = prim Word32_equal (x_480, global_0 (*0x0:w32*))
+    case x_479 of
+      true => L_245 | false => L_244
+  block L_244 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto L_243 (x_445)
+  block L_243 (x_481: (word8) array)
+    val x_482: bool = prim WordS32_lt (x_443, global_0 (*0x0:w32*))
+    case x_482 of
+      true => L_247 | false => L_246
+  block L_246 ()
+    val x_483: word32 = prim Word32_neg (x_443)
+    goto loop_30 (x_483, global_33 (*0x20:w32*))
+  block L_247 ()
+    goto loop_30 (x_443, global_33 (*0x20:w32*))
+  block loop_30 (x_485: word32, x_484: word32)
+    val x_489: word32 = prim WordS32_rem (x_485, global_14 (*0xA:w32*))
+    val x_488: word32 = prim Word32_neg (x_489)
+    val x_487: word64 = prim WordS32_extdToWord64 (x_488)
+    val x_486: bool = prim WordU64_lt (x_487, global_53 (*0x10:w64*))
+    case x_486 of
+      true => L_249 | false => L_248
+  block L_249 ()
+    val x_493: word8 =
+      prim Vector_sub[word8] (global_54 (*"0123456789ABCDEF"*), x_487)
+    val x_491: word64 = prim Array_length[word8] (x_481)
+    val x_492: word64 = prim WordS32_extdToWord64 (x_484)
+    val x_490: bool = prim WordU64_lt (x_492, x_491)
+    case x_490 of
+      true => L_250 | false => L_248
+  block L_250 ()
+    val _: unit = prim Array_update[word8] (x_481, x_492, x_493)
+    val x_495: word32 = prim WordS32_quot (x_485, global_14 (*0xA:w32*))
+    val x_494: bool = prim Word32_equal (x_495, global_0 (*0x0:w32*))
+    case x_494 of
+      true => L_252 | false => L_251
+  block L_251 ()
+    val x_497: word32 = prim Word32_sub (x_484, global_2 (*0x1:w32*))
+    val x_496: bool = prim WordS32_subCheckP (x_484, global_2 (*0x1:w32*))
+    case x_496 of
+      true => L_248 | false => L_253
+  block L_253 ()
+    goto loop_30 (x_495, x_497)
+  block L_252 ()
+    val x_498: bool = prim WordS32_lt (x_443, global_0 (*0x0:w32*))
+    case x_498 of
+      true => L_255 | false => L_254
+  block L_254 ()
+    goto L_256 (x_484)
+  block L_255 ()
+    val x_500: word32 = prim Word32_sub (x_484, global_2 (*0x1:w32*))
+    val x_499: bool = prim WordS32_subCheckP (x_484, global_2 (*0x1:w32*))
+    case x_499 of
+      true => L_248 | false => L_257
+  block L_257 ()
+    val x_502: word64 = prim Array_length[word8] (x_481)
+    val x_503: word64 = prim WordS32_extdToWord64 (x_500)
+    val x_501: bool = prim WordU64_lt (x_503, x_502)
+    case x_501 of
+      true => L_258 | false => L_248
+  block L_258 ()
+    val _: unit = prim Array_update[word8] (x_481, x_503, global_55 (*0x7E:w8*))
+    goto L_256 (x_500)
+  block L_256 (x_504: word32)
+    val x_507: word64 = prim Array_length[word8] (x_481)
+    val x_506: word64 = prim WordS32_extdToWord64 (x_504)
+    val x_505: bool = prim WordU64_lt (x_507, x_506)
+    case x_505 of
+      true => L_260 | false => L_259
+  block L_259 ()
+    val x_509: word64 = prim Word64_sub (x_507, x_506)
+    val x_510: (word8) array = prim Array_alloc[word8] (x_509)
+    val x_508: bool = prim WordS64_lt (x_509, global_39 (*0x5:w64*))
+    case x_508 of
+      true => L_262 | false => L_261
+  block L_261 ()
+    val _: unit =
+      prim Array_copyArray[word8] (x_510,
+                                   global_4 (*0x0:w64*),
+                                   x_481,
+                                   x_506,
+                                   x_509)
+    goto L_263 ()
+  block L_262 ()
+    val x_511: word64 = prim Word64_sub (x_509, global_7 (*0x1:w64*))
+    goto loop_31 (global_4 (*0x0:w64*))
+  block loop_31 (x_512: word64)
+    val x_513: bool = prim WordS64_lt (x_511, x_512)
+    case x_513 of
+      true => L_263 | false => L_264
+  block L_264 ()
+    val x_516: word64 = prim Word64_add (x_506, x_512)
+    val x_515: word8 = prim Array_sub[word8] (x_481, x_516)
+    val _: unit = prim Array_update[word8] (x_510, x_512, x_515)
+    val x_514: word64 = prim Word64_add (x_512, global_7 (*0x1:w64*))
+    goto loop_31 (x_514)
+  block L_263 ()
+    val x_517: (word8) vector = prim Array_toVector[word8] (x_510)
+    case x_471 of
+      true => L_266 | false => L_265
+  block L_266 ()
+    val _: unit = prim Ref_assign[word8] (global_484, global_28 (*0x0:w8*))
+    goto L_265 ()
+  block L_265 ()
+    val x_521: ((word8) vector, list_3) tuple =
+      (x_517, global_456 (*con ::_1 ( ... _455)*))
+    val x_520: list_3 = con ::_1 (x_521)
+    val x_519: ((word8) vector, list_3) tuple =
+      (global_61 (*"MLton.Exit.exit("*), x_520)
+    val x_518: list_3 = con ::_1 (x_519)
+    call L_267 (concat_0 (x_518)) handle _ => raise
+  block L_267 (x_522: (word8) vector)
+    raise ()
+  block L_260 ()
+    goto x_523 (x_471)
+  block L_248 ()
+    goto x_523 (x_471)
+  block x_523 (env_4: bool)
+    case env_4 of
+      true => L_269 | false => L_268
+  block L_268 ()
+    raise ()
+  block L_269 ()
+    val _: unit = prim Ref_assign[word8] (global_484, global_28 (*0x0:w8*))
+    raise ()
+  block L_245 ()
+    raise ()
+  block L_221 ()
+    raise ()
+fun concat_0 (x_524: list_3):
+  {returns = Some ((word8) vector), raises = Some ()} =
+L_270 ()
+  block L_270 ()
+    case x_524 of
+      nil_3 => L_272 | ::_1 => L_271
+  block L_271 (x_525: ((word8) vector, list_3) tuple)
+    val x_527: list_3 = #1 (x_525)
+    val x_526: (word8) vector = #0 (x_525)
+    case x_527 of
+      nil_3 => L_273 | _ => L_274
+  block L_274 ()
+    goto loop_32 (x_524, global_4 (*0x0:w64*))
+  block loop_32 (x_529: list_3, x_528: word64)
+    case x_529 of
+      nil_3 => L_276 | ::_1 => L_275
+  block L_275 (x_530: ((word8) vector, list_3) tuple)
+    val x_535: list_3 = #1 (x_530)
+    val x_534: (word8) vector = #0 (x_530)
+    val x_532: word64 = prim Vector_length[word8] (x_534)
+    val x_533: word64 = prim Word64_add (x_528, x_532)
+    val x_531: bool = prim WordS64_addCheckP (x_528, x_532)
+    case x_531 of
+      true => L_278 | false => L_277
+  block L_277 ()
+    goto loop_32 (x_535, x_533)
+  block L_278 ()
+    raise ()
+  block L_276 ()
+    val x_536: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_528)
+    case x_536 of
+      true => L_280 | false => L_279
+  block L_279 ()
+    val x_537: (word8) array = prim Array_alloc[word8] (x_528)
+    goto loop_33 (global_4 (*0x0:w64*), x_524)
+  block loop_33 (x_539: word64, x_538: list_3)
+    case x_538 of
+      nil_3 => L_282 | ::_1 => L_281
+  block L_281 (x_540: ((word8) vector, list_3) tuple)
+    val x_544: list_3 = #1 (x_540)
+    val x_543: (word8) vector = #0 (x_540)
+    val x_542: word64 = prim Vector_length[word8] (x_543)
+    val x_541: bool = prim WordS64_lt (x_542, global_39 (*0x5:w64*))
+    case x_541 of
+      true => L_284 | false => L_283
+  block L_283 ()
+    val _: unit =
+      prim Array_copyVector[word8] (x_537,
+                                    x_539,
+                                    x_543,
+                                    global_4 (*0x0:w64*),
+                                    x_542)
+    goto L_285 ()
+  block L_284 ()
+    val x_545: word64 = prim Word64_sub (x_542, global_7 (*0x1:w64*))
+    goto loop_34 (global_4 (*0x0:w64*))
+  block loop_34 (x_546: word64)
+    val x_547: bool = prim WordS64_lt (x_545, x_546)
+    case x_547 of
+      true => L_285 | false => L_286
+  block L_286 ()
+    val x_550: word64 = prim Word64_add (x_539, x_546)
+    val x_549: word8 = prim Vector_sub[word8] (x_543, x_546)
+    val _: unit = prim Array_update[word8] (x_537, x_550, x_549)
+    val x_548: word64 = prim Word64_add (x_546, global_7 (*0x1:w64*))
+    goto loop_34 (x_548)
+  block L_285 ()
+    val x_551: word64 = prim Word64_add (x_539, x_542)
+    goto loop_33 (x_551, x_544)
+  block L_282 ()
+    val x_552: (word8) vector = prim Array_toVector[word8] (x_537)
+    return (x_552)
+  block L_280 ()
+    raise ()
+  block L_273 ()
+    val x_555: word64 = prim Vector_length[word8] (x_526)
+    val x_554: word64 = prim Vector_length[word8] (x_526)
+    val x_553: bool = prim Word64_equal (x_555, x_554)
+    case x_553 of
+      true => L_288 | false => L_287
+  block L_287 ()
+    val x_556: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_555)
+    case x_556 of
+      true => L_290 | false => L_289
+  block L_289 ()
+    val x_558: (word8) array = prim Array_alloc[word8] (x_555)
+    val _: unit =
+      prim Array_copyVector[word8] (x_558,
+                                    global_4 (*0x0:w64*),
+                                    x_526,
+                                    global_4 (*0x0:w64*),
+                                    x_555)
+    val x_557: (word8) vector = prim Array_toVector[word8] (x_558)
+    return (x_557)
+  block L_290 ()
+    raise ()
+  block L_288 ()
+    return (x_526)
+  block L_272 ()
+    return (global_48 (*""*))
+fun put_0 (env_5:
+             (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple):
+  {returns = Some (), raises = Some (exn)} =
+L_291 ()
+  block L_291 ()
+    val #_0: ((word64) ref, (bool) ref) tuple = #1 (env_5)
+    val x_560: word32 = 0x0:w32
+    val x_559: word32 = 0x6:w32
+    goto loop_35 (x_560)
+  block loop_35 (x_561: word32)
+    val x_562: bool = prim Word32_equal (x_561, x_559)
+    case x_562 of
+      true => L_293 | false => L_292
+  block L_292 ()
+    val x_564: word32 = prim Word32_sub (x_559, x_561)
+    val x_563: bool = prim WordS32_subCheckP (x_559, x_561)
+    case x_563 of
+      true => L_295 | false => L_294
+  block L_294 ()
+    val x_566: word64 = prim WordS32_extdToWord64 (x_561)
+    val x_567: word64 = prim WordS32_extdToWord64 (x_564)
+    val x_565: bool = prim WordU64_lt (global_45 (*0x6:w64*), x_566)
+    case x_565 of
+      true => L_297 | false => L_296
+  block L_296 ()
+    val x_569: word64 = prim Word64_sub (global_45 (*0x6:w64*), x_566)
+    val x_568: bool = prim WordU64_lt (x_569, x_567)
+    case x_568 of
+      true => L_297 | false => L_298
+  block L_298 ()
+    val putV_0: (word64) ref = #0 (#_0)
+    val closed_1: (bool) ref = #1 (#_0)
+    val x_570: bool = prim Ref_deref[bool] (closed_1)
+    case x_570 of
+      true => L_300 | false => L_299
+  block L_299 ()
+    val x_573: word32 = prim WordS64_extdToWord32 (x_566)
+    val x_572: word64 = prim WordS32_extdToWord64 (x_573)
+    val x_571: bool = prim Word64_equal (x_566, x_572)
+    case x_571 of
+      true => L_302 | false => L_301
+  block L_302 ()
+    val x_576: word32 = prim WordS64_extdToWord32 (x_567)
+    val x_575: word64 = prim WordS32_extdToWord64 (x_576)
+    val x_574: bool = prim Word64_equal (x_567, x_575)
+    case x_574 of
+      true => L_303 | false => L_301
+  block L_301 ()
+    raise (global_442 (*con Fail_0 ... _441)*))
+  block L_303 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_579: word64 = prim WordS32_extdToWord64 (x_576)
+    val x_578: word64 =
+      prim CFunction {args = (word32, (word8) vector, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Vec} (global_2 (*0x1:w32*),
+                                                        global_40 (*"hello\n"*),
+                                                        x_573,
+                                                        x_579)
+    val x_577: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_578)
+    case x_577 of
+      true => L_305 | false => L_304
+  block L_304 ()
+    val x_581: word32 = prim Thread_atomicState ()
+    val x_580: bool = prim Word32_equal (x_581, global_0 (*0x0:w32*))
+    case x_580 of
+      true => L_307 | false => L_306
+  block L_306 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_582 (x_578)
+  block L_307 ()
+    raise (global_425 (*con Fail8_ ... _419)*))
+  block L_305 ()
+    val x_585: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_584: word32 = prim Thread_atomicState ()
+    val x_583: bool = prim Word32_equal (x_584, global_0 (*0x0:w32*))
+    case x_583 of
+      true => L_309 | false => L_308
+  block L_308 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto loop_36 (x_585)
+  block loop_36 (x_586: word32)
+    val x_587: bool = prim Word32_equal (x_586, global_42 (*0x4:w32*))
+    case x_587 of
+      true => L_311 | false => L_310
+  block L_310 ()
+    val x_590: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_586)
+    val x_589: cpointer = prim CPointer_fromWord (x_590)
+    val x_588: bool = prim CPointer_equal (x_589, global_36 (*NULL*))
+    case x_588 of
+      true => L_313 | false => L_312
+  block L_312 ()
+    goto loop_37 (global_0 (*0x0:w32*))
+  block loop_37 (x_591: word32)
+    val x_594: cpointer = prim CPointer_fromWord (x_590)
+    val x_593: word64 = prim WordS32_extdToWord64 (x_591)
+    val x_592: word8 = prim CPointer_getWord8 (x_594, x_593)
+    case8 x_592 of
+      0x0:w8 => L_314 | _ => L_315
+  block L_315 ()
+    val x_595: word32 = prim Word32_add (x_591, global_2 (*0x1:w32*))
+    goto loop_37 (x_595)
+  block L_314 ()
+    val x_597: word64 = prim WordS32_extdToWord64 (x_591)
+    val x_596: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_597)
+    case x_596 of
+      true => L_317 | false => L_316
+  block L_316 ()
+    val x_598: (word8) array = prim Array_alloc[word8] (x_597)
+    goto loop_38 (global_4 (*0x0:w64*))
+  block loop_38 (x_599: word64)
+    val x_600: bool = prim WordS64_lt (x_599, x_597)
+    case x_600 of
+      true => L_319 | false => L_318
+  block L_318 ()
+    val x_601: (word8) vector = prim Array_toVector[word8] (x_598)
+    goto L_320 (x_601)
+  block L_319 ()
+    val x_606: word32 = prim WordS64_extdToWord32 (x_599)
+    val x_605: cpointer = prim CPointer_fromWord (x_590)
+    val x_604: word64 = prim WordS32_extdToWord64 (x_606)
+    val x_603: word8 = prim CPointer_getWord8 (x_605, x_604)
+    val _: unit = prim Array_update[word8] (x_598, x_599, x_603)
+    val x_602: word64 = prim Word64_add (x_599, global_7 (*0x1:w64*))
+    goto loop_38 (x_602)
+  block L_317 ()
+    raise (global_418 (*con Size_0*))
+  block L_313 ()
+    goto L_320 (global_37 (*"Unknown error"*))
+  block L_320 (x_607: (word8) vector)
+    val x_610: t_0 = con SOME_0 (x_586)
+    val x_609: ((word8) vector, t_0) tuple = (x_607, x_610)
+    val x_608: exn = con SysErr_0 (x_609)
+    raise (x_608)
+  block L_311 ()
+    val x_612: word32 = prim Thread_atomicState ()
+    val x_611: bool = prim Word32_equal (x_612, global_0 (*0x0:w32*))
+    case x_611 of
+      true => L_322 | false => L_321
+  block L_321 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_615: word64 = prim WordS32_extdToWord64 (x_576)
+    val x_614: word64 =
+      prim CFunction {args = (word32, (word8) vector, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Vec} (global_2 (*0x1:w32*),
+                                                        global_40 (*"hello\n"*),
+                                                        x_573,
+                                                        x_615)
+    val x_613: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_614)
+    case x_613 of
+      true => L_324 | false => L_323
+  block L_323 ()
+    val x_617: word32 = prim Thread_atomicState ()
+    val x_616: bool = prim Word32_equal (x_617, global_0 (*0x0:w32*))
+    case x_616 of
+      true => L_326 | false => L_325
+  block L_325 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_582 (x_614)
+  block L_326 ()
+    raise (global_424 (*con Fail8_ ... _419)*))
+  block L_324 ()
+    val x_620: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_619: word32 = prim Thread_atomicState ()
+    val x_618: bool = prim Word32_equal (x_619, global_0 (*0x0:w32*))
+    case x_618 of
+      true => L_328 | false => L_327
+  block L_327 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_623: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_620)
+    val x_622: cpointer = prim CPointer_fromWord (x_623)
+    val x_621: bool = prim CPointer_equal (x_622, global_36 (*NULL*))
+    case x_621 of
+      true => L_330 | false => L_329
+  block L_329 ()
+    goto loop_39 (global_0 (*0x0:w32*))
+  block loop_39 (x_624: word32)
+    val x_627: cpointer = prim CPointer_fromWord (x_623)
+    val x_626: word64 = prim WordS32_extdToWord64 (x_624)
+    val x_625: word8 = prim CPointer_getWord8 (x_627, x_626)
+    case8 x_625 of
+      0x0:w8 => L_331 | _ => L_332
+  block L_332 ()
+    val x_628: word32 = prim Word32_add (x_624, global_2 (*0x1:w32*))
+    goto loop_39 (x_628)
+  block L_331 ()
+    val x_630: word64 = prim WordS32_extdToWord64 (x_624)
+    val x_629: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_630)
+    case x_629 of
+      true => L_334 | false => L_333
+  block L_333 ()
+    val x_631: (word8) array = prim Array_alloc[word8] (x_630)
+    goto loop_40 (global_4 (*0x0:w64*))
+  block loop_40 (x_632: word64)
+    val x_633: bool = prim WordS64_lt (x_632, x_630)
+    case x_633 of
+      true => L_336 | false => L_335
+  block L_335 ()
+    val x_634: (word8) vector = prim Array_toVector[word8] (x_631)
+    goto L_337 (x_634)
+  block L_336 ()
+    val x_639: word32 = prim WordS64_extdToWord32 (x_632)
+    val x_638: cpointer = prim CPointer_fromWord (x_623)
+    val x_637: word64 = prim WordS32_extdToWord64 (x_639)
+    val x_636: word8 = prim CPointer_getWord8 (x_638, x_637)
+    val _: unit = prim Array_update[word8] (x_631, x_632, x_636)
+    val x_635: word64 = prim Word64_add (x_632, global_7 (*0x1:w64*))
+    goto loop_40 (x_635)
+  block L_334 ()
+    raise (global_418 (*con Size_0*))
+  block L_330 ()
+    goto L_337 (global_37 (*"Unknown error"*))
+  block L_337 (x_640: (word8) vector)
+    val x_643: t_0 = con SOME_0 (x_620)
+    val x_642: ((word8) vector, t_0) tuple = (x_640, x_643)
+    val x_641: exn = con SysErr_0 (x_642)
+    raise (x_641)
+  block L_328 ()
+    raise (global_423 (*con Fail8_ ... _419)*))
+  block L_322 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_646: word64 = prim WordS32_extdToWord64 (x_576)
+    val x_645: word64 =
+      prim CFunction {args = (word32, (word8) vector, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Vec} (global_2 (*0x1:w32*),
+                                                        global_40 (*"hello\n"*),
+                                                        x_573,
+                                                        x_646)
+    val x_644: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_645)
+    case x_644 of
+      true => L_339 | false => L_338
+  block L_338 ()
+    val x_648: word32 = prim Thread_atomicState ()
+    val x_647: bool = prim Word32_equal (x_648, global_0 (*0x0:w32*))
+    case x_647 of
+      true => L_341 | false => L_340
+  block L_340 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_582 (x_645)
+  block x_582 (x_649: word64)
+    val x_652: word32 = prim WordS64_extdToWord32 (x_649)
+    val x_651: word64 = prim WordS32_extdToWord64 (x_652)
+    val x_650: bool = prim Word64_equal (x_649, x_651)
+    case x_650 of
+      true => L_343 | false => L_342
+  block L_342 ()
+    raise (global_401 (*con Overflow_0*))
+  block L_343 ()
+    val x_655: word64 = prim Ref_deref[word64] (putV_0)
+    val x_654: word64 = prim WordS32_extdToWord64 (x_652)
+    val x_656: word64 = prim Word64_add (x_655, x_654)
+    val x_653: bool = prim WordS64_addCheckP (x_655, x_654)
+    case x_653 of
+      true => L_345 | false => L_344
+  block L_344 ()
+    val _: unit = prim Ref_assign[word64] (putV_0, x_656)
+    val x_657: bool = prim Word32_equal (x_652, global_0 (*0x0:w32*))
+    case x_657 of
+      true => L_347 | false => L_346
+  block L_346 ()
+    val x_659: word32 = prim Word32_add (x_561, x_652)
+    val x_658: bool = prim WordS32_addCheckP (x_561, x_652)
+    case x_658 of
+      true => L_349 | false => L_348
+  block L_348 ()
+    goto loop_35 (x_659)
+  block L_349 ()
+    raise (global_400 (*con Overflow_0*))
+  block L_347 ()
+    raise (global_445 (*con Fail_0 ... _444)*))
+  block L_345 ()
+    raise (global_399 (*con Overflow_0*))
+  block L_341 ()
+    raise (global_422 (*con Fail8_ ... _419)*))
+  block L_339 ()
+    val x_662: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_661: word32 = prim Thread_atomicState ()
+    val x_660: bool = prim Word32_equal (x_661, global_0 (*0x0:w32*))
+    case x_660 of
+      true => L_351 | false => L_350
+  block L_350 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto loop_36 (x_662)
+  block L_351 ()
+    raise (global_421 (*con Fail8_ ... _419)*))
+  block L_309 ()
+    raise (global_420 (*con Fail8_ ... _419)*))
+  block L_300 ()
+    raise (global_447 (*con ClosedStream_0*))
+  block L_297 ()
+    raise (global_439 (*con Subscript_0*))
+  block L_295 ()
+    raise (global_398 (*con Overflow_0*))
+  block L_293 ()
+    return ()
+fun flushBuf_0 (x_663:
+                  ((((word64) ref, (bool) ref) tuple,
+                    ((word64) ref, (bool) ref) tuple) tuple,
+                   ((word8) array, (word32) ref) tuple) tuple):
+  {returns = Some (), raises = Some (exn)} =
+L_352 ()
+  block L_352 ()
+    val x_670: ((word8) array, (word32) ref) tuple = #1 (x_663)
+    val x_671:
+      (((word64) ref, (bool) ref) tuple, ((word64) ref, (bool) ref) tuple) tuple =
+      #0 (x_663)
+    val x_669: (word32) ref = #1 (x_670)
+    val x_668: (word8) array = #0 (x_670)
+    val x_667: word32 = prim Ref_deref[word32] (x_669)
+    val _: unit = prim Ref_assign[word32] (x_669, global_0 (*0x0:w32*))
+    val x_666: word64 = prim Array_length[word8] (x_668)
+    val x_665: word64 = prim WordS32_extdToWord64 (x_667)
+    val x_664: bool = prim WordU64_lt (x_666, x_665)
+    case x_664 of
+      true => L_354 | false => L_353
+  block L_353 ()
+    val #_1: ((word64) ref, (bool) ref) tuple = #0 (x_671)
+    val x_675: word32 = 0x0:w32
+    val x_674: word32 = prim WordS64_extdToWord32 (x_665)
+    val x_673: word64 = prim WordS32_extdToWord64 (x_674)
+    val x_672: bool = prim Word64_equal (x_665, x_673)
+    case x_672 of
+      true => L_356 | false => L_355
+  block L_355 ()
+    raise (global_443 (*con Fail_0 ... _441)*))
+  block L_356 ()
+    goto loop_41 (x_675)
+  block loop_41 (x_676: word32)
+    val x_677: bool = prim Word32_equal (x_676, x_674)
+    case x_677 of
+      true => L_358 | false => L_357
+  block L_357 ()
+    val x_679: word32 = prim Word32_sub (x_674, x_676)
+    val x_678: bool = prim WordS32_subCheckP (x_674, x_676)
+    case x_678 of
+      true => L_360 | false => L_359
+  block L_359 ()
+    val x_682: word64 = prim Array_length[word8] (x_668)
+    val x_681: word64 = prim WordS32_extdToWord64 (x_676)
+    val x_683: word64 = prim WordS32_extdToWord64 (x_679)
+    val x_680: bool = prim WordU64_lt (x_682, x_681)
+    case x_680 of
+      true => L_362 | false => L_361
+  block L_361 ()
+    val x_685: word64 = prim Word64_sub (x_682, x_681)
+    val x_684: bool = prim WordU64_lt (x_685, x_683)
+    case x_684 of
+      true => L_362 | false => L_363
+  block L_363 ()
+    val putA_0: (word64) ref = #0 (#_1)
+    val closed_2: (bool) ref = #1 (#_1)
+    val x_686: bool = prim Ref_deref[bool] (closed_2)
+    case x_686 of
+      true => L_365 | false => L_364
+  block L_364 ()
+    val x_689: word32 = prim WordS64_extdToWord32 (x_681)
+    val x_688: word64 = prim WordS32_extdToWord64 (x_689)
+    val x_687: bool = prim Word64_equal (x_681, x_688)
+    case x_687 of
+      true => L_367 | false => L_366
+  block L_367 ()
+    val x_692: word32 = prim WordS64_extdToWord32 (x_683)
+    val x_691: word64 = prim WordS32_extdToWord64 (x_692)
+    val x_690: bool = prim Word64_equal (x_683, x_691)
+    case x_690 of
+      true => L_368 | false => L_366
+  block L_366 ()
+    raise (global_443 (*con Fail_0 ... _441)*))
+  block L_368 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_695: word64 = prim WordS32_extdToWord64 (x_692)
+    val x_694: word64 =
+      prim CFunction {args = (word32, (word8) array, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Arr} (global_2 (*0x1:w32*),
+                                                        x_668,
+                                                        x_689,
+                                                        x_695)
+    val x_693: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_694)
+    case x_693 of
+      true => L_370 | false => L_369
+  block L_369 ()
+    val x_697: word32 = prim Thread_atomicState ()
+    val x_696: bool = prim Word32_equal (x_697, global_0 (*0x0:w32*))
+    case x_696 of
+      true => L_372 | false => L_371
+  block L_371 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_698 (x_694)
+  block L_372 ()
+    raise (global_431 (*con Fail8_ ... _419)*))
+  block L_370 ()
+    val x_701: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_700: word32 = prim Thread_atomicState ()
+    val x_699: bool = prim Word32_equal (x_700, global_0 (*0x0:w32*))
+    case x_699 of
+      true => L_374 | false => L_373
+  block L_373 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto loop_42 (x_701)
+  block loop_42 (x_702: word32)
+    val x_703: bool = prim Word32_equal (x_702, global_42 (*0x4:w32*))
+    case x_703 of
+      true => L_376 | false => L_375
+  block L_375 ()
+    val x_706: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_702)
+    val x_705: cpointer = prim CPointer_fromWord (x_706)
+    val x_704: bool = prim CPointer_equal (x_705, global_36 (*NULL*))
+    case x_704 of
+      true => L_378 | false => L_377
+  block L_377 ()
+    goto loop_43 (global_0 (*0x0:w32*))
+  block loop_43 (x_707: word32)
+    val x_710: cpointer = prim CPointer_fromWord (x_706)
+    val x_709: word64 = prim WordS32_extdToWord64 (x_707)
+    val x_708: word8 = prim CPointer_getWord8 (x_710, x_709)
+    case8 x_708 of
+      0x0:w8 => L_379 | _ => L_380
+  block L_380 ()
+    val x_711: word32 = prim Word32_add (x_707, global_2 (*0x1:w32*))
+    goto loop_43 (x_711)
+  block L_379 ()
+    val x_713: word64 = prim WordS32_extdToWord64 (x_707)
+    val x_712: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_713)
+    case x_712 of
+      true => L_382 | false => L_381
+  block L_381 ()
+    val x_714: (word8) array = prim Array_alloc[word8] (x_713)
+    goto loop_44 (global_4 (*0x0:w64*))
+  block loop_44 (x_715: word64)
+    val x_716: bool = prim WordS64_lt (x_715, x_713)
+    case x_716 of
+      true => L_384 | false => L_383
+  block L_383 ()
+    val x_717: (word8) vector = prim Array_toVector[word8] (x_714)
+    goto L_385 (x_717)
+  block L_384 ()
+    val x_722: word32 = prim WordS64_extdToWord32 (x_715)
+    val x_721: cpointer = prim CPointer_fromWord (x_706)
+    val x_720: word64 = prim WordS32_extdToWord64 (x_722)
+    val x_719: word8 = prim CPointer_getWord8 (x_721, x_720)
+    val _: unit = prim Array_update[word8] (x_714, x_715, x_719)
+    val x_718: word64 = prim Word64_add (x_715, global_7 (*0x1:w64*))
+    goto loop_44 (x_718)
+  block L_382 ()
+    raise (global_418 (*con Size_0*))
+  block L_378 ()
+    goto L_385 (global_37 (*"Unknown error"*))
+  block L_385 (x_723: (word8) vector)
+    val x_726: t_0 = con SOME_0 (x_702)
+    val x_725: ((word8) vector, t_0) tuple = (x_723, x_726)
+    val x_724: exn = con SysErr_0 (x_725)
+    raise (x_724)
+  block L_376 ()
+    val x_728: word32 = prim Thread_atomicState ()
+    val x_727: bool = prim Word32_equal (x_728, global_0 (*0x0:w32*))
+    case x_727 of
+      true => L_387 | false => L_386
+  block L_386 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_731: word64 = prim WordS32_extdToWord64 (x_692)
+    val x_730: word64 =
+      prim CFunction {args = (word32, (word8) array, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Arr} (global_2 (*0x1:w32*),
+                                                        x_668,
+                                                        x_689,
+                                                        x_731)
+    val x_729: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_730)
+    case x_729 of
+      true => L_389 | false => L_388
+  block L_388 ()
+    val x_733: word32 = prim Thread_atomicState ()
+    val x_732: bool = prim Word32_equal (x_733, global_0 (*0x0:w32*))
+    case x_732 of
+      true => L_391 | false => L_390
+  block L_390 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_698 (x_730)
+  block L_391 ()
+    raise (global_430 (*con Fail8_ ... _419)*))
+  block L_389 ()
+    val x_736: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_735: word32 = prim Thread_atomicState ()
+    val x_734: bool = prim Word32_equal (x_735, global_0 (*0x0:w32*))
+    case x_734 of
+      true => L_393 | false => L_392
+  block L_392 ()
+    val _: unit = prim Thread_atomicEnd ()
+    val x_739: word64 =
+      prim CFunction {args = (word32),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32), res = Some Word64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_Error_strError} (x_736)
+    val x_738: cpointer = prim CPointer_fromWord (x_739)
+    val x_737: bool = prim CPointer_equal (x_738, global_36 (*NULL*))
+    case x_737 of
+      true => L_395 | false => L_394
+  block L_394 ()
+    goto loop_45 (global_0 (*0x0:w32*))
+  block loop_45 (x_740: word32)
+    val x_743: cpointer = prim CPointer_fromWord (x_739)
+    val x_742: word64 = prim WordS32_extdToWord64 (x_740)
+    val x_741: word8 = prim CPointer_getWord8 (x_743, x_742)
+    case8 x_741 of
+      0x0:w8 => L_396 | _ => L_397
+  block L_397 ()
+    val x_744: word32 = prim Word32_add (x_740, global_2 (*0x1:w32*))
+    goto loop_45 (x_744)
+  block L_396 ()
+    val x_746: word64 = prim WordS32_extdToWord64 (x_740)
+    val x_745: bool = prim WordU64_lt (global_29 (*0x7FFFFFFF:w64*), x_746)
+    case x_745 of
+      true => L_399 | false => L_398
+  block L_398 ()
+    val x_747: (word8) array = prim Array_alloc[word8] (x_746)
+    goto loop_46 (global_4 (*0x0:w64*))
+  block loop_46 (x_748: word64)
+    val x_749: bool = prim WordS64_lt (x_748, x_746)
+    case x_749 of
+      true => L_401 | false => L_400
+  block L_400 ()
+    val x_750: (word8) vector = prim Array_toVector[word8] (x_747)
+    goto L_402 (x_750)
+  block L_401 ()
+    val x_755: word32 = prim WordS64_extdToWord32 (x_748)
+    val x_754: cpointer = prim CPointer_fromWord (x_739)
+    val x_753: word64 = prim WordS32_extdToWord64 (x_755)
+    val x_752: word8 = prim CPointer_getWord8 (x_754, x_753)
+    val _: unit = prim Array_update[word8] (x_747, x_748, x_752)
+    val x_751: word64 = prim Word64_add (x_748, global_7 (*0x1:w64*))
+    goto loop_46 (x_751)
+  block L_399 ()
+    raise (global_418 (*con Size_0*))
+  block L_395 ()
+    goto L_402 (global_37 (*"Unknown error"*))
+  block L_402 (x_756: (word8) vector)
+    val x_759: t_0 = con SOME_0 (x_736)
+    val x_758: ((word8) vector, t_0) tuple = (x_756, x_759)
+    val x_757: exn = con SysErr_0 (x_758)
+    raise (x_757)
+  block L_393 ()
+    raise (global_429 (*con Fail8_ ... _419)*))
+  block L_387 ()
+    val _: unit = prim Thread_atomicBegin ()
+    val x_762: word64 = prim WordS32_extdToWord64 (x_692)
+    val x_761: word64 =
+      prim CFunction {args = (word32, (word8) array, word32, word64),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (Int32, Objptr, Int32, Word64),
+                                   res = Some Int64},
+                      return = word64,
+                      symbolScope = private,
+                      target = Posix_IO_writeChar8Arr} (global_2 (*0x1:w32*),
+                                                        x_668,
+                                                        x_689,
+                                                        x_762)
+    val x_760: bool =
+      prim Word64_equal (global_6 (*0xFFFFFFFF ... F:w64*), x_761)
+    case x_760 of
+      true => L_404 | false => L_403
+  block L_403 ()
+    val x_764: word32 = prim Thread_atomicState ()
+    val x_763: bool = prim Word32_equal (x_764, global_0 (*0x0:w32*))
+    case x_763 of
+      true => L_406 | false => L_405
+  block L_405 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto x_698 (x_761)
+  block x_698 (x_765: word64)
+    val x_768: word32 = prim WordS64_extdToWord32 (x_765)
+    val x_767: word64 = prim WordS32_extdToWord64 (x_768)
+    val x_766: bool = prim Word64_equal (x_765, x_767)
+    case x_766 of
+      true => L_408 | false => L_407
+  block L_407 ()
+    raise (global_405 (*con Overflow_0*))
+  block L_408 ()
+    val x_771: word64 = prim Ref_deref[word64] (putA_0)
+    val x_770: word64 = prim WordS32_extdToWord64 (x_768)
+    val x_772: word64 = prim Word64_add (x_771, x_770)
+    val x_769: bool = prim WordS64_addCheckP (x_771, x_770)
+    case x_769 of
+      true => L_410 | false => L_409
+  block L_409 ()
+    val _: unit = prim Ref_assign[word64] (putA_0, x_772)
+    val x_773: bool = prim Word32_equal (x_768, global_0 (*0x0:w32*))
+    case x_773 of
+      true => L_412 | false => L_411
+  block L_411 ()
+    val x_775: word32 = prim Word32_add (x_676, x_768)
+    val x_774: bool = prim WordS32_addCheckP (x_676, x_768)
+    case x_774 of
+      true => L_414 | false => L_413
+  block L_413 ()
+    goto loop_41 (x_775)
+  block L_414 ()
+    raise (global_404 (*con Overflow_0*))
+  block L_412 ()
+    raise (global_446 (*con Fail_0 ... _444)*))
+  block L_410 ()
+    raise (global_403 (*con Overflow_0*))
+  block L_406 ()
+    raise (global_428 (*con Fail8_ ... _419)*))
+  block L_404 ()
+    val x_778: word32 =
+      prim CFunction {args = (),
+                      convention = cdecl,
+                      inline = false,
+                      kind = Impure,
+                      prototype = {args = (), res = Some Int32},
+                      return = word32,
+                      symbolScope = private,
+                      target = Posix_Error_getErrno} ()
+    val x_777: word32 = prim Thread_atomicState ()
+    val x_776: bool = prim Word32_equal (x_777, global_0 (*0x0:w32*))
+    case x_776 of
+      true => L_416 | false => L_415
+  block L_415 ()
+    val _: unit = prim Thread_atomicEnd ()
+    goto loop_42 (x_778)
+  block L_416 ()
+    raise (global_427 (*con Fail8_ ... _419)*))
+  block L_374 ()
+    raise (global_426 (*con Fail8_ ... _419)*))
+  block L_365 ()
+    raise (global_448 (*con ClosedStream_0*))
+  block L_362 ()
+    raise (global_440 (*con Subscript_0*))
+  block L_360 ()
+    raise (global_402 (*con Overflow_0*))
+  block L_358 ()
+    return ()
+  block L_354 ()
+    raise (global_440 (*con Subscript_0*))
+
+
+(* Main: *) main_0

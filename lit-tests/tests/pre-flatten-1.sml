@@ -1,11 +1,27 @@
+(* RUN: mpl-compile -ssa-passes preFlatten -keep-pass preFlatten -stop-pass 'preFlatten.*' %s %t
+
+   Test that `preFlatten` builds a new flattened version and calls it
+
+   Non-flat version in 'pre'
+   RUN: egrep    'doAdd.*tuple' %t/*preFlatten*.pre.ssa
+   RUN: egrep    'call.*doAdd'  %t/*preFlatten*.pre.ssa
+
+   Non-flat version still in 'post'
+   RUN: egrep    'doAdd.*tuple' %t/*preFlatten*.post.ssa
+   RUN: egrep    'call.*doAdd'  %t/*preFlatten*.post.ssa
+
+   Flattened verison is additionally present
+
+   RUN: egrep    'doAdd.*flat' %t/*preFlatten*.post.ssa
+   RUN: egrep    'call.*doAdd.*flat'  %t/*preFlatten*.post.ssa
+ *)
 
 
 fun __inline_never__ doAdd (args: int * int) = let
    val (x, y) = args
-in 
+in
    x + y
 end
-    
 
 val res1 = doAdd((1, 1))
 val res2 = let

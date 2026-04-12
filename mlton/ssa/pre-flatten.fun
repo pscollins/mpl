@@ -156,10 +156,10 @@ datatype argChoice =
             Preserve
           | FlattenTuple
 
-fun newFuncNamedLike (name: Func.t) = let
+fun newFuncNamedLike (name: Func.t, suffix) = let
    val currName = Func.toString name
 in
-   Func.newString currName
+   Func.newString (concat [currName, "_", suffix])
 end
 
 fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
@@ -196,7 +196,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
       Function.new {args = newArgs,
                     blocks = Vector.concat [Vector.new1 newBlock, blocks],
                     inline = inline,
-                    name = newFuncNamedLike name,
+                    name = newFuncNamedLike (name, "flat"),
                     raises = raises,
                     returns = returns,
                     start = Block.label newBlock}
