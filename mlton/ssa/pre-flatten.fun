@@ -75,7 +75,45 @@ in
    Program.dfs (p, doWalkFunc)
 end
 
-fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = p
+fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
+   val Program.T {datatypes, functions, globals, main} = p
+
+   (* If `blockF` returns SOME for any `Block.t` in the `Function.t`, rewrites
+   the `Function.t` to point to the modified block list. Otherwise, returns the
+   original `Function.t` *)
+
+   fun doFunc (f: Function.t) = let
+      val oldBlocks = Function.blocks f
+      val maybeNewBlocks = Vector.map (oldBlocks, blockF)
+      val allNone = Vector.forall (maybeNewBlocks, Option.isNone)
+      fun buildNewF() = let
+         fun selectBlock (oldBlock: Block.t, maybeNewBlock: Block.t option) =
+             case maybeNewBlock of
+                 SOME newBlock => (print "TAKE NEW\n"; newBlock)
+               | NONE => (print "TAKE OLD\n"; oldBlock)
+         val {args, inline, name, raises, returns, start, ...} =
+             Function.dest f
+      in
+         Function.new {
+            args = args,
+            blocks = Vector.map2 (oldBlocks, maybeNewBlocks, selectBlock),
+            inline = inline,
+            name = name,
+            raises = raises,
+            returns = returns,
+            start = start
+         }
+      end
+   in
+      if allNone then (print "RETURN OLD\n"; f)
+      else (print "BUILD NEW\n"; buildNewF())
+   end
+in
+   Program.T {datatypes = datatypes,
+              functions = List.map (functions, doFunc),
+              globals = globals,
+              main = main}
+end
 
 type typedVar = Var.t * Type.t
 fun flattenTupleVar (var, ty): (typedVar vector) option = let

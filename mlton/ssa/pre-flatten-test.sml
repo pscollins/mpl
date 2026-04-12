@@ -4,6 +4,18 @@ structure PreFlatten = PreFlatten (Ssa)
 
 val _ = Control.diagnosticWriter := SOME (fn l => Layout.output (l, Out.standard))
 
+(* Debug helper for printing *)
+fun programToString program =
+    let
+       val segments = ref []
+       (* Accumulate each layout part into the segments list *)
+       val _ = Ssa.Program.layouts (program, fn l =>
+                                                Layout.print (l, fn s => segments := s :: !segments))
+    in
+       String.concat (List.rev (!segments))
+    end
+
+
 local
    open Ssa
 
@@ -39,7 +51,7 @@ local
       afterFunc = fn f => addLog ("afterFunc " ^ (Func.toString (Function.name f))),
       beforeBlock = fn b => addLog ("beforeBlock " ^ (Label.toString (Block.label b))),
       afterBlock = fn b => addLog ("afterBlock " ^ (Label.toString (Block.label b))),
-      statement = fn s => 
+      statement = fn s =>
          case Statement.var s of
             SOME v => addLog ("statement " ^ (Var.toString v))
           | NONE => addLog "statement <none>"
@@ -71,7 +83,7 @@ local
          globals = Vector.new0 (),
          main = mainFunc
       }
-      
+
       val _ = PreFlatten.transform p1
       val _ = print "Test 1 passed\n"
    in () end
@@ -102,7 +114,7 @@ local
          globals = Vector.new0 (),
          main = mainFunc
       }
-      
+
       val _ = clearLog ()
       val _ = PreFlatten.doWalk (walker, p2)
       val expected = [
@@ -145,7 +157,7 @@ local
          globals = Vector.new0 (),
          main = mainFunc
       }
-      
+
       val _ = clearLog ()
       val _ = PreFlatten.doWalk (walker, p3)
       val expected = [
@@ -168,7 +180,7 @@ local
       val g2 = Var.fromString "g2"
       val gs1 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME g1}
       val gs2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME g2}
-      
+
       val mainFunc = Func.fromString "main4"
       val mainLabel = Label.fromString "L3"
       val mainBlock = Block.T {
@@ -192,7 +204,7 @@ local
          globals = Vector.fromList [gs1, gs2],
          main = mainFunc
       }
-      
+
       val _ = clearLog ()
       val _ = PreFlatten.doWalk (walker, p4)
       val expected = [
@@ -242,7 +254,7 @@ local
          returns = SOME (Vector.new0 ()),
          start = f1L1
       }
-      
+
       val f2L1 = Label.fromString "f2L1"
       val v2 = Var.fromString "v2"
       val s2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME v2}
@@ -268,7 +280,7 @@ local
          globals = Vector.new0 (),
          main = f1Name
       }
-      
+
       val _ = clearLog ()
       val _ = PreFlatten.doWalk (walker, p5)
       val expected = [
@@ -297,7 +309,7 @@ local
       val mainLabel = Label.fromString "L0"
       fun mkBlock label = Block.T {
          args = Vector.new0 (),
-         label = mainLabel,
+         label = label,
          statements = Vector.new0 (),
          transfer = Transfer.Return (Vector.new0 ())
       }
@@ -326,19 +338,21 @@ local
       fun getUniqueBlockLabel (Program.T {functions, ...}) = let
          val _ = assert (List.length functions = 1, "expect unique function")
          val func = List.first functions
-         val blocks = Function.blocks func 
+         val blocks = Function.blocks func
          val _ = assert (Vector.length blocks = 1, "expect unique block")
          val block = Vector.first blocks
       in
          Block.label block
       end
-      
-      val p1 = PreFlatten.mapBlocks (p1, noOpBlockF)
-      val _ = assert (Label.equals (getUniqueBlockLabel p1, mainLabel),
+
+
+      val p1' = PreFlatten.mapBlocks (p1, noOpBlockF)
+      val _ = assert (Label.equals (getUniqueBlockLabel p1', mainLabel),
                       "expect original label")
 
-      val p1 = PreFlatten.mapBlocks (p1, changeNameBlockF)
-      val _ = assert (Label.equals (getUniqueBlockLabel p1, newLabel),
+      val p1'' = PreFlatten.mapBlocks (p1, changeNameBlockF)
+
+      val _ = assert (Label.equals (getUniqueBlockLabel p1'', newLabel),
                       "expect new label")
 
       val _ = print "Test 14 passed\n"
@@ -370,7 +384,7 @@ local
          globals = Vector.new0 (),
          main = mainFunc
       }
-      
+
       val _ = clearLog ()
       val _ = PreFlatten.doWalk (walker, p2)
       val expected = [
@@ -386,16 +400,16 @@ local
    (* Test 6: flattenTupleVar *)
    val _ = let
       val _ = print "Test 6: flattenTupleVar\n"
-      
+
       val t1 = Type.bool
       val t2 = Type.unit
       val tTuple = Type.tuple (Vector.fromList [t1, t2])
-      
+
       val v = Var.fromString "v"
-      
+
       val _ = print "Test 6a: flattening a 2-tuple\n"
       val res = PreFlatten.flattenTupleVar (v, tTuple)
-      val _ = 
+      val _ =
          case res of
             NONE => (print "flattenTupleVar returned NONE for tuple type\n"; OS.Process.exit OS.Process.failure)
           | SOME vts =>
@@ -409,14 +423,14 @@ local
                   val _ = assert (not (Var.equals (v2, v)), "flattenTupleVar var 2 should be fresh")
                   val _ = assert (not (Var.equals (v1, v2)), "flattenTupleVar vars should be distinct")
                in () end
-               
+
       val _ = print "Test 6b: flattening a non-tuple\n"
       val resNonTuple = PreFlatten.flattenTupleVar (v, t1)
-      val _ = 
+      val _ =
          case resNonTuple of
             NONE => ()
           | SOME _ => (print "flattenTupleVar should return NONE for non-tuple type\n"; OS.Process.exit OS.Process.failure)
-      
+
       val _ = print "Test 6 passed\n"
    in () end
 
@@ -428,21 +442,21 @@ local
       val f2 = Var.fromString "f2"
       val binds = Vector.fromList [PreFlatten.BindTuple {to = (toVar, Type.unit), froms = Vector.fromList [f1, f2]}]
       val targetLabel = Label.fromString "target"
-      
+
       val block = PreFlatten.buildBindBlock (binds, targetLabel)
       val Block.T {args, label = _, statements, transfer} = block
-      
+
       val _ = assert (Vector.length args = 0, "buildBindBlock block should have no args")
       val _ = assert (Vector.length statements = 1, "buildBindBlock should have 1 statement")
-      
+
       val s0 = Vector.sub (statements, 0)
       val Statement.T {exp, var, ...} = s0
-      val _ = 
+      val _ =
          case var of
             SOME v => assert (Var.equals (v, toVar), "statement var mismatch")
           | NONE => (print "statement should have a var\n"; OS.Process.exit OS.Process.failure)
-          
-      val _ = 
+
+      val _ =
          case exp of
             Exp.Tuple vs =>
                let
@@ -451,8 +465,8 @@ local
                   val _ = assert (Var.equals (Vector.sub (vs, 1), f2), "tuple arg 2 mismatch")
                in () end
           | _ => (print "exp should be a tuple\n"; OS.Process.exit OS.Process.failure)
-          
-      val _ = 
+
+      val _ =
          case transfer of
             Transfer.Goto {args, dst} =>
                let
@@ -477,10 +491,10 @@ local
          PreFlatten.BindTuple {to = (t2, Type.unit), froms = Vector.fromList [f2, f3]}
       ]
       val targetLabel = Label.fromString "target2"
-      
+
       val block = PreFlatten.buildBindBlock (binds, targetLabel)
       val Block.T {statements, ...} = block
-      
+
       val _ = assert (Vector.length statements = 2, "buildBindBlock should have 2 statements")
       val _ = print "Test 8 passed\n"
    in () end
@@ -520,7 +534,7 @@ local
          returns = SOME (Vector.fromList [t1]),
          start = l1
       }
-      
+
       val res = PreFlatten.buildFlattenedFunction
                     (f, Vector.fromList [PreFlatten.Preserve,
                                          PreFlatten.FlattenTuple])
@@ -537,7 +551,7 @@ local
       val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
       val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
 
-      
+
       val startBlock = Vector.peek (blocks, fn b => Label.equals (Block.label b, start))
       val _ = case startBlock of
          SOME (Block.T {statements, ...}) =>
@@ -558,7 +572,7 @@ local
       val vcm = PreFlatten.newVarChoiceManager ()
       val v = Var.fromString "v11"
       val choice = PreFlatten.getVarChoice (vcm, v)
-      val _ = 
+      val _ =
          case choice of
             PreFlatten.PreserveVar => ()
           | _ => (print "Default choice should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
@@ -570,28 +584,28 @@ local
    val _ = let
       val _ = print "Test 12: chooseVarsInStatement\n"
       val vcm = PreFlatten.newVarChoiceManager ()
-      
+
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
       val vTuple = Var.fromString "vt"
-      
+
       val sTuple = Statement.T {
          exp = Exp.Tuple (Vector.fromList [v1, v2]),
          ty = Type.unit, (* Type doesn't strictly matter for chooseVarsInStatement logic as described *)
          var = SOME vTuple
       }
-      
+
       val sNonTuple = Statement.T {
          exp = Exp.unit,
          ty = Type.unit,
          var = SOME v1
       }
-      
+
       val _ = PreFlatten.chooseVarsInStatement (vcm, sTuple)
       val _ = PreFlatten.chooseVarsInStatement (vcm, sNonTuple)
-      
+
       val choiceTuple = PreFlatten.getVarChoice (vcm, vTuple)
-      val _ = 
+      val _ =
          case choiceTuple of
             PreFlatten.FlattenTupleVar vs =>
                let
@@ -600,13 +614,13 @@ local
                   val _ = assert (Var.equals (Vector.sub (vs, 1), v2), "FlattenTupleVar var 1 mismatch")
                in () end
           | _ => (print "vt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
-          
+
       val choiceNonTuple = PreFlatten.getVarChoice (vcm, v1)
-      val _ = 
+      val _ =
          case choiceNonTuple of
             PreFlatten.PreserveVar => ()
           | _ => (print "v1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
-          
+
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 12 passed\n"
    in () end
@@ -614,14 +628,14 @@ local
    (* Test 13: newVarChoicesForProgram *)
    val _ = let
       val _ = print "Test 13: newVarChoicesForProgram\n"
-      
+
       val g1 = Var.fromString "g1"
       val g2 = Var.fromString "g2"
       val gt = Var.fromString "gt"
       (* gt = (g1, g2) *)
       val gs1 = Statement.T {exp = Exp.Tuple (Vector.fromList [g1, g2]), ty = Type.unit, var = SOME gt}
       val gs2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME g1}
-      
+
       val mainFunc = Func.fromString "main13"
       val mainLabel = Label.fromString "L13"
       val v1 = Var.fromString "v1"
@@ -630,7 +644,7 @@ local
       (* vt = (v1, v2) *)
       val s1 = Statement.T {exp = Exp.Tuple (Vector.fromList [v1, v2]), ty = Type.unit, var = SOME vt}
       val s2 = Statement.T {exp = Exp.unit, ty = Type.unit, var = SOME v1}
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = mainLabel,
@@ -652,11 +666,11 @@ local
          globals = Vector.fromList [gs1, gs2],
          main = mainFunc
       }
-      
+
       val vcm = PreFlatten.newVarChoicesForProgram p
-      
+
       val choiceGt = PreFlatten.getVarChoice (vcm, gt)
-      val _ = 
+      val _ =
          case choiceGt of
             PreFlatten.FlattenTupleVar vs =>
                let
@@ -667,7 +681,7 @@ local
           | _ => (print "gt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
 
       val choiceVt = PreFlatten.getVarChoice (vcm, vt)
-      val _ = 
+      val _ =
          case choiceVt of
             PreFlatten.FlattenTupleVar vs =>
                let
@@ -678,13 +692,13 @@ local
           | _ => (print "vt should be FlattenTupleVar\n"; OS.Process.exit OS.Process.failure)
 
       val choiceG1 = PreFlatten.getVarChoice (vcm, g1)
-      val _ = 
+      val _ =
          case choiceG1 of
             PreFlatten.PreserveVar => ()
           | _ => (print "g1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
 
       val choiceV1 = PreFlatten.getVarChoice (vcm, v1)
-      val _ = 
+      val _ =
          case choiceV1 of
             PreFlatten.PreserveVar => ()
           | _ => (print "v1 should be PreserveVar\n"; OS.Process.exit OS.Process.failure)
@@ -703,7 +717,7 @@ local
       val v2 = Var.fromString "v2"
       val t2 = Type.unit
       val tTuple = Type.tuple (Vector.fromList [t1, t2])
-      
+
       val f = Function.new {
          args = Vector.fromList [(v1, t1), (v2, tTuple)],
          blocks = Vector.fromList [Block.T {
@@ -756,7 +770,7 @@ local
       val v2 = Var.fromString "v2"
       val t2 = Type.unit
       val tTuple = Type.tuple (Vector.fromList [t1, t2])
-      
+
       val f = Function.new {
          args = Vector.fromList [(v1, t1), (v2, tTuple)],
          blocks = Vector.fromList [Block.T {
@@ -779,29 +793,29 @@ local
       }
 
       val fm = PreFlatten.newFunctionManager p
-      
+
       val _ = print "Test 15a: getOrCreateFunc NoOp\n"
       val fNoOp = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.Preserve])
       val _ = assert (Func.equals (fNoOp, fName), "NoOp should return original Func.t")
-      
+
       val _ = print "Test 15b: extractNewFunctions after NoOp\n"
       val newFuncs0 = PreFlatten.extractNewFunctions fm
       val _ = assert (List.length newFuncs0 = 0, "No new functions should be extracted after NoOp")
-      
+
       val _ = print "Test 15c: getOrCreateFunc Valid\n"
       val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
       val _ = assert (not (Func.equals (fFlattened, fName)), "Valid flattening should return new Func.t")
-      
+
       val _ = print "Test 15d: extractNewFunctions after Valid\n"
       val newFuncs1 = PreFlatten.extractNewFunctions fm
       val _ = assert (List.length newFuncs1 = 1, "One new function should be extracted")
       val f1 = case newFuncs1 of (x::_) => x | _ => (print "Expected non-empty list\n"; OS.Process.exit OS.Process.failure)
       val _ = assert (Func.equals (Function.name f1, fFlattened), "Extracted function name mismatch")
-      
+
       val _ = print "Test 15e: extractNewFunctions should clear pending\n"
       val newFuncs2 = PreFlatten.extractNewFunctions fm
       val _ = assert (List.length newFuncs2 = 0, "extractNewFunctions should clear pending list")
-      
+
       val _ = PreFlatten.destroyFunctionManager fm
       val _ = print "Test 15 passed\n"
    in () end
@@ -812,7 +826,7 @@ local
       val fName = Func.fromString "f16"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-      
+
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
@@ -835,7 +849,7 @@ local
       val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = Label.fromString "Lmain",
@@ -862,10 +876,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      
+
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-      
+
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
       val _ = print "Test 16 passed\n"
    in () end
@@ -876,7 +890,7 @@ local
       val fName = Func.fromString "f17"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-      
+
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
          blocks = Vector.fromList [Block.T {
@@ -901,7 +915,7 @@ local
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
       val s4 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME y}
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = Label.fromString "Lmain",
@@ -928,10 +942,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      
+
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-      
+
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
       val _ = print "Test 17 passed\n"
    in () end
@@ -943,7 +957,7 @@ local
       val tBool = Type.bool
       val tTup1 = Type.tuple (Vector.fromList [tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
-      
+
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
@@ -970,7 +984,7 @@ local
       val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
       val s4 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x}
       val s5 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y}
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = Label.fromString "Lmain",
@@ -997,10 +1011,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      
+
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-      
+
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
       val _ = print "Test 18 passed\n"
    in () end
@@ -1065,7 +1079,7 @@ local
       val fName = Func.fromString "f20"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-      
+
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
@@ -1091,10 +1105,10 @@ local
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x1}
       (* x2 is NOT a tuple from a tuple expression *)
       val s4 = Statement.T {exp = Exp.unit, ty = tTuple, var = SOME x2}
-      
+
       val lMain = Label.fromString "Lmain"
       val lCall2 = Label.fromString "Lcall2"
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = lMain,
@@ -1117,7 +1131,7 @@ local
             return = Return.Tail
          }
       }
-      
+
       val mainFunction = Function.new {
          args = Vector.new0 (),
          blocks = Vector.fromList [mainBlock, call2Block],
@@ -1133,10 +1147,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      
+
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-      
+
       (* Should have 3 functions: f, main, and f_flattened (for x1 call) *)
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
       val _ = print "Test 20 passed\n"
@@ -1149,7 +1163,7 @@ local
       val tBool = Type.bool
       val tTup1 = Type.tuple (Vector.fromList [tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
-      
+
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
@@ -1173,20 +1187,20 @@ local
       val y1 = Var.fromString "y1"
       val x2 = Var.fromString "x2"
       val y2 = Var.fromString "y2"
-      
+
       val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
       val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
-      
+
       val sx1 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x1}
       val sy1 = Statement.T {exp = Exp.unit, ty = tTup2, var = SOME y1} (* No flatten *)
-      
+
       val sx2 = Statement.T {exp = Exp.unit, ty = tTup1, var = SOME x2} (* No flatten *)
       val sy2 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y2}
-      
+
       val lMain = Label.fromString "Lmain"
       val lCall2 = Label.fromString "Lcall2"
-      
+
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = lMain,
@@ -1209,7 +1223,7 @@ local
             return = Return.Tail
          }
       }
-      
+
       val mainFunction = Function.new {
          args = Vector.new0 (),
          blocks = Vector.fromList [mainBlock, call2Block],
@@ -1225,10 +1239,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      
+
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-      
+
       (* Should have 4 functions: f, main, f_flat1 (for x1), f_flat2 (for y2) *)
       val _ = assert (List.length functions = 4, "Expected 4 functions in flattened program")
       val _ = print "Test 21 passed\n"
