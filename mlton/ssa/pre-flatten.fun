@@ -15,7 +15,7 @@ type walker = {
    statement: Statement.t -> unit
 }
 
-val defaultWalker = let
+val defaultWalker: walker = let
    fun noop (x: 'a) = ()
    (* Work around type system restriction *)
    val noopF: Function.t -> unit = noop
@@ -252,12 +252,12 @@ fun newFunctionManager (p: Program.t) = let
       pendingFuncs := newPendingFuncs
    end
    (* First, collect Func.t -> Function mappings *)
-   val {get=getFunc, set=setFunc, dest=destroyFuncs} =
+   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
        Property.destGetSetOnce (Func.plist,
                                 Property.initRaise ("function lookup", Func.layout))
    fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
    val funcMappingWalker = beforeFunctionWalker addFuncToMapping
-   val _ = doWalk funcMappingWalker
+   val _ = doWalk (funcMappingWalker, p)
 
    (* Next, set up a hook to create new flattened functions when necessary
 
@@ -266,26 +266,26 @@ fun newFunctionManager (p: Program.t) = let
    functions *)
    fun createFlattenedFunc
            (originalName: Func.t, choices: argChoice vector): Function.t = let
-      val original = getFunc f
+      val original = getFunc originalName
       fun doBuildFlattenedFunction() = let
-         val flattenedFunction = buildFlattenedFunction (original, argChoice)
+         val flattenedFunction = buildFlattenedFunction (original, choices)
          val _ = appendFunc flattenedFunction
       in
-         f
+         flattenedFunction
       end
    in
       case checkFlatteningChoice (original, choices) of
-       NoOp => f
-     | Valid => getOrCreateFlattened()
+       NoOp => original
+     | Valid => doBuildFlattenedFunction()
      | Invalid => Error.bug "Invalid flattening decision"
    end
 
    (* Use createFlattenedFunc as the initializer for the "find function under
    flattening decision" property list*)
-   val {get=getOrCreateFlattenedFunc, dest=destroyFlattenedFuncs,
+   val {get=getOrCreateFlattenedFunc, destroy=destroyFlattenedFuncs,
         ...} = Property.destGetSetOnce
                    (Func.plist,
-                    Property.initFun createFlattendFunc)
+                    Property.initFun createFlattenedFunc)
    fun destroyFunctionManagerState() = let
       val _ = destroyFlattenedFuncs()
       val _ = destroyFuncs()
@@ -315,7 +315,7 @@ in
 end
 
 fun destroyFunctionManager (fm: functionManager) = let
-   val {pendingFuncs, destroyFunctionManagerState} = fm
+   val {pendingFuncs, destroyFunctionManagerState, ...} = fm
 in
    case !pendingFuncs of
        [] => destroyFunctionManagerState ()
