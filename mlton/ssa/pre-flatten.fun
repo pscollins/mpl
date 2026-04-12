@@ -363,7 +363,8 @@ fun newFunctionManager (p: Program.t) = let
            (originalName: Func.t, choices: argChoice vector): Function.t = let
       val original = getFunc originalName
       fun doBuildFlattenedFunction() = let
-         val flattenedFunction = buildFlattenedFunction (original, choices)
+         val flattenedFunction = buildFlattenedFunction (original,
+                                                         choices)
          val _ = appendFunc flattenedFunction
       in
          flattenedFunction
