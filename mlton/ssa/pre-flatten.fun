@@ -75,6 +75,8 @@ in
    Program.dfs (p, doWalkFunc)
 end
 
+fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = p
+
 type typedVar = Var.t * Type.t
 fun flattenTupleVar (var, ty): (typedVar vector) option = let
    fun buildVar (t: Type.t): typedVar = (Var.newString "flattened", t)
@@ -389,7 +391,12 @@ in
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
 
-fun flattenOnce (p: Program.t) = raise Fail "TODO"
+fun flattenOnce (p: Program.t) = let
+   val vm = newVarChoicesForProgram p
+   val fm = newFunctionManager p
+in
+   raise FAIL "TODO"
+end
 
 fun transform (p: Program.t): Program.t =
     p

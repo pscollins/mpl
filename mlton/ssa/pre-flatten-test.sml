@@ -710,5 +710,433 @@ local
       val _ = PreFlatten.destroyFunctionManager fm
       val _ = print "Test 15 passed\n"
    in () end
+
+   (* Test 16: flattening through a single argument for a single-argument function *)
+   val _ = let
+      val _ = print "Test 16: single argument function flattening\n"
+      val fName = Func.fromString "f16"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+
+      val mainName = Func.fromString "main16"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = Label.fromString "Lmain",
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lmain"
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      val _ = print "Test 16 passed\n"
+   in () end
+
+   (* Test 17: flattening through a single argument for a multi-argument function *)
+   val _ = let
+      val _ = print "Test 17: single argument flattening in multi-arg function\n"
+      val fName = Func.fromString "f17"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+
+      val mainName = Func.fromString "main17"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      val s4 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME y}
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = Label.fromString "Lmain",
+         statements = Vector.fromList [s1, s2, s3, s4],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x, y],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lmain"
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      val _ = print "Test 17 passed\n"
+   in () end
+
+   (* Test 18: flattening through multiple arguments for a multi-argument function *)
+   val _ = let
+      val _ = print "Test 18: multi-argument flattening\n"
+      val fName = Func.fromString "f18"
+      val tBool = Type.bool
+      val tTup1 = Type.tuple (Vector.fromList [tBool])
+      val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+
+      val mainName = Func.fromString "main18"
+      val b1 = Var.fromString "b1"
+      val b2 = Var.fromString "b2"
+      val b3 = Var.fromString "b3"
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
+      val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
+      val s4 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x}
+      val s5 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y}
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = Label.fromString "Lmain",
+         statements = Vector.fromList [s1, s2, s3, s4, s5],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x, y],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lmain"
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      val _ = print "Test 18 passed\n"
+   in () end
+
+   (* Test 19: an unflattenable call *)
+   val _ = let
+      val _ = print "Test 19: unflattenable call\n"
+      val fName = Func.fromString "f19"
+      val tBool = Type.bool
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tBool)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tBool)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+      val mainName = Func.fromString "main19"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME x}
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = Label.fromString "Lmain",
+         statements = Vector.fromList [s1],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lmain"
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      val _ = assert (List.length functions = 2, "Expected 2 functions, no flattening possible")
+      val _ = print "Test 19 passed\n"
+   in () end
+
+   (* Test 20: a mixture of flattenable and unflattenable calls for the same function *)
+   val _ = let
+      val _ = print "Test 20: mixture of flattenable and unflattenable calls\n"
+      val fName = Func.fromString "f20"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+
+      val mainName = Func.fromString "main20"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x1 = Var.fromString "x1"
+      val x2 = Var.fromString "x2"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x1}
+      (* x2 is NOT a tuple from a tuple expression *)
+      val s4 = Statement.T {exp = Exp.unit, ty = tTuple, var = SOME x2}
+      
+      val lMain = Label.fromString "Lmain"
+      val lCall2 = Label.fromString "Lcall2"
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = lMain,
+         statements = Vector.fromList [s1, s2, s3, s4],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x1],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {cont = lCall2, handler = Handler.Caller}
+         }
+      }
+      val call2Block = Block.T {
+         args = Vector.new0 (),
+         label = lCall2,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.fromList [x2],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock, call2Block],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = lMain
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      
+      (* Should have 3 functions: f, main, and f_flattened (for x1 call) *)
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      val _ = print "Test 20 passed\n"
+   in () end
+
+   (* Test 21: a mixture of different flattening decisions for the same function *)
+   val _ = let
+      val _ = print "Test 21: mixture of different flattening decisions\n"
+      val fName = Func.fromString "f21"
+      val tBool = Type.bool
+      val tTup1 = Type.tuple (Vector.fromList [tBool])
+      val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
+            label = Label.fromString "Lf",
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = Label.fromString "Lf"
+      }
+
+      val mainName = Func.fromString "main21"
+      val b1 = Var.fromString "b1"
+      val b2 = Var.fromString "b2"
+      val b3 = Var.fromString "b3"
+      val x1 = Var.fromString "x1"
+      val y1 = Var.fromString "y1"
+      val x2 = Var.fromString "x2"
+      val y2 = Var.fromString "y2"
+      
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
+      val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
+      
+      val sx1 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x1}
+      val sy1 = Statement.T {exp = Exp.unit, ty = tTup2, var = SOME y1} (* No flatten *)
+      
+      val sx2 = Statement.T {exp = Exp.unit, ty = tTup1, var = SOME x2} (* No flatten *)
+      val sy2 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y2}
+      
+      val lMain = Label.fromString "Lmain"
+      val lCall2 = Label.fromString "Lcall2"
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = lMain,
+         statements = Vector.fromList [s1, s2, s3, sx1, sy1, sx2, sy2],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x1, y1],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {cont = lCall2, handler = Handler.Caller}
+         }
+      }
+      val call2Block = Block.T {
+         args = Vector.new0 (),
+         label = lCall2,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.fromList [x2, y2],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock, call2Block],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = lMain
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      
+      val p' = PreFlatten.flattenOnce p
+      val Program.T {functions, ...} = p'
+      
+      (* Should have 4 functions: f, main, f_flat1 (for x1), f_flat2 (for y2) *)
+      val _ = assert (List.length functions = 4, "Expected 4 functions in flattened program")
+      val _ = print "Test 21 passed\n"
+   in () end
 in
 end

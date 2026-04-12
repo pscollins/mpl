@@ -6,6 +6,9 @@ sig
    include SSA_TRANSFORM
 
    (* General IR manipulation utilities, exposed for testing *)
+
+   (* Utility to apply a side-effecting expression at each level of the
+      program *)
    type walker = {
       (* Hook to execute before visiting a function body *)
       beforeFunc: Function.t -> unit,
@@ -19,6 +22,10 @@ sig
       statement: Statement.t -> unit
    }
    val doWalk: (walker * Program.t) -> unit
+
+   (* Applies the provided function to each `Block.t` in the program, updating
+   the containing `Function.t` for any instances that return SOME (..). *)
+   val mapBlocks: (Program.t * (Block.t * Block.t option)) -> Program.t
 
    type typedVar = Var.t * Type.t
    (* If the provided `typedVar` is a tuple type, returns a sequence of
@@ -41,7 +48,7 @@ sig
             (* No modification: keep the existing argument *)
             Preserve
             (* Flatten a tuple argument into its constituent parts *)
-          | FlattenTuple
+            | FlattenTuple
 
    (* Given a `Function.t` and a set of flattening decisions for each argument,
    returns the (partially)-flattened function, i.e. given:
@@ -63,7 +70,7 @@ sig
    function *)
    datatype flatteningChoiceType =
             (* Valid, but no change *)
-              NoOp
+            NoOp
             (* Valid, and corresponds to a real flattening *)
             | Valid
             (* Invalid: wrong arity or impossible flatten *)
@@ -77,7 +84,7 @@ sig
             PreserveVar
             (* Flatten: carries the parent `Var.t`s to flatten-through.
             `parents` is guaranteed to be non-empty. *)
-          | FlattenTupleVar of Var.t vector
+            | FlattenTupleVar of Var.t vector
 
    (* Type to manage tagging `Var.t`s with their flattening decision *)
    type varChoiceManager
@@ -118,8 +125,8 @@ sig
       `Program.t`: newly-returned `Func.t`s are not added to the mapping.
     *)
    val getOrCreateFunc: (functionManager *
-                        Func.t *
-                        argChoice vector) -> Func.t
+                         Func.t *
+                         argChoice vector) -> Func.t
 
    (* Returns the collection of `Function.t`s backing the newly-created
    `Func.t`s from calls to `getOrCreateFunc`, clearing the list of "pending new
