@@ -51,7 +51,7 @@ in
 end
 
 
-fun doWalk (w: walker, p: Program.t) = let 
+fun doWalk (w: walker, p: Program.t) = let
    val {beforeFunc, afterFunc, beforeBlock, afterBlock, statement}
        = w
    val Program.T {globals, ...} = p
@@ -292,7 +292,7 @@ fun choiceString c =
 fun choiceLayout c =
     Layout.str (choiceString c)
 
-fun newFunctionManager (p: Program.t) = let 
+fun newFunctionManager (p: Program.t) = let
    (* TODO(pscollins): Since the scheme below doesn't 'follow through'
    already-flattened functions, we'll need to destroy and recreate it after each
    iteration of flattening, which will result in unnecessary flattened
@@ -348,7 +348,7 @@ fun newFunctionManager (p: Program.t) = let
    the list of for `f`. *)
    fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector): Func.t = let
       fun logInputThunk () = let
-         open Layout 
+         open Layout
       in
          seq [str "getOrCreateFlattenedFunc: looking for ",
               Func.layout f,
@@ -429,14 +429,42 @@ in
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
 
+fun varChoiceToArgChoice (vc: varChoice): argChoice =
+    case vc of
+        PreserveVar => Preserve
+      | FlattenTupleVar _ => FlattenTuple
+
+
+(* Given a flattening choice for the constituent vars of `originalArgs`, returns
+the argument vector to pass to the flattened function *)
+fun buildCallArgs (originalArgs: Var.t vector,
+                   varChoices: varChoice vector) = let
+   fun buildCallArg (originalArg, varChoice) =
+       case varChoice of
+           PreserveVar => Vector.new1 originalArg
+         | FlattenTupleVar parents => parents
+in
+   Vector.concatV (
+   Vector.map2 (originalArgs, varChoices, buildCallArg))
+end
+
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val fm = newFunctionManager p
-   fun rewriteTransfer (t: Transfer.t) = let 
+   fun getChoice v = getVarChoice (vm, v)
+   fun getFunc (original, argChoices) =
+       getOrCreateFunc (fm, original, argChoices)
+   fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
-         val args' = args
-         val func' = func
+         (* Make a flattening decision for each argument *)
+         val varChoices = Vector.map (args, getChoice)
+         (* Construct the call argument *)
+         val args' = buildCallArgs (args, varChoices)
+         (* Construct the flattened function *)
+         val argChoices = Vector.map (varChoices, varChoiceToArgChoice)
+         val func' = getFunc (func, argChoices)
       in
+         (* Return a call to the flattened function (perhaps unchanged) *)
          Transfer.Call {args=args',
                         func=func',
                         inline=inline,
@@ -463,7 +491,17 @@ fun flattenOnce (p: Program.t) = let
                                            transfer=transfer'})
         | NONE => NONE
    end
-   val p' = mapBlocks (p, maybeRewriteBlock)
+   (* Extracts new functions from `fm` and adds them to `p'` *)
+   fun appendNewFns (p': Program.t) = let
+      val Program.T {datatypes, functions, globals, main} = p'
+   in
+      Program.T {datatypes=datatypes,
+                 functions=List.append (extractNewFunctions fm,
+                                        functions),
+                 globals=globals,
+                 main = main}
+   end
+   val p' = appendNewFns (mapBlocks (p, maybeRewriteBlock))
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
 in
