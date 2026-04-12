@@ -27,6 +27,10 @@ in
    print (String.concat msgParts)
 end
 
+fun printFail msg =
+    (print (msg ^ "\n");
+     OS.Process.exit OS.Process.failure)
+
 local
    open Ssa
 
@@ -438,10 +442,21 @@ local
       val _ = print "Test 6b: flattening a non-tuple\n"
       val resNonTuple = PreFlatten.flattenTupleVar (v, t1)
       val _ =
-         case resNonTuple of
-            NONE => ()
-          | SOME _ => (print "flattenTupleVar should return NONE for non-tuple type\n"; OS.Process.exit OS.Process.failure)
+          case resNonTuple of
+              NONE => ()
+            | SOME _ => (print "flattenTupleVar should return NONE for non-tuple type\n"; OS.Process.exit OS.Process.failure)
 
+
+      (* This surprising behavior is because `Type.tuple` flattens through
+      single-element arguments *)
+      val _ = print "Test 6b: flattening a singleton tuple (regular ctor)\n"
+      val tSingletonTuple = Type.tuple (Vector.new1 t1)
+      val resSingletonTuple = PreFlatten.flattenTupleVar (v, tSingletonTuple)
+      val _ = case resSingletonTuple of
+                  NONE => ()
+                | SOME inner => printFail "unexpected flatten"
+
+     
       val _ = print "Test 6 passed\n"
    in () end
 
@@ -970,7 +985,7 @@ local
       val _ = print "Test 18: multi-argument flattening\n"
       val fName = Func.fromString "f18"
       val tBool = Type.bool
-      val tTup1 = Type.tuple (Vector.fromList [tBool])
+      val tTup1 = Type.tuple (Vector.fromList [tBool, tBool, tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
       
       val fLf = Label.fromString "Lf"
@@ -998,7 +1013,8 @@ local
       val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
       val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
-      val s4 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x}
+      val s4 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1, b2, b3]),
+                            ty = tTup1, var = SOME x}
       val s5 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y}
       
       val mainL = Label.fromString "Lmain"
@@ -1183,7 +1199,7 @@ local
       val _ = print "Test 21: mixture of different flattening decisions\n"
       val fName = Func.fromString "f21"
       val tBool = Type.bool
-      val tTup1 = Type.tuple (Vector.fromList [tBool])
+      val tTup1 = Type.tuple (Vector.fromList [tBool, tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
       
       val fLf = Label.fromString "Lf"
@@ -1215,7 +1231,7 @@ local
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
       val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
 
-      val sx1 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x1}
+      val sx1 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1, b2]), ty = tTup1, var = SOME x1}
       val sy1 = Statement.T {exp = Exp.unit, ty = tTup2, var = SOME y1} (* No flatten *)
 
       val sx2 = Statement.T {exp = Exp.unit, ty = tTup1, var = SOME x2} (* No flatten *)
