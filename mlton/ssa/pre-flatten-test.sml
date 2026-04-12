@@ -846,6 +846,66 @@ local
       val _ = print "Test 15 passed\n"
    in () end
 
+   val _ = let
+      (* TODO(gemini): Fix names *)
+      val _ = print "Test 15_2: functionManager, disconnected\n"
+      val fName = Func.fromString "f15_2"
+      val fName' = Func.fromString "f15_2'"
+      val l1 = Label.fromString "L15_2"
+      val l1' = Label.fromString "L15_2'"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+
+      val f = Function.new {
+         args = Vector.fromList [(v1, t1)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(v1, t1)],
+            label = l1,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+      val f2 = Function.new {
+         args = Vector.fromList [(v1, t1)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(v1, t1)],
+            label = l1',
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName',
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1'
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [f, f2],
+         globals = Vector.new0 (),
+         main = fName
+      }
+
+      val fm = PreFlatten.newFunctionManager p
+
+      (* Test that we can access a function that's not reachable via DFS *)
+      val _ = print "Test 15_2: access disconnected function\n"
+      val fNoOp = PreFlatten.getOrCreateFunc (fm, fName',
+                                              Vector.fromList [PreFlatten.Preserve])
+      val _ = assert (Func.equals (fNoOp, fName'), "NoOp should return original Func.t")
+
+      val _ = PreFlatten.destroyFunctionManager fm
+      val _ = print "Test 15_2 passed\n"
+   in () end
+
    (* Test 16: flattening through a single argument for a single-argument function *)
    val _ = let
       val _ = print "Test 16: single argument function flattening\n"

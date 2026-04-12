@@ -75,13 +75,11 @@ in
    Program.dfs (p, doWalkFunc)
 end
 
-fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
-   val Program.T {datatypes, functions, globals, main} = p
-
-   (* If `blockF` returns SOME for any `Block.t` in the `Function.t`, rewrites
+(* If `blockF` returns SOME for any `Block.t` in the `Function.t`, rewrites
    the `Function.t` to point to the modified block list. Otherwise, returns the
    original `Function.t` *)
-
+fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
+   val Program.T {datatypes, functions, globals, main} = p
    fun doFunc (f: Function.t) = let
       val oldBlocks = Function.blocks f
       val maybeNewBlocks = Vector.map (oldBlocks, blockF)
@@ -114,6 +112,15 @@ in
               globals = globals,
               main = main}
 end
+
+(* Applies an effectful expression to each `Function.t` in `p` *)
+fun foreachFunction (p: Program.t, funcF: (Function.t -> unit)): unit = let
+   val Program.T {functions, ...} = p
+in
+   List.foreach (functions, funcF)
+end
+   
+                        
 
 type typedVar = Var.t * Type.t
 fun flattenTupleVar (var, ty): (typedVar vector) option = let
@@ -323,8 +330,13 @@ fun newFunctionManager (p: Program.t) = let
        Property.destGetSetOnce (Func.plist,
                                 Property.initRaise ("function lookup", Func.layout))
    fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
-   val funcMappingWalker = beforeFunctionWalker addFuncToMapping
-   val _ = doWalk (funcMappingWalker, p)
+
+   (* Use foreachFunctin rather than `walker` because the DFS traversal pattern
+   doesn't reach disconnected functions, and so a program containing any such
+   function hits the `initRaise` above. The ordering of our `addFuncToMapping`
+   calls doesn't matter, so we might as well avoid the error by just setting up
+   the mapping for all functions. *)
+   val _ = foreachFunction (p, addFuncToMapping)
 
    (* Next, set up a hook to create new flattened functions when necessary
 
@@ -523,5 +535,6 @@ in
 end
 
 fun transform (p: Program.t): Program.t =
-    p
+    flattenOnce p
+    (* p *)
 end
