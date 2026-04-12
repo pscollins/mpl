@@ -134,7 +134,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
        case choice of
            Preserve => Vector.new1 typedVar
          | FlattenTuple => doFlatten typedVar
-   val {args, blocks, inline, name, returns, raises, start} =
+   val {args, blocks, inline, returns, raises, start, ...} =
        Function.dest f
    val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
    fun buildNewFunc binds = let
@@ -143,7 +143,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
       Function.new {args = newArgs,
                     blocks = Vector.concat [Vector.new1 newBlock, blocks],
                     inline = inline,
-                    name = name,
+                    name = Func.newString "flattened",
                     raises = raises,
                     returns = returns,
                     start = Block.label newBlock}

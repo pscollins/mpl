@@ -429,7 +429,10 @@ local
       val res = PreFlatten.buildFlattenedFunction
                     (f, Vector.fromList [PreFlatten.Preserve,
                                          PreFlatten.FlattenTuple])
-      val {args, blocks, start, ...} = Function.dest res
+      val {args, blocks, start,
+           name = resName, ...} = Function.dest res
+      val _ = assert (not (Label.equals(fName,  resName)),
+                      "new function must have a fresh name")
       val _ = assert (Vector.length args = 3,
                       "Flattened function should have 3 args")
       val (_, rt0) = Vector.sub (args, 0)
@@ -438,6 +441,7 @@ local
       val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
       val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
       val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
+
       
       val startBlock = Vector.peek (blocks, fn b => Label.equals (Block.label b, start))
       val _ = case startBlock of
