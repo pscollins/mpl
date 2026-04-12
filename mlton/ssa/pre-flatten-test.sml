@@ -15,6 +15,17 @@ fun programToString program =
        String.concat (List.rev (!segments))
     end
 
+fun printProgram (label, program) = let 
+   val msgParts = [
+      "Program ",
+      label,
+      "contents: \n",
+      programToString program,
+      "\n"
+      ]
+in
+   print (String.concat msgParts)
+end
 
 local
    open Ssa
@@ -1017,6 +1028,8 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
+
+      val _ = printProgram ("test18", p)
 
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
