@@ -826,12 +826,13 @@ local
       val fName = Func.fromString "f16"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-
+      
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tTuple)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -839,7 +840,7 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
 
       val mainName = Func.fromString "main16"
@@ -849,10 +850,11 @@ local
       val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
-
+      
+      val mainL = Label.fromString "Lmain"
       val mainBlock = Block.T {
          args = Vector.new0 (),
-         label = Label.fromString "Lmain",
+         label = mainL,
          statements = Vector.fromList [s1, s2, s3],
          transfer = Transfer.Call {
             args = Vector.fromList [x],
@@ -868,7 +870,7 @@ local
          name = mainName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lmain"
+         start = mainL
       }
       val p = Program.T {
          datatypes = Vector.new0 (),
@@ -890,12 +892,13 @@ local
       val fName = Func.fromString "f17"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-
+      
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tTuple), (Var.fromString "arg2", tBool)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -903,7 +906,7 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
 
       val mainName = Func.fromString "main17"
@@ -915,10 +918,11 @@ local
       val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
       val s4 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME y}
-
+      
+      val mainL = Label.fromString "Lmain"
       val mainBlock = Block.T {
          args = Vector.new0 (),
-         label = Label.fromString "Lmain",
+         label = mainL,
          statements = Vector.fromList [s1, s2, s3, s4],
          transfer = Transfer.Call {
             args = Vector.fromList [x, y],
@@ -934,7 +938,7 @@ local
          name = mainName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lmain"
+         start = mainL
       }
       val p = Program.T {
          datatypes = Vector.new0 (),
@@ -957,12 +961,13 @@ local
       val tBool = Type.bool
       val tTup1 = Type.tuple (Vector.fromList [tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
-
+      
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -970,7 +975,7 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
 
       val mainName = Func.fromString "main18"
@@ -984,10 +989,11 @@ local
       val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
       val s4 = Statement.T {exp = Exp.Tuple (Vector.fromList [b1]), ty = tTup1, var = SOME x}
       val s5 = Statement.T {exp = Exp.Tuple (Vector.fromList [b2, b3]), ty = tTup2, var = SOME y}
-
+      
+      val mainL = Label.fromString "Lmain"
       val mainBlock = Block.T {
          args = Vector.new0 (),
-         label = Label.fromString "Lmain",
+         label = mainL,
          statements = Vector.fromList [s1, s2, s3, s4, s5],
          transfer = Transfer.Call {
             args = Vector.fromList [x, y],
@@ -1003,7 +1009,7 @@ local
          name = mainName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lmain"
+         start = mainL
       }
       val p = Program.T {
          datatypes = Vector.new0 (),
@@ -1024,11 +1030,12 @@ local
       val _ = print "Test 19: unflattenable call\n"
       val fName = Func.fromString "f19"
       val tBool = Type.bool
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tBool)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tBool)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -1036,14 +1043,15 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
       val mainName = Func.fromString "main19"
       val x = Var.fromString "x"
       val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME x}
+      val mainL = Label.fromString "Lmain"
       val mainBlock = Block.T {
          args = Vector.new0 (),
-         label = Label.fromString "Lmain",
+         label = mainL,
          statements = Vector.fromList [s1],
          transfer = Transfer.Call {
             args = Vector.fromList [x],
@@ -1059,7 +1067,7 @@ local
          name = mainName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lmain"
+         start = mainL
       }
       val p = Program.T {
          datatypes = Vector.new0 (),
@@ -1079,12 +1087,13 @@ local
       val fName = Func.fromString "f20"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
-
+      
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTuple)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tTuple)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -1092,7 +1101,7 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
 
       val mainName = Func.fromString "main20"
@@ -1105,10 +1114,10 @@ local
       val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x1}
       (* x2 is NOT a tuple from a tuple expression *)
       val s4 = Statement.T {exp = Exp.unit, ty = tTuple, var = SOME x2}
-
+      
       val lMain = Label.fromString "Lmain"
       val lCall2 = Label.fromString "Lcall2"
-
+      
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = lMain,
@@ -1131,7 +1140,7 @@ local
             return = Return.Tail
          }
       }
-
+      
       val mainFunction = Function.new {
          args = Vector.new0 (),
          blocks = Vector.fromList [mainBlock, call2Block],
@@ -1147,10 +1156,10 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-
+      
       val p' = PreFlatten.flattenOnce p
       val Program.T {functions, ...} = p'
-
+      
       (* Should have 3 functions: f, main, and f_flattened (for x1 call) *)
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
       val _ = print "Test 20 passed\n"
@@ -1163,12 +1172,13 @@ local
       val tBool = Type.bool
       val tTup1 = Type.tuple (Vector.fromList [tBool])
       val tTup2 = Type.tuple (Vector.fromList [tBool, tBool])
-
+      
+      val fLf = Label.fromString "Lf"
       val fFunction = Function.new {
          args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
          blocks = Vector.fromList [Block.T {
             args = Vector.fromList [(Var.fromString "arg1", tTup1), (Var.fromString "arg2", tTup2)],
-            label = Label.fromString "Lf",
+            label = fLf,
             statements = Vector.new0 (),
             transfer = Transfer.Return (Vector.new0 ())
          }],
@@ -1176,7 +1186,7 @@ local
          name = fName,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "Lf"
+         start = fLf
       }
 
       val mainName = Func.fromString "main21"
