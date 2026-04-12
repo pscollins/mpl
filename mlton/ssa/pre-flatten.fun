@@ -242,18 +242,32 @@ end
 fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
    val {setVarChoiceProp, ...} = vt
    val Statement.T {exp, ty, var=maybeVar} = s
-   fun getDecisionFromParents (parents: Var.t vector) =
+   fun buildLogStmt args =
+       Layout.seq ([Layout.str "chooseVarsInStatement: for s=",
+                    Statement.layout s,
+                    Layout.str " made decision: "] @
+                   args @ [Layout.str "\n"])
+   fun logNonTupleResultThunk() =
+       buildLogStmt ([Layout.str " do not flatten: not a tuple, or no dest"])
+
+   fun getDecisionFromParents (parents: Var.t vector) = let
+      fun logResultThunk() =
+          buildLogStmt ([Layout.str " flatten unless empty: ",
+                         Vector.layout Var.layout parents])
+      val _ = Control.diagnostic logResultThunk
+   in
        (* `unit` is represented by an empty tuple that we don't want to flatten
        through *)
        if Vector.isEmpty parents then
           PreserveVar
        else
           FlattenTupleVar parents
+   end
 in
    case (exp, maybeVar) of
        (Exp.Tuple parents, SOME var) =>
        setVarChoiceProp (var, getDecisionFromParents parents)
-    | _ => ()
+    | _ => Control.diagnostic logNonTupleResultThunk
 end
 
 fun getVarChoice (vt: varChoiceManager, v: Var.t) = let
