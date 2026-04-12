@@ -432,8 +432,37 @@ end
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val fm = newFunctionManager p
-   fun maybeRewriteBlock (b: Block.t): Block.t option =
-      NONE
+   fun rewriteTransfer (t: Transfer.t) = let 
+      fun buildCall (args, func, inline, return) = let
+         val args' = args
+         val func' = func
+      in
+         Transfer.Call {args=args',
+                        func=func',
+                        inline=inline,
+                        return=return}
+      end
+   in
+      case t of
+          (* For now, only Call is supported
+
+           TODO(pscollins): Ideally we'd support goto-with-args as well
+           *)
+          Transfer.Call {args, func, inline, return} =>
+          SOME (buildCall (args, func, inline, return))
+        | _ => NONE
+   end
+
+   fun maybeRewriteBlock (b: Block.t): Block.t option = let
+      val Block.T {args, label, statements, transfer} = b
+   in
+      case rewriteTransfer transfer of
+          SOME transfer' => SOME (Block.T {args=args,
+                                           label=label,
+                                           statements=statements,
+                                           transfer=transfer'})
+        | NONE => NONE
+   end
    val p' = mapBlocks (p, maybeRewriteBlock)
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
