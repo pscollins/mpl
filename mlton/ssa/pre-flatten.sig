@@ -62,7 +62,8 @@ sig
    `argChoice` must be compatible with the function args (i.e. same count and
    applicable types): if not, error.
 
-   The returned function is guaranteed to have a new name
+   The returned function is guaranteed to have a new name, and all of the
+   variables within it are guarnateed to be distinct from the original function.
     *)
    val buildFlattenedFunction: (Function.t * argChoice vector) -> Function.t
 

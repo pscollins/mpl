@@ -188,7 +188,9 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
            Preserve => Vector.new1 typedVar
          | FlattenTuple => doFlatten typedVar
    val {args, blocks, inline, name, returns, raises, start} =
-       Function.dest f
+       (* Use fresh variables in the clone to prevent errors in later analyses
+       (which assume that variables in distinct functions are distinct) *)
+       Function.dest (Function.alphaRename f)
    val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
    fun buildNewFunc binds = let
       val newBlock = buildBindBlock (Vector.fromList binds, start)

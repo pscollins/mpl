@@ -576,7 +576,13 @@ local
       val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
       val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
       val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
-
+      fun checkFreshVar (v: Var.t, _) = let
+         val _ = assert (not (Var.equals (v, v1)), "v1 not renamed")
+         val _ = assert (not (Var.equals (v, v2)), "v2 not renamed")
+      in
+         ()
+      end
+      val _ = Function.foreachVar (res, checkFreshVar)
 
       val startBlock = Vector.peek (blocks, fn b => Label.equals (Block.label b, start))
       val _ = case startBlock of
