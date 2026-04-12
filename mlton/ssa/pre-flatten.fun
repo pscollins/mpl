@@ -244,6 +244,14 @@ type functionManager = {
    destroyFunctionManagerState: unit -> unit
 }
 
+fun choiceString c =
+    case c of
+        Preserve => "Preserve"
+     |  FlattenTuple => "FlattenTuple"
+
+fun choiceLayout c =
+    Layout.str (choiceString c)
+
 fun newFunctionManager (p: Program.t) = let 
    (* TODO(pscollins): Since the scheme below doesn't 'follow through'
    already-flattened functions, we'll need to destroy and recreate it after each
@@ -299,14 +307,24 @@ fun newFunctionManager (p: Program.t) = let
    Otherwise, builds a flattened function for `f` under `choice` and adds it to
    the list of for `f`. *)
    fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector): Func.t = let
-      val _ = Control.diagnostic (fn () => let open Layout in
+      fun logInputThunk () = let
+         open Layout 
+      in
          seq [str "getOrCreateFlattenedFunc: looking for ",
               Func.layout f,
-              str " with choices ",
-              Vector.layout (fn choice => case choice of
-                 Preserve => str "Preserve"
-               | FlattenTuple => str "FlattenTuple") choices, str "\n"]
-      end)
+              Layout.str " with choices ",
+              Vector.layout (choiceLayout, choices),
+              str "\n"]
+      end
+      fun doLogChoice (newF) = let
+         open Layout
+      in
+         seq [str "getOrCreateFlattenedFunc: created new function ",
+              Func.layout newF,
+              str " from ",
+              Func.layout f, str "\n"]
+      end
+      val _ = Control.diagnostic logInputThunk
       val flattenedFuncList: flattenedFunc list ref = getFlattenedFuncList f
       fun flattenedFuncMatches (choices', _) =
           Vector.equals (choices', choices,
@@ -314,12 +332,7 @@ fun newFunctionManager (p: Program.t) = let
       fun addNewFlattenedFunc () = let
          val newFunc = createFlattenedFunc (f, choices)
          val newF = Function.name newFunc
-         val _ = Control.diagnostic (fn () => let open Layout in
-            seq [str "getOrCreateFlattenedFunc: created new function ",
-                 Func.layout newF,
-                 str " from ",
-                 Func.layout f, str "\n"]
-         end)
+         val _ = Control.diagnostic (fn () => doLogChoice newF)
          val _ = List.push (flattenedFuncList, (choices, newF))
       in
          newF
