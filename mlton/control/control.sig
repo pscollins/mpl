@@ -52,6 +52,7 @@ signature CONTROL =
          Layout of 'a -> Layout.t
        | Layouts of 'a * (Layout.t -> unit) -> unit
 
+      val diagnosticWriter: (Layout.t -> unit) option ref
       val diagnostic: (unit -> Layout.t) -> unit
       val diagnostics: ((Layout.t -> unit) -> unit) -> unit
       val saveToFile:

@@ -134,7 +134,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
        case choice of
            Preserve => Vector.new1 typedVar
          | FlattenTuple => doFlatten typedVar
-   val {args, blocks, inline, name, raises, returns, start} =
+   val {args, blocks, inline, name, returns, raises, start} =
        Function.dest f
    val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
    fun buildNewFunc binds = let
@@ -299,6 +299,14 @@ fun newFunctionManager (p: Program.t) = let
    Otherwise, builds a flattened function for `f` under `choice` and adds it to
    the list of for `f`. *)
    fun getOrCreateFlattenedFunc (f: Func.t, choices: argChoice vector): Func.t = let
+      val _ = Control.diagnostic (fn () => let open Layout in
+         seq [str "getOrCreateFlattenedFunc: looking for ",
+              Func.layout f,
+              str " with choices ",
+              Vector.layout (fn choice => case choice of
+                 Preserve => str "Preserve"
+               | FlattenTuple => str "FlattenTuple") choices, str "\n"]
+      end)
       val flattenedFuncList: flattenedFunc list ref = getFlattenedFuncList f
       fun flattenedFuncMatches (choices', _) =
           Vector.equals (choices', choices,
@@ -306,6 +314,12 @@ fun newFunctionManager (p: Program.t) = let
       fun addNewFlattenedFunc () = let
          val newFunc = createFlattenedFunc (f, choices)
          val newF = Function.name newFunc
+         val _ = Control.diagnostic (fn () => let open Layout in
+            seq [str "getOrCreateFlattenedFunc: created new function ",
+                 Func.layout newF,
+                 str " from ",
+                 Func.layout f, str "\n"]
+         end)
          val _ = List.push (flattenedFuncList, (choices, newF))
       in
          newF
@@ -315,7 +329,13 @@ fun newFunctionManager (p: Program.t) = let
                       flattenedFuncMatches)  of
           (* If we already have a flattened function for `choices`, return it
              here *)
-          SOME (_, matchedFunc) => matchedFunc
+          SOME (_, matchedFunc) => (
+             Control.diagnostic (fn () => let open Layout in
+                seq [str "getOrCreateFlattenedFunc: found matched function ",
+                     Func.layout matchedFunc]
+             end);
+             matchedFunc
+          )
         (* Otherwise, build a new one *)
         | _ => addNewFlattenedFunc()
    end

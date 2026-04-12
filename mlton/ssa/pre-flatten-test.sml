@@ -2,6 +2,8 @@ structure Atoms = Atoms ()
 structure Ssa = Ssa (open Atoms)
 structure PreFlatten = PreFlatten (Ssa)
 
+val _ = Control.diagnosticWriter := SOME (fn l => Layout.output (l, Out.standard))
+
 local
    open Ssa
 
@@ -424,9 +426,12 @@ local
          start = l1
       }
       
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val res = PreFlatten.buildFlattenedFunction
+                    (f, Vector.fromList [PreFlatten.Preserve,
+                                         PreFlatten.FlattenTuple])
       val {args, blocks, start, ...} = Function.dest res
-      val _ = assert (Vector.length args = 3, "Flattened function should have 3 args")
+      val _ = assert (Vector.length args = 3,
+                      "Flattened function should have 3 args")
       val (_, rt0) = Vector.sub (args, 0)
       val (_, rt1) = Vector.sub (args, 1)
       val (_, rt2) = Vector.sub (args, 2)

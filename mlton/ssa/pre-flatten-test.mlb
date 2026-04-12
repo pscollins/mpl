@@ -1,5 +1,6 @@
+../../lib/mlton/sources.mlb
+../control/sources.mlb
 local
-   ../../lib/mlton/sources.mlb
    ../atoms/sources.mlb
    sources.mlb
    pre-flatten-test.sml
