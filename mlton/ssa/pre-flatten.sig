@@ -25,7 +25,7 @@ sig
 
    (* Applies the provided function to each `Block.t` in the program, updating
    the containing `Function.t` for any instances that return SOME (..). *)
-   val mapBlocks: (Program.t * (Block.t * Block.t option)) -> Program.t
+   val mapBlocks: (Program.t * (Block.t -> Block.t option)) -> Program.t
 
    type typedVar = Var.t * Type.t
    (* If the provided `typedVar` is a tuple type, returns a sequence of

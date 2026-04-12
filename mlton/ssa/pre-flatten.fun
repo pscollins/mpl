@@ -395,7 +395,7 @@ fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val fm = newFunctionManager p
 in
-   raise FAIL "TODO"
+   raise Fail "TODO"
 end
 
 fun transform (p: Program.t): Program.t =

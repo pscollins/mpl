@@ -160,6 +160,7 @@ local
       val _ = print "Test 3 passed\n"
    in () end
 
+
    (* Test 4: doWalk with globals *)
    val _ = let
       val _ = print "Test 4: doWalk with globals\n"
@@ -286,6 +287,100 @@ local
       ]
       val _ = assertEqualStrings (expected, getLog (), "doWalk sequence mismatch in Test 5")
       val _ = print "Test 5 passed\n"
+   in () end
+
+   (* TODO(gemini): renumber tests *)
+   (* Test 14: Simple program (existing) *)
+   val _ = let
+      val _ = print "Test 14: mapBlocks\n"
+      val mainFunc = Func.fromString "main"
+      val mainLabel = Label.fromString "L0"
+      fun mkBlock label = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainBlock = mkBlock mainLabel
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p1 = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      fun noOpBlockF b = NONE
+
+      val newLabel = Label.fromString "newLabel"
+      fun changeNameBlockF b = SOME (mkBlock newLabel)
+
+      fun getUniqueBlockLabel (Program.T {functions, ...}) = let
+         val _ = assert (List.length functions = 1, "expect unique function")
+         val func = List.first functions
+         val blocks = Function.blocks func 
+         val _ = assert (Vector.length blocks = 1, "expect unique block")
+         val block = Vector.first blocks
+      in
+         Block.label block
+      end
+      
+      val p1 = PreFlatten.mapBlocks (p1, noOpBlockF)
+      val _ = assert (Label.equals (getUniqueBlockLabel p1, mainLabel),
+                      "expect original label")
+
+      val p1 = PreFlatten.mapBlocks (p1, changeNameBlockF)
+      val _ = assert (Label.equals (getUniqueBlockLabel p1, newLabel),
+                      "expect new label")
+
+      val _ = print "Test 14 passed\n"
+   in () end
+
+   (* Test 2: doWalk on simple program *)
+   val _ = let
+      val _ = print "Test 2: doWalk on simple program\n"
+      val mainFunc = Func.fromString "main2"
+      val mainLabel = Label.fromString "L1"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p2 = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val _ = clearLog ()
+      val _ = PreFlatten.doWalk (walker, p2)
+      val expected = [
+         "beforeFunc main2",
+         "beforeBlock L1",
+         "afterBlock L1",
+         "afterFunc main2"
+      ]
+      val _ = assertEqualStrings (expected, getLog (), "doWalk sequence mismatch in Test 2")
+      val _ = print "Test 2 passed\n"
    in () end
 
    (* Test 6: flattenTupleVar *)
