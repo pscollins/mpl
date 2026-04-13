@@ -1113,6 +1113,10 @@ val keepPasses = control {name = "keep passes",
                                      (Layout.toString o
                                       Regexp.Compiled.layout)}
 
+val keepPassOutDir = control {name = "keep pass out dir",
+                              default = NONE,
+                              toString = Option.toString (fn s => s)}
+
 val keepRSSA = control {name = "keep RSSA",
                         default = false,
                         toString = Bool.toString}

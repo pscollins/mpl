@@ -30,13 +30,12 @@ else
 fi
 
 OUTFILE=${OUTDIR}/out.bin
-# -keep-pass doesn't respect -output, so we need to run in ${OUTDIR}.
-#
+# Use the new -keep-pass-out-dir flag
+mkdir -p ${OUTDIR}
 # Extract the last argument and make it absolute
 # ${@: -1} grabs the last arg, ${@:1:$#-1} grabs everything else
 LAST_ARG=$(realpath "${@: -1}")
 OTHER_ARGS=("${@:1:$#-1}")
-cd ${OUTDIR}
 # Pass the earlier arguments as-is and use the absolute path for the last one
-${MPL} -output ${OUTFILE} -keep g "${OTHER_ARGS[@]}" "$LAST_ARG"
+${MPL} -output ${OUTFILE} -keep g -keep-pass-out-dir ${OUTDIR} "${OTHER_ARGS[@]}" "$LAST_ARG"
 cat ${OUTFILE}.*.c

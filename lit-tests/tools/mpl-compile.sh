@@ -18,8 +18,6 @@ INFILE=$(realpath "${@: -2: 1}")
 COMPILE_ARGS=("${@: 1: $# - 2}")
 
 OUTFILE=${OUTDIR}/out.bin
-# -keep-pass doesn't respect -output, so we need to run in ${OUTDIR}.
+# Use the new -keep-pass-out-dir flag
 mkdir -p ${OUTDIR}
-cd ${OUTDIR}
-# Pass the earlier arguments as-is and use the absolute path for the input file
-${MPL} -output ${OUTFILE} "${COMPILE_ARGS[@]}" "$INFILE"
+${MPL} -output ${OUTFILE} -keep-pass-out-dir ${OUTDIR} "${COMPILE_ARGS[@]}" "$INFILE"

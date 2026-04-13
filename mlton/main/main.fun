@@ -556,6 +556,8 @@ fun makeOptions {usage} =
                                     in List.push (keepPasses, re)
                                     end
                    | NONE => usage (concat ["invalid -keep-pass flag: ", s])))),
+       (Expert, "keep-pass-out-dir", " <dir>", "directory for -keep-pass outputs",
+        SpaceString (fn s => keepPassOutDir := SOME s)),
        (Expert, "layout-width", " <n>", "target width for pretty printer",
         Int (fn n =>
              if n > 0
