@@ -2,6 +2,11 @@ signature PRE_FLATTEN =
 sig
    (* Exports:
         val transform: Program.t -> Program.t
+
+     which iteratively runs `flattenOnce` until convergence. The behavior of
+     this call is controlled by the following flags:
+
+       -pre-flatten-max-iters=N: limit the number of iterations to N
     *)
    include SSA_TRANSFORM
 
