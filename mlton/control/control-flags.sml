@@ -1403,6 +1403,11 @@ val polyvariance =
                              ("product", Int.layout product)])
              p)}
 
+val preFlattenMaxIters =
+   control {name = "pre-flatten-max-iters",
+            default = 1,
+            toString = Int.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =

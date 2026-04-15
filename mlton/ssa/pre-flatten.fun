@@ -548,7 +548,15 @@ in
 end
 
 fun transform (p: Program.t): Program.t =
-    case flattenOnce p of 
-        SOME p' => p'
-      | NONE => p
+    let
+       fun loop (p, n) =
+          if n >= !Control.preFlattenMaxIters
+             then p
+          else
+             case flattenOnce p of
+                NONE => p
+              | SOME p' => loop (p', n + 1)
+    in
+       loop (p, 0)
+    end
 end

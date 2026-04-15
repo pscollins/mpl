@@ -411,6 +411,8 @@ signature CONTROL_FLAGS =
           product: int
          } option ref
 
+      val preFlattenMaxIters: int ref
+
       structure PositionIndependentStyle:
          sig
             datatype t =

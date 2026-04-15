@@ -713,7 +713,10 @@ fun makeOptions {usage} =
                                          rounds = rounds,
                                          small = small}
               | _ => ())),
+       (Expert, "pre-flatten-max-iters", " <n>", "limit the number of pre-flattening iterations (1)",
+        Int (fn n => preFlattenMaxIters := n)),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
+
         SpaceString (fn s =>
                      (case (s, PositionIndependentStyle.fromString s) of
                          ("default", NONE) => positionIndependentStyle := NONE
