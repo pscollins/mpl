@@ -555,7 +555,7 @@ fun transform (p: Program.t): Program.t =
           else
              case flattenOnce p of
                 NONE => p
-              | SOME p' => loop (p', n + 1)
+              | SOME p' => loop (shrink p', n + 1)
     in
        loop (p, 0)
     end
