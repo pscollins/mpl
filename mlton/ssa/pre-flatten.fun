@@ -526,15 +526,19 @@ fun flattenOnce (p: Program.t) = let
                                            transfer=transfer'})
         | NONE => NONE
    end
-   (* Extracts new functions from `fm` and adds them to `p'` *)
-   fun appendNewFns (p': Program.t) = let
+
+   (* Extracts new functions from `fm` and adds them to `p'`, or
+      returns `NONE` *)
+   fun maybeAppendNewFns (p': Program.t) = let
       val Program.T {datatypes, functions, globals, main} = p'
    in
-      Program.T {datatypes=datatypes,
-                 functions=List.append (extractNewFunctions fm,
-                                        functions),
-                 globals=globals,
-                 main = main}
+      case extractNewFunctions fm of
+          [] => NONE
+        | newFns => Program.T {datatypes=datatypes,
+                               functions=List.append (newFns,
+                                                      functions),
+                               globals=globals,
+                               main = main}
    end
    val p' = appendNewFns (mapBlocks (p, maybeRewriteBlock))
    val _ = destroyFunctionManager fm
@@ -544,6 +548,7 @@ in
 end
 
 fun transform (p: Program.t): Program.t =
-    flattenOnce p
-    (* p *)
+    case flattenOnce p of 
+        SOME p' => p'
+      | NONE => p
 end

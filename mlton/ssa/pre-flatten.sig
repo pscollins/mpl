@@ -154,7 +154,10 @@ sig
        f_flat(t1, t2, ..., arg2, ...):
          arg1 = tuple(t1, t2, ...)
          ...original body of `f`...
+
+     On success (i.e. if we made progress and flattened at least one function),
+     returns `SOME ...`, otherwise, returns `NONE`.
     *)
-   val flattenOnce: Program.t -> Program.t
+   val flattenOnce: Program.t -> Program.t option
 
 end
