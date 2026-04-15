@@ -971,7 +971,9 @@ local
          main = mainName
       }
 
-      val p' = PreFlatten.flattenOnce p
+      val p' = (case PreFlatten.flattenOnce p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 16: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
 
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
@@ -1058,7 +1060,9 @@ local
          main = mainName
       }
 
-      val p' = PreFlatten.flattenOnce p
+      val p' = (case PreFlatten.flattenOnce p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 17: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
 
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
@@ -1153,7 +1157,9 @@ local
 
       val _ = printProgram ("test18", p)
 
-      val p' = PreFlatten.flattenOnce p
+      val p' = (case PreFlatten.flattenOnce p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 18: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
 
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
@@ -1227,9 +1233,9 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      val p' = PreFlatten.flattenOnce p
-      val Program.T {functions, ...} = p'
-      val _ = assert (List.length functions = 2, "Expected 2 functions, no flattening possible")
+      val _ = case PreFlatten.flattenOnce p of
+                 NONE => ()
+               | SOME _ => printFail "Test 19: expected NONE, but got SOME"
       val _ = print "Test 19 passed\n"
    in () end
 
@@ -1309,7 +1315,9 @@ local
          main = mainName
       }
       
-      val p' = PreFlatten.flattenOnce p
+      val p' = (case PreFlatten.flattenOnce p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 20: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
       
       (* Should have 3 functions: f, main, and f_flattened (for x1 call) *)
@@ -1424,7 +1432,9 @@ local
          main = mainName
       }
 
-      val p' = PreFlatten.flattenOnce p
+      val p' = (case PreFlatten.flattenOnce p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 21: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
 
       (* Should have 4 functions: f, main, f_flat1 (for x1), f_flat2 (for y2) *)

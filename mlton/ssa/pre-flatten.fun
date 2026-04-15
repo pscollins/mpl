@@ -534,13 +534,13 @@ fun flattenOnce (p: Program.t) = let
    in
       case extractNewFunctions fm of
           [] => NONE
-        | newFns => Program.T {datatypes=datatypes,
-                               functions=List.append (newFns,
-                                                      functions),
-                               globals=globals,
-                               main = main}
+        | newFns => SOME (Program.T {datatypes=datatypes,
+                                     functions=List.append (newFns,
+                                                            functions),
+                                     globals=globals,
+                                     main = main})
    end
-   val p' = appendNewFns (mapBlocks (p, maybeRewriteBlock))
+   val p' = maybeAppendNewFns (mapBlocks (p, maybeRewriteBlock))
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
 in
