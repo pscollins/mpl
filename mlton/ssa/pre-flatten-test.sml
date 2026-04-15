@@ -1475,5 +1475,97 @@ local
 
       val _ = print "Test 21 passed\n"
    in () end
+
+   (* Test 22: Iterative flattening *)
+   val _ = let
+      val _ = print "Test 22: Iterative flattening\n"
+      val fName = Func.fromString "f22"
+      val tBool = Type.bool
+      val tTupInner = Type.tuple (Vector.fromList [tBool, tBool])
+      val tTupOuter = Type.tuple (Vector.fromList [tTupInner, tBool])
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTupOuter)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main22"
+      val b1 = Var.fromString "b1"
+      val b2 = Var.fromString "b2"
+      val b3 = Var.fromString "b3"
+      val vInner = Var.fromString "vInner"
+      val vOuter = Var.fromString "vOuter"
+
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b2}
+      val s3 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b3}
+
+      val sInner = Statement.T {exp = Exp.Tuple (Vector.fromList [b1, b2]), ty = tTupInner, var = SOME vInner}
+      val sOuter = Statement.T {exp = Exp.Tuple (Vector.fromList [vInner, b3]), ty = tTupOuter, var = SOME vOuter}
+
+      val lMain = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = lMain,
+         statements = Vector.fromList [s1, s2, s3, sInner, sOuter],
+         transfer = Transfer.Call {
+            args = Vector.fromList [vOuter],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = lMain
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* First, run with max-iters = 1 *)
+      val _ = Control.preFlattenMaxIters := 1
+      val p1 = PreFlatten.transform p
+      val Program.T {functions = funcs1, ...} = p1
+      
+      (* Should have 3 functions: f, main, and f_flat (2 args) *)
+      val _ = assert (List.length funcs1 = 3, "Expected 3 functions with max-iters=1")
+      
+      (* Second, run with max-iters = 2 *)
+      val _ = Control.preFlattenMaxIters := 2
+      val p2 = PreFlatten.transform p
+      val Program.T {functions = funcs2, ...} = p2
+      
+      (* Should have 4 functions: f, main, f_flat, and f_flat_flat (3 args) *)
+      val _ = assert (List.length funcs2 = 4, "Expected 4 functions with max-iters=2")
+      
+      val finalFunc = List.peek (funcs2, fn f =>
+         let val {args, ...} = Function.dest f in
+            Vector.length args = 3
+         end)
+      val _ = assert (Option.isSome finalFunc, "Expected a function with 3 arguments after 2 iterations")
+
+      val _ = print "Test 22 passed\n"
+   in () end
 in
 end
