@@ -92,6 +92,15 @@ sig
             `parents` is guaranteed to be non-empty. *)
             | FlattenTupleVar of Var.t vector
 
+   (* Describes how a `Var.t` is consumed by a particular reader. *)
+   datatype varConsumer =
+            (* The consumer is an unpack operation (i.e. tuple select) *)
+            AsUnpacked
+            (* The consumer is a non-call operation that takes the entire tuple *)
+            | AsPacked
+            (* The consumer is the specified call *)
+            | ViaCall of Func.t
+
    (* Type to manage tagging `Var.t`s with their flattening decision *)
    type varChoiceManager
    (* Creates a new `varChoiceManager` *)
