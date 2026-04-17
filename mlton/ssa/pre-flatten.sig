@@ -98,10 +98,13 @@ sig
             AsUnpacked
             (* The consumer is a non-call operation that takes the entire tuple *)
             | AsPacked
-            (* The consumer is the specified call *)
-            | ViaCall of Func.t
+            (* The consumer is a function call, accepting this `Var.t` via the
+            specified formal parameter. *)
+            | ViaCall of Var.t
 
-   (* Type to manage tagging `Var.t`s with their flattening decision *)
+   (* Type to manage tagging `Var.t`s with their flattening decision and other
+   associated data *)
+   (* TODO(pscollins): Rename? `varDataManager`? *)
    type varChoiceManager
    (* Creates a new `varChoiceManager` *)
    val newVarChoiceManager: unit -> varChoiceManager
@@ -114,8 +117,12 @@ sig
      All other `Var.t`s are marked `PreserveVar`.
     *)
    val chooseVarsInStatement: (varChoiceManager * Statement.t) -> unit
+   (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
+   val markConsumersInStatement: (varChoiceManager * Statement.t) -> unit
    (* Returns the choice for the provided `Var.t` *)
    val getVarChoice: (varChoiceManager * Var.t) -> varChoice
+   (* Returns the `varConsumer` tags for each consumer of the provided `Var.t` *)
+   val getVarConsumers (varChoiceManager * Var.t) -> varConsumer list
    (* Cleans up state associated with the provided `varChoiceManager` *)
    val destroyVarChoiceManager: varChoiceManager -> unit
    (* Returns a `varChoiceManager` that carries flattening choices for all
