@@ -650,8 +650,7 @@ datatype flatteningPolicy =
          | FlattenForAnyLocalUnpack
 
 fun updateChoiceForPolicy policy (varChoice, varConsumers) =
-    varChoice
-
+    Error.unimplemented "TODO"
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of
