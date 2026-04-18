@@ -238,6 +238,11 @@ datatype varChoice =
          PreserveVar
          | FlattenTupleVar of Var.t vector
 
+datatype varConsumer =
+            AsUnpacked
+            | AsPacked
+            | ViaCall of Var.t
+
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
    setVarChoiceProp: Var.t * varChoice -> unit,
@@ -290,6 +295,10 @@ fun getVarChoice (vt: varChoiceManager, v: Var.t) = let
 in
    getVarChoiceProp v
 end
+
+fun markConsumersInStatement (vm: varChoiceManager, s: Statement.t) = ()
+
+fun getVarConsumers (vm: varChoiceManager, v: Var.t) = []
 
 fun destroyVarChoiceManager (vt: varChoiceManager) = let
    val {destroyVarChoiceProps, ...} = vt

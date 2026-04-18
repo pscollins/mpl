@@ -122,7 +122,7 @@ sig
    (* Returns the choice for the provided `Var.t` *)
    val getVarChoice: (varChoiceManager * Var.t) -> varChoice
    (* Returns the `varConsumer` tags for each consumer of the provided `Var.t` *)
-   val getVarConsumers (varChoiceManager * Var.t) -> varConsumer list
+   val getVarConsumers: (varChoiceManager * Var.t) -> varConsumer list
    (* Cleans up state associated with the provided `varChoiceManager` *)
    val destroyVarChoiceManager: varChoiceManager -> unit
    (* Returns a `varChoiceManager` that carries flattening choices for all
