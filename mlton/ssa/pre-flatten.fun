@@ -649,8 +649,19 @@ datatype flatteningPolicy =
            FlattenAlways
          | FlattenForAnyLocalUnpack
 
-fun updateChoiceForPolicy policy (varChoice, varConsumers) =
-    Error.unimplemented "TODO"
+fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
+   fun hasConsumerType wantType = let
+      fun checkEl el = el = wantType
+   in
+      List.exists (varConsumers, checkEl)
+   end
+in
+   case policy of
+       FlattenAlways => varChoice
+    |  FlattenForAnyLocalUnpack =>
+       if hasConsumerType AsUnpacked then varChoice
+       else PreserveVar
+end
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of

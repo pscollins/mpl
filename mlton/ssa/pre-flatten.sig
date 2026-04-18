@@ -196,7 +196,7 @@ sig
    `x[i]` and `arg[i]` (described above), updates `varChoice` to account for the
    specified policy. *)
    val updateChoiceForPolicy: flatteningPolicy ->
-                              (varChoice * varConsumer list) ->
+                              (varChoice * (varConsumer list)) ->
                               varChoice
 
    (* Runs one iteration of flattening: for each appearance of the sequence:
