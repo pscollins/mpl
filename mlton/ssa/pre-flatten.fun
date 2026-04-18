@@ -650,17 +650,21 @@ datatype flatteningPolicy =
          | FlattenForAnyLocalUnpack
 
 fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
-   fun hasConsumerType wantType = let
-      fun checkEl el = el = wantType
-   in
-      List.exists (varConsumers, checkEl)
-   end
+   fun isUnpacked consumer =
+       case consumer of
+           AsUnpacked => true
+         | _ => false
+   fun hasConsumerType wantType =
+       List.exists (varConsumers, wantType)
 in
    case policy of
-       FlattenAlways => varChoice
-    |  FlattenForAnyLocalUnpack =>
-       if hasConsumerType AsUnpacked then varChoice
-       else PreserveVar
+      FlattenAlways => varChoice
+    | FlattenForAnyLocalUnpack =>
+         (case varChoice of
+             PreserveVar => PreserveVar
+           | FlattenTupleVar _ =>
+                if hasConsumerType isUnpacked then varChoice
+                else PreserveVar)
 end
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
