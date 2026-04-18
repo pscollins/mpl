@@ -428,9 +428,26 @@ end
    should record an `AsUnpacked` relation. For now, we ignore them
  *)
 fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
-   val _ = ()
+   val {getVarConsumersProp, funcsMap, ...} = vm
+   val {getFunc, getBlock, ...} = funcsMap
+   fun markConsumer (from, to) = let
+      val consumersRef = getVarConsumersProp from
+   in
+      List.push (consumersRef, AsAlias to)
+   end
+   fun markConsumers (froms, tos) =
+       Vector.foreach2 (froms, tos, markConsumer)
+   fun getBlockArgs (l: Label.t): Var.t vector = let
+      val Block.T {args, ...} = getBlock l
+      fun extractVar (var, _) = var
+   in
+      Vector.map (args, extractVar)
+   end
 in
-   Error.unimplemented "TODO"
+   case transfer of
+       Transfer.Goto {args, dst} =>
+       markConsumers (args, getBlockArgs dst)
+    | _ => Error.unimplemented "TODO"
 end
 
 
