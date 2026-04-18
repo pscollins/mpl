@@ -240,8 +240,8 @@ datatype varChoice =
 
 datatype varConsumer =
             AsUnpacked
-            | AsPacked
-            | ViaCall of Var.t
+            | AsCurrent
+            | AsAlias of Var.t
 
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
@@ -296,6 +296,12 @@ in
    getVarChoiceProp v
 end
 
+(* Add each `varConsumer` in `s` to `vm`
+
+  * `_ := Select(..., v)` -> AsUnpacked
+  * `_ := {ConApp,PrimApp,Tuple}(...v...)` -> AsCurrent
+  * `v := Var(v')` -> AsAlias(v')
+ *)
 fun markConsumersInStatement (vm: varChoiceManager, s: Statement.t) = ()
 
 fun getVarConsumers (vm: varChoiceManager, v: Var.t) = []

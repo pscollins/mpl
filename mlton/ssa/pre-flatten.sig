@@ -96,11 +96,12 @@ sig
    datatype varConsumer =
             (* The consumer is an unpack operation (i.e. tuple select) *)
             AsUnpacked
-            (* The consumer is a non-call operation that takes the entire tuple *)
-            | AsPacked
-            (* The consumer is a function call, accepting this `Var.t` via the
-            specified formal parameter. *)
-            | ViaCall of Var.t
+            (* The consumer is a non-call operation that takes the entire tuple
+            object *)
+            | AsCurrent
+            (* The consumer behavior follows the behavior of the provided
+            `Var.t`, e.g. this `Var.t` binds to it through a function call. *)
+            | AsAlias of Var.t
 
    (* Type to manage tagging `Var.t`s with their flattening decision and other
    associated data *)
