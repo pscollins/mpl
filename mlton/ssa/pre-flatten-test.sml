@@ -1706,6 +1706,7 @@ local
          val consumers2 = PreFlatten.getVarConsumers (vm1, v2)
          val _ = assert (List.exists (consumers2, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal2) | _ => false),
                          "Expected AsAlias vf2 for v2 in Goto")
+         val _ = PreFlatten.destroyVarConsumerManager vm1
       in
          ()
       end
