@@ -120,17 +120,34 @@ in
    List.foreach (functions, funcF)
 end
 
-(* Manages Func.t -> Function mappings *)
+(* Manages Func.t -> Function + Label.t -> Block mappings *)
 type funcsMap = {
    getFunc: Func.t -> Function.t,
-   destroyFuncs: unit -> unit
+   getBlock: Label.t -> Block.t,
+   destroyFuncsMap: unit -> unit
 }
 
 fun newFuncsMap (p: Program.t): funcsMap = let
-   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
+   val {get=getFunc, set=setFunc, destroy=destroyFuncsMapFuncs} =
        Property.destGetSetOnce (Func.plist,
                                 Property.initRaise ("function lookup", Func.layout))
-   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
+
+   val {get=getBlock, set=setBlock, destroy=destroyFuncsMapBlocks} =
+       Property.destGetSetOnce (Label.plist,
+                                Property.initRaise ("block lookup", Label.layout))
+   fun destroyFuncsMap() = let
+      val _ = destroyFuncsMapFuncs()
+      val _ = destroyFuncsMapBlocks()
+   in
+      ()
+   end
+
+   fun addBlockToMapping (b: Block.t) = setBlock (Block.label b, b)
+   fun addFuncToMapping (f: Function.t) = let
+      val _ = Vector.foreach (Function.blocks f, addBlockToMapping)
+   in
+      setFunc (Function.name f, f)
+   end
    (* Use foreachFunction rather than `walker` because the DFS traversal pattern
    doesn't reach disconnected functions, and so a program containing any such
    function hits the `initRaise` above. The ordering of our `addFuncToMapping`
@@ -138,7 +155,7 @@ fun newFuncsMap (p: Program.t): funcsMap = let
    the mapping for all functions. *)
    val _ = foreachFunction (p, addFuncToMapping)
 in
-   {getFunc = getFunc, destroyFuncs = destroyFuncs}
+   {getFunc = getFunc, getBlock = getBlock, destroyFuncsMap = destroyFuncsMap}
 end
 
 type typedVar = Var.t * Type.t
@@ -418,9 +435,11 @@ end
 
 
 fun destroyVarConsumerManager (vc: varConsumerManager) = let
-   val {destroyVarConsumersProps, ...} = vc
+   val {destroyVarConsumersProps, funcsMap, ...} = vc
+   val {destroyFuncsMap, ...} = funcsMap
 in
-   destroyVarConsumersProps()
+   destroyVarConsumersProps();
+   destroyFuncsMap()
 end
 
 type functionManager = {
@@ -450,7 +469,7 @@ fun newFunctionManager (p: Program.t) = let
       pendingFuncs := newPendingFuncs
    end
    (* First, collect Func.t -> Function mappings *)
-   val {getFunc, destroyFuncs} = newFuncsMap p
+   val {getFunc, destroyFuncsMap, ...} = newFuncsMap p
 
    (* Next, set up a hook to create new flattened functions when necessary
 
@@ -536,7 +555,7 @@ fun newFunctionManager (p: Program.t) = let
 
    fun destroyFunctionManagerState() = let
       val _ = destroyFlattenedFuncs()
-      val _ = destroyFuncs()
+      val _ = destroyFuncsMap()
    in
       ()
    end
