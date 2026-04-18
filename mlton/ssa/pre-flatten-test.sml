@@ -1571,7 +1571,7 @@ local
    (* Test 23: markConsumersInStatement and getVarConsumers *)
    val _ = let
       val _ = print "Test 23: markConsumersInStatement and getVarConsumers\n"
-      val vcm = PreFlatten.newVarChoiceManager ()
+      val vm = PreFlatten.newVarConsumerManager ()
       val v = Var.fromString "v"
       val v_dest = Var.fromString "v_dest"
       val con = Con.fromString "C"
@@ -1582,8 +1582,8 @@ local
          ty = Type.unit,
          var = SOME v_dest
       }
-      val _ = PreFlatten.markConsumersInStatement (vcm, sSelect)
-      val consumers1 = PreFlatten.getVarConsumers (vcm, v)
+      val _ = PreFlatten.markConsumersInStatement (vm, sSelect)
+      val consumers1 = PreFlatten.getVarConsumers (vm, v)
       val _ = assert (List.length consumers1 = 1, "Expected 1 consumer after sSelect")
       val _ = case List.nth (consumers1, 0) of
                  PreFlatten.AsUnpacked => ()
@@ -1595,8 +1595,8 @@ local
          ty = Type.unit,
          var = SOME v_dest
       }
-      val _ = PreFlatten.markConsumersInStatement (vcm, sCon)
-      val consumers2 = PreFlatten.getVarConsumers (vcm, v)
+      val _ = PreFlatten.markConsumersInStatement (vm, sCon)
+      val consumers2 = PreFlatten.getVarConsumers (vm, v)
       val _ = assert (List.length consumers2 = 2, "Expected 2 consumers after sCon")
       val _ = assert (List.exists (consumers2, fn PreFlatten.AsCurrent => true | _ => false),
                       "Expected AsCurrent in consumers")
@@ -1607,14 +1607,14 @@ local
          ty = Type.unit,
          var = SOME v_dest
       }
-      val _ = PreFlatten.markConsumersInStatement (vcm, sPrim)
+      val _ = PreFlatten.markConsumersInStatement (vm, sPrim)
       
       val sTuple = Statement.T {
          exp = Exp.Tuple (Vector.fromList [v]),
          ty = Type.unit,
          var = SOME v_dest
       }
-      val _ = PreFlatten.markConsumersInStatement (vcm, sTuple)
+      val _ = PreFlatten.markConsumersInStatement (vm, sTuple)
 
       (* val _ = print "Test 23d: AsAlias\n" *)
       (* val v_alias = Var.fromString "v_alias" *)
@@ -1623,20 +1623,20 @@ local
       (*    ty = Type.unit, *)
       (*    var = SOME v_alias *)
       (* } *)
-      (* val _ = PreFlatten.markConsumersInStatement (vcm, sVar) *)
-      (* val consumers3 = PreFlatten.getVarConsumers (vcm, v) *)
+      (* val _ = PreFlatten.markConsumersInStatement (vm, sVar) *)
+      (* val consumers3 = PreFlatten.getVarConsumers (vm, v) *)
       (* val _ = assert (List.length consumers3 = 5, "Expected 5 consumers in total") *)
       (* val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_alias) | _ => false), *)
       (*                 "Expected AsAlias v_alias in consumers") *)
 
-      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = PreFlatten.destroyVarConsumerManager vm
       val _ = print "Test 23 passed\n"
    in () end
 
    (* Test 24: markConsumersInTransfer *)
    val _ = let
       val _ = print "Test 24: markConsumersInTransfer\n"
-      val vcm = PreFlatten.newVarChoiceManager ()
+      val vm = PreFlatten.newVarConsumerManager ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
       val v_formal1 = Var.fromString "vf1"
@@ -1648,26 +1648,26 @@ local
       val tGoto = Transfer.Goto {args = Vector.fromList [v1, v2], dst = l}
       (* We expect this to record v1 -> AsAlias vf1 and v2 -> AsAlias vf2
          if L has arguments [vf1, vf2]. Note: implementation is currently missing. *)
-      val _ = PreFlatten.markConsumersInTransfer (vcm, tGoto)
-      val consumers1 = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = PreFlatten.markConsumersInTransfer (vm, tGoto)
+      val consumers1 = PreFlatten.getVarConsumers (vm, v1)
       val _ = assert (List.exists (consumers1, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
                       "Expected AsAlias vf1 for v1 in Goto")
-      val consumers2 = PreFlatten.getVarConsumers (vcm, v2)
+      val consumers2 = PreFlatten.getVarConsumers (vm, v2)
       val _ = assert (List.exists (consumers2, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal2) | _ => false),
                       "Expected AsAlias vf2 for v2 in Goto")
 
       val _ = print "Test 24b: Call alias\n"
       val tCall = Transfer.Call {args = Vector.fromList [v1], func = f,
                                  inline = InlineAttr.Auto, return = Return.Tail}
-      val _ = PreFlatten.markConsumersInTransfer (vcm, tCall)
-      val consumers1' = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = PreFlatten.markConsumersInTransfer (vm, tCall)
+      val consumers1' = PreFlatten.getVarConsumers (vm, v1)
       val _ = assert (List.exists (consumers1', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
                       "Expected AsAlias vf1 for v1 in Call")
 
       val _ = print "Test 24c: Return alias\n"
       val tReturn = Transfer.Return (Vector.fromList [v1, v2])
-      val _ = PreFlatten.markConsumersInTransfer (vcm, tReturn)
-      val consumers1'' = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = PreFlatten.markConsumersInTransfer (vm, tReturn)
+      val consumers1'' = PreFlatten.getVarConsumers (vm, v1)
       val _ = assert (List.exists (consumers1'', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
                       "Expected AsAlias vf1 for v1 in Return")
 
@@ -1675,12 +1675,12 @@ local
       val v3 = Var.fromString "v3"
       (* Another return in the same function should also alias to the same formals *)
       val tReturn2 = Transfer.Return (Vector.fromList [v3, v2])
-      val _ = PreFlatten.markConsumersInTransfer (vcm, tReturn2)
-      val consumers3 = PreFlatten.getVarConsumers (vcm, v3)
+      val _ = PreFlatten.markConsumersInTransfer (vm, tReturn2)
+      val consumers3 = PreFlatten.getVarConsumers (vm, v3)
       val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
                       "Expected AsAlias vf1 for v3 in second Return")
 
-      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = PreFlatten.destroyVarConsumerManager vm
       val _ = print "Test 24 passed\n"
    in () end
 in

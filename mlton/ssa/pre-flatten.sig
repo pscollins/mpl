@@ -127,6 +127,8 @@ sig
 
    (* Manages tagging `Var.t`s with their `varConsumer` lists *)
    type varConsumerManager
+   (* Creates a new `varConsumerManager` *)
+   val newVarConsumerManager: unit -> varConsumerManager
 
    (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
    val markConsumersInStatement: (varConsumerManager * Statement.t) -> unit
