@@ -437,16 +437,28 @@ fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    end
    fun markConsumers (froms, tos) =
        Vector.foreach2 (froms, tos, markConsumer)
+   fun extractVar (var, _) = var
+   fun extractVars typedVars = Vector.map (typedVars, extractVar)
    fun getBlockArgs (l: Label.t): Var.t vector = let
       val Block.T {args, ...} = getBlock l
-      fun extractVar (var, _) = var
    in
-      Vector.map (args, extractVar)
+      extractVars args
    end
+   fun getFuncArgs funcLabel = let
+      val {args, ...} = Function.dest (getFunc funcLabel)
+   in
+      extractVars args
+   end
+   fun bindArgs (args, funcLabel) =
+      markConsumers (args, getFuncArgs funcLabel)
+   fun maybeBindRets (func, return) = () (* TODO *)
 in
    case transfer of
        Transfer.Goto {args, dst} =>
        markConsumers (args, getBlockArgs dst)
+     | Transfer.Call {args, func, return, ...} => 
+       (bindArgs (args, func);
+        maybeBindRets (func, return))
     | _ => Error.unimplemented "TODO"
 end
 
