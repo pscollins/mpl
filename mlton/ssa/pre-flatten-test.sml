@@ -1567,5 +1567,70 @@ local
 
       val _ = print "Test 22 passed\n"
    in () end
+
+   (* Test 23: markConsumersInStatement and getVarConsumers *)
+   val _ = let
+      val _ = print "Test 23: markConsumersInStatement and getVarConsumers\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+      val v = Var.fromString "v"
+      val v_dest = Var.fromString "v_dest"
+      val con = Con.fromString "C"
+      
+      val _ = print "Test 23a: AsUnpacked\n"
+      val sSelect = Statement.T {
+         exp = Exp.Select {offset = 0, tuple = v},
+         ty = Type.unit,
+         var = SOME v_dest
+      }
+      val _ = PreFlatten.markConsumersInStatement (vcm, sSelect)
+      val consumers1 = PreFlatten.getVarConsumers (vcm, v)
+      val _ = assert (List.length consumers1 = 1, "Expected 1 consumer after sSelect")
+      val _ = case List.nth (consumers1, 0) of
+                 PreFlatten.AsUnpacked => ()
+               | _ => printFail "Expected AsUnpacked for Select"
+
+      val _ = print "Test 23b: AsCurrent (ConApp)\n"
+      val sCon = Statement.T {
+         exp = Exp.ConApp {args = Vector.fromList [v], con = con},
+         ty = Type.unit,
+         var = SOME v_dest
+      }
+      val _ = PreFlatten.markConsumersInStatement (vcm, sCon)
+      val consumers2 = PreFlatten.getVarConsumers (vcm, v)
+      val _ = assert (List.length consumers2 = 2, "Expected 2 consumers after sCon")
+      val _ = assert (List.exists (consumers2, fn PreFlatten.AsCurrent => true | _ => false),
+                      "Expected AsCurrent in consumers")
+
+      val _ = print "Test 23c: AsCurrent (PrimApp and Tuple)\n"
+      val sPrim = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v], prim = Prim.MLton_equal, targs = Vector.new0 ()},
+         ty = Type.unit,
+         var = SOME v_dest
+      }
+      val _ = PreFlatten.markConsumersInStatement (vcm, sPrim)
+      
+      val sTuple = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [v]),
+         ty = Type.unit,
+         var = SOME v_dest
+      }
+      val _ = PreFlatten.markConsumersInStatement (vcm, sTuple)
+
+      val _ = print "Test 23d: AsAlias\n"
+      val v_alias = Var.fromString "v_alias"
+      val sVar = Statement.T {
+         exp = Exp.Var v,
+         ty = Type.unit,
+         var = SOME v_alias
+      }
+      val _ = PreFlatten.markConsumersInStatement (vcm, sVar)
+      val consumers3 = PreFlatten.getVarConsumers (vcm, v)
+      val _ = assert (List.length consumers3 = 5, "Expected 5 consumers in total")
+      val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_alias) | _ => false),
+                      "Expected AsAlias v_alias in consumers")
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 23 passed\n"
+   in () end
 in
 end
