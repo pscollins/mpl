@@ -120,8 +120,7 @@ sig
    val chooseVarsInStatement: (varChoiceManager * Statement.t) -> unit
    (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
    val markConsumersInStatement: (varChoiceManager * Statement.t) -> unit
-
-   (* Marks the `varConsumer`s for each `Var.t` in the provided `Statement.t`: a
+   (* Marks the `varConsumer`s for each `Var.t` in the provided `Transfer.t`: a
    `Transfer.t` can only induce an `AsAlias` relationship. *)
    val markConsumersInTransfer: (varChoiceManager * Transfer.t) -> unit
    (* Returns the choice for the provided `Var.t` *)
