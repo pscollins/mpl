@@ -246,17 +246,26 @@ datatype varConsumer =
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
    setVarChoiceProp: Var.t * varChoice -> unit,
-   destroyVarChoiceProps: unit -> unit
+   destroyVarChoiceProps: unit -> unit,
+   getVarConsumersProp: Var.t -> varConsumer list ref,
+   destroyVarConsumersProps: unit -> unit
 }
 
 fun newVarChoiceManager () = let
    (* TODO(pscollins): Consider making "missing" into an error *)
-   val {get, set, destroy} = Property.destGetSetOnce (Var.plist,
-                                                      Property.initConst PreserveVar)
+   val {get=getChoice, set=setChoice, destroy=destroyChoice} =
+       Property.destGetSetOnce (Var.plist,
+                                Property.initConst PreserveVar)
+   fun newConsumers _ = ref []
+   val {get=getConsumers, destroy=destroyConsumers, ...} =
+       Property.destGetSetOnce (Var.plist,
+                                Property.initFun newConsumers)
 in
-   {getVarChoiceProp = get,
-    setVarChoiceProp = set,
-    destroyVarChoiceProps = destroy}
+   {getVarChoiceProp = getChoice,
+    setVarChoiceProp = setChoice,
+    destroyVarChoiceProps = destroyChoice,
+    getVarConsumersProp = getConsumers,
+    destroyVarConsumersProps = destroyConsumers}
 end
 
 fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
@@ -302,14 +311,42 @@ end
   * `_ := {ConApp,PrimApp,Tuple}(...v...)` -> AsCurrent
   * `v := Var(v')` -> AsAlias(v')
  *)
-fun markConsumersInStatement (vm: varChoiceManager, s: Statement.t) = ()
+fun markConsumersInStatement (vm: varChoiceManager, s: Statement.t) = let
+   val {getVarConsumersProp, ...} = vm
+   val Statement.T {exp, ...} = s
+   fun addConsumer consumer v = let
+      val consumersRef = getVarConsumersProp v
+   in
+      List.push (consumersRef, consumer)
+   end
+   fun addConsumerTo consumer (vs: Var.t vector): unit =
+       Vector.foreach (vs, addConsumer consumer)
+   val addCurrentConsumer = addConsumerTo AsCurrent
+in
+   case exp of
+       Exp.ConApp {args, ...} => addCurrentConsumer args
+     | Exp.PrimApp  {args, ...} => addCurrentConsumer args
+     | Exp.Select {tuple, ...} => addConsumer AsUnpacked tuple
+     | Exp.Tuple args => addCurrentConsumer args
+     (* TODO(pscollins): Not sure which direction the "consumer" relationship
+     should go in, and I don't know why this IR construct would ever appear. For
+     now, reject. *)
+     | Exp.Var _ => Error.unimplemented "Not yet supported"
 
-fun getVarConsumers (vm: varChoiceManager, v: Var.t) = []
+     | _ => ()
+end
+
+fun getVarConsumers (vm: varChoiceManager, v: Var.t) = let
+   val {getVarConsumersProp, ...} = vm
+in
+   !(getVarConsumersProp v)
+end
 
 fun destroyVarChoiceManager (vt: varChoiceManager) = let
-   val {destroyVarChoiceProps, ...} = vt
+   val {destroyVarChoiceProps, destroyVarConsumersProps, ...} = vt
 in
-   destroyVarChoiceProps()
+   destroyVarChoiceProps();
+   destroyVarConsumersProps()
 end
 
 fun newVarChoicesForProgram (p: Program.t) = let
