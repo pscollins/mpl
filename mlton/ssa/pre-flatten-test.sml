@@ -1624,18 +1624,18 @@ local
       }
       val _ = PreFlatten.markConsumersInStatement (vm, sTuple)
 
-      (* val _ = print "Test 23d: AsAlias\n" *)
-      (* val v_alias = Var.fromString "v_alias" *)
-      (* val sVar = Statement.T { *)
-      (*    exp = Exp.Var v, *)
-      (*    ty = Type.unit, *)
-      (*    var = SOME v_alias *)
-      (* } *)
-      (* val _ = PreFlatten.markConsumersInStatement (vm, sVar) *)
-      (* val consumers3 = PreFlatten.getVarConsumers (vm, v) *)
-      (* val _ = assert (List.length consumers3 = 5, "Expected 5 consumers in total") *)
-      (* val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_alias) | _ => false), *)
-      (*                 "Expected AsAlias v_alias in consumers") *)
+      val _ = print "Test 23d: AsAlias\n"
+      val v_alias = Var.fromString "v_alias"
+      val sVar = Statement.T {
+         exp = Exp.Var v,
+         ty = Type.unit,
+         var = SOME v_alias
+      }
+      val _ = PreFlatten.markConsumersInStatement (vm, sVar)
+      val consumers3 = PreFlatten.getVarConsumers (vm, v)
+      val _ = assert (List.length consumers3 = 5, "Expected 5 consumers in total")
+      val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_alias) | _ => false),
+                      "Expected AsAlias v_alias in consumers")
 
       val _ = PreFlatten.destroyVarConsumerManager vm
       val _ = print "Test 23 passed\n"
@@ -1711,34 +1711,165 @@ local
          ()
       end
 
-      val _ = print "Test 24b: Call alias\n"
-      (* TODO(pscollins): These tests are wrong, they need to wrap the statements as a program (like above)  *)
+      val _ = let
+         val _ = print "Test 24b: Call alias\n"
+         val v1 = Var.fromString "v1"
+         val vf1 = Var.fromString "vf1"
+         val fName = Func.newString "callee"
+         val callee = Function.new {args = Vector.new1 (vf1, Type.unit),
+                                   blocks = Vector.new1 (Block.T {args = Vector.new0(),
+                                                                label = Label.newString "L",
+                                                                statements = Vector.new0(),
+                                                                transfer = Transfer.Return (Vector.new0())}),
+                                   inline = InlineAttr.Auto,
+                                   name = fName,
+                                   raises = NONE,
+                                   returns = NONE,
+                                   start = Label.newString "L"}
+         val callerL = Label.newString "caller"
+         val callerBlock = Block.T {args = Vector.new0(),
+                                    label = callerL,
+                                    statements = Vector.new0(),
+                                    transfer = Transfer.Call {args = Vector.new1 v1,
+                                                              func = fName,
+                                                              inline = InlineAttr.Auto,
+                                                              return = Return.Tail}}
+         val caller = Function.new {args = Vector.new0(),
+                                   blocks = Vector.new1 callerBlock,
+                                   inline = InlineAttr.Auto,
+                                   name = Func.newString "caller",
+                                   raises = NONE,
+                                   returns = NONE,
+                                   start = callerL}
+         val p = Program.T {datatypes = Vector.new0(),
+                            functions = [callee, caller],
+                            globals = Vector.new0(),
+                            main = Func.newString "caller"}
+         val vm = PreFlatten.newVarConsumerManager p
+         val tCall = Block.transfer callerBlock
+         val _ = PreFlatten.markConsumersInTransfer (vm, tCall)
+         val consumers = PreFlatten.getVarConsumers (vm, v1)
+         val _ = assert (List.exists (consumers, fn PreFlatten.AsAlias v' => Var.equals (v', vf1) | _ => false),
+                         "Expected AsAlias vf1 for v1 in Call")
+         val _ = PreFlatten.destroyVarConsumerManager vm
+      in
+         ()
+      end
 
-      (* val vm = PreFlatten.newVarConsumerManager emptyProgram *)
-      (* val tCall = Transfer.Call {args = Vector.fromList [v1], func = f, *)
-      (*                            inline = InlineAttr.Auto, return = Return.Tail} *)
-      (* val _ = PreFlatten.markConsumersInTransfer (vm, tCall) *)
-      (* val consumers1' = PreFlatten.getVarConsumers (vm, v1) *)
-      (* val _ = assert (List.exists (consumers1', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false), *)
-      (*                 "Expected AsAlias vf1 for v1 in Call") *)
+      val _ = let
+         val _ = print "Test 24c: Return alias\n"
+         val v1 = Var.fromString "v1"
+         val r1 = Var.fromString "r1"
+         val fName = Func.newString "callee"
+         val calleeL = Label.newString "L"
+         val returnT = Transfer.Return (Vector.new1 v1)
+         val callee = Function.new {args = Vector.new0(),
+                                   blocks = Vector.new1 (Block.T {args = Vector.new0(),
+                                                                label = calleeL,
+                                                                statements = Vector.new0(),
+                                                                transfer = returnT}),
+                                   inline = InlineAttr.Auto,
+                                   name = fName,
+                                   raises = NONE,
+                                   returns = SOME (Vector.new1 Type.unit),
+                                   start = calleeL}
+         val contL = Label.newString "cont"
+         val contBlock = Block.T {args = Vector.new1 (r1, Type.unit),
+                                  label = contL,
+                                  statements = Vector.new0(),
+                                  transfer = Transfer.Return (Vector.new0())}
+         val callerL = Label.newString "caller"
+         val callerBlock = Block.T {args = Vector.new0(),
+                                    label = callerL,
+                                    statements = Vector.new0(),
+                                    transfer = Transfer.Call {args = Vector.new0(),
+                                                              func = fName,
+                                                              inline = InlineAttr.Auto,
+                                                              return = Return.NonTail {cont = contL, handler = Handler.Caller}}}
+         val caller = Function.new {args = Vector.new0(),
+                                   blocks = Vector.new2 (callerBlock, contBlock),
+                                   inline = InlineAttr.Auto,
+                                   name = Func.newString "caller",
+                                   raises = NONE,
+                                   returns = NONE,
+                                   start = callerL}
+         val p = Program.T {datatypes = Vector.new0(),
+                            functions = [callee, caller],
+                            globals = Vector.new0(),
+                            main = Func.newString "caller"}
+         val vm = PreFlatten.newVarConsumerManager p
+         val tCall = Block.transfer callerBlock
+         val _ = PreFlatten.markConsumersInTransfer (vm, tCall)
+         val consumers = PreFlatten.getVarConsumers (vm, v1)
+         val _ = assert (List.exists (consumers, fn PreFlatten.AsAlias v' => Var.equals (v', r1) | _ => false),
+                         "Expected AsAlias r1 for v1 in Return")
+         val _ = PreFlatten.destroyVarConsumerManager vm
+      in
+         ()
+      end
 
-      (* val _ = print "Test 24c: Return alias\n" *)
-      (* val tReturn = Transfer.Return (Vector.fromList [v1, v2]) *)
-      (* val _ = PreFlatten.markConsumersInTransfer (vm, tReturn) *)
-      (* val consumers1'' = PreFlatten.getVarConsumers (vm, v1) *)
-      (* val _ = assert (List.exists (consumers1'', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false), *)
-      (*                 "Expected AsAlias vf1 for v1 in Return") *)
-
-      (* val _ = print "Test 24d: Multiple Return alias\n" *)
-      (* val v3 = Var.fromString "v3" *)
-      (* (* Another return in the same function should also alias to the same formals *) *)
-      (* val tReturn2 = Transfer.Return (Vector.fromList [v3, v2]) *)
-      (* val _ = PreFlatten.markConsumersInTransfer (vm, tReturn2) *)
-      (* val consumers3 = PreFlatten.getVarConsumers (vm, v3) *)
-      (* val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false), *)
-      (*                 "Expected AsAlias vf1 for v3 in second Return") *)
-
-      (* val _ = PreFlatten.destroyVarConsumerManager vm *)
+      val _ = let
+         val _ = print "Test 24d: Multiple Return alias\n"
+         val v1 = Var.fromString "v1"
+         val v2 = Var.fromString "v2"
+         val r1 = Var.fromString "r1"
+         val fName = Func.newString "callee"
+         val calleeL1 = Label.newString "L1"
+         val calleeL2 = Label.newString "L2"
+         val callee = Function.new {args = Vector.new0(),
+                                   blocks = Vector.fromList [Block.T {args = Vector.new0(),
+                                                                label = calleeL1,
+                                                                statements = Vector.new0(),
+                                                                transfer = Transfer.Return (Vector.new1 v1)},
+                                                       Block.T {args = Vector.new0(),
+                                                                label = calleeL2,
+                                                                statements = Vector.new0(),
+                                                                transfer = Transfer.Return (Vector.new1 v2)}],
+                                   inline = InlineAttr.Auto,
+                                   name = fName,
+                                   raises = NONE,
+                                   returns = SOME (Vector.new1 Type.unit),
+                                   start = calleeL1}
+         val contL = Label.newString "cont"
+         val contBlock = Block.T {args = Vector.new1 (r1, Type.unit),
+                                  label = contL,
+                                  statements = Vector.new0(),
+                                  transfer = Transfer.Return (Vector.new0())}
+         val callerL = Label.newString "caller"
+         val callerBlock = Block.T {args = Vector.new0(),
+                                    label = callerL,
+                                    statements = Vector.new0(),
+                                    transfer = Transfer.Call {args = Vector.new0(),
+                                                              func = fName,
+                                                              inline = InlineAttr.Auto,
+                                                              return = Return.NonTail {cont = contL, handler = Handler.Caller}}}
+         val caller = Function.new {args = Vector.new0(),
+                                   blocks = Vector.fromList [callerBlock, contBlock],
+                                   inline = InlineAttr.Auto,
+                                   name = Func.newString "caller",
+                                   raises = NONE,
+                                   returns = NONE,
+                                   start = callerL}
+         val p = Program.T {datatypes = Vector.new0(),
+                            functions = [callee, caller],
+                            globals = Vector.new0(),
+                            main = Func.newString "caller"}
+         val vm = PreFlatten.newVarConsumerManager p
+         val tCall = Block.transfer callerBlock
+         val _ = PreFlatten.markConsumersInTransfer (vm, tCall)
+         
+         val consumers1 = PreFlatten.getVarConsumers (vm, v1)
+         val _ = assert (List.exists (consumers1, fn PreFlatten.AsAlias v' => Var.equals (v', r1) | _ => false),
+                         "Expected AsAlias r1 for v1")
+         
+         val consumers2 = PreFlatten.getVarConsumers (vm, v2)
+         val _ = assert (List.exists (consumers2, fn PreFlatten.AsAlias v' => Var.equals (v', r1) | _ => false),
+                         "Expected AsAlias r1 for v2")
+                         
+         val _ = PreFlatten.destroyVarConsumerManager vm
+      in
+         ()
+      end
       val _ = print "Test 24 passed\n"
    in () end
 in
