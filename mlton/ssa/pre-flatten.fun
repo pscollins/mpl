@@ -333,20 +333,23 @@ datatype varConsumer =
             | AsCurrent
             | AsAlias of Var.t
 
-fun newVarConsumerManager () = let
+type varConsumerManager = {
+   getVarConsumersProp: Var.t -> varConsumer list ref,
+   destroyVarConsumersProps: unit -> unit,
+   funcsMap: funcsMap
+}
+
+
+fun newVarConsumerManager (p: Program.t) = let
    fun newConsumers _ = ref []
    val {get=getConsumers, destroy=destroyConsumers, ...} =
        Property.destGetSetOnce (Var.plist,
                                 Property.initFun newConsumers)
 in
    {getVarConsumersProp = getConsumers,
-    destroyVarConsumersProps = destroyConsumers}
+    destroyVarConsumersProps = destroyConsumers,
+    funcsMap = newFuncsMap p}
 end
-
-type varConsumerManager = {
-   getVarConsumersProp: Var.t -> varConsumer list ref,
-   destroyVarConsumersProps: unit -> unit
-}
 
 fun getVarConsumers (vm: varConsumerManager, v: Var.t) = let
    val {getVarConsumersProp, ...} = vm

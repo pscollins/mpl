@@ -1568,10 +1568,18 @@ local
       val _ = print "Test 22 passed\n"
    in () end
 
+   val emptyProgram = let
+      val dummyLabel = Func.fromString "dummy"
+   in
+      Program.T {datatypes=Vector.new0(),
+                 functions=[],
+                 globals=Vector.new0(),
+                 main=dummyLabel}
+   end
    (* Test 23: markConsumersInStatement and getVarConsumers *)
    val _ = let
       val _ = print "Test 23: markConsumersInStatement and getVarConsumers\n"
-      val vm = PreFlatten.newVarConsumerManager ()
+      val vm = PreFlatten.newVarConsumerManager emptyProgram
       val v = Var.fromString "v"
       val v_dest = Var.fromString "v_dest"
       val con = Con.fromString "C"
@@ -1636,7 +1644,7 @@ local
    (* Test 24: markConsumersInTransfer *)
    val _ = let
       val _ = print "Test 24: markConsumersInTransfer\n"
-      val vm = PreFlatten.newVarConsumerManager ()
+      val vm = PreFlatten.newVarConsumerManager emptyProgram
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
       val v_formal1 = Var.fromString "vf1"
