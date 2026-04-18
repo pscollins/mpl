@@ -387,6 +387,27 @@ in
    vcm
 end
 
+(* Manages Func.t -> Function mappings *)
+type funcsMap = {
+   getFunc: Func.t -> Function.t,
+   destroyFuncs: unit -> unit
+}
+
+fun newFuncsMap (p: Program.t): funcsMap = let
+   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
+       Property.destGetSetOnce (Func.plist,
+                                Property.initRaise ("function lookup", Func.layout))
+   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
+   (* Use foreachFunction rather than `walker` because the DFS traversal pattern
+   doesn't reach disconnected functions, and so a program containing any such
+   function hits the `initRaise` above. The ordering of our `addFuncToMapping`
+   calls doesn't matter, so we might as well avoid the error by just setting up
+   the mapping for all functions. *)
+   val _ = foreachFunction (p, addFuncToMapping)
+in
+   {getFunc = getFunc, destroyFuncs = destroyFuncs}
+end
+
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,
    pendingFuncs: Function.t list ref,
@@ -414,17 +435,7 @@ fun newFunctionManager (p: Program.t) = let
       pendingFuncs := newPendingFuncs
    end
    (* First, collect Func.t -> Function mappings *)
-   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
-       Property.destGetSetOnce (Func.plist,
-                                Property.initRaise ("function lookup", Func.layout))
-   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
-
-   (* Use foreachFunctin rather than `walker` because the DFS traversal pattern
-   doesn't reach disconnected functions, and so a program containing any such
-   function hits the `initRaise` above. The ordering of our `addFuncToMapping`
-   calls doesn't matter, so we might as well avoid the error by just setting up
-   the mapping for all functions. *)
-   val _ = foreachFunction (p, addFuncToMapping)
+   val {getFunc, destroyFuncs} = newFuncsMap p
 
    (* Next, set up a hook to create new flattened functions when necessary
 
