@@ -1632,5 +1632,56 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 23 passed\n"
    in () end
+
+   (* Test 24: markConsumersInTransfer *)
+   val _ = let
+      val _ = print "Test 24: markConsumersInTransfer\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val v_formal1 = Var.fromString "vf1"
+      val v_formal2 = Var.fromString "vf2"
+      val l = Label.fromString "L"
+      val f = Func.fromString "f"
+
+      val _ = print "Test 24a: Goto alias\n"
+      val tGoto = Transfer.Goto {args = Vector.fromList [v1, v2], dst = l}
+      (* We expect this to record v1 -> AsAlias vf1 and v2 -> AsAlias vf2
+         if L has arguments [vf1, vf2]. Note: implementation is currently missing. *)
+      val _ = PreFlatten.markConsumersInTransfer (vcm, tGoto)
+      val consumers1 = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = assert (List.exists (consumers1, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
+                      "Expected AsAlias vf1 for v1 in Goto")
+      val consumers2 = PreFlatten.getVarConsumers (vcm, v2)
+      val _ = assert (List.exists (consumers2, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal2) | _ => false),
+                      "Expected AsAlias vf2 for v2 in Goto")
+
+      val _ = print "Test 24b: Call alias\n"
+      val tCall = Transfer.Call {args = Vector.fromList [v1], func = f,
+                                 inline = InlineAttr.Auto, return = Return.Tail}
+      val _ = PreFlatten.markConsumersInTransfer (vcm, tCall)
+      val consumers1' = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = assert (List.exists (consumers1', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
+                      "Expected AsAlias vf1 for v1 in Call")
+
+      val _ = print "Test 24c: Return alias\n"
+      val tReturn = Transfer.Return (Vector.fromList [v1, v2])
+      val _ = PreFlatten.markConsumersInTransfer (vcm, tReturn)
+      val consumers1'' = PreFlatten.getVarConsumers (vcm, v1)
+      val _ = assert (List.exists (consumers1'', fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
+                      "Expected AsAlias vf1 for v1 in Return")
+
+      val _ = print "Test 24d: Multiple Return alias\n"
+      val v3 = Var.fromString "v3"
+      (* Another return in the same function should also alias to the same formals *)
+      val tReturn2 = Transfer.Return (Vector.fromList [v3, v2])
+      val _ = PreFlatten.markConsumersInTransfer (vcm, tReturn2)
+      val consumers3 = PreFlatten.getVarConsumers (vcm, v3)
+      val _ = assert (List.exists (consumers3, fn PreFlatten.AsAlias v' => Var.equals (v', v_formal1) | _ => false),
+                      "Expected AsAlias vf1 for v3 in second Return")
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 24 passed\n"
+   in () end
 in
 end
