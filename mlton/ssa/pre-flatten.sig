@@ -91,18 +91,6 @@ sig
             (* Flatten: carries the parent `Var.t`s to flatten-through.
             `parents` is guaranteed to be non-empty. *)
             | FlattenTupleVar of Var.t vector
-
-   (* Describes how a `Var.t` is consumed by a particular reader. *)
-   datatype varConsumer =
-            (* The consumer is an unpack operation (i.e. tuple select) *)
-            AsUnpacked
-            (* The consumer is a non-call operation that takes the entire tuple
-            object *)
-            | AsCurrent
-            (* The consumer behavior follows the behavior of the provided
-            `Var.t`, e.g. this `Var.t` binds to it through a function call. *)
-            | AsAlias of Var.t
-
    (* Type to manage tagging `Var.t`s with their flattening decision and other
    associated data *)
    (* TODO(pscollins): Rename? `varDataManager`? *)
@@ -118,20 +106,37 @@ sig
      All other `Var.t`s are marked `PreserveVar`.
     *)
    val chooseVarsInStatement: (varChoiceManager * Statement.t) -> unit
-   (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
-   val markConsumersInStatement: (varChoiceManager * Statement.t) -> unit
-   (* Marks the `varConsumer`s for each `Var.t` in the provided `Transfer.t`: a
-   `Transfer.t` can only induce an `AsAlias` relationship. *)
-   val markConsumersInTransfer: (varChoiceManager * Transfer.t) -> unit
    (* Returns the choice for the provided `Var.t` *)
    val getVarChoice: (varChoiceManager * Var.t) -> varChoice
-   (* Returns the `varConsumer` tags for each consumer of the provided `Var.t` *)
-   val getVarConsumers: (varChoiceManager * Var.t) -> varConsumer list
-   (* Cleans up state associated with the provided `varChoiceManager` *)
+   (* Cleans up state associated with the provided object *)
    val destroyVarChoiceManager: varChoiceManager -> unit
    (* Returns a `varChoiceManager` that carries flattening choices for all
    `Var.t`s  in the program. *)
    val newVarChoicesForProgram: Program.t -> varChoiceManager
+
+   (* Describes how a `Var.t` is consumed by a particular reader. *)
+   datatype varConsumer =
+            (* The consumer is an unpack operation (i.e. tuple select) *)
+            AsUnpacked
+            (* The consumer is a non-call operation that takes the entire tuple
+            object *)
+            | AsCurrent
+            (* The consumer behavior follows the behavior of the provided
+            `Var.t`, e.g. this `Var.t` binds to it through a function call. *)
+            | AsAlias of Var.t
+
+   (* Manages tagging `Var.t`s with their `varConsumer` lists *)
+   type varConsumerManager
+
+   (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
+   val markConsumersInStatement: (varConsumerManager * Statement.t) -> unit
+   (* Marks the `varConsumer`s for each `Var.t` in the provided `Transfer.t`: a
+   `Transfer.t` can only induce an `AsAlias` relationship. *)
+   val markConsumersInTransfer: (varConsumerManager * Transfer.t) -> unit
+   (* Returns the `varConsumer` tags for each consumer of the provided `Var.t` *)
+   val getVarConsumers: (varConsumerManager * Var.t) -> varConsumer list
+   (* Cleans up state associated with the provided object *)
+   val destroyVarConsumerManager: varConsumerManager -> unit
 
    (* Manages mapping `Func.t`s to their flattened equivalents  *)
    type functionManager

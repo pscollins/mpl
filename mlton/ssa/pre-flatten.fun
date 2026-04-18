@@ -232,6 +232,7 @@ datatype flatteningChoiceType =
            NoOp
          | Valid
          | Invalid
+
 fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
    val {args, ...} = Function.dest f
    fun checkFlatten (typedVar) =
@@ -257,17 +258,10 @@ datatype varChoice =
          PreserveVar
          | FlattenTupleVar of Var.t vector
 
-datatype varConsumer =
-            AsUnpacked
-            | AsCurrent
-            | AsAlias of Var.t
-
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
    setVarChoiceProp: Var.t * varChoice -> unit,
-   destroyVarChoiceProps: unit -> unit,
-   getVarConsumersProp: Var.t -> varConsumer list ref,
-   destroyVarConsumersProps: unit -> unit
+   destroyVarChoiceProps: unit -> unit
 }
 
 fun newVarChoiceManager () = let
@@ -275,16 +269,10 @@ fun newVarChoiceManager () = let
    val {get=getChoice, set=setChoice, destroy=destroyChoice} =
        Property.destGetSetOnce (Var.plist,
                                 Property.initConst PreserveVar)
-   fun newConsumers _ = ref []
-   val {get=getConsumers, destroy=destroyConsumers, ...} =
-       Property.destGetSetOnce (Var.plist,
-                                Property.initFun newConsumers)
 in
    {getVarChoiceProp = getChoice,
     setVarChoiceProp = setChoice,
-    destroyVarChoiceProps = destroyChoice,
-    getVarConsumersProp = getConsumers,
-    destroyVarConsumersProps = destroyConsumers}
+    destroyVarChoiceProps = destroyChoice}
 end
 
 fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
@@ -324,13 +312,55 @@ in
    getVarChoiceProp v
 end
 
+fun destroyVarChoiceManager (vt: varChoiceManager) = let
+   val {destroyVarChoiceProps, ...} = vt
+in
+   destroyVarChoiceProps()
+end
+
+fun newVarChoicesForProgram (p: Program.t) = let
+   val vcm = newVarChoiceManager ()
+   fun doStatement (s: Statement.t) =
+       chooseVarsInStatement (vcm, s)
+   val walker = statementWalker doStatement
+   val _ = doWalk (walker, p)
+in
+   vcm
+end
+
+datatype varConsumer =
+            AsUnpacked
+            | AsCurrent
+            | AsAlias of Var.t
+
+fun newVarConsumerManager () = let
+   fun newConsumers _ = ref []
+   val {get=getConsumers, destroy=destroyConsumers, ...} =
+       Property.destGetSetOnce (Var.plist,
+                                Property.initFun newConsumers)
+in
+   {getVarConsumersProp = getConsumers,
+    destroyVarConsumersProps = destroyConsumers}
+end
+
+type varConsumerManager = {
+   getVarConsumersProp: Var.t -> varConsumer list ref,
+   destroyVarConsumersProps: unit -> unit
+}
+
+fun getVarConsumers (vm: varConsumerManager, v: Var.t) = let
+   val {getVarConsumersProp, ...} = vm
+in
+   !(getVarConsumersProp v)
+end
+
 (* Add each `varConsumer` in `s` to `vm`
 
   * `_ := Select(..., v)` -> AsUnpacked
   * `_ := {ConApp,PrimApp,Tuple}(...v...)` -> AsCurrent
   * `v := Var(v')` -> AsAlias(v')
  *)
-fun markConsumersInStatement (vm: varChoiceManager, s: Statement.t) = let
+fun markConsumersInStatement (vm: varConsumerManager, s: Statement.t) = let
    val {getVarConsumersProp, ...} = vm
    val Statement.T {exp, ...} = s
    fun addConsumer consumer v = let
@@ -377,33 +407,17 @@ end
    TODO(pscollins): When we support flattening sum types, `Case` statments
    should record an `AsUnpacked` relation. For now, we ignore them
  *)
-fun markConsumersInTransfer (vm: varChoiceManager, transfer: Transfer.t) = let
+fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    val _ = ()
 in
    Error.unimplemented "TODO"
 end
 
-fun getVarConsumers (vm: varChoiceManager, v: Var.t) = let
-   val {getVarConsumersProp, ...} = vm
-in
-   !(getVarConsumersProp v)
-end
 
-fun destroyVarChoiceManager (vt: varChoiceManager) = let
-   val {destroyVarChoiceProps, destroyVarConsumersProps, ...} = vt
+fun destroyVarConsumerManager (vc: varConsumerManager) = let
+   val {destroyVarConsumersProps, ...} = vc
 in
-   destroyVarChoiceProps();
    destroyVarConsumersProps()
-end
-
-fun newVarChoicesForProgram (p: Program.t) = let
-   val vcm = newVarChoiceManager ()
-   fun doStatement (s: Statement.t) =
-       chooseVarsInStatement (vcm, s)
-   val walker = statementWalker doStatement
-   val _ = doWalk (walker, p)
-in
-   vcm
 end
 
 type functionManager = {
