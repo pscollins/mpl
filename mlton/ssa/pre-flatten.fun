@@ -404,6 +404,17 @@ in
      | _ => ()
 end
 
+(* Extract all of the `Return(...)`s from `f` *)
+fun extractReturns (f: Function.t): (Var.t vector) vector = let
+   fun extractInBlock b: (Var.t vector) option =
+       case Block.transfer b of
+           Transfer.Return rets => SOME rets
+         | _ => NONE
+
+in
+   Vector.keepAllMap (Function.blocks f, extractInBlock)
+end
+
 (* Records the "same-layout-as" relationship induced by function calls and
    similar constructs, i.e. if we have a function definition `f(arg1)`, then the
    call `f(x)` means that `x` is consumed in the same layout as `arg1`.
@@ -451,7 +462,23 @@ fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    end
    fun bindArgs (args, funcLabel) =
       markConsumers (args, getFuncArgs funcLabel)
-   fun maybeBindRets (func, return) = () (* TODO *)
+   fun getAllReturns funcLabel =
+       extractReturns (getFunc funcLabel)
+   fun bindRetsToBlock (func, returnToLabel) = let
+      val returnToBlockArgs = getBlockArgs returnToLabel
+      val allReturns: (Var.t vector) vector =
+          getAllReturns func
+      fun bindReturns returns =
+          markConsumers (returns, returnToBlockArgs)
+   in
+      Vector.foreach (allReturns, bindReturns)
+   end
+   fun maybeBindRets (func, return) =
+       case return of
+           Return.NonTail {cont=label, ...} =>
+           bindRetsToBlock (func, label)
+         (* `Dead` and `Tail` do not bind *)
+         | _ => ()
 in
    case transfer of
        Transfer.Goto {args, dst} =>
