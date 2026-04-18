@@ -1879,12 +1879,14 @@ local
       val _ = print "Test 25: updateChoiceForPolicy\n"
       val xs = Vector.fromList [Var.fromString "x1", Var.fromString "x2"]
       
-      val _ = print "Test 25a: PreserveVar always preserved\n"
-      val res1 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenAlways (PreFlatten.PreserveVar, [])
+      val _ = print "Test 25a: PreserveVar always preserved (with consumers)\n"
+      val res1 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenAlways 
+                   (PreFlatten.PreserveVar, [PreFlatten.AsUnpacked, PreFlatten.AsCurrent])
       val _ = case res1 of PreFlatten.PreserveVar => () | _ => printFail "25a failed"
       
-      val _ = print "Test 25b: FlattenAlways flattens if possible\n"
-      val res2 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenAlways (PreFlatten.FlattenTupleVar xs, [])
+      val _ = print "Test 25b: FlattenAlways flattens if possible (with consumers)\n"
+      val res2 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenAlways 
+                   (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent])
       val _ = case res2 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "25b failed"
 
       val _ = print "Test 25c: FlattenForAnyLocalUnpack flattens if any AsUnpacked\n"
