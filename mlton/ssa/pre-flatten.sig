@@ -170,6 +170,34 @@ sig
    functions is not empty, error. *)
    val destroyFunctionManager: functionManager -> unit
 
+   (* Describes how we choose to flatten functions: for the description below,
+   we'll assume that we have a function definition
+
+       f(arg1, arg2, arg3, ...): ...
+
+    and we want to choose the appropriate flattening at the callsite:
+
+       f(x1, x2, x3, ...)
+
+    In this case, we say that `arg[i]` is "flattenable" (at this particular
+    callsite) whenever the corresponding `x[i]` is "flattenable", i.e. when
+    `varChoice` for the corresponding `x[i]` is not `PreserveVar`.
+    *)
+   datatype flatteningPolicy =
+            (* Flatten `arg[i]` as much as possible, i.e. whenever `x[i]` is
+            flattenable *)
+            FlattenAlways
+            (* Flatten `arg[i]` when `x[i]` is flattenable and at least one
+             consumer of `arg[i]` is `AsUnpacked` (with no `AsAlias` traversal) *)
+            | FlattenForAnyLocalUnpack
+            (* TODO(pscollins): Try more heuristics *)
+
+   (* Given the `varChoice` and `varConsumer` list corresponding to a particular
+   `x[i]` and `arg[i]` (described above), updates `varChoice` to account for the
+   specified policy. *)
+   val updateChoiceForPolicy: flatteningPolicy ->
+                              (varChoice * varConsumer list) ->
+                              varChoice
 
    (* Runs one iteration of flattening: for each appearance of the sequence:
 

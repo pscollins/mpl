@@ -645,6 +645,14 @@ in
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
 
+datatype flatteningPolicy =
+           FlattenAlways
+         | FlattenForAnyLocalUnpack
+
+fun updateChoiceForPolicy policy (varChoice, varConsumers) =
+    varChoice
+
+
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of
         PreserveVar => Preserve
