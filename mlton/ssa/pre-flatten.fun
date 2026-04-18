@@ -332,8 +332,36 @@ in
      should go in, and I don't know why this IR construct would ever appear. For
      now, reject. *)
      | Exp.Var _ => Error.unimplemented "Not yet supported"
-
      | _ => ()
+end
+
+(* Records the "same-layout-as" relationship induced by function calls and
+   similar constructs, i.e. if we have a function definition `f(arg1)`, then the
+   call `f(x)` means that `x` is consumed in the same layout as `arg1`.
+
+   * `Goto(args, "label")` + `Block(args', "label", ...)` ->
+      args[i] = AsAlias(args'[i])
+
+   * `Call(args, "func", ...)` + `Function(args', "func")` ->
+      args[i] = AsAlias(args'[i])
+
+   * `Call(..., "callee", Return.NonTail {"block"}` + `Block(args, "block")` +
+     `Function(..., "callee", ...) {
+        ...
+        Return (vs1)
+        ...
+        Return (vs2)
+        ...
+     }` ->
+     vs1[i] = vs2[i] = AsAlias(args[i])
+
+   TODO(pscollins): When we support flattening sum types, `Case` statments
+   should record an `AsUnpacked` relation. For now, we ignore them
+ *)
+fun markConsumersInTransfer (vm: varChoiceManager, transfer: Transfer.t) = let
+   val _ = ()
+in
+   Error.unimplemented "TODO"
 end
 
 fun getVarConsumers (vm: varChoiceManager, v: Var.t) = let
