@@ -119,8 +119,27 @@ fun foreachFunction (p: Program.t, funcF: (Function.t -> unit)): unit = let
 in
    List.foreach (functions, funcF)
 end
-   
-                        
+
+(* Manages Func.t -> Function mappings *)
+type funcsMap = {
+   getFunc: Func.t -> Function.t,
+   destroyFuncs: unit -> unit
+}
+
+fun newFuncsMap (p: Program.t): funcsMap = let
+   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
+       Property.destGetSetOnce (Func.plist,
+                                Property.initRaise ("function lookup", Func.layout))
+   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
+   (* Use foreachFunction rather than `walker` because the DFS traversal pattern
+   doesn't reach disconnected functions, and so a program containing any such
+   function hits the `initRaise` above. The ordering of our `addFuncToMapping`
+   calls doesn't matter, so we might as well avoid the error by just setting up
+   the mapping for all functions. *)
+   val _ = foreachFunction (p, addFuncToMapping)
+in
+   {getFunc = getFunc, destroyFuncs = destroyFuncs}
+end
 
 type typedVar = Var.t * Type.t
 fun flattenTupleVar (var, ty): (typedVar vector) option = let
@@ -385,27 +404,6 @@ fun newVarChoicesForProgram (p: Program.t) = let
    val _ = doWalk (walker, p)
 in
    vcm
-end
-
-(* Manages Func.t -> Function mappings *)
-type funcsMap = {
-   getFunc: Func.t -> Function.t,
-   destroyFuncs: unit -> unit
-}
-
-fun newFuncsMap (p: Program.t): funcsMap = let
-   val {get=getFunc, set=setFunc, destroy=destroyFuncs} =
-       Property.destGetSetOnce (Func.plist,
-                                Property.initRaise ("function lookup", Func.layout))
-   fun addFuncToMapping (f: Function.t) = setFunc (Function.name f, f)
-   (* Use foreachFunction rather than `walker` because the DFS traversal pattern
-   doesn't reach disconnected functions, and so a program containing any such
-   function hits the `initRaise` above. The ordering of our `addFuncToMapping`
-   calls doesn't matter, so we might as well avoid the error by just setting up
-   the mapping for all functions. *)
-   val _ = foreachFunction (p, addFuncToMapping)
-in
-   {getFunc = getFunc, destroyFuncs = destroyFuncs}
 end
 
 type functionManager = {
