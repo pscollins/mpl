@@ -2125,5 +2125,61 @@ local
 
       val _ = print "Test 27 passed\n"
    in () end
+
+   (* Test 28: resolveAliases *)
+   val _ = let
+      val _ = print "Test 28: resolveAliases\n"
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val v3 = Var.fromString "v3"
+      
+      val assignments = [
+         (v1, [PreFlatten.AsUnpacked, PreFlatten.AsAlias v2]),
+         (v2, [PreFlatten.AsCurrent, PreFlatten.AsAlias v3]),
+         (v3, [PreFlatten.AsCurrent])
+      ]
+      val vm = PreFlatten.newVarConsumerManagerFromAssignments assignments
+      
+      fun hasUnpacked l = List.exists (l, fn PreFlatten.AsUnpacked => true | _ => false)
+      fun hasCurrent l = List.exists (l, fn PreFlatten.AsCurrent => true | _ => false)
+      fun hasAlias l = List.exists (l, fn PreFlatten.AsAlias _ => true | _ => false)
+      fun countCurrent l = List.length (List.keepAll (l, fn PreFlatten.AsCurrent => true | _ => false))
+
+      val _ = print "Test 28a: DropAlias\n"
+      val res1 = PreFlatten.resolveAliases PreFlatten.DropAlias (vm, PreFlatten.getVarConsumers (vm, v1))
+      val _ = assert (hasUnpacked res1, "res1 should have AsUnpacked")
+      val _ = assert (not (hasAlias res1), "res1 should not have AsAlias")
+      val _ = assert (not (hasCurrent res1), "res1 should not have AsCurrent")
+
+      val _ = print "Test 28b: UnionAlias (1-deep)\n"
+      val res2 = PreFlatten.resolveAliases PreFlatten.UnionAlias (vm, PreFlatten.getVarConsumers (vm, v3))
+      val _ = assert (hasCurrent res2, "res2 should have AsCurrent")
+      val _ = assert (not (hasAlias res2), "res2 should not have AsAlias")
+
+      val _ = print "Test 28c: UnionAlias (2-deep chain)\n"
+      val res3 = PreFlatten.resolveAliases PreFlatten.UnionAlias (vm, PreFlatten.getVarConsumers (vm, v1))
+      (* v1 -> {AsUnpacked, AsAlias v2}
+         v2 -> {AsCurrent, AsAlias v3}
+         v3 -> {AsCurrent}
+         Result should be {AsUnpacked, AsCurrent, AsCurrent}
+       *)
+      val _ = assert (hasUnpacked res3, "res3 should have AsUnpacked")
+      val _ = assert (countCurrent res3 = 2, "res3 should have 2 AsCurrent")
+      val _ = assert (not (hasAlias res3), "res3 should not have AsAlias")
+
+      val _ = print "Test 28d: UnionAlias (cycle)\n"
+      val vCycle = Var.fromString "vCycle"
+      val assignmentsCycle = [
+         (vCycle, [PreFlatten.AsCurrent, PreFlatten.AsAlias vCycle])
+      ]
+      val vmCycle = PreFlatten.newVarConsumerManagerFromAssignments assignmentsCycle
+      val resCycle = PreFlatten.resolveAliases PreFlatten.UnionAlias (vmCycle, PreFlatten.getVarConsumers (vmCycle, vCycle))
+      val _ = assert (hasCurrent resCycle, "resCycle should have AsCurrent")
+      val _ = assert (not (hasAlias resCycle), "resCycle should not have AsAlias")
+
+      val _ = PreFlatten.destroyVarConsumerManager vm
+      val _ = PreFlatten.destroyVarConsumerManager vmCycle
+      val _ = print "Test 28 passed\n"
+   in () end
 in
 end

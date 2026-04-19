@@ -556,8 +556,21 @@ in
    vm
 end
 
-fun newVarConsumerManagerFromAssignments (assignments) =
-    Error.unimplemented "TODO: GEMINI -- DO THIS"
+fun newVarConsumerManagerFromAssignments (assignments) = let
+   val dummyLabel = Func.newString "dummy"
+   val emptyProgram =
+      Program.T {datatypes=Vector.new0(),
+                 functions=[],
+                 globals=Vector.new0(),
+                 main=dummyLabel}
+   val vm = newVarConsumerManager emptyProgram
+   val {getVarConsumersProp, ...} = vm
+   fun doAssignment (v, consumers) =
+       getVarConsumersProp v := consumers
+   val _ = List.foreach (assignments, doAssignment)
+in
+   vm
+end
 
 datatype varAliasPolicy =
          DropAlias
