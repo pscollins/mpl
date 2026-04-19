@@ -743,17 +743,16 @@ in
    Vector.map2 (originalArgs, varChoices, buildCallArg))
 end
 
-fun flattenOnce (p: Program.t) = let
+fun flattenOnce policy (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
    (* TODO(pscollins): Make policy configurable *)
-   val kPolicy = FlattenAlways
    fun getChoice v = getVarChoice (vm, v)
    fun getConsumers v = getVarConsumers (vc, v)
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
-   val updateChoice = updateChoiceForPolicy kPolicy
+   val updateChoice = updateChoiceForPolicy policy
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
          (* Make a flattening decision for each argument by collecting all of
@@ -813,18 +812,20 @@ fun flattenOnce (p: Program.t) = let
    val p' = maybeAppendNewFns (mapBlocks (p, maybeRewriteBlock))
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
-   val _ = destroyVarConsumerManager varConsumers
+   val _ = destroyVarConsumerManager vc
 in
    p'
 end
 
 fun transform (p: Program.t): Program.t =
     let
+       (* TODO(pscollins): Make this a flag *)
+       val policy = FlattenAlways
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
           else
-             case flattenOnce p of
+             case flattenOnce policy p of
                 NONE => p
               | SOME p' => loop (shrink p', n + 1)
     in

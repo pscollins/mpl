@@ -220,7 +220,10 @@ sig
 
      On success (i.e. if we made progress and flattened at least one function),
      returns `SOME ...`, otherwise, returns `NONE`.
+
+     Flattening decisions are subject to the described `flatteningPolicy`,
+     outlined above.
     *)
-   val flattenOnce: Program.t -> Program.t option
+   val flattenOnce: flatteningPolicy -> Program.t -> Program.t option
 
 end

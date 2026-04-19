@@ -913,8 +913,9 @@ local
    in () end
 
    (* Test 16: flattening through a single argument for a single-argument function *)
-   val _ = let
-      val _ = print "Test 16: single argument function flattening\n"
+   fun runFlattenOnceTestForPolicy (policy, name) = let
+      val _ = print (concat ["Test 16: single argument function flattening: ",
+                            name, "\n"])
       val fName = Func.fromString "f16"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
@@ -971,7 +972,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce p of
+      val p' = (case PreFlatten.flattenOnce policy p of
                    SOME p' => p'
                  | NONE => printFail "Test 16: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -997,7 +998,9 @@ local
       end
 
       val _ = print "Test 16 passed\n"
-   in () end
+in () end
+val _ = runFlattenOnceTestForPolicy (PreFlatten.FlattenAlways, "always")
+val _ = runFlattenOnceTestForPolicy (PreFlatten.FlattenForAnyLocalUnpack, "local unpack")
 
    (* Test 17: flattening through a single argument for a multi-argument function *)
    val _ = let
@@ -1060,7 +1063,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce p of
+      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                    SOME p' => p'
                  | NONE => printFail "Test 17: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1157,7 +1160,7 @@ local
 
       val _ = printProgram ("test18", p)
 
-      val p' = (case PreFlatten.flattenOnce p of
+      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                    SOME p' => p'
                  | NONE => printFail "Test 18: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1233,7 +1236,7 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      val _ = case PreFlatten.flattenOnce p of
+      val _ = case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                  NONE => ()
                | SOME _ => printFail "Test 19: expected NONE, but got SOME"
       val _ = print "Test 19 passed\n"
@@ -1315,7 +1318,7 @@ local
          main = mainName
       }
       
-      val p' = (case PreFlatten.flattenOnce p of
+      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                    SOME p' => p'
                  | NONE => printFail "Test 20: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1432,7 +1435,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce p of
+      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                    SOME p' => p'
                  | NONE => printFail "Test 21: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
