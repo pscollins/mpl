@@ -556,11 +556,14 @@ in
    vm
 end
 
+fun newVarConsumerManagerFromAssignments (assignments) =
+    Error.unimplemented "TODO: GEMINI -- DO THIS"
+
 datatype varAliasPolicy =
          DropAlias
          | UnionAlias
 fun resolveAliases policy (vc, consumers) =
-    Error.unimplemented "TODO"
+    Error.unimplemented "TODO: GEMINI -- LEAVE THIS TO ME"
 
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,

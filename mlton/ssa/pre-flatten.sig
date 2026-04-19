@@ -143,6 +143,12 @@ sig
    information for the specified `Program.t` *)
    val newVarConsumersForProgram: Program.t -> varConsumerManager
 
+   (* Exposed for testing: initializes a `varConsumerManager` with the specified
+   consumers attached to the provided `Var.t`s *)
+   val newVarConsumerManagerFromAssignments:
+       (Var.t * (varConsumer list)) list ->
+       varConsumerManager
+
    (* Policy describing how to resolve `AsAlias` statements. *)
    datatype varAliasPolicy =
             (* Remove `AsAlias` statements from the list *)
