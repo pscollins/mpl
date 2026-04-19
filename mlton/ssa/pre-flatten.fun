@@ -809,16 +809,20 @@ fun flattenOnce policy (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
+   (* TODO(pscollins): Make the resolve policy configurable *)
+   val kResolvePolicy = DropAlias
+   val resolve = resolveAliases (kResolvePolicy, vc)
    fun getChoice v = getVarChoice (vm, v)
-   fun getConsumers v = getVarConsumers (vc, v)
+   fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
    val updateChoice = updateChoiceForPolicy policy
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
          (* Make a flattening decision for each argument by collecting all of
-         the tags for each argument... *)
+         the tags for each concrete argument... *)
          val varChoices = Vector.map (args, getChoice)
+         (* ...and the (resolved) usage info for each formal parameter... *)
          val varConsumers = Vector.map (args, getConsumers)
          (* ...and applying the policy *)
          val varChoices' = Vector.map2 (varChoices, varConsumers,

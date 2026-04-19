@@ -157,8 +157,8 @@ sig
             | UnionAlias
    (* Resolves aliases in the `varConsumer` list according to the specified
    policy *)
-   val resolveAliases: varAliasPolicy ->
-                       (varConsumerManager * varConsumer list) ->
+   val resolveAliases: (varAliasPolicy, varConsumerManager) ->
+                       varConsumer list ->
                        varConsumer list
 
 
@@ -216,7 +216,10 @@ sig
 
    (* Given the `varChoice` and `varConsumer` list corresponding to a particular
    `x[i]` and `arg[i]` (described above), updates `varChoice` to account for the
-   specified policy. *)
+   specified policy.
+
+   Must run *after* resolving aliases: if any `varConsumer` is `AsAlias`, error.
+    *)
    val updateChoiceForPolicy: flatteningPolicy ->
                               (varChoice * (varConsumer list)) ->
                               varChoice
