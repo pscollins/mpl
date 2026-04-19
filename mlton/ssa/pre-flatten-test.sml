@@ -912,10 +912,9 @@ local
       val _ = print "Test 15_2 passed\n"
    in () end
 
-   (* Test 16: flattening through a single argument for a single-argument function *)
-   fun runFlattenOnceTestForPolicy (policy, name) = let
-      val _ = print (concat ["Test 16: single argument function flattening: ",
-                            name, "\n"])
+   (* Test 16: flattening through a single argument for a single-argument function (Always) *)
+   val _ = let
+      val _ = print "Test 16: single argument function flattening: always\n"
       val fName = Func.fromString "f16"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
@@ -972,9 +971,9 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce policy p of
+      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
                    SOME p' => p'
-                 | NONE => printFail "Test 16: flattenOnce returned NONE")
+                 | NONE => printFail "Test 16 (always): flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
 
       val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
@@ -997,10 +996,74 @@ local
           | NONE => printFail "Test 16: Flattened function not found"
       end
 
-      val _ = print "Test 16 passed\n"
-in () end
-val _ = runFlattenOnceTestForPolicy (PreFlatten.FlattenAlways, "always")
-val _ = runFlattenOnceTestForPolicy (PreFlatten.FlattenForAnyLocalUnpack, "local unpack")
+      val _ = print "Test 16 (always) passed\n"
+   in () end
+
+   (* Test 16b: single argument function flattening: local unpack *)
+   val _ = let
+      val _ = print "Test 16: single argument function flattening: local unpack\n"
+      val fName = Func.fromString "f16b"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main16b"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val _ = (case PreFlatten.flattenOnce PreFlatten.FlattenForAnyLocalUnpack p of
+                   SOME _ => printFail "Test 16 (local unpack): flattenOnce returned SOME, expected NONE"
+                 | NONE => ())
+
+      val _ = print "Test 16 (local unpack) passed\n"
+   in () end
 
    (* Test 17: flattening through a single argument for a multi-argument function *)
    val _ = let

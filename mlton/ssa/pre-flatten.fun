@@ -747,7 +747,6 @@ fun flattenOnce policy (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
-   (* TODO(pscollins): Make policy configurable *)
    fun getChoice v = getVarChoice (vm, v)
    fun getConsumers v = getVarConsumers (vc, v)
    fun getFunc (original, argChoices) =
