@@ -374,7 +374,11 @@ in
    !(getVarConsumersProp v)
 end
 
-fun varConsumerToString varConsumer = ""
+fun varConsumerToString varConsumer =
+   case varConsumer of
+      AsUnpacked => "AsUnpacked"
+    | AsCurrent => "AsCurrent"
+    | AsAlias v => concat ["AsAlias(", Var.toString v, ")"]
 
 (* Add each `varConsumer` in `s` to `vm`
 
