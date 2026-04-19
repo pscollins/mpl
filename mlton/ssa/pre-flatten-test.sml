@@ -971,7 +971,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                    SOME p' => p'
                  | NONE => printFail "Test 16 (always): flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1058,7 +1058,7 @@ local
          main = mainName
       }
 
-      val _ = (case PreFlatten.flattenOnce PreFlatten.FlattenForAnyLocalUnpack p of
+      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.DropAlias) p of
                    SOME _ => printFail "Test 16 (local unpack): flattenOnce returned SOME, expected NONE"
                  | NONE => ())
 
@@ -1126,7 +1126,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                    SOME p' => p'
                  | NONE => printFail "Test 17: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1223,7 +1223,7 @@ local
 
       val _ = printProgram ("test18", p)
 
-      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                    SOME p' => p'
                  | NONE => printFail "Test 18: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1299,7 +1299,7 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      val _ = case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                  NONE => ()
                | SOME _ => printFail "Test 19: expected NONE, but got SOME"
       val _ = print "Test 19 passed\n"
@@ -1381,7 +1381,7 @@ local
          main = mainName
       }
       
-      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                    SOME p' => p'
                  | NONE => printFail "Test 20: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1498,7 +1498,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce PreFlatten.FlattenAlways p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
                    SOME p' => p'
                  | NONE => printFail "Test 21: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -2180,6 +2180,127 @@ local
       val _ = PreFlatten.destroyVarConsumerManager vm
       val _ = PreFlatten.destroyVarConsumerManager vmCycle
       val _ = print "Test 28 passed\n"
+   in () end
+
+   (* Test 29: UnionAlias in flattenOnce *)
+   val _ = let
+      val _ = print "Test 29: UnionAlias in flattenOnce\n"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+
+      (* g(arg1: tuple) = #0 arg1 *)
+      val gName = Func.fromString "g29"
+      val gArg1 = Var.fromString "gArg1"
+      val gL = Label.fromString "Lg"
+      val gS = Statement.T {exp = Exp.Select {offset = 0, tuple = gArg1},
+                            ty = tBool, var = SOME (Var.fromString "gTmp")}
+      val gFunction = Function.new {
+         args = Vector.fromList [(gArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = gL,
+            statements = Vector.fromList [gS],
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = gName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = gL
+      }
+
+      (* f(arg1: tuple) = g(arg1) *)
+      val fName = Func.fromString "f29"
+      val fArg1 = Var.fromString "fArg1"
+      val fL = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(fArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fL,
+            statements = Vector.new0 (),
+            transfer = Transfer.Call {
+               args = Vector.fromList [fArg1],
+               func = gName,
+               inline = InlineAttr.Auto,
+               return = Return.Tail
+            }
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fL
+      }
+
+      (* main() = f((true, true)) *)
+      val mainName = Func.fromString "main29"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [gFunction, fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val _ = print "Test 29a: DropAlias (should NOT flatten f)\n"
+      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.DropAlias) p of
+                      SOME p' => p'
+                    | NONE => p)
+      val Program.T {functions = funcsDrop, ...} = pDrop
+      (* Should have 3 functions (g, f, main) + maybe g_flat if g was reachable and flattened.
+         Wait, f calls g. If we flatten g, f's call to g changes.
+         Actually, g unpacks its arg, so g will ALWAYS be flattened if its arg is a tuple from a tuple exp.
+         But f's arg in main is a tuple from a tuple exp.
+         If resolvePolicy = DropAlias, f's arg has only AsAlias(gArg1). So f won't be flattened.
+       *)
+      val fIsFlattenedDrop = List.exists (funcsDrop, fn f => 
+          let val name = Func.toString (Function.name f) in
+             String.hasPrefix (name, {prefix = "f29_flat"})
+          end)
+      val _ = assert (not fIsFlattenedDrop, "f should NOT be flattened with DropAlias")
+
+      val _ = print "Test 29a passed\n"
+
+      val _ = print "Test 29b: UnionAlias (SHOULD flatten f)\n"
+      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.UnionAlias) p of
+                       SOME p' => p'
+                     | NONE => printFail "Test 29b: expected SOME, got NONE")
+      val Program.T {functions = funcsUnion, ...} = pUnion
+      val fIsFlattenedUnion = List.exists (funcsUnion, fn f => 
+          let val name = Func.toString (Function.name f) in
+             String.hasPrefix (name, {prefix = "f29_flat"})
+          end)
+      val _ = assert (fIsFlattenedUnion, "f SHOULD be flattened with UnionAlias")
+
+      val _ = print "Test 29 passed\n"
    in () end
 in
 end

@@ -247,6 +247,6 @@ sig
      outlined above, with consumer information resolved according to
      `varAliasPolicy` (above).
     *)
-   val flattenOnce: flatteningPolicy -> Program.t -> Program.t option
+   val flattenOnce: flatteningPolicy * varAliasPolicy -> Program.t -> Program.t option
 
 end
