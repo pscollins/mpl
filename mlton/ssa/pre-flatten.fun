@@ -712,6 +712,7 @@ end
 
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
+   val varConsumers = newVarConsumersForProgram p
    val fm = newFunctionManager p
    fun getChoice v = getVarChoice (vm, v)
    fun getFunc (original, argChoices) =
@@ -770,6 +771,7 @@ fun flattenOnce (p: Program.t) = let
    val p' = maybeAppendNewFns (mapBlocks (p, maybeRewriteBlock))
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
+   val _ = destroyVarConsumerManager varConsumers
 in
    p'
 end
