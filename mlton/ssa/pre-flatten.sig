@@ -244,7 +244,8 @@ sig
      returns `SOME ...`, otherwise, returns `NONE`.
 
      Flattening decisions are subject to the described `flatteningPolicy`,
-     outlined above.
+     outlined above, with consumer information resolved according to
+     `varAliasPolicy` (above).
     *)
    val flattenOnce: flatteningPolicy -> Program.t -> Program.t option
 
