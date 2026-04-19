@@ -388,7 +388,7 @@ fun varConsumerToString varConsumer =
  *)
 fun markConsumersInStatement (vm: varConsumerManager, s: Statement.t) = let
    val {getVarConsumersProp, ...} = vm
-   val Statement.T {exp, ...} = s
+   val Statement.T {exp, var=maybeLhs, ...} = s
    fun buildLogStmtThunk (var, decision) = let
       fun thunk () =
           Layout.seq ([Layout.str "markConsumersInStatement: for s=",
@@ -409,6 +409,11 @@ fun markConsumersInStatement (vm: varConsumerManager, s: Statement.t) = let
    fun addConsumerTo consumer (vs: Var.t vector): unit =
        Vector.foreach (vs, addConsumer consumer)
    val addCurrentConsumer = addConsumerTo AsCurrent
+   fun addAliasOf rhs =
+      case maybeLhs of
+          SOME lhs => addConsumer (AsAlias (lhs)) rhs
+        | NONE =>  Error.bug ("Bad alias" ^
+                              (Layout.toString (Statement.layout s)))
 in
    case exp of
        Exp.ConApp {args, ...} => addCurrentConsumer args
@@ -418,9 +423,17 @@ in
      (* TODO(pscollins): Not sure which direction the "consumer" relationship
      should go in, and I don't know why this IR construct would ever appear. For
      now, reject. *)
-     | Exp.Var _ => Error.unimplemented
-                        ("Not yet supported" ^
-                         (Layout.toString (Statement.layout s)))
+
+     (* This shows up in an example program as
+
+          global_2 := global_1
+
+        and all later references are only to `global_2`, not `global_1`, so we
+        have the alias "point upwards" from the new name to the old name, i.e.
+
+          rhs := AsAlias(lhs)
+      *)
+     | Exp.Var rhs => addAliasOf rhs
      | _ => ()
 end
 
