@@ -2055,9 +2055,9 @@ local
       val _ = print "Test 26 passed\n"
    in () end
 
-   (* Test 27: transform with preFlattenPolicy *)
+   (* Test 27: transform with preFlattenConsumerPolicy *)
    val _ = let
-      val _ = print "Test 27: transform with preFlattenPolicy\n"
+      val _ = print "Test 27: transform with preFlattenConsumerPolicy\n"
       val fName = Func.fromString "f27"
       val tBool = Type.bool
       val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
@@ -2114,21 +2114,142 @@ local
          main = mainName
       }
 
-      (* Case 1: preFlattenPolicy = Always *)
+      (* Case 1: preFlattenConsumerPolicy = Always *)
       val _ = Control.preFlattenMaxIters := 1
-      val _ = Control.preFlattenPolicy := Control.PreFlattenPolicy.Always
+      val _ = Control.preFlattenConsumerPolicy := Control.PreFlattenConsumerPolicy.Always
       val p1 = PreFlatten.transform p
       val Program.T {functions = funcs1, ...} = p1
       val _ = assert (List.length funcs1 = 3, "Expected 3 functions with policy Always")
 
-      (* Case 2: preFlattenPolicy = AnyUnpack *)
-      val _ = Control.preFlattenPolicy := Control.PreFlattenPolicy.AnyUnpack
+      (* Case 2: preFlattenConsumerPolicy = AnyUnpack *)
+      val _ = Control.preFlattenConsumerPolicy := Control.PreFlattenConsumerPolicy.AnyUnpack
       val p2 = PreFlatten.transform p
       val Program.T {functions = funcs2, ...} = p2
       (* AnyUnpack should NOT flatten here because arg1 is not unpacked in fFunction *)
       val _ = assert (List.length funcs2 = 2, "Expected 2 functions with policy AnyUnpack")
 
+      (* Case 3: preFlattenConsumerPolicy = AllUnpack *)
+      val _ = Control.preFlattenConsumerPolicy := Control.PreFlattenConsumerPolicy.AllUnpack
+      val p3 = PreFlatten.transform p
+      val Program.T {functions = funcs3, ...} = p3
+      (* AllUnpack should flatten here because arg1 has NO consumers in fFunction (vacuously all unpacked) *)
+      val _ = assert (List.length funcs3 = 3, "Expected 3 functions with policy AllUnpack")
+
       val _ = print "Test 27 passed\n"
+   in () end
+
+   (* Test 32: transform with preFlattenResolvePolicy *)
+   val _ = let
+      val _ = print "Test 32: transform with preFlattenResolvePolicy\n"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+
+      (* g(arg1: tuple) = #0 arg1 *)
+      val gName = Func.fromString "g32"
+      val gArg1 = Var.fromString "gArg1"
+      val gL = Label.fromString "Lg"
+      val gS = Statement.T {exp = Exp.Select {offset = 0, tuple = gArg1},
+                            ty = tBool, var = SOME (Var.fromString "gTmp")}
+      val gFunction = Function.new {
+         args = Vector.fromList [(gArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = gL,
+            statements = Vector.fromList [gS],
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = gName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = gL
+      }
+
+      (* f(arg1: tuple) = g(arg1) *)
+      val fName = Func.fromString "f32"
+      val fArg1 = Var.fromString "fArg1"
+      val fL = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(fArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fL,
+            statements = Vector.new0 (),
+            transfer = Transfer.Call {
+               args = Vector.fromList [fArg1],
+               func = gName,
+               inline = InlineAttr.Auto,
+               return = Return.Tail
+            }
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fL
+      }
+
+      (* main() = f((true, true)) *)
+      val mainName = Func.fromString "main32"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [gFunction, fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val _ = Control.preFlattenMaxIters := 1
+      val _ = Control.preFlattenConsumerPolicy := Control.PreFlattenConsumerPolicy.AnyUnpack
+
+      val _ = print "Case 1: preFlattenResolvePolicy = Local (should NOT flatten f)\n"
+      val _ = Control.preFlattenResolvePolicy := Control.PreFlattenResolvePolicy.Local
+      val pLocal = PreFlatten.transform p
+      val Program.T {functions = funcsLocal, ...} = pLocal
+      val fIsFlattenedLocal = List.exists (funcsLocal, fn f => 
+          let val name = Func.toString (Function.name f) in
+             String.hasPrefix (name, {prefix = "f32_flat"})
+          end)
+      val _ = assert (not fIsFlattenedLocal, "f should NOT be flattened with Local")
+
+      val _ = print "Case 2: preFlattenResolvePolicy = Global (SHOULD flatten f)\n"
+      val _ = Control.preFlattenResolvePolicy := Control.PreFlattenResolvePolicy.Global
+      val pGlobal = PreFlatten.transform p
+      val Program.T {functions = funcsGlobal, ...} = pGlobal
+      val fIsFlattenedGlobal = List.exists (funcsGlobal, fn f => 
+          let val name = Func.toString (Function.name f) in
+             String.hasPrefix (name, {prefix = "f32_flat"})
+          end)
+      val _ = assert (fIsFlattenedGlobal, "f SHOULD be flattened with Global")
+
+      val _ = print "Test 32 passed\n"
    in () end
 
    (* Test 28: resolveAliases *)

@@ -887,15 +887,19 @@ end
 fun transform (p: Program.t): Program.t =
     let
        val policy =
-          case !Control.preFlattenPolicy of
-             Control.PreFlattenPolicy.Always => FlattenAlways
-           | Control.PreFlattenPolicy.AnyUnpack => FlattenForAnyUnpack
+          case !Control.preFlattenConsumerPolicy of
+             Control.PreFlattenConsumerPolicy.Always => FlattenAlways
+           | Control.PreFlattenConsumerPolicy.AnyUnpack => FlattenForAnyUnpack
+           | Control.PreFlattenConsumerPolicy.AllUnpack => FlattenForAllUnpack
+       val resolvePolicy =
+          case !Control.preFlattenResolvePolicy of
+             Control.PreFlattenResolvePolicy.Global => UnionAlias
+           | Control.PreFlattenResolvePolicy.Local => DropAlias
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
           else
-             (* TODO(pscollins): Make this configurable *)
-             case flattenOnce (policy, DropAlias) p of
+             case flattenOnce (policy, resolvePolicy) p of
                 NONE => p
               | SOME p' => loop (shrink p', n + 1)
     in

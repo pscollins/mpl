@@ -1408,25 +1408,49 @@ val preFlattenMaxIters =
             default = 1,
             toString = Int.toString}
 
-structure PreFlattenPolicy =
+structure PreFlattenConsumerPolicy =
    struct
-      datatype t = Always | AnyUnpack
+      datatype t = Always | AnyUnpack | AllUnpack
 
       val toString =
          fn Always => "always"
           | AnyUnpack => "any_unpack"
+          | AllUnpack => "all_unpack"
 
       val fromString =
          fn "always" => SOME Always
           | "any_unpack" => SOME AnyUnpack
+          | "all_unpack" => SOME AllUnpack
           | _ => NONE
    end
 
-datatype preFlattenPolicy = datatype PreFlattenPolicy.t
+datatype preFlattenConsumerPolicy = datatype PreFlattenConsumerPolicy.t
 
-val preFlattenPolicy = control {name = "pre-flatten-policy",
-                                default = PreFlattenPolicy.Always,
-                                toString = PreFlattenPolicy.toString}
+val preFlattenConsumerPolicy =
+   control {name = "pre-flatten-consumer-policy",
+            default = PreFlattenConsumerPolicy.Always,
+            toString = PreFlattenConsumerPolicy.toString}
+
+structure PreFlattenResolvePolicy =
+   struct
+      datatype t = Global | Local
+
+      val toString =
+         fn Global => "global"
+          | Local => "local"
+
+      val fromString =
+         fn "global" => SOME Global
+          | "local" => SOME Local
+          | _ => NONE
+   end
+
+datatype preFlattenResolvePolicy = datatype PreFlattenResolvePolicy.t
+
+val preFlattenResolvePolicy =
+   control {name = "pre-flatten-resolve-policy",
+            default = PreFlattenResolvePolicy.Local,
+            toString = PreFlattenResolvePolicy.toString}
 
 structure PositionIndependentStyle =
    struct

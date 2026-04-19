@@ -413,13 +413,21 @@ signature CONTROL_FLAGS =
 
       val preFlattenMaxIters: int ref
 
-      structure PreFlattenPolicy:
+      structure PreFlattenConsumerPolicy:
          sig
-            datatype t = Always | AnyUnpack
+            datatype t = Always | AnyUnpack | AllUnpack
             val toString: t -> string
             val fromString: string -> t option
          end
-      val preFlattenPolicy: PreFlattenPolicy.t ref
+      val preFlattenConsumerPolicy: PreFlattenConsumerPolicy.t ref
+
+      structure PreFlattenResolvePolicy:
+         sig
+            datatype t = Global | Local
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val preFlattenResolvePolicy: PreFlattenResolvePolicy.t ref
 
       structure PositionIndependentStyle:
          sig

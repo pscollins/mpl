@@ -715,10 +715,16 @@ fun makeOptions {usage} =
               | _ => ())),
        (Expert, "pre-flatten-max-iters", " <n>", "limit the number of pre-flattening iterations (1)",
         Int (fn n => preFlattenMaxIters := n)),
-       (Expert, "pre-flatten-policy", " {always|any_unpack}", "set pre-flattening policy (always)",        SpaceString (fn s =>
-                     case PreFlattenPolicy.fromString s of
-                        SOME p => preFlattenPolicy := p
-                      | NONE => usage (concat ["invalid -pre-flatten-policy flag: ", s]))),
+       (Expert, "pre-flatten-consumer-policy", " {always|any_unpack|all_unpack}", "set pre-flattening consumer policy (always)",
+        SpaceString (fn s =>
+                     case PreFlattenConsumerPolicy.fromString s of
+                        SOME p => preFlattenConsumerPolicy := p
+                      | NONE => usage (concat ["invalid -pre-flatten-consumer-policy flag: ", s]))),
+       (Expert, "pre-flatten-resolve-policy", " {local|global}", "set pre-flattening resolve policy (local)",
+        SpaceString (fn s =>
+                     case PreFlattenResolvePolicy.fromString s of
+                        SOME p => preFlattenResolvePolicy := p
+                      | NONE => usage (concat ["invalid -pre-flatten-resolve-policy flag: ", s]))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>
