@@ -1408,6 +1408,26 @@ val preFlattenMaxIters =
             default = 1,
             toString = Int.toString}
 
+structure PreFlattenPolicy =
+   struct
+      datatype t = Always | LocalOnly
+
+      val toString =
+         fn Always => "always"
+          | LocalOnly => "local_only"
+
+      val fromString =
+         fn "always" => SOME Always
+          | "local_only" => SOME LocalOnly
+          | _ => NONE
+   end
+
+datatype preFlattenPolicy = datatype PreFlattenPolicy.t
+
+val preFlattenPolicy = control {name = "pre-flatten-policy",
+                                default = PreFlattenPolicy.Always,
+                                toString = PreFlattenPolicy.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =

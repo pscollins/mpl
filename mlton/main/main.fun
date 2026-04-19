@@ -715,6 +715,11 @@ fun makeOptions {usage} =
               | _ => ())),
        (Expert, "pre-flatten-max-iters", " <n>", "limit the number of pre-flattening iterations (1)",
         Int (fn n => preFlattenMaxIters := n)),
+       (Expert, "pre-flatten-policy", " {always|local_only}", "set pre-flattening policy (always)",
+        SpaceString (fn s =>
+                     case PreFlattenPolicy.fromString s of
+                        SOME p => preFlattenPolicy := p
+                      | NONE => usage (concat ["invalid -pre-flatten-policy flag: ", s]))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>

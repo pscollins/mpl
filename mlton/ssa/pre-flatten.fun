@@ -818,8 +818,10 @@ end
 
 fun transform (p: Program.t): Program.t =
     let
-       (* TODO(pscollins): Make this a flag *)
-       val policy = FlattenAlways
+       val policy =
+          case !Control.preFlattenPolicy of
+             Control.PreFlattenPolicy.Always => FlattenAlways
+           | Control.PreFlattenPolicy.LocalOnly => FlattenForAnyLocalUnpack
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
