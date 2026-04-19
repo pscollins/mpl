@@ -7,6 +7,12 @@ sig
      this call is controlled by the following flags:
 
        -pre-flatten-max-iters=N: limit the number of iterations to N
+
+       -pre-flatten-consumer-policy={always|any_unpack|all_unpack}:
+          sets the `flatteningPolicy` (below)
+
+       -pre-flatten-resolve-policy={local|global}:
+          sets the `resolvePolicy` (below)
     *)
    include SSA_TRANSFORM
 
