@@ -2,11 +2,11 @@
    RUN:    -keep-pass 'preFlatten.*' -stop-pass 'preFlatten.*' \
    RUN:    -pre-flatten-max-iters 1 \
    RUN:    -pre-flatten-consumer-policy always \
-   RUN:    -pre-flatten-resolve-policy local \
+   RUN:    -pre-flatten-resolve-policy global \
    RUN:    %s %t
 
    Test that `preFlatten` builds a new flattened version and calls it. Since the
-   consumer policy is `always`, it should succeed.
+   consumer policy is `always`, the local/global distinction doesn't matter.
 
    Non-flat version in 'pre'
    RUN: egrep    'doAdd.*tuple' %t/*preFlatten*.pre.ssa

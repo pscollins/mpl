@@ -1,12 +1,18 @@
 (* RUN: mpl-compile -ssa-passes preFlatten \
    RUN:    -keep-pass 'preFlatten.*' -stop-pass 'preFlatten.*' \
    RUN:    -pre-flatten-max-iters 1 \
-   RUN:    -pre-flatten-consumer-policy always \
+   RUN:    -pre-flatten-consumer-policy all_unpack \
    RUN:    -pre-flatten-resolve-policy local \
    RUN:    %s %t
 
-   Test that `preFlatten` builds a new flattened version and calls it. Since the
-   consumer policy is `always`, it should succeed.
+   Test that `preFlatten` builds a new flattened version and calls it.
+
+   The structure of the IR is:
+
+   fun doAdd (env, arg: int * int):
+     call tail implFn (env, arg)
+
+   so `all_unpack` + `local` should (vacuously) succeed.
 
    Non-flat version in 'pre'
    RUN: egrep    'doAdd.*tuple' %t/*preFlatten*.pre.ssa
