@@ -143,6 +143,19 @@ sig
    information for the specified `Program.t` *)
    val newVarConsumersForProgram: Program.t -> varConsumerManager
 
+   (* Policy describing how to resolve `AsAlias` statements. *)
+   datatype varAliasPolicy =
+            (* Remove `AsAlias` statements from the list *)
+            DropAlias
+            (* Traverse the `AsAlias` graph to union all results together *)
+            | UnionAlias
+   (* Resolves aliases in the `varConsumer` list according to the specified
+   policy *)
+   val resolveAliases: varAliasPolicy ->
+                       (varConsumerManager * varConsumer list) ->
+                       varConsumer list
+
+
    (* Manages mapping `Func.t`s to their flattened equivalents  *)
    type functionManager
 
@@ -193,7 +206,7 @@ sig
             (* Flatten `arg[i]` when `x[i]` is flattenable and at least one
              consumer of `arg[i]` is `AsUnpacked` (with no `AsAlias` traversal) *)
             | FlattenForAnyLocalUnpack
-            (* TODO(pscollins): Try more heuristics *)
+   (* TODO(pscollins): Try more heuristics *)
 
    (* Given the `varChoice` and `varConsumer` list corresponding to a particular
    `x[i]` and `arg[i]` (described above), updates `varChoice` to account for the

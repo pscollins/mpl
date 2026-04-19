@@ -556,6 +556,12 @@ in
    vm
 end
 
+datatype varAliasPolicy =
+         DropAlias
+         | UnionAlias
+fun resolveAliases policy (vc, consumers) =
+    Error.unimplemented "TODO"
+
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,
    pendingFuncs: Function.t list ref,
