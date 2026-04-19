@@ -498,6 +498,9 @@ in
    destroyFuncsMap()
 end
 
+fun newVarConsumersForProgram (p: Program.t): varConsumerManager =
+    Error.unimplemented "TODO"
+
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,
    pendingFuncs: Function.t list ref,

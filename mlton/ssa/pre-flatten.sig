@@ -129,8 +129,8 @@ sig
    type varConsumerManager
    (* Creates a new `varConsumerManager` over the specified program *)
    val newVarConsumerManager: Program.t -> varConsumerManager
-
-   (* Marks the `varConsumer`s for each used `Var.t` in the provided `Statement.t` *)
+   (* Marks the `varConsumer`s for each used `Var.t` in the provided
+   `Statement.t` *)
    val markConsumersInStatement: (varConsumerManager * Statement.t) -> unit
    (* Marks the `varConsumer`s for each `Var.t` in the provided `Transfer.t`: a
    `Transfer.t` can only induce an `AsAlias` relationship. *)
@@ -139,6 +139,9 @@ sig
    val getVarConsumers: (varConsumerManager * Var.t) -> varConsumer list
    (* Cleans up state associated with the provided object *)
    val destroyVarConsumerManager: varConsumerManager -> unit
+   (* Returns a `varConsumerManager` that carries all the `varConsumer`
+   information for the specified `Program.t` *)
+   val newVarConsumersForProgram: Program.t -> varConsumerManager
 
    (* Manages mapping `Func.t`s to their flattened equivalents  *)
    type functionManager
