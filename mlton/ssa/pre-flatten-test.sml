@@ -2442,7 +2442,8 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias) p2 of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack,
+                                           PreFlatten.UnionAlias) p2 of
                  SOME _ => printFail "Test 31b: expected NONE, got SOME"
                | NONE => ()
 
