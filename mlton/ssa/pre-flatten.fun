@@ -745,19 +745,28 @@ end
 
 fun flattenOnce (p: Program.t) = let
    val vm = newVarChoicesForProgram p
-   val varConsumers = newVarConsumersForProgram p
+   val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
+   (* TODO(pscollins): Make policy configurable *)
+   val kPolicy = FlattenAlways
    fun getChoice v = getVarChoice (vm, v)
+   fun getConsumers v = getVarConsumers (vc, v)
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
+   val updateChoice = updateChoiceForPolicy kPolicy
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
-         (* Make a flattening decision for each argument *)
+         (* Make a flattening decision for each argument by collecting all of
+         the tags for each argument... *)
          val varChoices = Vector.map (args, getChoice)
+         val varConsumers = Vector.map (args, getConsumers)
+         (* ...and applying the policy *)
+         val varChoices' = Vector.map2 (varChoices, varConsumers,
+                                        updateChoice)
          (* Construct the call argument *)
-         val args' = buildCallArgs (args, varChoices)
+         val args' = buildCallArgs (args, varChoices')
          (* Construct the flattened function *)
-         val argChoices = Vector.map (varChoices, varChoiceToArgChoice)
+         val argChoices = Vector.map (varChoices', varChoiceToArgChoice)
          val func' = getFunc (func, argChoices)
       in
          (* Return a call to the flattened function (perhaps unchanged) *)
