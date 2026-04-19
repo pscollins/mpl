@@ -766,6 +766,7 @@ end
 datatype flatteningPolicy =
            FlattenAlways
          | FlattenForAnyUnpack
+         | FlattenForAllUnpack
 
 fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
    fun isUnpacked consumer =
@@ -777,11 +778,12 @@ fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
        List.exists (varConsumers, wantType)
 in
    case (policy, varChoice) of
-      (FlattenAlways, _) => varChoice
-    | (_, PreserveVar) => varChoice
-    | (FlattenForAnyUnpack, _) =>
+       (FlattenAlways, _) => varChoice
+     | (_, PreserveVar) => varChoice
+     | (FlattenForAnyUnpack, _) =>
       if hasConsumerType isUnpacked then varChoice
       else PreserveVar
+    | (FlattenForAllUnpack, _) => Error.unimplemented "TODO"
 end
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =

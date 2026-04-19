@@ -212,6 +212,11 @@ sig
             (* Flatten `arg[i]` when `x[i]` is flattenable and at least one
              consumer of `arg[i]` is `AsUnpacked` *)
             | FlattenForAnyUnpack
+            (* Flatten `arg[i]` when `x[i]` is flattenable and every consumer of
+             `arg[i]` is `AsUnpacked` (satisfied vacuously by an empty consumer
+             list) *)
+            | FlattenForAllUnpack
+
    (* TODO(pscollins): Try more heuristics *)
 
    (* Given the `varChoice` and `varConsumer` list corresponding to a particular
