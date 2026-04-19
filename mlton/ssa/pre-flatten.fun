@@ -575,8 +575,48 @@ end
 datatype varAliasPolicy =
          DropAlias
          | UnionAlias
-fun resolveAliases policy (vc, consumers) =
-    Error.unimplemented "TODO: GEMINI -- LEAVE THIS TO ME"
+fun resolveAliases (policy: varAliasPolicy)
+                   (vc: varConsumerManager,
+                    consumers: varConsumer list) = let
+   val {getVarConsumersProp, ...} = vc
+   fun mkVisitedProp _ = ref false
+   val {get=getVisitedProp, destroy=destroyVisitedProp, ...} =
+       Property.destGetSetOnce (Var.plist,
+                                Property.initFun mkVisitedProp)
+   (* Marks v' as visited and returns previous state *)
+   fun markSeen v' = let
+      val seen = getVisitedProp v'
+      val wasSeen = !seen
+      val _ = seen := true
+   in
+      wasSeen
+   end
+   fun doResolve v = let
+      val found = ref []
+      fun visitConsumer consumer =
+          case consumer of
+              AsAlias v' => resolve v'
+           | _ => List.push (found, consumer)
+      and resolve v' =
+          if markSeen v' then ()
+          else
+             List.foreach (!(getVarConsumersProp v'),
+                           visitConsumer)
+      val _ = resolve v
+   in
+      !found
+   end
+   fun processConsumer consumer =
+       case (policy, consumer) of
+           (DropAlias, AsAlias _) => []
+         | (UnionAlias, AsAlias v) => doResolve v
+         | _ => [consumer]
+   val result =
+       List.concatMap (consumers, processConsumer)
+   val _ = destroyVisitedProp()
+in
+   result
+end
 
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,
