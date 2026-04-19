@@ -498,8 +498,20 @@ in
    destroyFuncsMap()
 end
 
-fun newVarConsumersForProgram (p: Program.t): varConsumerManager =
-    Error.unimplemented "TODO"
+fun newVarConsumersForProgram (p: Program.t): varConsumerManager = let
+   val {beforeFunc, afterFunc, beforeBlock, ...} = defaultWalker 
+   val vm = newVarConsumerManager p
+   fun doBlock b = markConsumersInTransfer (vm, Block.transfer b)
+   fun doStatement s = markConsumersInStatement (vm, s)
+   val walker = {beforeFunc = beforeFunc,
+                 afterFunc = afterFunc,
+                 beforeBlock = beforeBlock,
+                 afterBlock = doBlock,
+                 statement = doStatement}
+   val _ = doWalk (walker, p)
+in
+   vm
+end
 
 type functionManager = {
    getOrCreateFlattenedFunc: (Func.t * argChoice vector) -> Func.t,

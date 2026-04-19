@@ -1901,5 +1901,87 @@ local
 
       val _ = print "Test 25 passed\n"
    in () end
+
+   (* Test 26: newVarConsumersForProgram with all consumer types *)
+   val _ = let
+      val _ = print "Test 26: newVarConsumersForProgram with all consumer types\n"
+      
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fName = Func.fromString "f26"
+      val fArg = Var.fromString "fArg"
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(fArg, tBool)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main26"
+      val vUnpacked = Var.fromString "vUnpacked"
+      val vCurrent = Var.fromString "vCurrent"
+      val vAlias = Var.fromString "vAlias"
+      
+      val s1 = Statement.T {exp = Exp.Select {offset = 0, tuple = vUnpacked}, 
+                            ty = tBool, var = SOME (Var.fromString "tmp1")}
+      val s2 = Statement.T {exp = Exp.Tuple (Vector.fromList [vCurrent]), 
+                            ty = tTuple, var = SOME (Var.fromString "tmp2")}
+      
+      val lMain = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.fromList [(vUnpacked, tTuple), (vCurrent, tBool), (vAlias, tBool)],
+         label = lMain,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Call {
+            args = Vector.fromList [vAlias],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.fromList [(vUnpacked, tTuple), (vCurrent, tBool), (vAlias, tBool)],
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = lMain
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val vm = PreFlatten.newVarConsumersForProgram p
+      
+      val consumersUnpacked = PreFlatten.getVarConsumers (vm, vUnpacked)
+      val _ = assert (List.exists (consumersUnpacked, fn PreFlatten.AsUnpacked => true | _ => false),
+                      "vUnpacked should have AsUnpacked consumer")
+      
+      val consumersCurrent = PreFlatten.getVarConsumers (vm, vCurrent)
+      val _ = assert (List.exists (consumersCurrent, fn PreFlatten.AsCurrent => true | _ => false),
+                      "vCurrent should have AsCurrent consumer")
+      
+      val consumersAlias = PreFlatten.getVarConsumers (vm, vAlias)
+      val _ = assert (List.exists (consumersAlias, fn PreFlatten.AsAlias v' => Var.equals (v', fArg) | _ => false),
+                      "vAlias should have AsAlias fArg consumer")
+      
+      val _ = PreFlatten.destroyVarConsumerManager vm
+      val _ = print "Test 26 passed\n"
+   in () end
 in
 end
