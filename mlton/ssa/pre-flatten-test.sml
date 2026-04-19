@@ -2,7 +2,7 @@ structure Atoms = Atoms ()
 structure Ssa = Ssa (open Atoms)
 structure PreFlatten = PreFlatten (Ssa)
 
-val _ = Control.diagnosticWriter := SOME (fn l => Layout.output (l, Out.standard))
+val _ = Control.diagnosticWriter := SOME (fn l => Layout.outputl (l, Out.standard))
 
 (* Debug helper for printing *)
 fun programToString program =

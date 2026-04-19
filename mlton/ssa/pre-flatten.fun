@@ -299,7 +299,7 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
        Layout.seq ([Layout.str "chooseVarsInStatement: for s=",
                     Statement.layout s,
                     Layout.str " made decision: "] @
-                   args @ [Layout.str "\n"])
+                   args)
    fun logNonTupleResultThunk() =
        buildLogStmt ([Layout.str " do not flatten: not a tuple, or no dest"])
 
@@ -443,8 +443,7 @@ fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    val {getFunc, getBlock, ...} = funcsMap
    fun logInputThunk () =
        Layout.seq [Layout.str "markConsumersInTransfer: ",
-                   Transfer.layout transfer,
-                   Layout.str "\n"]
+                   Transfer.layout transfer]
    val _ = Control.diagnostic logInputThunk
    fun markConsumer (from, to) = let
       val consumersRef = getVarConsumersProp from
@@ -595,8 +594,7 @@ fun newFunctionManager (p: Program.t) = let
          seq [str "getOrCreateFlattenedFunc: looking for ",
               Func.layout f,
               Layout.str " with choices ",
-              Vector.layout choiceLayout choices,
-              str "\n"]
+              Vector.layout choiceLayout choices]
       end
       fun doLogChoice (newF) = let
          open Layout
@@ -604,7 +602,7 @@ fun newFunctionManager (p: Program.t) = let
          seq [str "getOrCreateFlattenedFunc: created new function ",
               Func.layout newF,
               str " from ",
-              Func.layout f, str "\n"]
+              Func.layout f]
       end
       val _ = Control.diagnostic logInputThunk
       val flattenedFuncList: flattenedFunc list ref = getFlattenedFuncList f
