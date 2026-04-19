@@ -1058,7 +1058,7 @@ local
          main = mainName
       }
 
-      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.DropAlias) p of
+      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias) p of
                    SOME _ => printFail "Test 16 (local unpack): flattenOnce returned SOME, expected NONE"
                  | NONE => ())
 
@@ -1955,13 +1955,13 @@ local
                    (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent])
       val _ = case res2 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "25b failed"
 
-      val _ = print "Test 25c: FlattenForAnyLocalUnpack flattens if any AsUnpacked\n"
-      val res3 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAnyLocalUnpack 
+      val _ = print "Test 25c: FlattenForAnyUnpack flattens if any AsUnpacked\n"
+      val res3 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAnyUnpack 
                    (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent, PreFlatten.AsUnpacked])
       val _ = case res3 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "25c failed"
 
-      val _ = print "Test 25d: FlattenForAnyLocalUnpack preserves if only AsCurrent\n"
-      val res4 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAnyLocalUnpack 
+      val _ = print "Test 25d: FlattenForAnyUnpack preserves if only AsCurrent\n"
+      val res4 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAnyUnpack 
                    (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent, PreFlatten.AsCurrent])
       val _ = case res4 of PreFlatten.PreserveVar => () | _ => printFail "25d failed"
 
@@ -2116,12 +2116,12 @@ local
       val Program.T {functions = funcs1, ...} = p1
       val _ = assert (List.length funcs1 = 3, "Expected 3 functions with policy Always")
 
-      (* Case 2: preFlattenPolicy = LocalOnly *)
-      val _ = Control.preFlattenPolicy := Control.PreFlattenPolicy.LocalOnly
+      (* Case 2: preFlattenPolicy = AnyUnpack *)
+      val _ = Control.preFlattenPolicy := Control.PreFlattenPolicy.AnyUnpack
       val p2 = PreFlatten.transform p
       val Program.T {functions = funcs2, ...} = p2
-      (* LocalOnly should NOT flatten here because arg1 is not unpacked in fFunction *)
-      val _ = assert (List.length funcs2 = 2, "Expected 2 functions with policy LocalOnly")
+      (* AnyUnpack should NOT flatten here because arg1 is not unpacked in fFunction *)
+      val _ = assert (List.length funcs2 = 2, "Expected 2 functions with policy AnyUnpack")
 
       val _ = print "Test 27 passed\n"
    in () end
@@ -2271,7 +2271,7 @@ local
       }
 
       val _ = print "Test 29a: DropAlias (should NOT flatten f)\n"
-      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.DropAlias) p of
+      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias) p of
                       SOME p' => p'
                     | NONE => p)
       val Program.T {functions = funcsDrop, ...} = pDrop
@@ -2290,7 +2290,7 @@ local
       val _ = print "Test 29a passed\n"
 
       val _ = print "Test 29b: UnionAlias (SHOULD flatten f)\n"
-      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyLocalUnpack, PreFlatten.UnionAlias) p of
+      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.UnionAlias) p of
                        SOME p' => p'
                      | NONE => printFail "Test 29b: expected SOME, got NONE")
       val Program.T {functions = funcsUnion, ...} = pUnion

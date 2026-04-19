@@ -765,7 +765,7 @@ end
 
 datatype flatteningPolicy =
            FlattenAlways
-         | FlattenForAnyLocalUnpack
+         | FlattenForAnyUnpack
 
 fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
    fun isUnpacked consumer =
@@ -779,7 +779,7 @@ in
    case (policy, varChoice) of
       (FlattenAlways, _) => varChoice
     | (_, PreserveVar) => varChoice
-    | (FlattenForAnyLocalUnpack, _) =>
+    | (FlattenForAnyUnpack, _) =>
       if hasConsumerType isUnpacked then varChoice
       else PreserveVar
 end
@@ -883,7 +883,7 @@ fun transform (p: Program.t): Program.t =
        val policy =
           case !Control.preFlattenPolicy of
              Control.PreFlattenPolicy.Always => FlattenAlways
-           | Control.PreFlattenPolicy.LocalOnly => FlattenForAnyLocalUnpack
+           | Control.PreFlattenPolicy.AnyUnpack => FlattenForAnyUnpack
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p

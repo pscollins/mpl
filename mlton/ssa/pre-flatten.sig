@@ -210,8 +210,8 @@ sig
             flattenable *)
             FlattenAlways
             (* Flatten `arg[i]` when `x[i]` is flattenable and at least one
-             consumer of `arg[i]` is `AsUnpacked` (with no `AsAlias` traversal) *)
-            | FlattenForAnyLocalUnpack
+             consumer of `arg[i]` is `AsUnpacked` *)
+            | FlattenForAnyUnpack
    (* TODO(pscollins): Try more heuristics *)
 
    (* Given the `varChoice` and `varConsumer` list corresponding to a particular

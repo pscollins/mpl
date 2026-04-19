@@ -1410,15 +1410,15 @@ val preFlattenMaxIters =
 
 structure PreFlattenPolicy =
    struct
-      datatype t = Always | LocalOnly
+      datatype t = Always | AnyUnpack
 
       val toString =
          fn Always => "always"
-          | LocalOnly => "local_only"
+          | AnyUnpack => "any_unpack"
 
       val fromString =
          fn "always" => SOME Always
-          | "local_only" => SOME LocalOnly
+          | "any_unpack" => SOME AnyUnpack
           | _ => NONE
    end
 

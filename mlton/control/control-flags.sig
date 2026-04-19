@@ -415,7 +415,7 @@ signature CONTROL_FLAGS =
 
       structure PreFlattenPolicy:
          sig
-            datatype t = Always | LocalOnly
+            datatype t = Always | AnyUnpack
             val toString: t -> string
             val fromString: string -> t option
          end
