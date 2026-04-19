@@ -374,6 +374,8 @@ in
    !(getVarConsumersProp v)
 end
 
+fun varConsumerToString varConsumer = ""
+
 (* Add each `varConsumer` in `s` to `vm`
 
   * `_ := Select(..., v)` -> AsUnpacked
@@ -383,7 +385,19 @@ end
 fun markConsumersInStatement (vm: varConsumerManager, s: Statement.t) = let
    val {getVarConsumersProp, ...} = vm
    val Statement.T {exp, ...} = s
+   fun buildLogStmtThunk (var, decision) = let
+      fun thunk () =
+          Layout.seq ([Layout.str "markConsumersInStatement: for s=",
+                       Statement.layout s,
+                       Layout.str " with var=",
+                       Var.layout var,
+                       Layout.str " added consumer ",
+                       Layout.str (varConsumerToString decision)])
+   in
+      thunk
+   end
    fun addConsumer consumer v = let
+      val _ = Control.diagnostic (buildLogStmtThunk (v, consumer))
       val consumersRef = getVarConsumersProp v
    in
       List.push (consumersRef, consumer)
