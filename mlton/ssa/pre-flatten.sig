@@ -157,7 +157,7 @@ sig
             | UnionAlias
    (* Resolves aliases in the `varConsumer` list according to the specified
    policy *)
-   val resolveAliases: (varAliasPolicy, varConsumerManager) ->
+   val resolveAliases: (varAliasPolicy * varConsumerManager) ->
                        varConsumer list ->
                        varConsumer list
 

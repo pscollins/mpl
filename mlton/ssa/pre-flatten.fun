@@ -575,9 +575,8 @@ end
 datatype varAliasPolicy =
          DropAlias
          | UnionAlias
-fun resolveAliases (policy: varAliasPolicy)
-                   (vc: varConsumerManager,
-                    consumers: varConsumer list) = let
+fun resolveAliases (policy: varAliasPolicy, vc: varConsumerManager)
+                   (consumers: varConsumer list) = let
    val {getVarConsumersProp, ...} = vc
    fun mkVisitedProp _ = ref false
    val {get=getVisitedProp, destroy=destroyVisitedProp, ...} =

@@ -2146,18 +2146,18 @@ local
       fun countCurrent l = List.length (List.keepAll (l, fn PreFlatten.AsCurrent => true | _ => false))
 
       val _ = print "Test 28a: DropAlias\n"
-      val res1 = PreFlatten.resolveAliases PreFlatten.DropAlias (vm, PreFlatten.getVarConsumers (vm, v1))
+      val res1 = PreFlatten.resolveAliases (PreFlatten.DropAlias, vm) (PreFlatten.getVarConsumers (vm, v1))
       val _ = assert (hasUnpacked res1, "res1 should have AsUnpacked")
       val _ = assert (not (hasAlias res1), "res1 should not have AsAlias")
       val _ = assert (not (hasCurrent res1), "res1 should not have AsCurrent")
 
       val _ = print "Test 28b: UnionAlias (1-deep)\n"
-      val res2 = PreFlatten.resolveAliases PreFlatten.UnionAlias (vm, PreFlatten.getVarConsumers (vm, v3))
+      val res2 = PreFlatten.resolveAliases (PreFlatten.UnionAlias, vm) (PreFlatten.getVarConsumers (vm, v3))
       val _ = assert (hasCurrent res2, "res2 should have AsCurrent")
       val _ = assert (not (hasAlias res2), "res2 should not have AsAlias")
 
       val _ = print "Test 28c: UnionAlias (2-deep chain)\n"
-      val res3 = PreFlatten.resolveAliases PreFlatten.UnionAlias (vm, PreFlatten.getVarConsumers (vm, v1))
+      val res3 = PreFlatten.resolveAliases (PreFlatten.UnionAlias, vm) (PreFlatten.getVarConsumers (vm, v1))
       (* v1 -> {AsUnpacked, AsAlias v2}
          v2 -> {AsCurrent, AsAlias v3}
          v3 -> {AsCurrent}
@@ -2173,7 +2173,7 @@ local
          (vCycle, [PreFlatten.AsCurrent, PreFlatten.AsAlias vCycle])
       ]
       val vmCycle = PreFlatten.newVarConsumerManagerFromAssignments assignmentsCycle
-      val resCycle = PreFlatten.resolveAliases PreFlatten.UnionAlias (vmCycle, PreFlatten.getVarConsumers (vmCycle, vCycle))
+      val resCycle = PreFlatten.resolveAliases (PreFlatten.UnionAlias, vmCycle) (PreFlatten.getVarConsumers (vmCycle, vCycle))
       val _ = assert (hasCurrent resCycle, "resCycle should have AsCurrent")
       val _ = assert (not (hasAlias resCycle), "resCycle should not have AsAlias")
 
