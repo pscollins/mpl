@@ -441,6 +441,11 @@ end
 fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    val {getVarConsumersProp, funcsMap, ...} = vm
    val {getFunc, getBlock, ...} = funcsMap
+   fun logInputThunk () =
+       Layout.seq [Layout.str "markConsumersInTransfer: ",
+                   Transfer.layout transfer,
+                   Layout.str "\n"]
+   val _ = Control.diagnostic logInputThunk
    fun markConsumer (from, to) = let
       val consumersRef = getVarConsumersProp from
    in
@@ -486,7 +491,13 @@ in
      | Transfer.Call {args, func, return, ...} => 
        (bindArgs (args, func);
         maybeBindRets (func, return))
-    | _ => Error.unimplemented "TODO"
+
+     (* `Case` should bind as an unpack when we support sum types
+        `Return` does not bind (it is handled in `Call`)
+        `Raise` does not bind
+         TODO(pscollins): Spork/spoin?
+      *)
+    | _ => ()
 end
 
 
