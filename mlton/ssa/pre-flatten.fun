@@ -418,7 +418,9 @@ in
      (* TODO(pscollins): Not sure which direction the "consumer" relationship
      should go in, and I don't know why this IR construct would ever appear. For
      now, reject. *)
-     | Exp.Var _ => Error.unimplemented "Not yet supported"
+     | Exp.Var _ => Error.unimplemented
+                        ("Not yet supported" ^
+                         (Layout.toString (Statement.layout s)))
      | _ => ()
 end
 
