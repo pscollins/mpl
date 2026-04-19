@@ -776,14 +776,18 @@ fun updateChoiceForPolicy policy (varChoice, varConsumers) = let
          | AsAlias _ => Error.bug "Must filter AsAlias!"
    fun hasConsumerType wantType =
        List.exists (varConsumers, wantType)
+   fun allConsumerType wantType =
+       List.forall (varConsumers, wantType)
 in
    case (policy, varChoice) of
        (FlattenAlways, _) => varChoice
      | (_, PreserveVar) => varChoice
      | (FlattenForAnyUnpack, _) =>
-      if hasConsumerType isUnpacked then varChoice
-      else PreserveVar
-    | (FlattenForAllUnpack, _) => Error.unimplemented "TODO"
+       if hasConsumerType isUnpacked then varChoice
+       else PreserveVar
+     | (FlattenForAllUnpack, _) =>
+       if allConsumerType isUnpacked then varChoice
+       else PreserveVar
 end
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
