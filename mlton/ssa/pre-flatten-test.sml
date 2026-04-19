@@ -1965,6 +1965,11 @@ local
                    (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent, PreFlatten.AsCurrent])
       val _ = case res4 of PreFlatten.PreserveVar => () | _ => printFail "25d failed"
 
+      val _ = print "Test 25e: FlattenForAnyUnpack does not flatten for empty\n"
+      val res4 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAnyUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [])
+      val _ = case res4 of PreFlatten.PreserveVar => () | _ => printFail "25d failed"
+
       val _ = print "Test 25 passed\n"
    in () end
 
@@ -2301,6 +2306,147 @@ local
       val _ = assert (fIsFlattenedUnion, "f SHOULD be flattened with UnionAlias")
 
       val _ = print "Test 29 passed\n"
+   in () end
+
+   (* Test 30: updateChoiceForPolicy with FlattenForAllUnpack *)
+   val _ = let
+      val _ = print "Test 30: updateChoiceForPolicy with FlattenForAllUnpack\n"
+      val xs = Vector.fromList [Var.fromString "x1", Var.fromString "x2"]
+      
+      val _ = print "Test 30a: FlattenForAllUnpack flattens if all are AsUnpacked\n"
+      val res1 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAllUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsUnpacked, PreFlatten.AsUnpacked])
+      val _ = case res1 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "30a failed"
+
+      val _ = print "Test 30a2: FlattenForAllUnpack flattens for empty users\n"
+      val res1 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAllUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [])
+      val _ = case res1 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "30a failed"
+
+      val _ = print "Test 30b: FlattenForAllUnpack flattens if empty\n"
+      val res2 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAllUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [])
+      val _ = case res2 of PreFlatten.FlattenTupleVar _ => () | _ => printFail "30b failed"
+
+      val _ = print "Test 30c: FlattenForAllUnpack preserves if there is AsCurrent\n"
+      val res3 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAllUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsUnpacked, PreFlatten.AsCurrent])
+      val _ = case res3 of PreFlatten.PreserveVar => () | _ => printFail "30c failed"
+
+      val _ = print "Test 30d: FlattenForAllUnpack preserves if only AsCurrent\n"
+      val res4 = PreFlatten.updateChoiceForPolicy PreFlatten.FlattenForAllUnpack 
+                   (PreFlatten.FlattenTupleVar xs, [PreFlatten.AsCurrent])
+      val _ = case res4 of PreFlatten.PreserveVar => () | _ => printFail "30d failed"
+
+      val _ = print "Test 30 passed\n"
+   in () end
+
+   (* Test 31: flattenOnce with FlattenForAllUnpack *)
+   val _ = let
+      val _ = print "Test 31: flattenOnce with FlattenForAllUnpack\n"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+
+      (* f(arg1: tuple) = #0 arg1 *)
+      val fName = Func.fromString "f31"
+      val fArg1 = Var.fromString "fArg1"
+      val fL = Label.fromString "Lf"
+      val fS = Statement.T {exp = Exp.Select {offset = 0, tuple = fArg1},
+                            ty = tBool, var = SOME (Var.fromString "fTmp")}
+      val fFunction = Function.new {
+         args = Vector.fromList [(fArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fL,
+            statements = Vector.fromList [fS],
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fL
+      }
+
+      (* main() = f((true, true)) *)
+      val mainName = Func.fromString "main31"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* Case 31a: Only AsUnpacked consumer in f. Should flatten. *)
+      val _ = print "Test 31a: Only AsUnpacked consumer (should flatten)\n"
+      val pFlat = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias) p of
+                      SOME p' => p'
+                    | NONE => printFail "Test 31a: expected SOME, got NONE")
+      val Program.T {functions = funcsFlat, ...} = pFlat
+      val fIsFlattened = List.exists (funcsFlat, fn f => 
+          let val name = Func.toString (Function.name f) in
+             String.hasPrefix (name, {prefix = "f31_flat"})
+          end)
+      val _ = assert (fIsFlattened, "f SHOULD be flattened in 31a")
+
+      (* Case 31b: AsCurrent consumer in f. Should NOT flatten. *)
+      val _ = print "Test 31b: AsCurrent consumer (should NOT flatten)\n"
+      (* Modify f to have an AsCurrent consumer *)
+      val fS2 = Statement.T {exp = Exp.Tuple (Vector.fromList [fArg1]),
+                             ty = tTuple, var = SOME (Var.fromString "fTmp2")}
+      val fFunction2 = Function.new {
+         args = Vector.fromList [(fArg1, tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fL,
+            statements = Vector.fromList [fS, fS2],
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fL
+      }
+      val p2 = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction2, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias) p2 of
+                 SOME _ => printFail "Test 31b: expected NONE, got SOME"
+               | NONE => ()
+
+      val _ = print "Test 31 passed\n"
    in () end
 in
 end
