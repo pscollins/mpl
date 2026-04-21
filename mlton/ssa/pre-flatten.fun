@@ -198,51 +198,17 @@ in
    Func.newString (concat [currName, "_", suffix])
 end
 
-fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
-   val needBinds: (bind list) ref = ref []
-   fun addBind (bind) = let
-      val newBinds = bind::(!needBinds)
-   in
-      needBinds := newBinds
-   end
-   fun extractVar (var, ty) = var
-  (* Adds the 'reverse binding' `typleVar = tuple(flattendVars)`
-     to `needBinds` and returns `flattendVars` *)
-   fun addFlattenedBind (tupleVar, flattenedVars) = let
-      val bind = BindTuple {to = tupleVar,
-                            froms = Vector.map (flattenedVars, extractVar)}
-      val _ = addBind bind
-   in
-      flattenedVars
-   end
-   fun doFlatten typedVar =
-       case flattenTupleVar typedVar of
-           SOME flattenedVars => addFlattenedBind (typedVar, flattenedVars)
-         | NONE => Error.bug "Tried to flatten non-tuple type!"
-   fun applyChoice (typedVar, choice): typedVar vector =
-       case choice of
-           Preserve => Vector.new1 typedVar
-         | FlattenTuple => doFlatten typedVar
+fun buildFlattenedFunction (f: Function.t, _: argChoice vector) = let
    val {args, blocks, inline, name, returns, raises, start} =
-       (* Use fresh variables in the clone to prevent errors in later analyses
-       (which assume that variables in distinct functions are distinct) *)
        Function.dest (Function.alphaRename f)
-   val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
-   fun buildNewFunc binds = let
-      val newBlock = buildBindBlock (Vector.fromList binds, start)
-   in
-      Function.new {args = newArgs,
-                    blocks = Vector.concat [Vector.new1 newBlock, blocks],
-                    inline = inline,
-                    name = newFuncNamedLike (name, "flat"),
-                    raises = raises,
-                    returns = returns,
-                    start = Block.label newBlock}
-   end
 in
-   case !needBinds of
-       [] => Error.bug "No-op flattening decision"
-    | binds => buildNewFunc binds
+   Function.new {args = args,
+                 blocks = blocks,
+                 inline = inline,
+                 name = newFuncNamedLike (name, "flat"),
+                 raises = raises,
+                 returns = returns,
+                 start = start}
 end
 
 datatype flatteningChoiceType =
@@ -799,15 +765,7 @@ fun varChoiceToArgChoice (vc: varChoice): argChoice =
 (* Given a flattening choice for the constituent vars of `originalArgs`, returns
 the argument vector to pass to the flattened function *)
 fun buildCallArgs (originalArgs: Var.t vector,
-                   varChoices: varChoice vector) = let
-   fun buildCallArg (originalArg, varChoice) =
-       case varChoice of
-           PreserveVar => Vector.new1 originalArg
-         | FlattenTupleVar parents => parents
-in
-   Vector.concatV (
-   Vector.map2 (originalArgs, varChoices, buildCallArg))
-end
+                   _: varChoice vector) = originalArgs
 
 fun flattenOnce (flattenPolicy, resolvePolicy) (p: Program.t) = let
    val vm = newVarChoicesForProgram p

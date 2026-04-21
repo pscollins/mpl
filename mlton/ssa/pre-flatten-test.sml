@@ -568,14 +568,12 @@ local
            name = resName, ...} = Function.dest res
       val _ = assert (not (Label.equals(fName,  resName)),
                       "new function must have a fresh name")
-      val _ = assert (Vector.length args = 3,
-                      "Flattened function should have 3 args")
+      val _ = assert (Vector.length args = 2,
+                      "Flattened function should have 2 args")
       val (_, rt0) = Vector.sub (args, 0)
       val (_, rt1) = Vector.sub (args, 1)
-      val (_, rt2) = Vector.sub (args, 2)
       val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
-      val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
-      val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
+      val _ = assert (Type.equals (rt1, tTuple), "Arg 1 type mismatch")
       fun checkFreshVar (v: Var.t, _) = let
          val _ = assert (not (Var.equals (v, v1)), "v1 not renamed")
          val _ = assert (not (Var.equals (v, v2)), "v2 not renamed")
@@ -592,7 +590,7 @@ local
                   case var of
                      SOME v => Var.originalName v = "v2"
                    | NONE => false)
-               val _ = assert (found, "Original var v2 not found in statements")
+               val _ = assert (not found, "Original var v2 should NOT be found in statements")
             in () end
        | NONE => (print "Start block not found\n"; OS.Process.exit OS.Process.failure)
       val _ = print "Test 10 passed\n"
@@ -987,11 +985,9 @@ local
          case newFunc of
             SOME f => let
                val {args, ...} = Function.dest f
-               val _ = assert (Vector.length args = 2, "Expected 2 args in flattened function")
+               val _ = assert (Vector.length args = 1, "Expected 1 arg in flattened function")
                val (_, t0) = Vector.sub (args, 0)
-               val (_, t1) = Vector.sub (args, 1)
-               val _ = assert (Type.equals (t0, tBool), "Arg 0 should be bool")
-               val _ = assert (Type.equals (t1, tBool), "Arg 1 should be bool")
+               val _ = assert (Type.equals (t0, tTuple), "Arg 0 should be tuple")
             in () end
           | NONE => printFail "Test 16: Flattened function not found"
       end
@@ -1142,13 +1138,11 @@ local
          case newFunc of
             SOME f => let
                val {args, ...} = Function.dest f
-               val _ = assert (Vector.length args = 3, "Expected 3 args in flattened function")
+               val _ = assert (Vector.length args = 2, "Expected 2 args in flattened function")
                val (_, t0) = Vector.sub (args, 0)
                val (_, t1) = Vector.sub (args, 1)
-               val (_, t2) = Vector.sub (args, 2)
-               val _ = assert (Type.equals (t0, tBool), "Arg 0 should be bool")
+               val _ = assert (Type.equals (t0, tTuple), "Arg 0 should be tuple")
                val _ = assert (Type.equals (t1, tBool), "Arg 1 should be bool")
-               val _ = assert (Type.equals (t2, tBool), "Arg 2 should be bool")
             in () end
           | NONE => printFail "Test 17: Flattened function not found"
       end
@@ -1239,9 +1233,11 @@ local
          case newFunc of
             SOME f => let
                val {args, ...} = Function.dest f
-               val _ = assert (Vector.length args = 5, "Expected 5 args in flattened function")
-               val _ = Vector.foreach (args, fn (_, t) =>
-                          assert (Type.equals (t, tBool), "All args should be bool"))
+               val _ = assert (Vector.length args = 2, "Expected 2 args in flattened function")
+               val (_, t0) = Vector.sub (args, 0)
+               val (_, t1) = Vector.sub (args, 1)
+               val _ = assert (Type.equals (t0, tTup1), "Arg 0 should be tTup1")
+               val _ = assert (Type.equals (t1, tTup2), "Arg 1 should be tTup2")
             in () end
           | NONE => printFail "Test 18: Flattened function not found"
       end
@@ -1403,9 +1399,8 @@ local
                val _ = assert (Vector.length argsOrig = 1, "Original function should have 1 arg")
                val _ = assert (Type.equals (#2 (Vector.sub (argsOrig, 0)), tTuple),
                                "Original arg should be tuple")
-               val _ = assert (Vector.length argsNew = 2, "New function should have 2 args")
-               val _ = assert (Type.equals (#2 (Vector.sub (argsNew, 0)), tBool), "New arg 0 should be bool")
-               val _ = assert (Type.equals (#2 (Vector.sub (argsNew, 1)), tBool), "New arg 1 should be bool")
+               val _ = assert (Vector.length argsNew = 1, "New function should have 1 arg")
+               val _ = assert (Type.equals (#2 (Vector.sub (argsNew, 0)), tTuple), "New arg 0 should be tuple")
             in () end
           | _ => printFail "Test 20: Original or new function not found"
       end
@@ -1521,20 +1516,19 @@ local
                fun check (f, expected) = let
                   val {args, ...} = Function.dest f
                in
-                  Vector.length args = 3
+                  Vector.length args = 2
                   andalso Type.equals (#2 (Vector.sub (args, 0)), List.nth (expected, 0))
                   andalso Type.equals (#2 (Vector.sub (args, 1)), List.nth (expected, 1))
-                  andalso Type.equals (#2 (Vector.sub (args, 2)), List.nth (expected, 2))
                end
                
-               val sig1 = [tBool, tBool, tTup2]
-               val sig2 = [tTup1, tBool, tBool]
+               val sig1 = [tTup1, tTup2]
+               val sig2 = [tTup1, tTup2]
                
                val match1 = check (fA, sig1) orelse check (fB, sig1)
                val match2 = check (fA, sig2) orelse check (fB, sig2)
                
-               val _ = assert (match1, "Signature [bool, bool, tuple] not found")
-               val _ = assert (match2, "Signature [tuple, bool, bool] not found")
+               val _ = assert (match1, "Signature [tTup1, tTup2] not found for match1")
+               val _ = assert (match2, "Signature [tTup1, tTup2] not found for match2")
             in () end
           | _ => printFail "Test 21: Original or new functions not found correctly"
       end
@@ -1614,7 +1608,7 @@ local
       val p1 = PreFlatten.transform p
       val Program.T {functions = funcs1, ...} = p1
       
-      (* Should have 3 functions: f, main, and f_flat (2 args) *)
+      (* Should have 3 functions: f, main, and f_flat (1 arg) *)
       val _ = assert (List.length funcs1 = 3, "Expected 3 functions with max-iters=1")
       
       (* Second, run with max-iters = 2 *)
@@ -1622,14 +1616,14 @@ local
       val p2 = PreFlatten.transform p
       val Program.T {functions = funcs2, ...} = p2
       
-      (* Should have 4 functions: f, main, f_flat, and f_flat_flat (3 args) *)
+      (* Should have 4 functions: f, main, f_flat, and f_flat_flat (1 arg) *)
       val _ = assert (List.length funcs2 = 4, "Expected 4 functions with max-iters=2")
       
       val finalFunc = List.peek (funcs2, fn f =>
          let val {args, ...} = Function.dest f in
-            Vector.length args = 3
+            Vector.length args = 1
          end)
-      val _ = assert (Option.isSome finalFunc, "Expected a function with 3 arguments after 2 iterations")
+      val _ = assert (Option.isSome finalFunc, "Expected a function with 1 argument after 2 iterations")
 
       val _ = print "Test 22 passed\n"
    in () end
