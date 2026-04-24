@@ -97,6 +97,9 @@ sig
             (* Flatten: carries the parent `Var.t`s to flatten-through.
             `parents` is guaranteed to be non-empty. *)
             | FlattenTupleVar of Var.t vector
+            (* Flatten: carries the parent constructpr + `Var.t`s to flatten-through *)
+            | FlattenConVar of {args: Var.t vector, con: Con.t}
+
    (* Type to manage tagging `Var.t`s with their flattening decision and other
    associated data *)
    (* TODO(pscollins): Rename? `varDataManager`? *)
@@ -105,9 +108,13 @@ sig
    val newVarChoiceManager: unit -> varChoiceManager
    (* Sets the `varChoice` for any `Var.t`s in `Statement.t`:
 
-     Flattenable `Var.t`s are of the form:
+     Flattenable tuple `Var.t`s are of the form:
 
        var := tuple(p1, p2, p3) -> FlattenTupleVar ([p1, p2, p3])
+
+     Flattenable datatype `Var.t`s are of the form:
+
+       var := con (p1, p2, p3) -> FlattenConVar ([[p1, p2, p3])
 
      All other `Var.t`s are marked `PreserveVar`.
     *)

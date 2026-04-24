@@ -274,6 +274,7 @@ end
 datatype varChoice =
          PreserveVar
          | FlattenTupleVar of Var.t vector
+         | FlattenConVar of {args: Var.t vector, con: Con.t}
 
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
