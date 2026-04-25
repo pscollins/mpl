@@ -2570,5 +2570,89 @@ local
 
       val _ = print "Test 31 passed\n"
    in () end
+
+   (* Test 33: chooseVarsInStatement with FlattenConVar *)
+   val _ = let
+      val _ = print "Test 33: chooseVarsInStatement with FlattenConVar\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val vCon = Var.fromString "vc"
+      val con = Con.fromString "C"
+
+      val sCon = Statement.T {
+         exp = Exp.ConApp {args = Vector.fromList [v1, v2], con = con},
+         ty = Type.unit,
+         var = SOME vCon
+      }
+
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sCon)
+
+      val choiceCon = PreFlatten.getVarChoice (vcm, vCon)
+      val _ =
+         case choiceCon of
+            PreFlatten.FlattenConVar {args, con = con'} =>
+               let
+                  val _ = assert (Vector.length args = 2, "FlattenConVar should have 2 vars")
+                  val _ = assert (Var.equals (Vector.sub (args, 0), v1), "FlattenConVar var 0 mismatch")
+                  val _ = assert (Var.equals (Vector.sub (args, 1), v2), "FlattenConVar var 1 mismatch")
+                  val _ = assert (Con.equals (con, con'), "FlattenConVar con mismatch")
+               in () end
+          | _ => (print "vc should be FlattenConVar\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 33 passed\n"
+   in () end
+
+   (* Test 34: newVarChoicesForProgram with FlattenConVar *)
+   val _ = let
+      val _ = print "Test 34: newVarChoicesForProgram with FlattenConVar\n"
+
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val vCon = Var.fromString "vc"
+      val con = Con.fromString "C"
+
+      val sCon = Statement.T {
+         exp = Exp.ConApp {args = Vector.fromList [v1, v2], con = con},
+         ty = Type.unit,
+         var = SOME vCon
+      }
+
+      val mainFunc = Func.fromString "main34"
+      val mainLabel = Label.fromString "L34"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.fromList [sCon],
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val vcm = PreFlatten.newVarChoicesForProgram p
+      val choiceCon = PreFlatten.getVarChoice (vcm, vCon)
+      val _ =
+         case choiceCon of
+            PreFlatten.FlattenConVar _ => ()
+          | _ => (print "vc should be FlattenConVar\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 34 passed\n"
+   in () end
 in
 end

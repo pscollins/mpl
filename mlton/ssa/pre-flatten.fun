@@ -304,9 +304,9 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
    fun logNonTupleResultThunk() =
        buildLogStmt ([Layout.str " do not flatten: not a tuple, or no dest"])
 
-   fun getDecisionFromParents (parents: Var.t vector) = let
+   fun getTupleDecisionFromParents (parents: Var.t vector) = let
       fun logResultThunk() =
-          buildLogStmt ([Layout.str " flatten unless empty: ",
+          buildLogStmt ([Layout.str " flatten tuple unless empty: ",
                          Vector.layout Var.layout parents])
       val _ = Control.diagnostic logResultThunk
    in
@@ -317,10 +317,22 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
        else
           FlattenTupleVar parents
    end
+   fun getFlattenConFromParents (argcon as {args, con}) = let
+      fun logResultThunk() =
+          buildLogStmt ([Layout.str " flatten datatype: parents=(",
+                         Vector.layout Var.layout args,
+                         Layout.str "), con=",
+                         Con.layout con])
+      val _ = Control.diagnostic logResultThunk
+   in
+      FlattenConVar argcon
+   end
 in
    case (exp, maybeVar) of
        (Exp.Tuple parents, SOME var) =>
-       setVarChoiceProp (var, getDecisionFromParents parents)
+       setVarChoiceProp (var, getTupleDecisionFromParents parents)
+    | (Exp.ConApp argcon, SOME var) =>
+       setVarChoiceProp (var, getFlattenConFromParents argcon)
     | _ => Control.diagnostic logNonTupleResultThunk
 end
 
