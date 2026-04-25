@@ -899,20 +899,28 @@ fun updateChoiceForAllowedTypes policy vc =
      | _ => vc
 
 
-fun varChoiceToArgChoice (vc: varChoice): argChoice =
-    case vc of
-        PreserveVar => Preserve
-      | FlattenTupleVar _ => FlattenTuple
+fun varChoiceToArgChoice (vc: varChoice): argChoice = let
+   fun extractTy (_, t) = t
+in
+   case vc of
+       PreserveVar => Preserve
+     | FlattenTupleVar _ => FlattenTuple
+     | FlattenConVar {args, con} =>
+       FlattenCon {argTys = Vector.map (args, extractTy),
+                   con=con}
+end
 
 
 (* Given a flattening choice for the constituent vars of `originalArgs`, returns
 the argument vector to pass to the flattened function *)
 fun buildCallArgs (originalArgs: Var.t vector,
                    varChoices: varChoice vector) = let
+   fun extractVar (v, _) = v
    fun buildCallArg (originalArg, varChoice) =
        case varChoice of
            PreserveVar => Vector.new1 originalArg
          | FlattenTupleVar parents => parents
+         | FlattenConVar {args, ...} => Vector.map (args, extractVar)
 in
    Vector.concatV (
    Vector.map2 (originalArgs, varChoices, buildCallArg))

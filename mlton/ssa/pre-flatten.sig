@@ -13,6 +13,9 @@ sig
 
        -pre-flatten-resolve-policy={local|global}:
           sets the `resolvePolicy` (below)
+
+       -pre-flatten-types-policy={any|tuple|con}
+          sets the `flattenableTypesPolicy` (below)
     *)
    include SSA_TRANSFORM
 
