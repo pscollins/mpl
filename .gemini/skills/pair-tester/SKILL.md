@@ -22,10 +22,17 @@ Write unit tests in the specified test file that cover the behavior outlined by 
 - **Error Conditions**: Expected exceptions or error return values for invalid inputs (if specified in the contract).
 - **Concurrency/Parallelism**: If the project (like `mpl`) involves parallel constructs, ensure tests account for them if relevant.
 
-### 3. Verification (The Red Phase)
-Run the newly created tests. **Crucially, the tests must fail** at this stage because the function implementation is still just a stub.
+### 3. Verification (The Red Phase) - MANDATORY STOP
+Run the newly created tests. **THE TESTS MUST FAIL.** This is the "Red" phase of TDD.
 - If the test suite fails to *compile*, you may make minor, surgical changes to the source file to fix typos or type mismatches that prevent compilation.
-- **DO NOT** fill in the actual logic or implementation of the function.
+- **CRITICAL: DO NOT fill in the actual logic, fix the bug, or implement the function.** Your task ends when the tests fail on a stub.
+- **Verification Step**: Before concluding, explicitly verify: "Did I modify the logic in the source file? If yes, revert it immediately."
+
+## Constraints
+
+- **STUB PROTECTION**: Never replace a `TODO`, `Error.bug`, or dummy return value with actual logic.
+- **NO BUG FIXING**: Even if the fix is obvious, you MUST NOT apply it. The goal is to provide the user with a failing test that *they* will then fix.
+- **SURGICAL ONLY**: Edits to implementation files are permitted ONLY for fixing syntax/type errors that block compilation of the test suite.
 
 ### 4. Handoff
 Once you have a compiling but failing test suite, return control to the user.

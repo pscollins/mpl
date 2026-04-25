@@ -594,16 +594,16 @@ in
    case transfer of
        Transfer.Goto {args, dst} =>
        markConsumers (args, getBlockArgs dst)
-     | Transfer.Call {args, func, return, ...} => 
+     | Transfer.Call {args, func, return, ...} =>
        (bindArgs (args, func);
         maybeBindRets (func, return))
 
      (* `Case` should bind as an unpack when we support sum types
-        `Return` does not bind (it is handled in `Call`)
-        `Raise` does not bind
-         TODO(pscollins): Spork/spoin?
-      *)
-    | _ => ()
+       `Return` does not bind (it is handled in `Call`)
+       `Raise` does not bind
+        TODO(pscollins): Spork/spoin?
+     *)
+     | _ => ()
 end
 
 

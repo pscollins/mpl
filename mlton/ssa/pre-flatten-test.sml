@@ -2879,5 +2879,30 @@ local
 
       val _ = print "Test 39 passed\n"
    in () end
+
+   (* Test 40: markConsumersInTransfer with Case *)
+   val _ = let
+      val _ = print "Test 40: markConsumersInTransfer with Case\n"
+      val vTest = Var.fromString "vTest"
+      val lDefault = Label.fromString "Ldefault"
+      val caseTransfer = Transfer.Case {
+         cases = Cases.Con (Vector.new0 ()),
+         default = SOME lDefault,
+         test = vTest
+      }
+      
+      val dummyLabel = Func.fromString "dummy"
+      val p = Program.T {datatypes=Vector.new0(),
+                         functions=[],
+                         globals=Vector.new0(),
+                         main=dummyLabel}
+      val vm = PreFlatten.newVarConsumerManager p
+      val _ = PreFlatten.markConsumersInTransfer (vm, caseTransfer)
+      val consumers = PreFlatten.getVarConsumers (vm, vTest)
+      val _ = assert (List.exists (consumers, fn PreFlatten.AsUnpacked => true | _ => false),
+                      "Expected AsUnpacked for test variable in Case")
+      val _ = PreFlatten.destroyVarConsumerManager vm
+      val _ = print "Test 40 passed\n"
+   in () end
 in
 end
