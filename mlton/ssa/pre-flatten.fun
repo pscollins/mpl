@@ -171,7 +171,7 @@ end
 fun flattenConVar ((var, ty), argTys): (typedVar vector) option = let
    fun buildVar (t: Type.t): typedVar = (Var.newString "flattenedCon", t)
 in
-   case ty of
+   case Type.dest ty of
        (* TODO: more validation? *)
        Type.Datatype _ =>
        SOME (Vector.map (argTys, buildVar))
@@ -244,7 +244,8 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
        case flattenTupleVar typedVar of
            SOME flattenedVars => addFlattenedTupleBind (typedVar, flattenedVars)
          | NONE => Error.bug "Tried to flatten non-tuple type!"
-   fun doFlattenCon (typedVar, {argTys, con}) =
+   fun doFlattenCon (typedVar: typedVar, {argTys: Type.t vector,
+                                          con: Con.t}) =
        case flattenConVar (typedVar, argTys) of
            SOME flattenedVars => addFlattenedConBind (typedVar, con,
                                                       flattenedVars)
@@ -291,7 +292,11 @@ fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
        case choice of
            Preserve => true
          | FlattenTuple => checkFlatten (typedVar)
-   val isNoop = Vector.forall (choices, fn c => c = Preserve)
+   fun isPreserve c =
+       case c of
+           Preserve => true
+         | _ => false
+   val isNoop = Vector.forall (choices, isPreserve)
    val validChoice = if isNoop then NoOp else Valid
 in
    if (Vector.length args) = (Vector.length choices) andalso
@@ -675,6 +680,19 @@ fun choiceString c =
 fun choiceLayout c =
     Layout.str (choiceString c)
 
+fun choiceEqual (l, r) = let
+   fun compareArg ({argTys, con},
+                   {argTys=argTys', con=con'}) =
+       (Con.equals (con, con')) andalso
+       Vector.equals (argTys, argTys', Type.equals)
+in
+    case (l, r) of
+        (Preserve, Preserve) => true
+      | (FlattenTuple, FlattenTuple) => true
+      | (FlattenCon arg, FlattenCon arg') =>
+        compareArg (arg, arg')
+end
+
 fun newFunctionManager (p: Program.t) = let
    (* TODO(pscollins): Since the scheme below doesn't 'follow through'
    already-flattened functions, we'll need to destroy and recreate it after each
@@ -746,7 +764,7 @@ fun newFunctionManager (p: Program.t) = let
       val flattenedFuncList: flattenedFunc list ref = getFlattenedFuncList f
       fun flattenedFuncMatches (choices', _) =
           Vector.equals (choices', choices,
-                         fn (l, r) => l = r)
+                         choiceEqual)
       fun addNewFlattenedFunc () = let
          val newFunc = createFlattenedFunc (f, choices)
          val newF = Function.name newFunc
