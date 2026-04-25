@@ -317,7 +317,9 @@ datatype varChoice =
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
    setVarChoiceProp: Var.t * varChoice -> unit,
-   destroyVarChoiceProps: unit -> unit
+   getVarTypeProp: Var.t -> Type.t,
+   setVarTypeProp: Var.t * Type.t -> unit,
+   destroyVarChoiceManagerProps: unit -> unit
 }
 
 fun newVarChoiceManager () = let
@@ -325,14 +327,21 @@ fun newVarChoiceManager () = let
    val {get=getChoice, set=setChoice, destroy=destroyChoice} =
        Property.destGetSetOnce (Var.plist,
                                 Property.initConst PreserveVar)
+   val {get=getType, set=setType, destroy=destroyType} =
+       Property.destGetSetOnce (Var.plist,
+                                Property.initRaise ("type lookup", Var.layout))
+   fun destroyProps () =
+       (destroyChoice(); destroyType())
 in
    {getVarChoiceProp = getChoice,
     setVarChoiceProp = setChoice,
-    destroyVarChoiceProps = destroyChoice}
+    getVarTypeProp = getType,
+    setVarTypeProp = setType,
+    destroyVarChoiceManagerProps = destroyProps}
 end
 
 fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
-   val {setVarChoiceProp, ...} = vt
+   val {setVarChoiceProp, getVarTypeProp, ...} = vt
    val Statement.T {exp, ty, var=maybeVar} = s
    fun buildLogStmt args =
        Layout.seq ([Layout.str "chooseVarsInStatement: for s=",
@@ -341,7 +350,8 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
                    args)
    fun logNonTupleResultThunk() =
        buildLogStmt ([Layout.str " do not flatten: not a tuple, or no dest"])
-
+   fun addType v =
+       (v, getVarTypeProp v)
    fun getTupleDecisionFromParents (parents: Var.t vector) = let
       fun logResultThunk() =
           buildLogStmt ([Layout.str " flatten tuple unless empty: ",
@@ -363,8 +373,7 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
                          Con.layout con])
       val _ = Control.diagnostic logResultThunk
    in
-      (* FlattenConVar argcon *)
-      Error.unimplemented "TODO"
+      FlattenConVar {args=Vector.map (args, addType), con=con}
    end
 in
    case (exp, maybeVar) of
@@ -382,17 +391,33 @@ in
 end
 
 fun destroyVarChoiceManager (vt: varChoiceManager) = let
-   val {destroyVarChoiceProps, ...} = vt
+   val {destroyVarChoiceManagerProps, ...} = vt
 in
-   destroyVarChoiceProps()
+   destroyVarChoiceManagerProps()
 end
+
+fun markTypeForBinding (vt: varChoiceManager, s: Statement.t) = let
+   val {setVarTypeProp, ...} = vt
+   val Statement.T {ty, var, ...} = s
+in
+   case var of
+       SOME var => setVarTypeProp (var, ty)
+     | _ => ()
+end
+
 
 fun newVarChoicesForProgram (p: Program.t) = let
    val vcm = newVarChoiceManager ()
-   fun doStatement (s: Statement.t) =
+   fun markStatement (s: Statement.t) =
+       markTypeForBinding (vcm, s)
+   fun chooseStatement (s: Statement.t) =
        chooseVarsInStatement (vcm, s)
-   val walker = statementWalker doStatement
-   val _ = doWalk (walker, p)
+   (* First, record the types associated with every bound variable *)
+   val _ = doWalk (statementWalker markStatement, p)
+   (* Next, in a separate pass, make the flattening choice. We do this in two
+   passes since the DFS order might not guarantee us that we visit every def
+   before its use. *)
+   val _ = doWalk (statementWalker chooseStatement, p)
 in
    vcm
 end

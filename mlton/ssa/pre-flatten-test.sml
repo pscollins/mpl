@@ -2622,6 +2622,8 @@ local
       val v2 = Var.fromString "v2"
       val t2 = Type.unit
       val s2 = Statement.T {exp = Exp.unit, ty = t2, var = SOME v2}
+      val _ = PreFlatten.markTypeForBinding (vcm, s1)
+      val _ = PreFlatten.markTypeForBinding (vcm, s2)
       val vCon = Var.fromString "vc"
       val con = Con.fromString "C"
 

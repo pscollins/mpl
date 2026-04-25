@@ -144,6 +144,9 @@ sig
    (* Returns a `varChoiceManager` that carries flattening choices for all
    `Var.t`s  in the program. *)
    val newVarChoicesForProgram: Program.t -> varChoiceManager
+   (* Exposed for testing: records the type of any binding in `Statement.t` for
+   use in a future `chooseVarsInStatement` call *)
+   val markTypeForBinding: (varChoiceManager * Statement.t) -> unit
 
    (* Describes how a `Var.t` is consumed by a particular reader. *)
    datatype varConsumer =
