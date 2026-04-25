@@ -2904,5 +2904,175 @@ local
       val _ = PreFlatten.destroyVarConsumerManager vm
       val _ = print "Test 40 passed\n"
    in () end
+
+   (* Test 41: ConApp flattening (2-ary) via flattenOnce *)
+   val _ = let
+      val _ = print "Test 41: ConApp flattening (2-ary) via flattenOnce\n"
+      val fName = Func.fromString "f41"
+      val tBool = Type.bool
+      val tUnit = Type.unit
+      val tCon = Type.datatypee (Tycon.fromString "T41")
+      val con = Con.fromString "C41"
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tCon)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main41"
+      val b1 = Var.fromString "b1"
+      val u1 = Var.fromString "u1"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tUnit, var = SOME u1}
+      val s3 = Statement.T {exp = Exp.ConApp {args = Vector.fromList [b1, u1], con = con}, 
+                            ty = tCon, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 41: flattenOnce returned NONE")
+      val Program.T {functions, ...} = p'
+
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      
+      val _ = let
+         val newFunc = List.peek (functions, fn f =>
+            let val name = Function.name f in
+               not (Func.equals (name, fName)) andalso not (Func.equals (name, mainName))
+            end)
+      in
+         case newFunc of
+            SOME f => let
+               val {args, ...} = Function.dest f
+               val _ = assert (Vector.length args = 2, "Expected 2 args in flattened function")
+               val (_, t0) = Vector.sub (args, 0)
+               val (_, t1) = Vector.sub (args, 1)
+               val _ = assert (Type.equals (t0, tBool), "Arg 0 should be bool")
+               val _ = assert (Type.equals (t1, tUnit), "Arg 1 should be unit")
+            in () end
+          | NONE => printFail "Test 41: Flattened function not found"
+      end
+
+      val _ = print "Test 41 passed\n"
+   in () end
+
+   (* Test 42: ConApp flattening (nullary) via flattenOnce *)
+   val _ = let
+      val _ = print "Test 42: ConApp flattening (nullary) via flattenOnce\n"
+      val fName = Func.fromString "f42"
+      val tCon = Type.datatypee (Tycon.fromString "T42")
+      val con = Con.fromString "C42"
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tCon)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main42"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.ConApp {args = Vector.new0 (), con = con}, 
+                            ty = tCon, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+                   SOME p' => p'
+                 | NONE => printFail "Test 42: flattenOnce returned NONE")
+      val Program.T {functions, ...} = p'
+
+      val _ = assert (List.length functions = 3, "Expected 3 functions in flattened program")
+      
+      val _ = let
+         val newFunc = List.peek (functions, fn f =>
+            let val name = Function.name f in
+               not (Func.equals (name, fName)) andalso not (Func.equals (name, mainName))
+            end)
+      in
+         case newFunc of
+            SOME f => let
+               val {args, ...} = Function.dest f
+               val _ = assert (Vector.length args = 0, "Expected 0 args in flattened function")
+            in () end
+          | NONE => printFail "Test 42: Flattened function not found"
+      end
+
+      val _ = print "Test 42 passed\n"
+   in () end
 in
 end
