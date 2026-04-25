@@ -2688,5 +2688,99 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 34 passed\n"
    in () end
+
+   (* Test 35: buildFlattenedFunction with Datatype (2-args) *)
+   val _ = let
+      val _ = print "Test 35: buildFlattenedFunction with Datatype (2-args)\n"
+      val fName = Func.fromString "f35"
+      val l1 = Label.fromString "L35"
+      val v1 = Var.fromString "v1"
+      val tCon = Type.datatypee (Tycon.fromString "T2")
+      val b1 = Block.T {
+         args = Vector.new0 (),
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val f = Function.new {
+         args = Vector.fromList [(v1, tCon)],
+         blocks = Vector.fromList [b1],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+
+      val _ = print "Checking checkFlatteningChoice for datatype (2-args)\n"
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten])
+      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (2-args)")
+
+      val _ = print "Attempting buildFlattenedFunction for datatype (2-args)\n"
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Flatten])
+      val _ = print "Test 35 passed\n"
+   in () end
+
+   (* Test 36: buildFlattenedFunction with Datatype (nullary) *)
+   val _ = let
+      val _ = print "Test 36: buildFlattenedFunction with Datatype (nullary)\n"
+      val fName = Func.fromString "f36"
+      val l1 = Label.fromString "L36"
+      val v1 = Var.fromString "v1"
+      val tCon = Type.datatypee (Tycon.fromString "T0")
+      val b1 = Block.T {
+         args = Vector.new0 (),
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val f = Function.new {
+         args = Vector.fromList [(v1, tCon)],
+         blocks = Vector.fromList [b1],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+
+      val _ = print "Checking checkFlatteningChoice for datatype (nullary)\n"
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten])
+      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (nullary)")
+
+      val _ = print "Attempting buildFlattenedFunction for datatype (nullary)\n"
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Flatten])
+      val _ = print "Test 36 passed\n"
+   in () end
+
+   (* Test 37: chooseVarsInStatement with FlattenConVar (nullary) *)
+   val _ = let
+      val _ = print "Test 37: chooseVarsInStatement with FlattenConVar (nullary)\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+
+      val vCon = Var.fromString "vc"
+      val con = Con.fromString "C0"
+
+      val sCon = Statement.T {
+         exp = Exp.ConApp {args = Vector.new0 (), con = con},
+         ty = Type.unit,
+         var = SOME vCon
+      }
+
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sCon)
+
+      val choiceCon = PreFlatten.getVarChoice (vcm, vCon)
+      val _ =
+         case choiceCon of
+            PreFlatten.FlattenConVar {args, con = con'} =>
+               let
+                  val _ = assert (Vector.length args = 0, "FlattenConVar should have 0 vars")
+                  val _ = assert (Con.equals (con, con'), "FlattenConVar con mismatch")
+               in () end
+          | _ => (print "vc should be FlattenConVar\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 37 passed\n"
+   in () end
 in
 end

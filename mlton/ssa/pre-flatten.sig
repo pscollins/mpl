@@ -75,6 +75,12 @@ sig
 
       f (a: bool, b: bool, c: int): ab = tuple (a, b); ....
 
+   Or, for, the ConApp case
+
+      {f (ab: (Ty of bool * bool), c: int): ..., [Flatten]}
+        -->
+      f (a: bool, b: bool, c: int): ab = con Ty (a, b); ....
+
    `argChoice` must be compatible with the function args (i.e. same count and
    applicable types): if not, error.
 
