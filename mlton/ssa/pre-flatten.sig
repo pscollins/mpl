@@ -293,6 +293,18 @@ sig
          arg1 = tuple(t1, t2, ...)
          ...original body of `f`...
 
+     Similarly, for ConApp flattening, finds a sequence like:
+
+       x = con MyCon (t1, t2, ...)
+       f(x, arg2, ...)
+
+     and replaces this call to `f` with an equivalent call to a flattened
+     version, i.e.:
+
+       f_flat(t1, t2, ..., arg2)
+         arg1 = con MyCon (t1, t2, ...)
+         ...original body of `f`...
+
      On success (i.e. if we made progress and flattened at least one function),
      returns `SOME ...`, otherwise, returns `NONE`.
 
