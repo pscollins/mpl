@@ -263,6 +263,20 @@ sig
                               (varChoice * (varConsumer list)) ->
                               varChoice
 
+   (* Chooses which datatypes can be flattened through *)
+   datatype flattenableTypesPolicy =
+            (* Allows flattening any type (tuple or ConApp) *)
+              FlattenAnyType
+            (* Flatten through tuple constructors only *)
+            | FlattenOnlyTuple
+            (* Flatten through ConApp only *)
+            | FlattenOnlyConApp
+
+   (* Updates the provided `varChoice` according to the policy: unsupported
+   types become `Preserve` *)
+   val updateChoiceForAllowedTypes: flattenableTypesPolicy ->
+                                    varChoice -> varChoice
+
    (* Runs one iteration of flattening: for each appearance of the sequence:
 
        x = tuple(t1, t2, ...)

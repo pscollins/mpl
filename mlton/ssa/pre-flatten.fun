@@ -882,9 +882,21 @@ in
        if hasConsumerType isUnpacked then varChoice
        else PreserveVar
      | (FlattenForAllUnpack, _) =>
-       if allConsumerType isUnpacked then varChoice
-       else PreserveVar
-end
+      if allConsumerType isUnpacked then varChoice
+      else PreserveVar
+     end
+
+datatype flattenableTypesPolicy =
+         FlattenAnyType
+         | FlattenOnlyTuple
+         | FlattenOnlyConApp
+
+fun updateChoiceForAllowedTypes policy vc =
+   case (policy, vc) of
+       (FlattenOnlyTuple, FlattenConVar _) => PreserveVar
+     | (FlattenOnlyConApp, FlattenTupleVar _) => PreserveVar
+     | _ => vc
+
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of

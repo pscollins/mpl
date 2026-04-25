@@ -2846,5 +2846,38 @@ local
 
       val _ = print "Test 38 passed\n"
    in () end
+
+   (* Test 39: updateChoiceForAllowedTypes *)
+   val _ = let
+      val _ = print "Test 39: updateChoiceForAllowedTypes\n"
+      val xs = Vector.fromList [Var.fromString "x1", Var.fromString "x2"]
+      val args = Vector.fromList [(Var.fromString "v1", Type.bool)]
+      val con = Con.fromString "C"
+      
+      val vcTuple = PreFlatten.FlattenTupleVar xs
+      val vcCon = PreFlatten.FlattenConVar {args = args, con = con}
+      val vcPreserve = PreFlatten.PreserveVar
+
+      fun isPreserve vc = case vc of PreFlatten.PreserveVar => true | _ => false
+      fun isTuple vc = case vc of PreFlatten.FlattenTupleVar _ => true | _ => false
+      fun isCon vc = case vc of PreFlatten.FlattenConVar _ => true | _ => false
+
+      val _ = print "Test 39a: FlattenAnyType\n"
+      val _ = assert (isTuple (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenAnyType vcTuple), "Any: tuple should be preserved")
+      val _ = assert (isCon (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenAnyType vcCon), "Any: con should be preserved")
+      val _ = assert (isPreserve (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenAnyType vcPreserve), "Any: preserve should be preserved")
+
+      val _ = print "Test 39b: FlattenOnlyTuple\n"
+      val _ = assert (isTuple (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyTuple vcTuple), "OnlyTuple: tuple should be preserved")
+      val _ = assert (isPreserve (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyTuple vcCon), "OnlyTuple: con should be dropped")
+      val _ = assert (isPreserve (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyTuple vcPreserve), "OnlyTuple: preserve should be preserved")
+
+      val _ = print "Test 39c: FlattenOnlyConApp\n"
+      val _ = assert (isPreserve (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyConApp vcTuple), "OnlyCon: tuple should be dropped")
+      val _ = assert (isCon (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyConApp vcCon), "OnlyCon: con should be preserved")
+      val _ = assert (isPreserve (PreFlatten.updateChoiceForAllowedTypes PreFlatten.FlattenOnlyConApp vcPreserve), "OnlyCon: preserve should be preserved")
+
+      val _ = print "Test 39 passed\n"
+   in () end
 in
 end
