@@ -497,10 +497,6 @@ in
      | Exp.PrimApp  {args, ...} => addCurrentConsumer args
      | Exp.Select {tuple, ...} => addConsumer AsUnpacked tuple
      | Exp.Tuple args => addCurrentConsumer args
-     (* TODO(pscollins): Not sure which direction the "consumer" relationship
-     should go in, and I don't know why this IR construct would ever appear. For
-     now, reject. *)
-
      (* This shows up in an example program as
 
           global_2 := global_1
@@ -545,8 +541,9 @@ end
      }` ->
      vs1[i] = vs2[i] = AsAlias(args[i])
 
-   TODO(pscollins): When we support flattening sum types, `Case` statments
-   should record an `AsUnpacked` relation. For now, we ignore them
+
+  * `Case(..., test="x")` ->
+    x = AsUnpacked
  *)
 fun markConsumersInTransfer (vm: varConsumerManager, transfer: Transfer.t) = let
    val {getVarConsumersProp, funcsMap, ...} = vm
@@ -926,7 +923,10 @@ fun flattenOnce (flattenPolicy, resolvePolicy) (p: Program.t) = let
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
-   val updateChoice = updateChoiceForPolicy flattenPolicy
+   (* TODO: make this configurable *)
+   val kAllowedType = FlattenAnyType
+   val updateChoice = (updateChoiceForAllowedTypes kAllowedType)
+                      o updateChoiceForPolicy flattenPolicy
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
          (* Make a flattening decision for each argument by collecting all of
