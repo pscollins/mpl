@@ -429,6 +429,14 @@ signature CONTROL_FLAGS =
          end
       val preFlattenResolvePolicy: PreFlattenResolvePolicy.t ref
 
+      structure PreFlattenTypesPolicy:
+         sig
+            datatype t = Any | Tuple | Con
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val preFlattenTypesPolicy: PreFlattenTypesPolicy.t ref
+
       structure PositionIndependentStyle:
          sig
             datatype t =

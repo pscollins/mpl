@@ -1452,6 +1452,29 @@ val preFlattenResolvePolicy =
             default = PreFlattenResolvePolicy.Local,
             toString = PreFlattenResolvePolicy.toString}
 
+structure PreFlattenTypesPolicy =
+   struct
+      datatype t = Any | Tuple | Con
+
+      val toString =
+         fn Any => "any"
+          | Tuple => "tuple"
+          | Con => "con"
+
+      val fromString =
+         fn "any" => SOME Any
+          | "tuple" => SOME Tuple
+          | "con" => SOME Con
+          | _ => NONE
+   end
+
+datatype preFlattenTypesPolicy = datatype PreFlattenTypesPolicy.t
+
+val preFlattenTypesPolicy =
+   control {name = "pre-flatten-types-policy",
+            default = PreFlattenTypesPolicy.Tuple,
+            toString = PreFlattenTypesPolicy.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =

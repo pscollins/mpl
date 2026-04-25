@@ -725,6 +725,11 @@ fun makeOptions {usage} =
                      case PreFlattenResolvePolicy.fromString s of
                         SOME p => preFlattenResolvePolicy := p
                       | NONE => usage (concat ["invalid -pre-flatten-resolve-policy flag: ", s]))),
+       (Expert, "pre-flatten-types-policy", " {any|tuple|con}", "set pre-flattening types policy (tuple)",
+        SpaceString (fn s =>
+                     case PreFlattenTypesPolicy.fromString s of
+                        SOME p => preFlattenTypesPolicy := p
+                      | NONE => usage (concat ["invalid -pre-flatten-types-policy flag: ", s]))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>

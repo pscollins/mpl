@@ -1011,7 +1011,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 16 (always): flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1098,7 +1098,7 @@ local
          main = mainName
       }
 
-      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias) p of
+      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME _ => printFail "Test 16 (local unpack): flattenOnce returned SOME, expected NONE"
                  | NONE => ())
 
@@ -1166,7 +1166,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 17: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1263,7 +1263,7 @@ local
 
       val _ = printProgram ("test18", p)
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 18: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1339,7 +1339,7 @@ local
          globals = Vector.new0 (),
          main = mainName
       }
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                  NONE => ()
                | SOME _ => printFail "Test 19: expected NONE, but got SOME"
       val _ = print "Test 19 passed\n"
@@ -1421,7 +1421,7 @@ local
          main = mainName
       }
       
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 20: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -1538,7 +1538,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 21: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -2437,7 +2437,7 @@ local
       }
 
       val _ = print "Test 29a: DropAlias (should NOT flatten f)\n"
-      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias) p of
+      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                       SOME p' => p'
                     | NONE => p)
       val Program.T {functions = funcsDrop, ...} = pDrop
@@ -2456,7 +2456,7 @@ local
       val _ = print "Test 29a passed\n"
 
       val _ = print "Test 29b: UnionAlias (SHOULD flatten f)\n"
-      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.UnionAlias) p of
+      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.UnionAlias, PreFlatten.FlattenAnyType) p of
                        SOME p' => p'
                      | NONE => printFail "Test 29b: expected SOME, got NONE")
       val Program.T {functions = funcsUnion, ...} = pUnion
@@ -2568,7 +2568,7 @@ local
 
       (* Case 31a: Only AsUnpacked consumer in f. Should flatten. *)
       val _ = print "Test 31a: Only AsUnpacked consumer (should flatten)\n"
-      val pFlat = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias) p of
+      val pFlat = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                       SOME p' => p'
                     | NONE => printFail "Test 31a: expected SOME, got NONE")
       val Program.T {functions = funcsFlat, ...} = pFlat
@@ -2604,7 +2604,8 @@ local
          main = mainName
       }
       val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack,
-                                           PreFlatten.UnionAlias) p2 of
+                                           PreFlatten.UnionAlias,
+                                           PreFlatten.FlattenAnyType) p2 of
                  SOME _ => printFail "Test 31b: expected NONE, got SOME"
                | NONE => ()
 
@@ -2967,7 +2968,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 41: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -3051,7 +3052,7 @@ local
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
                    SOME p' => p'
                  | NONE => printFail "Test 42: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -3073,6 +3074,282 @@ local
       end
 
       val _ = print "Test 42 passed\n"
+   in () end
+
+   (* Test 43: flattenableTypesPolicy - FlattenOnlyConApp with Tuples *)
+   val _ = let
+      val _ = print "Test 43: flattenableTypesPolicy - FlattenOnlyConApp with Tuples\n"
+      val fName = Func.fromString "f43"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main43"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* Should NOT flatten tuples when policy is FlattenOnlyConApp *)
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp) p of
+                 SOME _ => printFail "Test 43: expected NONE (tuples should not flatten under FlattenOnlyConApp), got SOME"
+               | NONE => ()
+
+      val _ = print "Test 43 passed\n"
+   in () end
+
+   (* Test 44: flattenableTypesPolicy - FlattenOnlyTuple with ConApps *)
+   val _ = let
+      val _ = print "Test 44: flattenableTypesPolicy - FlattenOnlyTuple with ConApps\n"
+      val conName = Con.fromString "Ty"
+      val tBool = Type.bool
+      val tyconName = Tycon.fromString "T"
+      val datatypes = Vector.new1 (Datatype.T {
+         cons = Vector.new1 {con = conName, args = Vector.new1 tBool},
+         tycon = tyconName
+      })
+      val tData = Type.datatypee tyconName
+
+      val fName = Func.fromString "f44"
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.new1 (Var.fromString "arg1", tData),
+         blocks = Vector.new1 (Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }),
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main44"
+      val b1 = Var.fromString "b1"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.ConApp {args = Vector.new1 b1, con = conName}, ty = tData, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Call {
+            args = Vector.new1 x,
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.new1 mainBlock,
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = datatypes,
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* Should NOT flatten ConApps when policy is FlattenOnlyTuple *)
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple) p of
+                 SOME _ => printFail "Test 44: expected NONE (ConApps should not flatten under FlattenOnlyTuple), got SOME"
+               | NONE => ()
+
+      val _ = print "Test 44 passed\n"
+   in () end
+
+   (* Test 45: flattenableTypesPolicy - FlattenOnlyTuple with Tuples *)
+   val _ = let
+      val _ = print "Test 45: flattenableTypesPolicy - FlattenOnlyTuple with Tuples\n"
+      val fName = Func.fromString "f45"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main45"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* Should flatten tuples when policy is FlattenOnlyTuple *)
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple) p of
+                 SOME _ => ()
+               | NONE => printFail "Test 45: expected SOME (tuples should flatten under FlattenOnlyTuple), got NONE"
+
+      val _ = print "Test 45 passed\n"
+   in () end
+
+   (* Test 46: flattenableTypesPolicy - FlattenOnlyConApp with ConApps *)
+   val _ = let
+      val _ = print "Test 46: flattenableTypesPolicy - FlattenOnlyConApp with ConApps\n"
+      val conName = Con.fromString "Ty"
+      val tBool = Type.bool
+      val tyconName = Tycon.fromString "T"
+      val datatypes = Vector.new1 (Datatype.T {
+         cons = Vector.new1 {con = conName, args = Vector.new1 tBool},
+         tycon = tyconName
+      })
+      val tData = Type.datatypee tyconName
+
+      val fName = Func.fromString "f46"
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.new1 (Var.fromString "arg1", tData),
+         blocks = Vector.new1 (Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }),
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main46"
+      val b1 = Var.fromString "b1"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME b1}
+      val s2 = Statement.T {exp = Exp.ConApp {args = Vector.new1 b1, con = conName}, ty = tData, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Call {
+            args = Vector.new1 x,
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.new1 mainBlock,
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = datatypes,
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+
+      (* Should flatten ConApps when policy is FlattenOnlyConApp *)
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp) p of
+                 SOME _ => ()
+               | NONE => printFail "Test 46: expected SOME (ConApps should flatten under FlattenOnlyConApp), got NONE"
+
+      val _ = print "Test 46 passed\n"
    in () end
 in
 end

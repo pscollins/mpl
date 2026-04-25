@@ -926,7 +926,7 @@ in
    Vector.map2 (originalArgs, varChoices, buildCallArg))
 end
 
-fun flattenOnce (flattenPolicy, resolvePolicy) (p: Program.t) = let
+fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
@@ -935,9 +935,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy) (p: Program.t) = let
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
-   (* TODO: make this configurable *)
-   val kAllowedType = FlattenAnyType
-   val updateChoice = (updateChoiceForAllowedTypes kAllowedType)
+   val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
@@ -1015,11 +1013,16 @@ fun transform (p: Program.t): Program.t =
           case !Control.preFlattenResolvePolicy of
              Control.PreFlattenResolvePolicy.Global => UnionAlias
            | Control.PreFlattenResolvePolicy.Local => DropAlias
+       val typesPolicy =
+          case !Control.preFlattenTypesPolicy of
+             Control.PreFlattenTypesPolicy.Any => FlattenAnyType
+           | Control.PreFlattenTypesPolicy.Tuple => FlattenOnlyTuple
+           | Control.PreFlattenTypesPolicy.Con => FlattenOnlyConApp
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
           else
-             case flattenOnce (policy, resolvePolicy) p of
+             case flattenOnce (policy, resolvePolicy, typesPolicy) p of
                 NONE => p
               | SOME p' => loop (shrink p', n + 1)
     in
