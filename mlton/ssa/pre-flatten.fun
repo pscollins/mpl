@@ -428,11 +428,14 @@ fun newVarChoicesForProgram (p: Program.t) = let
    val vcm = newVarChoiceManager ()
    fun markStatement (s: Statement.t) =
        markTypeForBinding (vcm, s)
+   fun markFunction (f: Function.t) =
+       markTypeForArgs (vcm, f)
    fun chooseStatement (s: Statement.t) =
        chooseVarsInStatement (vcm, s)
 
    (* First, record the types associated with every bound variable. Don't use
    the DFS order since it can miss statements. *)
+   val _ = foreachFunction (p, markFunction)
    val _ = foreachStatement (p, markStatement)
    (* Next, in a separate pass, make the flattening choice. We do this in two
    passes since the DFS order might not guarantee us that we visit every def
