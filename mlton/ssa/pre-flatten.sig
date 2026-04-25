@@ -114,8 +114,9 @@ sig
             (* Flatten: carries the parent `Var.t`s to flatten-through.
             `parents` is guaranteed to be non-empty. *)
             | FlattenTupleVar of Var.t vector
-            (* Flatten: carries the parent constructpr + `Var.t`s to flatten-through *)
-            | FlattenConVar of {args: Var.t vector, con: Con.t}
+            (* Flatten: carries the parent constructpr + typed `Var.t`s to
+            flatten-through *)
+            | FlattenConVar of {args: (Var.t * Type.t) vector, con: Con.t}
 
    (* Type to manage tagging `Var.t`s with their flattening decision and other
    associated data *)

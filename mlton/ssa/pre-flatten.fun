@@ -312,7 +312,7 @@ end
 datatype varChoice =
          PreserveVar
          | FlattenTupleVar of Var.t vector
-         | FlattenConVar of {args: Var.t vector, con: Con.t}
+         | FlattenConVar of {args: (Var.t * Type.t) vector, con: Con.t}
 
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
@@ -363,7 +363,8 @@ fun chooseVarsInStatement (vt: varChoiceManager, s: Statement.t) = let
                          Con.layout con])
       val _ = Control.diagnostic logResultThunk
    in
-      FlattenConVar argcon
+      (* FlattenConVar argcon *)
+      Error.unimplemented "TODO"
    end
 in
    case (exp, maybeVar) of
