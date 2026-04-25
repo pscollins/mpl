@@ -292,6 +292,8 @@ fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
        case choice of
            Preserve => true
          | FlattenTuple => checkFlatten (typedVar)
+         | FlattenCon {argTys, ...} =>
+           Option.isSome (flattenConVar (typedVar, argTys))
    fun isPreserve c =
        case c of
            Preserve => true
