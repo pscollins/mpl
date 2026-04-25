@@ -56,6 +56,12 @@ local
                OS.Process.exit OS.Process.failure)
       end
 
+   fun choiceResToString res =
+      case res of
+         PreFlatten.NoOp => "NoOp"
+       | PreFlatten.Valid => "Valid"
+       | PreFlatten.Invalid => "Invalid"
+
    val log = ref []
    fun addLog s = log := s :: !log
    fun getLog () = List.rev (!log)
@@ -2689,9 +2695,9 @@ local
       val _ = print "Test 34 passed\n"
    in () end
 
-   (* Test 35: buildFlattenedFunction with Datatype (2-args) *)
+   (* Test 35: buildFlattenedFunctionWithDatatype (2-args) *)
    val _ = let
-      val _ = print "Test 35: buildFlattenedFunction with Datatype (2-args)\n"
+      val _ = print "Test 35: buildFlattenedFunctionWithDatatype (2-args)\n"
       val fName = Func.fromString "f35"
       val l1 = Label.fromString "L35"
       val v1 = Var.fromString "v1"
@@ -2712,18 +2718,22 @@ local
          start = l1
       }
 
+      val con = Con.fromString "C2"
+      val argTys = Vector.fromList [Type.bool, Type.unit]
+      val choice = PreFlatten.FlattenCon {argTys = argTys, con = con}
+
       val _ = print "Checking checkFlatteningChoice for datatype (2-args)\n"
-      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple])
-      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (2-args)")
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [choice])
+      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (2-args), got " ^ (choiceResToString choiceRes))
 
       val _ = print "Attempting buildFlattenedFunction for datatype (2-args)\n"
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.FlattenTuple])
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [choice])
       val _ = print "Test 35 passed\n"
    in () end
 
-   (* Test 36: buildFlattenedFunction with Datatype (nullary) *)
+   (* Test 36: buildFlattenedFunctionWithDatatype (nullary) *)
    val _ = let
-      val _ = print "Test 36: buildFlattenedFunction with Datatype (nullary)\n"
+      val _ = print "Test 36: buildFlattenedFunctionWithDatatype (nullary)\n"
       val fName = Func.fromString "f36"
       val l1 = Label.fromString "L36"
       val v1 = Var.fromString "v1"
@@ -2744,12 +2754,15 @@ local
          start = l1
       }
 
+      val con = Con.fromString "C0"
+      val choice = PreFlatten.FlattenCon {argTys = Vector.new0 (), con = con}
+
       val _ = print "Checking checkFlatteningChoice for datatype (nullary)\n"
-      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple])
-      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (nullary)")
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [choice])
+      val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (nullary), got " ^ (choiceResToString choiceRes))
 
       val _ = print "Attempting buildFlattenedFunction for datatype (nullary)\n"
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.FlattenTuple])
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [choice])
       val _ = print "Test 36 passed\n"
    in () end
 
