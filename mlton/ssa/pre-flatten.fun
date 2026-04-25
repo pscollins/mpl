@@ -414,6 +414,9 @@ in
      | _ => ()
 end
 
+fun markTypeForBinding (vt: varChoiceManager, func: Function.t) =
+    Error.unimplemented "TODO"
+
 
 fun newVarChoicesForProgram (p: Program.t) = let
    val vcm = newVarChoiceManager ()
