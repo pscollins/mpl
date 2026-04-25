@@ -414,8 +414,14 @@ in
      | _ => ()
 end
 
-fun markTypeForBinding (vt: varChoiceManager, func: Function.t) =
-    Error.unimplemented "TODO"
+fun markTypeForArgs (vt: varChoiceManager, func: Function.t) = let
+   val {setVarTypeProp, ...} = vt
+   val {args, ...} = Function.dest func
+   fun doBlock b = Vector.foreach (Block.args b, setVarTypeProp)
+in
+   (Vector.foreach (args, setVarTypeProp);
+    Vector.foreach (Function.blocks func, doBlock))
+end
 
 
 fun newVarChoicesForProgram (p: Program.t) = let

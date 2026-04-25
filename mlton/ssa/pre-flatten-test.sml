@@ -3347,9 +3347,75 @@ local
       (* Should flatten ConApps when policy is FlattenOnlyConApp *)
       val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp) p of
                  SOME _ => ()
-               | NONE => printFail "Test 46: expected SOME (ConApps should flatten under FlattenOnlyConApp), got NONE"
+               | NONE => printFail "Test 46: expected SOME (ConApps should not flatten under FlattenOnlyConApp), got SOME"
 
       val _ = print "Test 46 passed\n"
+   in () end
+
+   (* Test 47: markTypeForArgs *)
+   val _ = let
+      val _ = print "Test 47: markTypeForArgs\n"
+      val vcm = PreFlatten.newVarChoiceManager ()
+      
+      val fArg = Var.fromString "fArg"
+      val tBool = Type.bool
+      val bArg = Var.fromString "bArg"
+      val tUnit = Type.unit
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(fArg, tBool)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.fromList [(bArg, tUnit)],
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = Func.fromString "f47",
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+      
+      val _ = PreFlatten.markTypeForArgs (vcm, fFunction)
+      
+      (* Test function argument via ConApp *)
+      val vConF = Var.fromString "vConF"
+      val conF = Con.fromString "CF"
+      val sConF = Statement.T {
+         exp = Exp.ConApp {args = Vector.new1 fArg, con = conF},
+         ty = Type.unit,
+         var = SOME vConF
+      }
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sConF)
+      val choiceF = PreFlatten.getVarChoice (vcm, vConF)
+      val _ = case choiceF of
+                 PreFlatten.FlattenConVar {args, ...} =>
+                    let val (_, t) = Vector.sub (args, 0) in
+                       assert (Type.equals (t, tBool), "fArg type mismatch")
+                    end
+               | _ => printFail "Expected FlattenConVar for vConF"
+
+      (* Test block argument via ConApp *)
+      val vConB = Var.fromString "vConB"
+      val conB = Con.fromString "CB"
+      val sConB = Statement.T {
+         exp = Exp.ConApp {args = Vector.new1 bArg, con = conB},
+         ty = Type.unit,
+         var = SOME vConB
+      }
+      val _ = PreFlatten.chooseVarsInStatement (vcm, sConB)
+      val choiceB = PreFlatten.getVarChoice (vcm, vConB)
+      val _ = case choiceB of
+                 PreFlatten.FlattenConVar {args, ...} =>
+                    let val (_, t) = Vector.sub (args, 0) in
+                       assert (Type.equals (t, tUnit), "bArg type mismatch")
+                    end
+               | _ => printFail "Expected FlattenConVar for vConB"
+      
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 47 passed\n"
    in () end
 in
 end
