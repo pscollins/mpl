@@ -178,6 +178,10 @@ fun buildBindBlock (binds: bind vector, goto: Label.t): Block.t = let
            Statement.T {exp = Exp.Tuple froms,
                         ty = toType,
                         var = SOME toVar}
+        | BindCon {to=(toVar, toType), froms, con} =>
+           Statement.T {exp = Exp.ConApp {args=froms, con=con},
+                        ty = toType,
+                        var = SOME toVar}
 
    (* We'll rely on the fact that the first block in a function can't have
       args  *)

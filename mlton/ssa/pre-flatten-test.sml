@@ -535,6 +535,40 @@ local
       val _ = print "Test 9 passed\n"
    in () end
 
+   (* Test 9a: buildBindBlock with BindCon *)
+   val _ = let
+      val _ = print "Test 9a: buildBindBlock with BindCon\n"
+      val toVar = Var.fromString "c"
+      val f1 = Var.fromString "f1"
+      val con = Con.fromString "SomeCon"
+      val binds = Vector.fromList [PreFlatten.BindCon {to = (toVar, Type.unit), froms = Vector.fromList [f1], con = con}]
+      val targetLabel = Label.fromString "target"
+
+      val block = PreFlatten.buildBindBlock (binds, targetLabel)
+      val Block.T {statements, ...} = block
+
+      val _ = assert (Vector.length statements = 1, "buildBindBlock should have 1 statement")
+
+      val s0 = Vector.sub (statements, 0)
+      val Statement.T {exp, var, ...} = s0
+      val _ =
+         case var of
+            SOME v => assert (Var.equals (v, toVar), "statement var mismatch")
+          | NONE => (print "statement should have a var\n"; OS.Process.exit OS.Process.failure)
+
+      val _ =
+         case exp of
+            Exp.ConApp {args, con = con', ...} =>
+               let
+                  val _ = assert (Vector.length args = 1, "ConApp exp should have 1 arg")
+                  val _ = assert (Var.equals (Vector.sub (args, 0), f1), "ConApp arg 1 mismatch")
+                  val _ = assert (Con.equals (con, con'), "ConApp con mismatch")
+               in () end
+          | _ => (print "exp should be a ConApp\n"; OS.Process.exit OS.Process.failure)
+
+      val _ = print "Test 9a passed\n"
+   in () end
+
    (* Test 10: buildFlattenedFunction with Preserve and Flatten *)
    val _ = let
       val _ = print "Test 10: buildFlattenedFunction with Preserve and Flatten\n"
