@@ -190,7 +190,7 @@ end
 
 datatype argChoice =
             Preserve
-          | FlattenTuple
+          | Flatten
 
 fun newFuncNamedLike (name: Func.t, suffix) = let
    val currName = Func.toString name
@@ -222,7 +222,7 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
    fun applyChoice (typedVar, choice): typedVar vector =
        case choice of
            Preserve => Vector.new1 typedVar
-         | FlattenTuple => doFlatten typedVar
+         | Flatten => doFlatten typedVar
    val {args, blocks, inline, name, returns, raises, start} =
        (* Use fresh variables in the clone to prevent errors in later analyses
        (which assume that variables in distinct functions are distinct) *)
@@ -259,7 +259,7 @@ fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
    fun checkChoice (typedVar, choice) =
        case choice of
            Preserve => true
-         | FlattenTuple => checkFlatten (typedVar)
+         | Flatten => checkFlatten (typedVar)
    val isNoop = Vector.forall (choices, fn c => c = Preserve)
    val validChoice = if isNoop then NoOp else Valid
 in
@@ -639,7 +639,7 @@ type functionManager = {
 fun choiceString c =
     case c of
         Preserve => "Preserve"
-     |  FlattenTuple => "FlattenTuple"
+     |  Flatten => "Flatten"
 
 fun choiceLayout c =
     Layout.str (choiceString c)
@@ -806,7 +806,7 @@ end
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of
         PreserveVar => Preserve
-      | FlattenTupleVar _ => FlattenTuple
+      | FlattenTupleVar _ => Flatten
 
 
 (* Given a flattening choice for the constituent vars of `originalArgs`, returns

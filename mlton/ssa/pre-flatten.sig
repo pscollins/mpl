@@ -59,12 +59,12 @@ sig
             (* No modification: keep the existing argument *)
             Preserve
             (* Flatten a tuple argument into its constituent parts *)
-            | FlattenTuple
+            | Flatten
 
    (* Given a `Function.t` and a set of flattening decisions for each argument,
    returns the (partially)-flattened function, i.e. given:
 
-      {f (ab: (bool * bool), c: int): ..., [FlattenTuple]}
+      {f (ab: (bool * bool), c: int): ..., [Flatten]}
 
    Returns the modified function:
 

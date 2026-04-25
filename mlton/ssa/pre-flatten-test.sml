@@ -535,9 +535,9 @@ local
       val _ = print "Test 9 passed\n"
    in () end
 
-   (* Test 10: buildFlattenedFunction with Preserve and FlattenTuple *)
+   (* Test 10: buildFlattenedFunction with Preserve and Flatten *)
    val _ = let
-      val _ = print "Test 10: buildFlattenedFunction with Preserve and FlattenTuple\n"
+      val _ = print "Test 10: buildFlattenedFunction with Preserve and Flatten\n"
       val fName = Func.fromString "f10"
       val l1 = Label.fromString "L10"
       val v1 = Var.fromString "v1"
@@ -563,7 +563,7 @@ local
 
       val res = PreFlatten.buildFlattenedFunction
                     (f, Vector.fromList [PreFlatten.Preserve,
-                                         PreFlatten.FlattenTuple])
+                                         PreFlatten.Flatten])
       val {args, blocks, start,
            name = resName, ...} = Function.dest res
       val _ = assert (not (Label.equals(fName,  resName)),
@@ -772,7 +772,7 @@ local
        | _ => (print "Expected NoOp\n"; OS.Process.exit OS.Process.failure)
 
       val _ = print "Test 14b: Valid choice\n"
-      val resValid = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val resValid = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.Flatten])
       val _ = case resValid of
          PreFlatten.Valid => ()
        | _ => (print "Expected Valid\n"; OS.Process.exit OS.Process.failure)
@@ -784,7 +784,7 @@ local
        | _ => (print "Expected Invalid due to arity\n"; OS.Process.exit OS.Process.failure)
 
       val _ = print "Test 14d: Invalid choice (flattening a non-tuple)\n"
-      val resInvalidNonTuple = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple, PreFlatten.Preserve])
+      val resInvalidNonTuple = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten, PreFlatten.Preserve])
       val _ = case resInvalidNonTuple of
          PreFlatten.Invalid => ()
        | _ => (print "Expected Invalid due to non-tuple flattening\n"; OS.Process.exit OS.Process.failure)
@@ -835,7 +835,7 @@ local
       val _ = assert (List.length newFuncs0 = 0, "No new functions should be extracted after NoOp")
 
       val _ = print "Test 15c: getOrCreateFunc Valid\n"
-      val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.Flatten])
       val _ = assert (not (Func.equals (fFlattened, fName)), "Valid flattening should return new Func.t")
 
       val _ = print "Test 15d: extractNewFunctions after Valid\n"
