@@ -2782,5 +2782,31 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 37 passed\n"
    in () end
+
+   (* Test 38: choiceEqual *)
+   val _ = let
+      val _ = print "Test 38: choiceEqual\n"
+      open PreFlatten
+      val c1 = Con.fromString "C1"
+      val c2 = Con.fromString "C2"
+      val tys1 = Vector.fromList [Type.bool]
+      val tys2 = Vector.fromList [Type.unit]
+
+      val fc1a = FlattenCon {argTys = tys1, con = c1}
+      val fc1b = FlattenCon {argTys = tys1, con = c1}
+      val fc1c = FlattenCon {argTys = tys2, con = c1}
+      val fc2 = FlattenCon {argTys = tys1, con = c2}
+
+      val _ = assert (choiceEqual (Preserve, Preserve), "Preserve = Preserve")
+      val _ = assert (choiceEqual (FlattenTuple, FlattenTuple), "FlattenTuple = FlattenTuple")
+      val _ = assert (choiceEqual (fc1a, fc1b), "FlattenCon equal case")
+      
+      val _ = assert (not (choiceEqual (Preserve, FlattenTuple)), "Preserve != FlattenTuple")
+      val _ = assert (not (choiceEqual (FlattenTuple, fc1a)), "FlattenTuple != FlattenCon")
+      val _ = assert (not (choiceEqual (fc1a, fc2)), "FlattenCon != FlattenCon (diff con)")
+      val _ = assert (not (choiceEqual (fc1a, fc1c)), "FlattenCon != FlattenCon (diff tys)")
+
+      val _ = print "Test 38 passed\n"
+   in () end
 in
 end

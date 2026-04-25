@@ -69,6 +69,12 @@ sig
             specified constructor.*)
             | FlattenCon of {argTys: Type.t vector, con: Con.t}
 
+   (* Compares two `argChoice`s for equality *)
+   val choiceEqual: argChoice * argChoice -> bool
+
+   (* Pretty-print an `argChoice` *)
+   val choiceLayout: argChoice -> Layout.t
+
    (* Given a `Function.t` and a set of flattening decisions for each argument,
    returns the (partially)-flattened function, i.e. given:
 

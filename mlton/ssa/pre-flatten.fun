@@ -672,13 +672,18 @@ type functionManager = {
    destroyFunctionManagerState: unit -> unit
 }
 
-fun choiceString c =
-    case c of
-        Preserve => "Preserve"
-     |  FlattenTuple => "FlattenTuple"
-
 fun choiceLayout c =
-    Layout.str (choiceString c)
+   case c of
+      Preserve => Layout.str "Preserve"
+    | FlattenTuple => Layout.str "FlattenTuple"
+    | FlattenCon {argTys, con}  =>
+      Layout.seq [
+         Layout.str "FlattenCon",
+         Layout.record [
+            ("con", Con.layout con),
+            ("argTys", Vector.layout Type.layout argTys)
+         ]
+      ]
 
 fun choiceEqual (l, r) = let
    fun compareArg ({argTys, con},
@@ -691,6 +696,7 @@ in
       | (FlattenTuple, FlattenTuple) => true
       | (FlattenCon arg, FlattenCon arg') =>
         compareArg (arg, arg')
+      | _ => false
 end
 
 fun newFunctionManager (p: Program.t) = let
