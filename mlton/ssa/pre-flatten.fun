@@ -159,12 +159,23 @@ in
 end
 
 type typedVar = Var.t * Type.t
+
 fun flattenTupleVar (var, ty): (typedVar vector) option = let
-   fun buildVar (t: Type.t): typedVar = (Var.newString "flattened", t)
+   fun buildVar (t: Type.t): typedVar = (Var.newString "flattenedVar", t)
    fun buildVars (ts: Type.t vector): typedVar vector =
        Vector.map (ts, buildVar)
 in
    Option.map (Type.deTupleOpt ty, buildVars)
+end
+
+fun flattenConVar ((var, ty), argTys): (typedVar vector) option = let
+   fun buildVar (t: Type.t): typedVar = (Var.newString "flattenedCon", t)
+in
+   case ty of
+       (* TODO: more validation? *)
+       Type.Datatype _ =>
+       SOME (Vector.map (argTys, buildVar))
+     | _ => NONE
 end
 
 
@@ -195,7 +206,8 @@ end
 
 datatype argChoice =
             Preserve
-          | Flatten
+          | FlattenTuple
+          | FlattenCon of {argTys: Type.t vector, con: Con.t}
 
 fun newFuncNamedLike (name: Func.t, suffix) = let
    val currName = Func.toString name
@@ -205,29 +217,43 @@ end
 
 fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
    val needBinds: (bind list) ref = ref []
-   fun addBind (bind) = let
-      val newBinds = bind::(!needBinds)
-   in
-      needBinds := newBinds
-   end
+   fun addBind (bind) =
+      List.push (needBinds, bind)
    fun extractVar (var, ty) = var
-  (* Adds the 'reverse binding' `typleVar = tuple(flattendVars)`
+  (* Adds the 'reverse binding' `tupleVar = tuple(flattendVars)`
      to `needBinds` and returns `flattendVars` *)
-   fun addFlattenedBind (tupleVar, flattenedVars) = let
+   fun addFlattenedTupleBind (tupleVar, flattenedVars) = let
       val bind = BindTuple {to = tupleVar,
                             froms = Vector.map (flattenedVars, extractVar)}
       val _ = addBind bind
    in
       flattenedVars
    end
-   fun doFlatten typedVar =
+   (* Adds the 'reverse binding' `conVar = con (flattendVars)`
+     to `needBinds` and returns `flattendVars` *)
+   fun addFlattenedConBind (conVar, con, flattenedVars) = let
+      val bind = BindCon {to = conVar,
+                          froms = Vector.map (flattenedVars, extractVar),
+                          con = con}
+      val _ = addBind bind
+   in
+      flattenedVars
+   end
+
+   fun doFlattenTuple typedVar =
        case flattenTupleVar typedVar of
-           SOME flattenedVars => addFlattenedBind (typedVar, flattenedVars)
+           SOME flattenedVars => addFlattenedTupleBind (typedVar, flattenedVars)
          | NONE => Error.bug "Tried to flatten non-tuple type!"
+   fun doFlattenCon (typedVar, {argTys, con}) =
+       case flattenConVar (typedVar, argTys) of
+           SOME flattenedVars => addFlattenedConBind (typedVar, con,
+                                                      flattenedVars)
+         | NONE => Error.bug "Tried to flaten non-con type!"
    fun applyChoice (typedVar, choice): typedVar vector =
        case choice of
            Preserve => Vector.new1 typedVar
-         | Flatten => doFlatten typedVar
+         | FlattenTuple => doFlattenTuple typedVar
+         | FlattenCon conInfo => doFlattenCon (typedVar, conInfo)
    val {args, blocks, inline, name, returns, raises, start} =
        (* Use fresh variables in the clone to prevent errors in later analyses
        (which assume that variables in distinct functions are distinct) *)
@@ -264,7 +290,7 @@ fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
    fun checkChoice (typedVar, choice) =
        case choice of
            Preserve => true
-         | Flatten => checkFlatten (typedVar)
+         | FlattenTuple => checkFlatten (typedVar)
    val isNoop = Vector.forall (choices, fn c => c = Preserve)
    val validChoice = if isNoop then NoOp else Valid
 in
@@ -644,7 +670,7 @@ type functionManager = {
 fun choiceString c =
     case c of
         Preserve => "Preserve"
-     |  Flatten => "Flatten"
+     |  FlattenTuple => "FlattenTuple"
 
 fun choiceLayout c =
     Layout.str (choiceString c)
@@ -811,7 +837,7 @@ end
 fun varChoiceToArgChoice (vc: varChoice): argChoice =
     case vc of
         PreserveVar => Preserve
-      | FlattenTupleVar _ => Flatten
+      | FlattenTupleVar _ => FlattenTuple
 
 
 (* Given a flattening choice for the constituent vars of `originalArgs`, returns

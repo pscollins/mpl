@@ -569,9 +569,9 @@ local
       val _ = print "Test 9a passed\n"
    in () end
 
-   (* Test 10: buildFlattenedFunction with Preserve and Flatten *)
+   (* Test 10: buildFlattenedFunction with Preserve and FlattenTuple *)
    val _ = let
-      val _ = print "Test 10: buildFlattenedFunction with Preserve and Flatten\n"
+      val _ = print "Test 10: buildFlattenedFunction with Preserve and FlattenTuple\n"
       val fName = Func.fromString "f10"
       val l1 = Label.fromString "L10"
       val v1 = Var.fromString "v1"
@@ -597,7 +597,7 @@ local
 
       val res = PreFlatten.buildFlattenedFunction
                     (f, Vector.fromList [PreFlatten.Preserve,
-                                         PreFlatten.Flatten])
+                                         PreFlatten.FlattenTuple])
       val {args, blocks, start,
            name = resName, ...} = Function.dest res
       val _ = assert (not (Label.equals(fName,  resName)),
@@ -806,7 +806,7 @@ local
        | _ => (print "Expected NoOp\n"; OS.Process.exit OS.Process.failure)
 
       val _ = print "Test 14b: Valid choice\n"
-      val resValid = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.Flatten])
+      val resValid = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
       val _ = case resValid of
          PreFlatten.Valid => ()
        | _ => (print "Expected Valid\n"; OS.Process.exit OS.Process.failure)
@@ -818,7 +818,7 @@ local
        | _ => (print "Expected Invalid due to arity\n"; OS.Process.exit OS.Process.failure)
 
       val _ = print "Test 14d: Invalid choice (flattening a non-tuple)\n"
-      val resInvalidNonTuple = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten, PreFlatten.Preserve])
+      val resInvalidNonTuple = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple, PreFlatten.Preserve])
       val _ = case resInvalidNonTuple of
          PreFlatten.Invalid => ()
        | _ => (print "Expected Invalid due to non-tuple flattening\n"; OS.Process.exit OS.Process.failure)
@@ -869,7 +869,7 @@ local
       val _ = assert (List.length newFuncs0 = 0, "No new functions should be extracted after NoOp")
 
       val _ = print "Test 15c: getOrCreateFunc Valid\n"
-      val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.Flatten])
+      val fFlattened = PreFlatten.getOrCreateFunc (fm, fName, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
       val _ = assert (not (Func.equals (fFlattened, fName)), "Valid flattening should return new Func.t")
 
       val _ = print "Test 15d: extractNewFunctions after Valid\n"
@@ -2713,11 +2713,11 @@ local
       }
 
       val _ = print "Checking checkFlatteningChoice for datatype (2-args)\n"
-      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten])
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple])
       val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (2-args)")
 
       val _ = print "Attempting buildFlattenedFunction for datatype (2-args)\n"
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Flatten])
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.FlattenTuple])
       val _ = print "Test 35 passed\n"
    in () end
 
@@ -2745,11 +2745,11 @@ local
       }
 
       val _ = print "Checking checkFlatteningChoice for datatype (nullary)\n"
-      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.Flatten])
+      val choiceRes = PreFlatten.checkFlatteningChoice (f, Vector.fromList [PreFlatten.FlattenTuple])
       val _ = assert (choiceRes = PreFlatten.Valid, "Expected Valid for datatype flattening (nullary)")
 
       val _ = print "Attempting buildFlattenedFunction for datatype (nullary)\n"
-      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.Flatten])
+      val res = PreFlatten.buildFlattenedFunction (f, Vector.fromList [PreFlatten.FlattenTuple])
       val _ = print "Test 36 passed\n"
    in () end
 

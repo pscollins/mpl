@@ -63,8 +63,11 @@ sig
    datatype argChoice =
             (* No modification: keep the existing argument *)
             Preserve
-            (* Flatten a tuple/conapp argument into its constituent parts *)
-            | Flatten
+            (* Flatten a tuple argument into its constituent parts *)
+            | FlattenTuple
+            (* Flatten a datatpe argument into its constituent parts for the
+            specified constructor.*)
+            | FlattenCon of {argTys: Type.t vector, con: Con.t}
 
    (* Given a `Function.t` and a set of flattening decisions for each argument,
    returns the (partially)-flattened function, i.e. given:
