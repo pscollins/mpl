@@ -3417,5 +3417,57 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 47 passed\n"
    in () end
+
+   (* Test 48: newVarChoicesForProgram ensures globals are visited *)
+   val _ = let
+      val _ = print "Test 48: newVarChoicesForProgram ensures globals are visited\n"
+      val g1 = Var.fromString "g1"
+      val tBool = Type.bool
+      val gs1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME g1}
+      
+      val vc = Var.fromString "vc"
+      val con = Con.fromString "C"
+      val gs2 = Statement.T {
+         exp = Exp.ConApp {args = Vector.new1 g1, con = con},
+         ty = Type.unit,
+         var = SOME vc
+      }
+      
+      val mainFunc = Func.fromString "main48"
+      val mainLabel = Label.fromString "L48"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.fromList [gs1, gs2],
+         main = mainFunc
+      }
+
+      val vcm = PreFlatten.newVarChoicesForProgram p
+      val choice = PreFlatten.getVarChoice (vcm, vc)
+      val _ = case choice of
+                 PreFlatten.FlattenConVar {args, ...} =>
+                    let val (_, t) = Vector.sub (args, 0) in
+                       assert (Type.equals (t, tBool), "global g1 type mismatch")
+                    end
+               | _ => printFail "Expected FlattenConVar for vc"
+      
+      val _ = PreFlatten.destroyVarChoiceManager vcm
+      val _ = print "Test 48 passed\n"
+   in () end
 in
 end

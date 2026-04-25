@@ -122,8 +122,10 @@ end
 
 (* Applies an effectful expression to each `Statment.t` in `p` *)
 fun foreachStatement (p: Program.t, statementF: (Statement.t -> unit)): unit = let
+   val Program.T {globals, ...} = p
    fun doBlock b = Vector.foreach (Block.statements b, statementF)
    fun doFunc f = Vector.foreach (Function.blocks f, doBlock)
+   val _ = Vector.foreach (globals, statementF)
 in
    foreachFunction (p, doFunc)
 end
@@ -432,7 +434,6 @@ fun newVarChoicesForProgram (p: Program.t) = let
        markTypeForArgs (vcm, f)
    fun chooseStatement (s: Statement.t) =
        chooseVarsInStatement (vcm, s)
-
    (* First, record the types associated with every bound variable. Don't use
    the DFS order since it can miss statements. *)
    val _ = foreachFunction (p, markFunction)
