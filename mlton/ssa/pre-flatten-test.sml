@@ -2617,7 +2617,11 @@ local
       val vcm = PreFlatten.newVarChoiceManager ()
 
       val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val s1 = Statement.T {exp = Exp.unit, ty = t1, var = SOME v1}
       val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val s2 = Statement.T {exp = Exp.unit, ty = t2, var = SOME v2}
       val vCon = Var.fromString "vc"
       val con = Con.fromString "C"
 
@@ -2627,6 +2631,8 @@ local
          var = SOME vCon
       }
 
+      val _ = PreFlatten.chooseVarsInStatement (vcm, s1)
+      val _ = PreFlatten.chooseVarsInStatement (vcm, s2)
       val _ = PreFlatten.chooseVarsInStatement (vcm, sCon)
 
       val choiceCon = PreFlatten.getVarChoice (vcm, vCon)
@@ -2635,8 +2641,12 @@ local
             PreFlatten.FlattenConVar {args, con = con'} =>
                let
                   val _ = assert (Vector.length args = 2, "FlattenConVar should have 2 vars")
-                  val _ = assert (Var.equals (Vector.sub (args, 0), v1), "FlattenConVar var 0 mismatch")
-                  val _ = assert (Var.equals (Vector.sub (args, 1), v2), "FlattenConVar var 1 mismatch")
+                  val (v1', t1') = Vector.sub (args, 0)
+                  val (v2', t2') = Vector.sub (args, 1)
+                  val _ = assert (Var.equals (v1', v1), "FlattenConVar var 0 mismatch")
+                  val _ = assert (Type.equals (t1', t1), "FlattenConVar type 0 mismatch")
+                  val _ = assert (Var.equals (v2', v2), "FlattenConVar var 1 mismatch")
+                  val _ = assert (Type.equals (t2', t2), "FlattenConVar type 1 mismatch")
                   val _ = assert (Con.equals (con, con'), "FlattenConVar con mismatch")
                in () end
           | _ => (print "vc should be FlattenConVar\n"; OS.Process.exit OS.Process.failure)
@@ -2650,7 +2660,11 @@ local
       val _ = print "Test 34: newVarChoicesForProgram with FlattenConVar\n"
 
       val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val s1 = Statement.T {exp = Exp.unit, ty = t1, var = SOME v1}
       val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val s2 = Statement.T {exp = Exp.unit, ty = t2, var = SOME v2}
       val vCon = Var.fromString "vc"
       val con = Con.fromString "C"
 
@@ -2665,7 +2679,7 @@ local
       val mainBlock = Block.T {
          args = Vector.new0 (),
          label = mainLabel,
-         statements = Vector.fromList [sCon],
+         statements = Vector.fromList [s1, s2, sCon],
          transfer = Transfer.Return (Vector.new0 ())
       }
       val mainFunction = Function.new {
@@ -2688,7 +2702,16 @@ local
       val choiceCon = PreFlatten.getVarChoice (vcm, vCon)
       val _ =
          case choiceCon of
-            PreFlatten.FlattenConVar _ => ()
+            PreFlatten.FlattenConVar {args, ...} =>
+               let
+                  val _ = assert (Vector.length args = 2, "FlattenConVar should have 2 vars")
+                  val (v1', t1') = Vector.sub (args, 0)
+                  val (v2', t2') = Vector.sub (args, 1)
+                  val _ = assert (Var.equals (v1', v1), "v1 mismatch")
+                  val _ = assert (Type.equals (t1', t1), "t1 mismatch")
+                  val _ = assert (Var.equals (v2', v2), "v2 mismatch")
+                  val _ = assert (Type.equals (t2', t2), "t2 mismatch")
+               in () end
           | _ => (print "vc should be FlattenConVar\n"; OS.Process.exit OS.Process.failure)
 
       val _ = PreFlatten.destroyVarChoiceManager vcm
