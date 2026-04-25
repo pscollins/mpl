@@ -169,6 +169,7 @@ end
 
 
 datatype bind = BindTuple of {to: typedVar, froms: Var.t vector}
+              | BindCon of {to: typedVar, froms: Var.t vector, con: Con.t}
 
 fun buildBindBlock (binds: bind vector, goto: Label.t): Block.t = let
    fun mkStmt (bind): Statement.t =

@@ -52,13 +52,18 @@ sig
             name for the tuple type, `froms` are the components of the tuple, in
             order. *)
             BindTuple of {to: typedVar, froms: Var.t vector}
+            (* Reverse binding corresponding to flattening a `ConApp`: `to` is
+            the name for the constructed object, `froms` are the components of
+            the tuple, in order, and `con` is the constructor. *)
+            | BindCon of {to: typedVar, froms: Var.t vector, con: Con.t}
+
    val buildBindBlock: bind vector * Label.t -> Block.t
 
    (* Describes how to modify each argument in `buildFlattenedFunction`  *)
    datatype argChoice =
             (* No modification: keep the existing argument *)
             Preserve
-            (* Flatten a tuple argument into its constituent parts *)
+            (* Flatten a tuple/conapp argument into its constituent parts *)
             | Flatten
 
    (* Given a `Function.t` and a set of flattening decisions for each argument,
