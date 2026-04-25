@@ -120,6 +120,15 @@ in
    List.foreach (functions, funcF)
 end
 
+(* Applies an effectful expression to each `Statment.t` in `p` *)
+fun foreachStatement (p: Program.t, statementF: (Statement.t -> unit)): unit = let
+   fun doBlock b = Vector.foreach (Block.statements b, statementF)
+   fun doFunc f = Vector.foreach (Function.blocks f, doBlock)
+in
+   foreachFunction (p, doFunc)
+end
+
+
 (* Manages Func.t -> Function + Label.t -> Block mappings *)
 type funcsMap = {
    getFunc: Func.t -> Function.t,
@@ -412,8 +421,10 @@ fun newVarChoicesForProgram (p: Program.t) = let
        markTypeForBinding (vcm, s)
    fun chooseStatement (s: Statement.t) =
        chooseVarsInStatement (vcm, s)
-   (* First, record the types associated with every bound variable *)
-   val _ = doWalk (statementWalker markStatement, p)
+
+   (* First, record the types associated with every bound variable. Don't use
+   the DFS order since it can miss statements. *)
+   val _ = foreachStatement (p, markStatement)
    (* Next, in a separate pass, make the flattening choice. We do this in two
    passes since the DFS order might not guarantee us that we visit every def
    before its use. *)

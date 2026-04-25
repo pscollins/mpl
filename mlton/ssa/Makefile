@@ -1,8 +1,8 @@
 MLTON := mlton
 
 # Uncomment to enable stack traces
-DEBUG_FLAGS = -const 'Exn.keepHistory true'
-# DEBUG_FLAGS = 
+# DEBUG_FLAGS = -const 'Exn.keepHistory true'
+DEBUG_FLAGS = 
 
 .PHONY: unittest
 unittest: parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin pre-flatten-test.bin rewrite-ir rewrite-ssa2
