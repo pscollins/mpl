@@ -338,6 +338,10 @@ structure Type =
                                equals = equals,
                                exn = unit,
                                intInf = intInf,
+                               isComposite = fn t =>
+                                  (case dest t of
+                                      Object _ => true
+                                    | _ => false),
                                real = real,
                                reff = reff1,
                                thread = thread,

@@ -201,7 +201,11 @@ structure Type =
             fun doLayout currDepth t =
                if currDepth = 0
                then str "..."
-               else initLayout (t, doLayout (currDepth - 1))
+               else
+                  case (dest t, currDepth) of
+                     (Tuple ts, 1) =>
+                        if Vector.isEmpty ts then str "unit" else str "(...) tuple"
+                   | _ => initLayout (t, doLayout (currDepth - 1))
          in
             doLayout depth t
          end
@@ -271,6 +275,11 @@ structure Type =
                             equals = equals,
                             exn = unit,
                             intInf = intInf,
+                            isComposite = fn t =>
+                               (case dest t of
+                                   Ref _ => true
+                                 | Tuple _ => true
+                                 | _ => false),
                             real = real,
                             reff = reff,
                             thread = thread,

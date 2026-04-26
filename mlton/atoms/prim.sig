@@ -234,6 +234,7 @@ signature PRIM =
                                       equals: 'a * 'a -> bool,
                                       exn: 'a,
                                       intInf: 'a,
+                                      isComposite: 'a -> bool,
                                       real: RealSize.t -> 'a,
                                       reff: 'a -> 'a,
                                       thread: 'a,

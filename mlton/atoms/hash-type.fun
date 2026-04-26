@@ -208,23 +208,33 @@ fun containsTycon (ty, tycon) =
                                   orelse Vector.exists (bs, fn b => b))}
 
 fun checkPrimApp {args, prim, result, targs}: bool =
-   Prim.checkApp (prim,
-                  {args = args,
-                   result = result,
-                   targs = targs,
-                   typeOps = {array = array,
-                              arrow = arrow,
-                              tuple = tuple,
-                              bool = bool,
-                              cpointer = cpointer,
-                              equals = equals,
-                              exn = exn,
-                              intInf = intInf,
-                              real = real,
-                              reff = reff,
-                              thread = thread,
-                              unit = unit,
-                              vector = vector,
-                              weak = weak,
-                              word = word}})
+   let
+      fun isComposite t =
+         case dest t of
+            Var _ => false
+          | Con (c, _) =>
+               Tycon.equals (c, Tycon.tuple)
+               orelse Tycon.equals (c, Tycon.reff)
+   in
+      Prim.checkApp (prim,
+                     {args = args,
+                      result = result,
+                      targs = targs,
+                      typeOps = {array = array,
+                                 arrow = arrow,
+                                 tuple = tuple,
+                                 bool = bool,
+                                 cpointer = cpointer,
+                                 equals = equals,
+                                 exn = exn,
+                                 intInf = intInf,
+                                 isComposite = isComposite,
+                                 real = real,
+                                 reff = reff,
+                                 thread = thread,
+                                 unit = unit,
+                                 vector = vector,
+                                 weak = weak,
+                                 word = word}})
+   end
 end

@@ -3555,13 +3555,13 @@ local
       val _ = check (tDeep, 0, "(((bool, bool) tuple, bool) tuple, bool) tuple")
 
       val _ = print "Testing depth 1\n"
-      val _ = check (tDeep, 1, "(..., ...) tuple")
+      val _ = check (tDeep, 1, "(...) tuple")
 
       val _ = print "Testing depth 2\n"
-      val _ = check (tDeep, 2, "((..., ...) tuple, bool) tuple")
+      val _ = check (tDeep, 2, "((...) tuple, bool) tuple")
 
       val _ = print "Testing depth 3\n"
-      val _ = check (tDeep, 3, "(((..., ...) tuple, bool) tuple, bool) tuple")
+      val _ = check (tDeep, 3, "(((...) tuple, bool) tuple, bool) tuple")
 
       val _ = print "Testing depth 4\n"
       val _ = check (tDeep, 4, "(((bool, bool) tuple, bool) tuple, bool) tuple")

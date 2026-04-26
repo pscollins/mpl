@@ -858,8 +858,10 @@ fun checkPrimApp {args, prim, result} =
        | Prim.Trace_noTuple => let
           val ty = Vector.first args
           fun isTy t = equals (t, ty)
+          val isComposite = fn t => (case node t of Objptr _ => true | Seq _ => true | _ => false)
        in
-          done ([isTy], SOME isTy) orelse done ([isTy], NONE)
+          not (isComposite ty)
+          andalso (done ([isTy], SOME isTy) orelse done ([isTy], NONE))
        end
 
        | Prim.Trace_sourceMarkValue =>
