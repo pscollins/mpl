@@ -192,10 +192,40 @@ structure Type =
               | Weak t => unary (t, "weak")
               | Word s => str (concat ["word", WordSize.toString s])
          end
-      in
-      val {get = layout, ...} =
+
+         val {get = initLayoutCached, ...} =
           Property.get
               (plist, Property.initRec initLayout)
+
+         fun doLayoutWithMaxDepth depth t = let
+            val remainingDepth = ref depth
+            fun decDepth() = let
+               val newDepth = (!remainingDepth) -1
+               val _ = remainingDepth := newDepth
+            in
+               newDepth
+            end
+            fun doLayout t =
+                if decDepth() < 0 then
+                   str "...elided..."
+                else
+                   initLayout (t, doLayout)
+         in
+            doLayout t
+         end
+      in
+
+      fun layout t = let
+         (* TODO: this should come from a flag -max-types-print-depth  *)
+         (* val maxDepth = !Control.maxTypesPrintDepth *)
+         val maxDepth = 1
+      in
+         if maxDepth > 0 then
+            (doLayoutWithMaxDepth maxDepth t)
+         else
+            initLayoutCached t
+      end
+
       end
 
       local
