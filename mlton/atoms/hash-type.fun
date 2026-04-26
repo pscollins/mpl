@@ -215,6 +215,8 @@ fun checkPrimApp {args, prim, result, targs}: bool =
           | Con (c, _) =>
                Tycon.equals (c, Tycon.tuple)
                orelse Tycon.equals (c, Tycon.reff)
+               orelse Tycon.equals (c, Tycon.array)
+               orelse Tycon.equals (c, Tycon.vector)
    in
       Prim.checkApp (prim,
                      {args = args,
