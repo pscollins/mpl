@@ -1064,13 +1064,28 @@ in
    p'
 end
 
+datatype postStep =
+         postShink
+         | postFlatten
+
+fun doPostStep (step: postStep, p: Program.t) =
+    case step of
+        postShrink => shrink p
+      (* TODO: Call the `flatten` transformation *)
+      | postFlatten => Error.unimplemented "TODO"
+
+fun doPostSteps (steps: postStep list, p: Program.t) =
+    case steps of
+        s::steps' => doPostSteps (steps', doPostStep (s, p))
+      | [] => p
+
 fun transform (p: Program.t): Program.t =
     let
        val policy =
-          case !Control.preFlattenConsumerPolicy of
-             Control.PreFlattenConsumerPolicy.Always => FlattenAlways
-           | Control.PreFlattenConsumerPolicy.AnyUnpack => FlattenForAnyUnpack
-           | Control.PreFlattenConsumerPolicy.AllUnpack => FlattenForAllUnpack
+           case !Control.preFlattenConsumerPolicy of
+               Control.PreFlattenConsumerPolicy.Always => FlattenAlways
+             | Control.PreFlattenConsumerPolicy.AnyUnpack => FlattenForAnyUnpack
+             | Control.PreFlattenConsumerPolicy.AllUnpack => FlattenForAllUnpack
        val resolvePolicy =
           case !Control.preFlattenResolvePolicy of
              Control.PreFlattenResolvePolicy.Global => UnionAlias
@@ -1080,13 +1095,16 @@ fun transform (p: Program.t): Program.t =
              Control.PreFlattenTypesPolicy.Any => FlattenAnyType
            | Control.PreFlattenTypesPolicy.Tuple => FlattenOnlyTuple
            | Control.PreFlattenTypesPolicy.Con => FlattenOnlyConApp
+       (* TODO: expose this as a flag *)
+       val kPostSteps = [postShrink]
+       fun applySteps p = doPostSteps (kPostSteps, p)
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
           else
              case flattenOnce (policy, resolvePolicy, typesPolicy) p of
                 NONE => p
-              | SOME p' => loop (shrink p', n + 1)
+              | SOME p' => loop (applySteps p', n + 1)
     in
        loop (p, 0)
     end

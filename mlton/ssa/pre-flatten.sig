@@ -282,6 +282,13 @@ sig
    val updateChoiceForAllowedTypes: flattenableTypesPolicy ->
                                     varChoice -> varChoice
 
+   (* Postprocessing steps to run after each iteration of `flattenOnce` *)
+   datatype postStep =
+            (* Run `shrink`  *)
+            postShink
+            (* Run the regular `flatten` pass *)
+            | postFlatten
+
    (* Runs one iteration of flattening: for each appearance of the sequence:
 
        x = tuple(t1, t2, ...)
@@ -317,6 +324,7 @@ sig
      outlined above, with consumer information resolved according to
      `varAliasPolicy` (above).
     *)
-   val flattenOnce: flatteningPolicy * varAliasPolicy * flattenableTypesPolicy -> Program.t -> Program.t option
+   val flattenOnce: flatteningPolicy * varAliasPolicy * flattenableTypesPolicy
+                    -> Program.t -> Program.t option
 
 end
