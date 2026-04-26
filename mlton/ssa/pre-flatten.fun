@@ -977,6 +977,21 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
        getOrCreateFunc (fm, original, argChoices)
    val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
+   fun buildLogThunk (t, varChoices, varConsumers, varChoices') = let
+      fun thunk() = Layout.seq [
+             Layout.str "rewriteTransfer: ", Transfer.layout t,
+             Layout.indent (Layout.align
+                                [Layout.seq [Layout.str "varChoices (before): ",
+                                             Vector.layout varChoiceLayout varChoices],
+                                 Layout.seq [Layout.str "varConsumers: ",
+                                             Vector.layout (List.layout varConsumerLayout) varConsumers],
+                                 Layout.seq [Layout.str "varChoices' (after): ",
+                                             Vector.layout varChoiceLayout varChoices'],
+                             3)]
+   in
+      thunk
+   end
+
    fun rewriteTransfer (t: Transfer.t) = let
       fun buildCall (args, func, inline, return) = let
          (* Make a flattening decision for each argument by collecting all of
@@ -985,14 +1000,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
          (* ...and the (resolved) usage info for each formal parameter... *)
          val varConsumers = Vector.map (args, getConsumers)
 
-         fun logRewriteTransferThunk () =
-             Layout.seq [Layout.str "rewriteTransfer: ", Transfer.layout t,
-                  Layout.indent (Layout.align [Layout.seq [Layout.str "varChoices: ",
-                                                           Vector.layout varChoiceLayout varChoices],
-                                               Layout.seq [Layout.str "varConsumers: ",
-                                                           Vector.layout (List.layout varConsumerLayout) varConsumers]],
-                                 3)]
-         val _ = Control.diagnostic logRewriteTransferThunk
+         val _ = Control.diagnostic (buildLogThunk (t, varChoices, varConsumers)
 
          (* ...and applying the policy *)
          val varChoices' = Vector.map2 (varChoices, varConsumers,
