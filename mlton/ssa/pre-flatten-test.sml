@@ -3501,5 +3501,30 @@ local
       val _ = PreFlatten.transform p
       val _ = print "Test 49 passed\n"
    in () end
+
+   (* Test 50: Type.layout *)
+   val _ = let
+      val _ = print "Test 50: Type.layout\n"
+      val w32 = WordSize.word32
+      val t1 = Type.word w32
+      val t2 = Type.array t1
+      val t3 = Type.array t2
+
+      fun check (t, expected) =
+         let
+            val actual = Layout.toString (Type.layout t)
+         in
+            if actual = expected then ()
+            else (print ("Type layout mismatch\n");
+                  print ("Expected: " ^ expected ^ "\n");
+                  print ("Actual:   " ^ actual ^ "\n");
+                  OS.Process.exit OS.Process.failure)
+         end
+
+      val _ = check (t1, "word32")
+      val _ = check (t2, "(word32) array")
+      val _ = check (t3, "((word32) array) array")
+      val _ = print "Test 50 passed\n"
+   in () end
 in
 end
