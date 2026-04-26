@@ -984,9 +984,11 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
                                 [Layout.seq [Layout.str "varChoices (before): ",
                                              Vector.layout varChoiceLayout varChoices],
                                  Layout.seq [Layout.str "varConsumers: ",
-                                             Vector.layout (List.layout varConsumerLayout) varConsumers],
+                                             Vector.layout
+                                                 (List.layout varConsumerLayout)
+                                                 varConsumers],
                                  Layout.seq [Layout.str "varChoices' (after): ",
-                                             Vector.layout varChoiceLayout varChoices'],
+                                             Vector.layout varChoiceLayout varChoices']]
                              3)]
    in
       thunk
@@ -999,12 +1001,14 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
          val varChoices = Vector.map (args, getChoice)
          (* ...and the (resolved) usage info for each formal parameter... *)
          val varConsumers = Vector.map (args, getConsumers)
-
-         val _ = Control.diagnostic (buildLogThunk (t, varChoices, varConsumers)
-
          (* ...and applying the policy *)
          val varChoices' = Vector.map2 (varChoices, varConsumers,
                                         updateChoice)
+
+         val _ = Control.diagnostic
+                     (buildLogThunk (t, varChoices, varConsumers,
+                                     varChoices'))
+
          (* Construct the call argument *)
          val args' = buildCallArgs (args, varChoices')
          (* Construct the flattened function *)
