@@ -3,6 +3,7 @@
    RUN:    -pre-flatten-max-iters 1 \
    RUN:    -pre-flatten-consumer-policy always \
    RUN:    -pre-flatten-resolve-policy local \
+   RUN:    -pre-flatten-types-policy any \
    RUN:    %s %t
 
    Test that `preFlatten` builds a new flattened version and calls it. Since the
