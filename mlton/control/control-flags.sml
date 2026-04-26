@@ -1475,6 +1475,27 @@ val preFlattenTypesPolicy =
             default = PreFlattenTypesPolicy.Tuple,
             toString = PreFlattenTypesPolicy.toString}
 
+structure PreFlattenPostStep =
+   struct
+      datatype t = Flatten | Shrink
+
+      val toString =
+         fn Flatten => "flatten"
+          | Shrink => "shrink"
+
+      val fromString =
+         fn "flatten" => SOME Flatten
+          | "shrink" => SOME Shrink
+          | _ => NONE
+   end
+
+datatype preFlattenPostStep = datatype PreFlattenPostStep.t
+
+val preFlattenPostSteps =
+   control {name = "pre-flatten-post-steps",
+            default = [PreFlattenPostStep.Shrink],
+            toString = List.toString PreFlattenPostStep.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =

@@ -1095,8 +1095,10 @@ fun transform (p: Program.t): Program.t =
              Control.PreFlattenTypesPolicy.Any => FlattenAnyType
            | Control.PreFlattenTypesPolicy.Tuple => FlattenOnlyTuple
            | Control.PreFlattenTypesPolicy.Con => FlattenOnlyConApp
-       (* TODO: expose this as a flag *)
-       val kPostSteps = [postShrink]
+       val kPostSteps =
+          List.map (!Control.preFlattenPostSteps,
+             fn Control.PreFlattenPostStep.Shrink => postShrink
+              | Control.PreFlattenPostStep.Flatten => postFlatten)
        fun applySteps p = doPostSteps (kPostSteps, p)
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters

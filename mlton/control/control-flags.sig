@@ -437,6 +437,14 @@ signature CONTROL_FLAGS =
          end
       val preFlattenTypesPolicy: PreFlattenTypesPolicy.t ref
 
+      structure PreFlattenPostStep:
+         sig
+            datatype t = Flatten | Shrink
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val preFlattenPostSteps: PreFlattenPostStep.t list ref
+
       structure PositionIndependentStyle:
          sig
             datatype t =

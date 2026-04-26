@@ -730,6 +730,13 @@ fun makeOptions {usage} =
                      case PreFlattenTypesPolicy.fromString s of
                         SOME p => preFlattenTypesPolicy := p
                       | NONE => usage (concat ["invalid -pre-flatten-types-policy flag: ", s]))),
+       (Expert, "pre-flatten-post-steps", " step1,step2,...", "set pre-flattening post steps (shrink)",
+        SpaceString (fn s =>
+                     preFlattenPostSteps :=
+                     List.map (String.tokens (s, fn c => c = #","), fn s =>
+                               case PreFlattenPostStep.fromString s of
+                                  SOME p => p
+                                | NONE => usage (concat ["invalid -pre-flatten-post-steps flag: ", s])))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>
