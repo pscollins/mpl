@@ -40,6 +40,7 @@ local
    restore.fun
 
    ssa-transform.sig
+   flatten.fun
    pre-flatten.sig
    pre-flatten.fun
    ssa2-transform.sig
@@ -57,7 +58,6 @@ local
    drop-spork.fun
    drop-spork2.fun
    duplicate-globals.fun
-   flatten.fun
    inline.sig
    inline.fun
    introduce-loops.fun

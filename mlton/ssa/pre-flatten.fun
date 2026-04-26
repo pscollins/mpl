@@ -1068,11 +1068,12 @@ datatype postStep =
          postShrink
          | postFlatten
 
+structure Flatten = Flatten (S)
+
 fun doPostStep (step: postStep, p: Program.t) =
     case step of
         postShrink => shrink p
-      (* TODO: Call the `flatten` transformation *)
-      | postFlatten => Error.unimplemented "TODO"
+      | postFlatten => Flatten.transform p
 
 fun doPostSteps (steps: postStep list, p: Program.t) =
     case steps of
