@@ -24,7 +24,7 @@
 
  *)
 
-dsddatatype pairs = pairs1 of int * int
+datatype pairs = pairs1 of int * int
                | pairs2 of int * int
 
 fun __inline_never__ doAdd (pairs) = let
