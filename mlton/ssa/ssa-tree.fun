@@ -168,35 +168,34 @@ structure Type =
 
       local
          open Layout
+
+         fun initLayout (t, layout) = let
+            fun unary (t, tc) =
+                seq [paren (layout t), str " ", str tc]
+         in
+            case dest t of
+                Array t => unary (t, "array")
+              | CPointer => str "cpointer"
+              | Datatype t => Tycon.layout t
+              | IntInf => str "intInf"
+              | Real s => str (concat ["real", RealSize.toString s])
+              | Ref t => unary (t, "ref")
+              | Thread => str "thread"
+              | Tuple ts =>
+                if Vector.isEmpty ts
+                then str "unit"
+                else seq [str "(",
+                          (mayAlign o separateRight)
+                              (Vector.toListMap (ts, layout), ","),
+                          str ") tuple"]
+              | Vector t => unary (t, "vector")
+              | Weak t => unary (t, "weak")
+              | Word s => str (concat ["word", WordSize.toString s])
+         end
       in
-         val {get = layout, ...} =
-            Property.get
-            (plist,
-             Property.initRec
-             (fn (t, layout) =>
-              let
-                 fun unary (t, tc) =
-                    seq [paren (layout t), str " ", str tc]
-              in
-              case dest t of
-                 Array t => unary (t, "array")
-               | CPointer => str "cpointer"
-               | Datatype t => Tycon.layout t
-               | IntInf => str "intInf"
-               | Real s => str (concat ["real", RealSize.toString s])
-               | Ref t => unary (t, "ref")
-               | Thread => str "thread"
-               | Tuple ts =>
-                    if Vector.isEmpty ts
-                       then str "unit"
-                       else seq [str "(",
-                              (mayAlign o separateRight)
-                                 (Vector.toListMap (ts, layout), ","),
-                                 str ") tuple"]
-               | Vector t => unary (t, "vector")
-               | Weak t => unary (t, "weak")
-               | Word s => str (concat ["word", WordSize.toString s])
-              end))
+      val {get = layout, ...} =
+          Property.get
+              (plist, Property.initRec initLayout)
       end
 
       local
