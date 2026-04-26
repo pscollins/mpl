@@ -3469,5 +3469,37 @@ local
       val _ = PreFlatten.destroyVarChoiceManager vcm
       val _ = print "Test 48 passed\n"
    in () end
+
+   (* Test 49: transform with postFlatten *)
+   val _ = let
+      val _ = print "Test 49: transform with postFlatten\n"
+      val mainFunc = Func.fromString "main49"
+      val mainLabel = Label.fromString "L49"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val _ = Control.preFlattenPostSteps := [Control.PreFlattenPostStep.Flatten]
+      val _ = PreFlatten.transform p
+      val _ = print "Test 49 passed\n"
+   in () end
 in
 end
