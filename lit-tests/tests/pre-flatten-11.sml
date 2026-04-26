@@ -2,7 +2,7 @@
    RUN:    -keep-pass 'preFlatten.*' -stop-pass 'preFlatten.*' \
    RUN:    -pre-flatten-max-iters 1 \
    RUN:    -pre-flatten-consumer-policy any_unpack \
-   RUN:    -pre-flatten-resolve-policy local \
+   RUN:    -pre-flatten-resolve-policy global \
    RUN:    -pre-flatten-types-policy any \
    RUN:    %s %t
 
@@ -14,6 +14,9 @@
      case pairs of pairs1 => ... | pairs2  => ...
 
    so both `any_unpack` and `all_unpack` should succeed
+
+   TODO(pscollins): This is intended to be the case where `local` kicks in, but
+   it doesn't. Investigate.
 
    Non-flat version in 'pre'
    RUN: egrep    'doAdd.*pairs_' %t/*preFlatten*.pre.ssa

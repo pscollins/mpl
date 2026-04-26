@@ -988,7 +988,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
                                                  (List.layout varConsumerLayout)
                                                  varConsumers],
                                  Layout.seq [Layout.str "varChoices' (after): ",
-                                             Vector.layout varChoiceLayout varChoices']]
+                                             Vector.layout varChoiceLayout varChoices']],
                              3)]
    in
       thunk
