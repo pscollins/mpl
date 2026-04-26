@@ -3526,5 +3526,47 @@ local
       val _ = check (t3, "((word32) array) array")
       val _ = print "Test 50 passed\n"
    in () end
+
+   (* Test 51: Type.layout with maxTypePrintDepth *)
+   val _ = let
+      val _ = print "Test 51: Type.layout with maxTypePrintDepth\n"
+      val tBool = Type.bool
+      val tTupInner = Type.tuple (Vector.fromList [tBool, tBool])
+      val tTupOuter = Type.tuple (Vector.fromList [tTupInner, tBool])
+      val tDeep = Type.tuple (Vector.fromList [tTupOuter, tBool])
+
+      fun check (t, depth, expected) =
+         let
+            val oldDepth = !Control.maxTypePrintDepth
+            val _ = Control.maxTypePrintDepth := depth
+            val actual = Layout.toString (Type.layout t)
+            val _ = Control.maxTypePrintDepth := oldDepth
+         in
+            if actual = expected then ()
+            else (print ("Type layout mismatch at depth " ^ (Int.toString depth) ^ "\n");
+                  print ("Expected: " ^ expected ^ "\n");
+                  print ("Actual:   " ^ actual ^ "\n");
+                  OS.Process.exit OS.Process.failure)
+         end
+
+      (* tDeep is (((bool, bool) tuple, bool) tuple, bool) tuple *)
+      
+      val _ = print "Testing depth 0 (print fully)\n"
+      val _ = check (tDeep, 0, "(((bool, bool) tuple, bool) tuple, bool) tuple")
+
+      val _ = print "Testing depth 1\n"
+      val _ = check (tDeep, 1, "(..., ...) tuple")
+
+      val _ = print "Testing depth 2\n"
+      val _ = check (tDeep, 2, "((..., ...) tuple, bool) tuple")
+
+      val _ = print "Testing depth 3\n"
+      val _ = check (tDeep, 3, "(((..., ...) tuple, bool) tuple, bool) tuple")
+
+      val _ = print "Testing depth 4\n"
+      val _ = check (tDeep, 4, "(((bool, bool) tuple, bool) tuple, bool) tuple")
+
+      val _ = print "Test 51 passed\n"
+   in () end
 in
 end

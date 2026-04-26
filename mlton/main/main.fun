@@ -631,6 +631,8 @@ fun makeOptions {usage} =
         (fn s => mathLinkOpt := s)),
        (Expert, "max-function-size", " <n>", "max function size (blocks)",
         intRef maxFunctionSize),
+       (Expert, "max-type-print-depth", " <n>", "Maximum depth when printing IL types (0 means 'print fully'). For now, only supported by SSA.",
+        intRef maxTypePrintDepth),
        (Normal, "mlb-path-map", " <file>", "additional MLB path map",
         SpaceString (fn s => mlbPathVars := !mlbPathVars @ readMlbPathMap s)),
        (Normal, "mlb-path-var", " '<name> <value>'", "additional MLB path var",

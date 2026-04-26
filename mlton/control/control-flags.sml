@@ -1660,6 +1660,10 @@ val showTypes = control {name = "show types",
                          default = true,
                          toString = Bool.toString}
 
+val maxTypePrintDepth = control {name = "maxTypePrintDepth",
+                                 default = 0,
+                                 toString = Int.toString}
+
 structure SignalCheck =
    struct
       datatype t =

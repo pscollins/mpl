@@ -507,6 +507,8 @@ signature CONTROL_FLAGS =
       (* Should types be printed in ILs. *)
       val showTypes: bool ref
 
+      val maxTypePrintDepth: int ref
+
       structure SignalCheck:
          sig
             datatype t =
