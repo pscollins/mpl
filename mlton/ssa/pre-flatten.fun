@@ -1065,7 +1065,7 @@ in
 end
 
 datatype postStep =
-         postShink
+         postShrink
          | postFlatten
 
 fun doPostStep (step: postStep, p: Program.t) =

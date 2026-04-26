@@ -16,6 +16,10 @@ sig
 
        -pre-flatten-types-policy={any|tuple|con}
           sets the `flattenableTypesPolicy` (below)
+
+       -pre-flatten-post-steps=$STEP1,$STEP2,...
+          where $STEPN={shrink|flatten}
+          sets the sequence of `postStep`s to run (below)
     *)
    include SSA_TRANSFORM
 
@@ -285,7 +289,7 @@ sig
    (* Postprocessing steps to run after each iteration of `flattenOnce` *)
    datatype postStep =
             (* Run `shrink`  *)
-            postShink
+            postShrink
             (* Run the regular `flatten` pass *)
             | postFlatten
 
