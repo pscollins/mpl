@@ -1533,7 +1533,7 @@ fun 'a checkApp (prim: 'a t,
        | Trace_sourceMarkValue => oneTarg (fn (t) => (twoArgs (t, string), unit))
        | Trace_noHeap => oneTarg (fn (t) => (oneArg t, t))
        | Trace_heapOK => oneTarg (fn (t) => (oneArg t, t))
-       | Trace_noTuple => oneTarg (fn (t) => (oneArg t, t))
+       | Trace_noTuple => oneTarg (fn t => if isComposite t then (fn _ => false, t) else (oneArg t, t))
        | Trace_staticSourceMarkValue s => oneTarg (fn (t) => (oneArg t, unit))
        | TopLevel_getHandler => noTargs (fn () => (noArgs, arrow (exn, unit)))
        | TopLevel_getSuffix => noTargs (fn () => (noArgs, arrow (unit, unit)))
