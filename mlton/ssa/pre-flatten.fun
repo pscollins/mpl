@@ -325,6 +325,16 @@ datatype varChoice =
          | FlattenTupleVar of Var.t vector
          | FlattenConVar of {args: (Var.t * Type.t) vector, con: Con.t}
 
+fun varChoiceLayout vc =
+   case vc of
+      PreserveVar => Layout.str "PreserveVar"
+    | FlattenTupleVar vs =>
+      Layout.seq [Layout.str "FlattenTupleVar ", Vector.layout Var.layout vs]
+    | FlattenConVar {args, con} =>
+      Layout.seq [Layout.str "FlattenConVar ",
+           Layout.record [("con", Con.layout con),
+                   ("args", Vector.layout (fn (v, _) => Var.layout v) args)]]
+
 type varChoiceManager = {
    getVarChoiceProp: Var.t -> varChoice,
    setVarChoiceProp: Var.t * varChoice -> unit,
@@ -450,6 +460,12 @@ datatype varConsumer =
             AsUnpacked
             | AsCurrent
             | AsAlias of Var.t
+
+fun varConsumerLayout vc =
+   case vc of
+      AsUnpacked => Layout.str "AsUnpacked"
+    | AsCurrent => Layout.str "AsCurrent"
+    | AsAlias v => Layout.seq [Layout.str "AsAlias ", Var.layout v]
 
 type varConsumerManager = {
    getVarConsumersProp: Var.t -> varConsumer list ref,
@@ -968,6 +984,16 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
          val varChoices = Vector.map (args, getChoice)
          (* ...and the (resolved) usage info for each formal parameter... *)
          val varConsumers = Vector.map (args, getConsumers)
+
+         fun logRewriteTransferThunk () =
+             Layout.seq [Layout.str "rewriteTransfer: ", Transfer.layout t,
+                  Layout.indent (Layout.align [Layout.seq [Layout.str "varChoices: ",
+                                                           Vector.layout varChoiceLayout varChoices],
+                                               Layout.seq [Layout.str "varConsumers: ",
+                                                           Vector.layout (List.layout varConsumerLayout) varConsumers]],
+                                 3)]
+         val _ = Control.diagnostic logRewriteTransferThunk
+
          (* ...and applying the policy *)
          val varChoices' = Vector.map2 (varChoices, varConsumers,
                                         updateChoice)
