@@ -25,7 +25,8 @@ Write unit tests in the specified test file that cover the behavior outlined by 
 ### 3. Verification (The Red Phase) - MANDATORY STOP
 Run the newly created tests. **THE TESTS MUST FAIL.** This is the "Red" phase of TDD.
 - If the test suite fails to *compile*, you may make minor, surgical changes to the source file to fix typos or type mismatches that prevent compilation.
-- **CRITICAL: DO NOT fill in the actual logic, fix the bug, or implement the function.** Your task ends when the tests fail on a stub.
+- **CRITICAL: DO NOT fill in the actual logic, fix the bug, or implement the function.** 
+- **HARD STOP**: Your execution for this directive ends immediately after verifying the test failure. Do NOT perform any research (e.g., searching for implementation templates) or plan the next "Green" phase. 
 - **Verification Step**: Before concluding, explicitly verify: "Did I modify the logic in the source file? If yes, revert it immediately."
 
 ## Constraints
@@ -34,11 +35,13 @@ Run the newly created tests. **THE TESTS MUST FAIL.** This is the "Red" phase of
 - **NO BUG FIXING**: Even if the fix is obvious, you MUST NOT apply it. The goal is to provide the user with a failing test that *they* will then fix.
 - **SURGICAL ONLY**: Edits to implementation files are permitted ONLY for fixing syntax/type errors that block compilation of the test suite.
 
-### 4. Handoff
-Once you have a compiling but failing test suite, return control to the user.
-- Summarize the test cases you have added.
-- Confirm that the tests are failing as expected.
-- Explicitly state that the implementation remains a stub.
+### 4. Handoff Protocol
+Once you have a compiling but failing test suite, return control to the user:
+1. Call `update_topic` with `title="Verification Complete - Handoff"` and a summary of the test coverage and failure.
+2. Provide the final synthesis to the user.
+3. Confirm that the tests are failing as expected.
+4. Explicitly state that the implementation remains a stub.
+5. **STOP AND WAIT.** Do not proceed to implementation research or planning unless a new directive is issued.
 
 ## Guidelines
 

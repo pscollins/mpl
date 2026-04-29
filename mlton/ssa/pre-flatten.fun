@@ -933,7 +933,11 @@ in
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
 
-type blockManager = unit
+type blockManager = {
+   getOrCreateFlattenedBlock: (Label.t * argChoice vector) -> Label.t,
+   pendingBlocks: Block.t list ref,
+   destroyBlockManagerState: unit -> unit
+}
 
 fun newBlockManager f = Error.unimplemented "TODO"
 
