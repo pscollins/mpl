@@ -344,7 +344,18 @@ sig
             (* Run the regular `flatten` pass *)
             | postFlatten
 
-   (* Runs one iteration of flattening: for each appearance of the sequence:
+   (* What level should this pass flatten at? *)
+   datatype flattenLevel =
+            (* Flatten only `Block.t`s within a `Function.t` (and not the
+            containing functions) *)
+            blockOnly
+            (* Flatten only `Function.t`s (and not the `Block.t`s that they
+            contain) *)
+            | functionOnly
+
+   (* Runs one iteration of flattening.
+
+      Behavior depends on the policy arguments: for flattening functions --
 
        x = tuple(t1, t2, ...)
        f(x, arg2, ...)
@@ -371,6 +382,20 @@ sig
        f_flat(t1, t2, ..., arg2)
          arg1 = con MyCon (t1, t2, ...)
          ...original body of `f`...
+
+     Flattening `Block.t`s is analogous, but we replace:
+
+       x = tuple(t1, t2, ...)
+       goto L_123(x)
+
+      with:
+
+       goto L_123_flat(t1, t2, ...)
+
+      where `L_123_flat` is a newly-created `Block.t` of the form:
+
+       L_123_flat(t1, t2, ...):
+         x = tuple(t1, t2, ...)
 
      On success (i.e. if we made progress and flattened at least one function),
      returns `SOME ...`, otherwise, returns `NONE`.
