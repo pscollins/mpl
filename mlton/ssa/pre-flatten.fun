@@ -1086,10 +1086,73 @@ end
 
 fun destroyBlockManager (bm: blockManager) = let
    val {pendingBlocks, destroyBlockManagerState, ...} = bm
-in 
+in
    validateAndDestroy {pending = pendingBlocks,
                        doDestroy = destroyBlockManagerState,
                        name = "blockManager"}
+end
+
+
+type blockManagerManager = {
+   getBlockManagerForFuncProp: Func.t -> blockManager,
+   getFuncForBlockProp: Label.t -> Func.t,
+   destroyBlockManagerManagerData: unit -> unit
+}
+
+fun newBlockManagerManager (p: Program.t) = let
+   val blockManagers = ref []
+   val {get=getFuncForBlockProp, set=setFuncForBlockProp,
+        destroy=destroyFuncForBlockProp} =
+       Property.destGetSetOnce (Label.plist,
+                                Property.initRaise ("containing func lookup",
+                                                    Label.layout))
+   val {get=getBlockManagerForFuncProp, set=setBlockManagerForFunc,
+        destroy=destroyBlockManagerManagerProps} =
+       Property.destGetSetOnce (Func.plist,
+                                Property.initRaise ("blockManager lookup",
+                                                    Func.layout))
+
+   fun createBlockManagerForFunction (f: Function.t) = let
+      val bm = newBlockManager f
+      val _ = List.push (blockManagers, bm)
+      fun setContainingFuncForBlock b =
+          setFuncForBlockProp (Block.label b, Function.name f)
+   in
+      (setBlockManagerForFunc (Function.name f, bm);
+       Vector.foreach (Function.blocks f, setContainingFuncForBlock))
+   end
+
+   val _ = foreachFunction (p, createBlockManagerForFunction)
+
+   fun destroyBlockManagerManagerData() = let
+      val _ = List.foreach (!blockManagers, destroyBlockManager)
+      val _ = destroyBlockManagerManagerProps()
+      val _ = destroyFuncForBlockProp()
+   in
+      ()
+   end
+in
+   {getBlockManagerForFuncProp = getBlockManagerForFuncProp,
+    getFuncForBlockProp = getFuncForBlockProp,
+    destroyBlockManagerManagerData = destroyBlockManagerManagerData}
+end
+
+fun getBlockManagerForFunc (bmm: blockManagerManager, f: Func.t) = let
+   val {getBlockManagerForFuncProp, ...} = bmm
+in
+   getBlockManagerForFuncProp f
+end
+
+fun getBlockManagerForBlock (bmm: blockManagerManager, l: Label.t) = let
+   val {getFuncForBlockProp, ...} = bmm
+in
+    getBlockManagerForFunc (bmm, getFuncForBlockProp l)
+end
+
+fun destroyBlockManagerManager (bmm: blockManagerManager) = let
+   val {destroyBlockManagerManagerData, ...} = bmm
+in
+   destroyBlockManagerManagerData()
 end
 
 datatype flatteningPolicy =
@@ -1173,13 +1236,15 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
+   val bmm = newBlockManagerManager p
    val resolve = resolveAliases (resolvePolicy, vc)
    fun getChoice v = getVarChoice (vm, v)
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
    fun getBlock (original, argChoices) =
-       getOrCreateBlock (bm, original, argChoices)
+       Error.unimplemented "TODO"
+       (* getOrCreateBlock (bm, original, argChoices) *)
    val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
    fun buildLogThunk (t, varChoices, varConsumers, varChoices') = let
@@ -1269,8 +1334,57 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
         | NONE => NONE
    end
 
+   (* Extracts new blocks from the appropriate `bm` and adds them to `f`, or
+   else returns `NONE` *)
+   fun maybeAppendNewBlocksForF (f: Function.t): Function.t option = let
+      val bm = getBlockManagerForFunc (bmm, Function.name f)
+      val blocks = extractNewBlocks bm
+      fun buildNewFunc blockVec = let
+         val {args, blocks, inline, name, raises, returns, start} =
+             Function.dest f
+      in
+         Function.new {args = args,
+          (* Append the new blocks (arbitrarily) at the end *)
+          blocks = Vector.concat [blocks, blockVec],
+          inline = inline,
+          name = name,
+          raises = raises,
+          returns = returns,
+          start = start}
+      end
+   in
+      case blocks of
+          [] => NONE
+        | _ => SOME (buildNewFunc (Vector.fromList blocks))
+   end
+
+   (* Extracts new blocks from the `bmm` and adds them to the appropriate
+   functions, or else returns `NONE` *)
+   fun maybeAppendNewBlocks (p': Program.t): Program.t option = let
+      val Program.T {datatypes, functions, globals, main} = p'
+      val maybeNewFuncs = List.map (functions, maybeAppendNewBlocksForF)
+      fun buildProgram() = let
+         fun takeLhs (l: Function.t option, r: Function.t): Function.t =
+             case (l, r) of
+                 (SOME l', _) => l'
+               | (NONE, _) => r
+         val newFuncs: Function.t list = List.map2 (maybeNewFuncs, functions, takeLhs)
+      in
+         Program.T {datatypes = datatypes,
+                    functions = newFuncs,
+                    globals = globals,
+                    main = main}
+      end
+   in
+      if List.forall (maybeNewFuncs, Option.isNone) then
+         NONE
+      else SOME (buildProgram())
+   end
+
    (* Extracts new functions from `fm` and adds them to `p'`, or
-      returns `NONE` *)
+      returns `NONE`
+
+    *)
    fun maybeAppendNewFns (p': Program.t) = let
       val Program.T {datatypes, functions, globals, main} = p'
    in
@@ -1282,12 +1396,22 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
                                      globals=globals,
                                      main = main})
    end
-   val p' = maybeAppendNewFns (mapBlocks (p, maybeRewriteBlock))
+   (* Apply the transformation to all blocks *)
+   val newP = mapBlocks (p, maybeRewriteBlock)
+   (* Try to update the program by applying new functions *)
+   val pNewFuncs = maybeAppendNewFns newP
+   (* Try to update the program by applying new blocks *)
+   val pNewBlocks = maybeAppendNewBlocks newP
    val _ = destroyFunctionManager fm
    val _ = destroyVarChoiceManager vm
    val _ = destroyVarConsumerManager vc
+   val _ = destroyBlockManagerManager bmm
 in
-   p'
+   case (pNewFuncs, pNewBlocks) of
+       (SOME p', NONE) => SOME p'
+    | (NONE, SOME p') => SOME p'
+    | (NONE, NONE) => NONE
+    | (SOME _, SOME _) => Error.bug "Can't add blocks and functions in one pass"
 end
 
 datatype postStep =

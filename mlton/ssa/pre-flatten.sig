@@ -286,6 +286,22 @@ sig
    val destroyBlockManager: blockManager -> unit
 
 
+   (* Tags `Func.t`s with their associated `blockManager` *)
+   type blockManagerManager
+
+   (* TODO(pscollins): Consider adding unit tests *)
+
+   (* Builds a `blockManager` for each `Function.t` in the `Program.t` and
+   returns the  resulting `blockManagerManager`. *)
+   val newBlockManagerManager: Program.t -> blockManagerManager
+   (* Returns the `blockManager` associated with the provided function label *)
+   val getBlockManagerForFunc: (blockManagerManager * Func.t) -> blockManager
+   (* Returns the `blockManager` associated with the function containing the
+   provided block label *)
+   val getBlockManagerForBlock: (blockManagerManager * Label.t) -> blockManager
+   (* Destroys all of the `blockManager`s associated with this object  *)
+   val destroyBlockManagerManager: blockManagerManager -> unit
+
    (* Describes how we choose to flatten functions: for the description below,
    we'll assume that we have a function definition
 
