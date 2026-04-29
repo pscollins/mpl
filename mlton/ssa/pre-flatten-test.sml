@@ -3638,5 +3638,36 @@ local
       
       val _ = print "Test 53 passed\n"
    in () end
+
+   (* Test 54: buildFlattenedBlock with mixed arguments *)
+   val _ = let
+      val _ = print "Test 54: buildFlattenedBlock with mixed arguments\n"
+      val l1 = Label.fromString "L1"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+      val v3 = Var.fromString "v3"
+      val con = Con.fromString "MyCon"
+      val tCon = Type.unit (* Dummy *)
+      
+      val b1 = Block.T {
+         args = Vector.fromList [(v1, t1), (v2, tTuple), (v3, tCon)],
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+
+      val res = PreFlatten.buildFlattenedBlock
+                    (b1, Vector.fromList [PreFlatten.Preserve,
+                                          PreFlatten.FlattenTuple,
+                                          PreFlatten.FlattenCon {argTys = Vector.new2 (t1, t2), con = con}])
+      val Block.T {args, statements, ...} = res
+      
+      val _ = assert (Vector.length args = 5, "Flattened block should have 5 args (1 + 2 + 2)")
+      
+      val _ = print "Test 54 passed\n"
+   in () end
 in
 end
