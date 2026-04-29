@@ -3669,5 +3669,96 @@ local
       
       val _ = print "Test 54 passed\n"
    in () end
+
+   (* Test 55: blockManager *)
+   val _ = let
+      val _ = print "Test 55: blockManager\n"
+      val fName = Func.fromString "f55"
+      val l1 = Label.fromString "L1"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+
+      val b1 = Block.T {
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [b1],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+
+      val bm = PreFlatten.newBlockManager f
+
+      val _ = print "Test 55a: getOrCreateBlock NoOp\n"
+      val lNoOp = PreFlatten.getOrCreateBlock (bm, l1, Vector.fromList [PreFlatten.Preserve, PreFlatten.Preserve])
+      val _ = assert (Label.equals (lNoOp, l1), "NoOp should return original Label.t")
+
+      val _ = print "Test 55b: extractNewBlocks after NoOp\n"
+      val newBlocks0 = PreFlatten.extractNewBlocks bm
+      val _ = assert (List.length newBlocks0 = 0, "No new blocks should be extracted after NoOp")
+
+      val _ = print "Test 55c: getOrCreateBlock Valid\n"
+      val lFlattened = PreFlatten.getOrCreateBlock (bm, l1, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
+      val _ = assert (not (Label.equals (lFlattened, l1)), "Valid flattening should return new Label.t")
+
+      val _ = print "Test 55d: extractNewBlocks after Valid\n"
+      val newBlocks1 = PreFlatten.extractNewBlocks bm
+      val _ = assert (List.length newBlocks1 = 1, "One new block should be extracted")
+      val b_res = case newBlocks1 of (x::_) => x | _ => (print "Expected non-empty list\n"; OS.Process.exit OS.Process.failure)
+      val _ = assert (Label.equals (Block.label b_res, lFlattened), "Extracted block label mismatch")
+
+      val _ = print "Test 55e: extractNewBlocks should clear pending\n"
+      val newBlocks2 = PreFlatten.extractNewBlocks bm
+      val _ = assert (List.length newBlocks2 = 0, "extractNewBlocks should clear pending list")
+
+      val _ = PreFlatten.destroyBlockManager bm
+      val _ = print "Test 55 passed\n"
+   in () end
+
+   (* Test 56: blockManager destroy error if pending *)
+   val _ = let
+      val _ = print "Test 56: blockManager destroy error if pending\n"
+      val fName = Func.fromString "f56"
+      val l1 = Label.fromString "L1"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val b1 = Block.T {
+         args = Vector.fromList [(v1, t1)],
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [b1],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = l1
+      }
+      val bm = PreFlatten.newBlockManager f
+      val _ = PreFlatten.getOrCreateBlock (bm, l1, Vector.fromList [PreFlatten.Preserve])
+      
+      val caught = ref false
+      val _ = (PreFlatten.destroyBlockManager bm) handle _ => caught := true
+      val _ = assert (!caught, "destroyBlockManager should fail if pending blocks exist")
+      
+      (* Clean up properly for real this time *)
+      val _ = PreFlatten.extractNewBlocks bm
+      val _ = PreFlatten.destroyBlockManager bm
+      
+      val _ = print "Test 56 passed\n"
+   in () end
 in
 end
