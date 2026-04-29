@@ -82,7 +82,7 @@ sig
    (* Given a `Function.t` and a set of flattening decisions for each argument,
    returns the (partially)-flattened function, i.e. given:
 
-      {f (ab: (bool * bool), c: int): ..., [Flatten]}
+      {f (ab: (bool * bool), c: int): ..., [Flatten, Preserve]}
 
    Returns the modified function:
 
@@ -90,7 +90,7 @@ sig
 
    Or, for, the ConApp case
 
-      {f (ab: (Ty of bool * bool), c: int): ..., [Flatten]}
+      {f (ab: (Ty of bool * bool), c: int): ..., [Flatten, Preserve]}
         -->
       f (a: bool, b: bool, c: int): ab = con Ty (a, b); ....
 
@@ -101,6 +101,25 @@ sig
    variables within it are guarnateed to be distinct from the original function.
     *)
    val buildFlattenedFunction: (Function.t * argChoice vector) -> Function.t
+
+   (* Like above, but for a `Block.t`: given
+
+
+       {L_123 (ab: (bool * bool), c: int): ..., ..., [Flatten, Preserve]}
+
+      Returns the modified block:
+
+       L_456 (a: bool, b: bool, c: int): ...
+         ab = tuple(a, b)
+
+      and analogously for the `ConApp` case.
+
+      Like above, `argChoice` must be compatible with the block args, else error.
+
+      The returned block is guaranteed to have a fresh label and fresh names for
+      all variables inside of it
+    *)
+   val buildFlattenedBlock: (Block.t * argChoice vector) -> Block.t
 
    (* Validates the action of the supplied set of choices on the supplied
    function *)

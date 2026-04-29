@@ -288,6 +288,8 @@ in
     | binds => buildNewFunc binds
 end
 
+fun buildFlattenedBlock (b, choices) = Error.unimplemented "TODO"
+
 datatype flatteningChoiceType =
            NoOp
          | Valid
