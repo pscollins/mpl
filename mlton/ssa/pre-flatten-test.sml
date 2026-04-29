@@ -3568,5 +3568,75 @@ local
 
       val _ = print "Test 51 passed\n"
    in () end
+
+   (* Test 52: buildFlattenedBlock with Preserve and FlattenTuple *)
+   val _ = let
+      val _ = print "Test 52: buildFlattenedBlock with Preserve and FlattenTuple\n"
+      val l1 = Label.fromString "L1"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
+      
+      val b1 = Block.T {
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.fromList [v1])
+      }
+
+      val res = PreFlatten.buildFlattenedBlock
+                    (b1, Vector.fromList [PreFlatten.Preserve,
+                                          PreFlatten.FlattenTuple])
+      val Block.T {args, label = resLabel, statements, ...} = res
+      
+      val _ = assert (not (Label.equals (l1, resLabel)), "new block must have a fresh label")
+      val _ = assert (Vector.length args = 3, "Flattened block should have 3 args")
+      
+      val (_, rt0) = Vector.sub (args, 0)
+      val (_, rt1) = Vector.sub (args, 1)
+      val (_, rt2) = Vector.sub (args, 2)
+      val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
+      val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
+      val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
+      
+      (* Check that original vars are bound in statements *)
+      val foundV2 = Vector.exists (statements, fn Statement.T {var, ...} =>
+         case var of
+            SOME v => Var.originalName v = "v2"
+          | NONE => false)
+      val _ = assert (foundV2, "Original var v2 not found in statements")
+
+      val _ = print "Test 52 passed\n"
+   in () end
+
+   (* Test 53: buildFlattenedBlock with FlattenCon *)
+   val _ = let
+      val _ = print "Test 53: buildFlattenedBlock with FlattenCon\n"
+      val l1 = Label.fromString "L1"
+      val v1 = Var.fromString "v1"
+      val t1 = Type.bool
+      val t2 = Type.unit
+      val con = Con.fromString "MyCon"
+      
+      val tCon = Type.unit (* Dummy type, assuming the stub is called first *)
+      
+      val b1 = Block.T {
+         args = Vector.new1 (v1, tCon),
+         label = l1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      
+      val res = PreFlatten.buildFlattenedBlock
+                    (b1, Vector.new1 (PreFlatten.FlattenCon {argTys = Vector.new2 (t1, t2), con = con}))
+      
+      val Block.T {args, statements, ...} = res
+      val _ = assert (Vector.length args = 2, "Flattened block should have 2 args")
+      val _ = assert (Vector.length statements = 1, "Should have 1 statement to bind the constructor")
+      
+      val _ = print "Test 53 passed\n"
+   in () end
 in
 end
