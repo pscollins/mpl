@@ -226,7 +226,9 @@ in
    Func.newString (concat [currName, "_", suffix])
 end
 
-fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
+fun applyChoicesToArgs (args: (Var.t * Type.t) vector,
+                        goto: Label.t,
+                        choices: argChoice vector) = let
    val needBinds: (bind list) ref = ref []
    fun addBind (bind) =
       List.push (needBinds, bind)
@@ -266,26 +268,29 @@ fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
            Preserve => Vector.new1 typedVar
          | FlattenTuple => doFlattenTuple typedVar
          | FlattenCon conInfo => doFlattenCon (typedVar, conInfo)
+   val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
+   fun buildNewBlock binds =
+      buildBindBlock (Vector.fromList binds, goto)
+in
+   case !needBinds of
+       [] => Error.bug "No-op flattening decision"
+    | binds => (newArgs, buildNewBlock binds)
+end
+
+fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
    val {args, blocks, inline, name, returns, raises, start} =
        (* Use fresh variables in the clone to prevent errors in later analyses
        (which assume that variables in distinct functions are distinct) *)
        Function.dest (Function.alphaRename f)
-   val newArgs = Vector.concatV (Vector.map2 (args, choices, applyChoice))
-   fun buildNewFunc binds = let
-      val newBlock = buildBindBlock (Vector.fromList binds, start)
-   in
-      Function.new {args = newArgs,
-                    blocks = Vector.concat [Vector.new1 newBlock, blocks],
-                    inline = inline,
-                    name = newFuncNamedLike (name, "flat"),
-                    raises = raises,
-                    returns = returns,
-                    start = Block.label newBlock}
-   end
+   val (newArgs, bindBlock) = applyChoicesToArgs (args, start, choices)
 in
-   case !needBinds of
-       [] => Error.bug "No-op flattening decision"
-    | binds => buildNewFunc binds
+   Function.new {args = newArgs,
+                 blocks = Vector.concat [Vector.new1 bindBlock, blocks],
+                 inline = inline,
+                 name = newFuncNamedLike (name, "flat"),
+                 raises = raises,
+                 returns = returns,
+                 start = Block.label bindBlock}
 end
 
 fun buildFlattenedBlock (b, choices) = Error.unimplemented "TODO"
