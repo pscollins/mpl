@@ -801,18 +801,21 @@ in
       | _ => false
 end
 
+fun buildPending() = let
+   val pending = ref []
+   fun doAppend x = List.push (pending, x)
+in
+   (pending, doAppend)
+end
+
 fun newFunctionManager (p: Program.t) = let
    (* TODO(pscollins): Since the scheme below doesn't 'follow through'
    already-flattened functions, we'll need to destroy and recreate it after each
    iteration of flattening, which will result in unnecessary flattened
    functions. Optimize in the future. *)
 
-   val pendingFuncs: Function.t list ref = ref []
-   fun appendFunc (f: Function.t) = let
-      val newPendingFuncs = f::(!pendingFuncs)
-   in
-      pendingFuncs := newPendingFuncs
-   end
+   val (pendingFuncs: Function.t list ref, appendFunc) = buildPending()
+
    (* First, collect Func.t -> Function mappings *)
    val {getFunc, destroyFuncsMap, ...} = newFuncsMap p
 
@@ -949,9 +952,121 @@ type blockManager = {
    destroyBlockManagerState: unit -> unit
 }
 
-fun newBlockManager f = Error.unimplemented "TODO"
+fun newBlockManager (f: Function.t) = let
+   (* TODO(pscollins): Deduplicate with `newFunctionManager` *)
 
-fun getOrCreateBlock (bm, l, choices) = Error.unimplemented "TODO"
+   val (pendingBlocks: Block.t list ref, appendBlock) = buildPending()
+   (* First, collect Label.t -> Block mappings
+
+   Wrap `f` in a dummy program for easier reuse
+    *)
+   val {getBlock, destroyFuncsMap, ...} =
+       newFuncsMap
+           (Program.T {datatypes = Vector.new0(),
+                       functions = Vector.new1(),
+                       globals = Vector.new0(),
+                       main = Func.newString "dummyTemp"})
+
+   (* Next, set up a hook to create new flattened blocks when necessary
+
+   For simplicity, we attach a list of `(flattening choice, block name)` to each
+   unflattened block.
+
+   TODO(pscollins): Optimize this representation. *)
+   type flattenedBlock = (argChoice vector * Label.t)
+   fun createNewFlattenedBlockList (_): flattenedBlock list ref = ref []
+
+   val {get=getFlattenedBlockList, destroy=destroyFlattenedBlocks,
+        ...} = Property.destGetSetOnce
+                   (Label.plist,
+                    Property.initFun createNewFlattenedBlockList)
+
+   (* Creates a new flattened block for the specified choice *)
+   fun createFlattenedBlock
+           (originalName: Label.t, choices: argChoice vector): Block.t = let
+      val original = getBlock originalName
+      fun doBuildFlattenedBlock() = let
+         val flattenedBlock = buildFlattenedBlock (original,
+                                                         choices)
+         val _ = appendFunc flattenedBlock
+      in
+         flattenedBlock
+      end
+   in
+      case checkFlatteningChoice (original, choices) of
+       NoOp => original
+     | Valid => doBuildFlattenedBlock()
+     | Invalid => Error.bug "Invalid flattening decision"
+   end
+
+   (* If we already have a flattened version of `b` for `choice`, returns it.
+   Otherwise, builds a flattened function for `b` under `choice` and adds it to
+   the list of for `b`. *)
+   fun getOrCreateFlattenedBlock (b: Label.t, choices: argChoice vector): Block.t = let
+      fun logInputThunk () = let
+         open Layout
+      in
+         seq [str "getOrCreateFlattenedBlock: looking for ",
+              Block.layout f,
+              Layout.str " with choices ",
+              Vector.layout choiceLayout choices]
+      end
+      fun doLogChoice (newB) = let
+         open Layout
+      in
+         seq [str "getOrCreateFlattenedBlock: created new block ",
+              Label.layout newB,
+              str " from ",
+              Label.layout f]
+      end
+      val _ = Control.diagnostic logInputThunk
+      val flattenedBlockList: flattenedBlock list ref = getFlattenedBlockList f
+      fun flattenedBlockMatches (choices', _) =
+          Vector.equals (choices', choices,
+                         choiceEqual)
+      fun addNewFlattenedBlock () = let
+         val newBlock = createFlattenedBlock (f, choices)
+         val newB = Block.label newBlock
+         val _ = Control.diagnostic (fn () => doLogChoice newB)
+         val _ = List.push (flattenedBlockList, (choices, newB))
+      in
+         newB
+      end
+   in
+      case List.peek (!flattenedBlockList,
+                      flattenedBlockMatches)  of
+          (* If we already have a flattened block for `choices`, return it
+             here *)
+          SOME (_, matchedBlock) => (
+             Control.diagnostic (fn () => let open Layout in
+                seq [str "getOrCreateFlattenedBlock: found matched block ",
+                     Label.layout matchedBlock]
+             end);
+             matchedBlock
+          )
+        (* Otherwise, build a new one *)
+        | _ => addNewFlattenedBlock()
+   end
+
+   fun destroyBlockManagerState() = let
+      val _ = destroyFlattenedBlocks()
+      val _ = destroyFuncsMap()
+   in
+      ()
+   end
+in
+   {getOrCreateFlattenedBlock = getOrCreateFlattenedBlock,
+    pendingBlocks = pendingBlocks,
+    destroyBlockManagerState = destroyBlockManagerState}
+end
+
+
+fun getOrCreateBlock (bm: blockManager, l: Label.t,
+                      choices: argChoice vector) = let
+   val {getOrCreateFlattenedBlock, ...} = bm
+in
+   getOrCreateFlattenedBlock (l, choices)
+end
 
 fun extractNewBlocks (bm: blockManager) = let
    val {pendingBlocks, ...} = bm
