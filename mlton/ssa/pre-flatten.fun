@@ -226,9 +226,25 @@ in
    Func.newString (concat [currName, "_", suffix])
 end
 
+fun newLabelNamedLike (name: Label.t, suffix) = let
+   val currName = Label.toString name
+in
+   Label.newString (concat [currName, "_", suffix])
+end
+
+(* Implementation detail of `buildFlattenedFunction` + `buildFlattenedBlock`
+
+   Applies `choices` to `args` and returns:
+
+     * The new `args` for the flattened function
+
+     * A `Block.t` that binds `newArgs` to `args` and then jumps to `goto`
+ *)
 fun applyChoicesToArgs (args: (Var.t * Type.t) vector,
                         goto: Label.t,
-                        choices: argChoice vector) = let
+                        choices: argChoice vector):
+    ((Var.t * Type.t) vector * Block.t)
+    = let
    val needBinds: (bind list) ref = ref []
    fun addBind (bind) =
       List.push (needBinds, bind)
@@ -293,7 +309,18 @@ in
                  start = Block.label bindBlock}
 end
 
-fun buildFlattenedBlock (b, choices) = Error.unimplemented "TODO"
+fun buildFlattenedBlock (b, choices) = let
+   val Block.T {args, label, statements, transfer} = b
+   (* TODO: need to rename? *)
+   val (newArgs, bindBlock) = applyChoicesToArgs (args,
+                                                  Label.newString "dummyTemp",
+                                                  choices)
+in
+   Block.T {args = newArgs,
+            label = newLabelNamedLike (label, "flat"),
+            statements = Vector.concat [Block.statements bindBlock, statements],
+            transfer = transfer}
+end
 
 datatype flatteningChoiceType =
            NoOp
