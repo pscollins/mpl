@@ -1162,7 +1162,14 @@ datatype flattenLevel =
          blockOnly
          | functionOnly
 
-fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel) (p: Program.t) = let
+fun flattenLevelToString l =
+    case l of
+        blockOnly => "blockOnly"
+      | functionOnly => "functionOnly"
+
+
+fun flattenOnce (flattenPolicy, resolvePolicy,
+                 allowedTypesPolicy, flattenLevel) (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
@@ -1171,11 +1178,15 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel)
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
+   fun getBlock (original, argChoices) =
+       getOrCreateBlock (bm, original, argChoices)
    val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
    fun buildLogThunk (t, varChoices, varConsumers, varChoices') = let
+      val name = concat ["rewriteTransfer (", flattenLevelToString flattenLevel,
+                         "): "]
       fun thunk() = Layout.seq [
-             Layout.str "rewriteTransfer: ", Transfer.layout t,
+             Layout.str name, Transfer.layout t,
              Layout.indent (Layout.align
                                 [Layout.seq [Layout.str "varChoices (before): ",
                                              Vector.layout varChoiceLayout varChoices],
@@ -1191,7 +1202,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel)
    end
 
    fun rewriteTransfer (t: Transfer.t) = let
-      fun buildCall (args, func, inline, return) = let
+      fun buildTransferArgs args = let
          (* Make a flattening decision for each argument by collecting all of
          the tags for each concrete argument... *)
          val varChoices = Vector.map (args, getChoice)
@@ -1200,15 +1211,21 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel)
          (* ...and applying the policy *)
          val varChoices' = Vector.map2 (varChoices, varConsumers,
                                         updateChoice)
-
          val _ = Control.diagnostic
                      (buildLogThunk (t, varChoices, varConsumers,
                                      varChoices'))
-
          (* Construct the call argument *)
          val args' = buildCallArgs (args, varChoices')
-         (* Construct the flattened function *)
+         (* Construct the flattening choice  *)
          val argChoices = Vector.map (varChoices', varChoiceToArgChoice)
+      in
+         (args', argChoices)
+      end
+
+      fun buildCall (args, func, inline, return) = let
+         (* Make the flattening decision *)
+         val (args', argChoices) = buildTransferArgs args
+         (* Build the flattened function *)
          val func' = getFunc (func, argChoices)
       in
          (* Return a call to the flattened function (perhaps unchanged) *)
@@ -1216,6 +1233,17 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel)
                         func=func',
                         inline=inline,
                         return=return}
+      end
+
+      fun buildGoto (args, dst) = let
+         (* Make the flattening decision *)
+         val (args', argChoices) = buildTransferArgs args
+         (* Build the flattened block *)
+         val dst' = getBlock (dst, argChoices)
+      in
+         (* Return a goto to the flattened block (perhaps unchanged) *)
+         Transfer.Goto {args=args',
+                        dst=dst'}
       end
    in
       case (t, flattenLevel) of
@@ -1225,7 +1253,8 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel)
            *)
           (Transfer.Call {args, func, inline, return}, functionOnly) =>
            SOME (buildCall (args, func, inline, return))
-       | (_, blockOnly) => Error.unimplemented "TODO"
+        | (Transfer.Goto {args, dst}, blockOnly) =>
+          SOME (buildGoto (args, dst))
         | _ => NONE
    end
 
