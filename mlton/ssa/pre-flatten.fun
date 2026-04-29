@@ -944,7 +944,7 @@ in
 end
 
 fun validateAndDestroy {pending, doDestroy, name} =
-    case !pending of 
+    case !pending of
         [] => doDestroy()
       | _ => Error.bug ("Tried to destroy nonempty " ^ name)
 

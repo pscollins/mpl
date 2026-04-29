@@ -3732,8 +3732,11 @@ local
       val l1 = Label.fromString "L1"
       val v1 = Var.fromString "v1"
       val t1 = Type.bool
+      val v2 = Var.fromString "v2"
+      val t2 = Type.unit
+      val tTuple = Type.tuple (Vector.fromList [t1, t2])
       val b1 = Block.T {
-         args = Vector.fromList [(v1, t1)],
+         args = Vector.fromList [(v1, t1), (v2, tTuple)],
          label = l1,
          statements = Vector.new0 (),
          transfer = Transfer.Return (Vector.new0 ())
@@ -3748,7 +3751,7 @@ local
          start = l1
       }
       val bm = PreFlatten.newBlockManager f
-      val _ = PreFlatten.getOrCreateBlock (bm, l1, Vector.fromList [PreFlatten.Preserve])
+      val _ = PreFlatten.getOrCreateBlock (bm, l1, Vector.fromList [PreFlatten.Preserve, PreFlatten.FlattenTuple])
       
       val caught = ref false
       val _ = (PreFlatten.destroyBlockManager bm) handle _ => caught := true
