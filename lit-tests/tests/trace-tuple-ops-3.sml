@@ -1,5 +1,5 @@
-(* RUN: mpl-print-c %s > %t 2>&1
-   RUN: grep 'Sssa.TypeCheck.primApp' %t
+(* RUN: mpl-print-c %s > %t 2>&1 || true
+   RUN: grep 'Ssa.TypeCheck.primApp' %t
 
    Verify that we can't apply noTuple to a tuple type: it prevents flattening
    and leads to uninteresting errors
