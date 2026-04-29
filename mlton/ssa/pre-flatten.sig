@@ -404,7 +404,7 @@ sig
      outlined above, with consumer information resolved according to
      `varAliasPolicy` (above).
     *)
-   val flattenOnce: flatteningPolicy * varAliasPolicy * flattenableTypesPolicy
+   val flattenOnce: flatteningPolicy * varAliasPolicy * flattenableTypesPolicy * flattenLevel
                     -> Program.t -> Program.t option
 
 end

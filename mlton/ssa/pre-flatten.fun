@@ -1158,12 +1158,15 @@ in
    Vector.map2 (originalArgs, varChoices, buildCallArg))
 end
 
-fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t) = let
+datatype flattenLevel =
+         blockOnly
+         | functionOnly
+
+fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy, flattenLevel) (p: Program.t) = let
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
    val resolve = resolveAliases (resolvePolicy, vc)
-   val flattenLevel = functionOnly
    fun getChoice v = getVarChoice (vm, v)
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
@@ -1299,7 +1302,7 @@ fun transform (p: Program.t): Program.t =
           if n >= !Control.preFlattenMaxIters
              then p
           else
-             case flattenOnce (policy, resolvePolicy, typesPolicy) p of
+             case flattenOnce (policy, resolvePolicy, typesPolicy, functionOnly) p of
                 NONE => p
               | SOME p' => loop (applySteps p', n + 1)
     in

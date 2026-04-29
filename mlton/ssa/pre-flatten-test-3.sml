@@ -59,7 +59,7 @@ in
          main = mainName
       }
 
-      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val _ = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME _ => printFail "Test 16 (local unpack): flattenOnce returned SOME, expected NONE"
                  | NONE => ())
 
@@ -127,7 +127,7 @@ in
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 17: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -224,7 +224,7 @@ in
 
       val _ = printProgram ("test18", p)
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 18: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -300,7 +300,7 @@ in
          globals = Vector.new0 (),
          main = mainName
       }
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                  NONE => ()
                | SOME _ => printFail "Test 19: expected NONE, but got SOME"
       val _ = print "Test 19 passed\n"
@@ -382,7 +382,7 @@ in
          main = mainName
       }
       
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 20: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -499,7 +499,7 @@ in
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 21: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'

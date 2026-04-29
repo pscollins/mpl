@@ -211,7 +211,7 @@ in
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 41: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -295,7 +295,7 @@ in
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly) p of
                    SOME p' => p'
                  | NONE => printFail "Test 42: flattenOnce returned NONE")
       val Program.T {functions, ...} = p'
@@ -379,7 +379,7 @@ in
       }
 
       (* Should NOT flatten tuples when policy is FlattenOnlyConApp *)
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp, PreFlatten.functionOnly) p of
                  SOME _ => printFail "Test 43: expected NONE (tuples should not flatten under FlattenOnlyConApp), got SOME"
                | NONE => ()
 
@@ -450,7 +450,7 @@ in
       }
 
       (* Should NOT flatten ConApps when policy is FlattenOnlyTuple *)
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple, PreFlatten.functionOnly) p of
                  SOME _ => printFail "Test 44: expected NONE (ConApps should not flatten under FlattenOnlyTuple), got SOME"
                | NONE => ()
 
@@ -517,7 +517,7 @@ in
       }
 
       (* Should flatten tuples when policy is FlattenOnlyTuple *)
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyTuple, PreFlatten.functionOnly) p of
                  SOME _ => ()
                | NONE => printFail "Test 45: expected SOME (tuples should flatten under FlattenOnlyTuple), got NONE"
 
