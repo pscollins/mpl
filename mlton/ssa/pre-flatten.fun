@@ -917,20 +917,30 @@ in
    getOrCreateFlattenedFunc (f, choices)
 end
 
+fun extractList (xs: 'a list ref) = let
+   val curr = !xs
+   val _ = xs := []
+in
+   curr
+end
+
 fun extractNewFunctions (fm: functionManager) = let
    val {pendingFuncs, ...} = fm
-   val currFuncs = !pendingFuncs
-   val _ = pendingFuncs := []
 in
-   currFuncs
+   extractList pendingFuncs
 end
+
+fun validateAndDestroy {pending, doDestroy, name} =
+    case !pending of 
+        [] => doDestroy()
+      | _ => Error.bug ("Tried to destroy nonempty " ^ name)
 
 fun destroyFunctionManager (fm: functionManager) = let
    val {pendingFuncs, destroyFunctionManagerState, ...} = fm
 in
-   case !pendingFuncs of
-       [] => destroyFunctionManagerState ()
-     | funcs => Error.bug "Tried to destroy nonempty `fm`"
+   validateAndDestroy {pending = pendingFuncs,
+                       doDestroy = destroyFunctionManagerState,
+                       name = "functionManager"}
 end
 
 type blockManager = {
@@ -943,9 +953,19 @@ fun newBlockManager f = Error.unimplemented "TODO"
 
 fun getOrCreateBlock (bm, l, choices) = Error.unimplemented "TODO"
 
-fun extractNewBlocks bm = Error.unimplemented "TODO"
+fun extractNewBlocks (bm: blockManager) = let
+   val {pendingBlocks, ...} = bm
+in
+   extractList pendingBlocks
+end
 
-fun destroyBlockManager bm = Error.unimplemented "TODO"
+fun destroyBlockManager (bm: blockManager) = let
+   val {pendingBlocks, destroyBlockManagerState, ...} = bm
+in 
+   validateAndDestroy {pending = pendingBlocks,
+                       doDestroy = destroyBlockManagerState,
+                       name = "blockManager"}
+end
 
 datatype flatteningPolicy =
            FlattenAlways
