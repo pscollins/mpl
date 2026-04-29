@@ -3620,7 +3620,7 @@ local
       val t2 = Type.unit
       val con = Con.fromString "MyCon"
       
-      val tCon = Type.unit (* Dummy type, assuming the stub is called first *)
+      val tCon = Type.datatypee (Tycon.fromString "MyCon")
       
       val b1 = Block.T {
          args = Vector.new1 (v1, tCon),
@@ -3650,8 +3650,8 @@ local
       val tTuple = Type.tuple (Vector.fromList [t1, t2])
       val v3 = Var.fromString "v3"
       val con = Con.fromString "MyCon"
-      val tCon = Type.unit (* Dummy *)
-      
+      val tCon = Type.datatypee (Tycon.fromString "MyCon")
+
       val b1 = Block.T {
          args = Vector.fromList [(v1, t1), (v2, tTuple), (v3, tCon)],
          label = l1,

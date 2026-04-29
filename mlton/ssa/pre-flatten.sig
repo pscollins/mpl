@@ -254,6 +254,38 @@ sig
    functions is not empty, error. *)
    val destroyFunctionManager: functionManager -> unit
 
+   (* Like `functionManager` manages mapping `Block.t`s to their flattened
+   equivalents *)
+   type blockManager
+
+   (* Creates a new `blockManager` over all of the `Block.t`s in the provided
+   program. *)
+   val newBlockManager: Function.t -> blockManager
+
+   (* Returns a block `Label.t` that satisfies the given flattening decision:
+
+      * If the flattening decision is NoOp, returns the input `Label.t`
+      * If the flattening decision is `Valid`, returns a `Label.t` that has been
+        flattened accordingly, adding it to the list of pending new blocks
+      * If the flattening decision is `Invalid`, crash.
+
+      Crashes if the provided `Block.t` was not a part of the original
+      `Function.t`: newly-returned `Block.t`s are not added to the mapping.
+    *)
+   val getOrCreateBlock: (blockManager *
+                         Label.t *
+                         argChoice vector) -> Label.t
+
+   (* Returns the collection of `Block.t`s backing the newly-created
+   `Label.t`s from calls to `getOrCreateBlock`, clearing the list of "pending new
+   blocks" as a side effect (i.e. for two consecutive calls, the second call
+   will always return emtpy.) *)
+   val extractNewBlocks: blockManager -> Block.t list
+   (* Cleans up state associated with this object. If the list of pending new
+   blocks is not empty, error. *)
+   val destroyBlockManager: blockManager -> unit
+
+
    (* Describes how we choose to flatten functions: for the description below,
    we'll assume that we have a function definition
 

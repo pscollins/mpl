@@ -237,7 +237,6 @@ end
    Applies `choices` to `args` and returns:
 
      * The new `args` for the flattened function
-
      * A `Block.t` that binds `newArgs` to `args` and then jumps to `goto`
  *)
 fun applyChoicesToArgs (args: (Var.t * Type.t) vector,
@@ -311,7 +310,7 @@ end
 
 fun buildFlattenedBlock (b, choices) = let
    val Block.T {args, label, statements, transfer} = b
-   (* TODO: need to rename? *)
+   (* TODO: need to rename?  *)
    val (newArgs, bindBlock) = applyChoicesToArgs (args,
                                                   Label.newString "dummyTemp",
                                                   choices)
@@ -933,6 +932,16 @@ in
        [] => destroyFunctionManagerState ()
      | funcs => Error.bug "Tried to destroy nonempty `fm`"
 end
+
+type blockManager = unit
+
+fun newBlockManager f = Error.unimplemented "TODO"
+
+fun getOrCreateBlock (bm, l, choices) = Error.unimplemented "TODO"
+
+fun extractNewBlocks bm = Error.unimplemented "TODO"
+
+fun destroyBlockManager bm = Error.unimplemented "TODO"
 
 datatype flatteningPolicy =
            FlattenAlways
