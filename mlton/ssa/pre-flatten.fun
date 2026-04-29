@@ -1163,6 +1163,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
    val resolve = resolveAliases (resolvePolicy, vc)
+   val flattenLevel = functionOnly
    fun getChoice v = getVarChoice (vm, v)
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
@@ -1214,13 +1215,14 @@ fun flattenOnce (flattenPolicy, resolvePolicy, allowedTypesPolicy) (p: Program.t
                         return=return}
       end
    in
-      case t of
+      case (t, flattenLevel) of
           (* For now, only Call is supported
 
            TODO(pscollins): Ideally we'd support goto-with-args as well
            *)
-          Transfer.Call {args, func, inline, return} =>
-          SOME (buildCall (args, func, inline, return))
+          (Transfer.Call {args, func, inline, return}, functionOnly) =>
+           SOME (buildCall (args, func, inline, return))
+       | (_, blockOnly) => Error.unimplemented "TODO"
         | _ => NONE
    end
 
