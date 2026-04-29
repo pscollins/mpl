@@ -326,8 +326,7 @@ datatype flatteningChoiceType =
          | Valid
          | Invalid
 
-fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
-   val {args, ...} = Function.dest f
+fun checkArgsFlatteningChoice (args: (Var.t * Type.t) vector, choices: argChoice vector) = let
    fun checkFlatten (typedVar) =
        case flattenTupleVar typedVar of
            SOME _ => true
@@ -350,7 +349,18 @@ in
       validChoice
    else
       Invalid
+end
 
+fun checkFlatteningChoice (f: Function.t, choices: argChoice vector) = let
+   val {args, ...} = Function.dest f
+in
+   checkArgsFlatteningChoice (args, choices)
+end
+
+fun checkBlockFlatteningChoice (b: Block.t, choices: argChoice vector) = let
+   val Block.T {args, ...} = b
+in
+   checkArgsFlatteningChoice (args, choices)
 end
 
 datatype varChoice =
@@ -963,7 +973,7 @@ fun newBlockManager (f: Function.t) = let
    val {getBlock, destroyFuncsMap, ...} =
        newFuncsMap
            (Program.T {datatypes = Vector.new0(),
-                       functions = Vector.new1(),
+                       functions = [f],
                        globals = Vector.new0(),
                        main = Func.newString "dummyTemp"})
 
@@ -988,12 +998,12 @@ fun newBlockManager (f: Function.t) = let
       fun doBuildFlattenedBlock() = let
          val flattenedBlock = buildFlattenedBlock (original,
                                                          choices)
-         val _ = appendFunc flattenedBlock
+         val _ = appendBlock flattenedBlock
       in
          flattenedBlock
       end
    in
-      case checkFlatteningChoice (original, choices) of
+      case checkBlockFlatteningChoice (original, choices) of
        NoOp => original
      | Valid => doBuildFlattenedBlock()
      | Invalid => Error.bug "Invalid flattening decision"
@@ -1002,12 +1012,12 @@ fun newBlockManager (f: Function.t) = let
    (* If we already have a flattened version of `b` for `choice`, returns it.
    Otherwise, builds a flattened function for `b` under `choice` and adds it to
    the list of for `b`. *)
-   fun getOrCreateFlattenedBlock (b: Label.t, choices: argChoice vector): Block.t = let
+   fun getOrCreateFlattenedBlock (b: Label.t, choices: argChoice vector): Label.t = let
       fun logInputThunk () = let
          open Layout
       in
          seq [str "getOrCreateFlattenedBlock: looking for ",
-              Block.layout f,
+              Label.layout b,
               Layout.str " with choices ",
               Vector.layout choiceLayout choices]
       end
@@ -1017,15 +1027,15 @@ fun newBlockManager (f: Function.t) = let
          seq [str "getOrCreateFlattenedBlock: created new block ",
               Label.layout newB,
               str " from ",
-              Label.layout f]
+              Label.layout b]
       end
       val _ = Control.diagnostic logInputThunk
-      val flattenedBlockList: flattenedBlock list ref = getFlattenedBlockList f
+      val flattenedBlockList: flattenedBlock list ref = getFlattenedBlockList b
       fun flattenedBlockMatches (choices', _) =
           Vector.equals (choices', choices,
                          choiceEqual)
       fun addNewFlattenedBlock () = let
-         val newBlock = createFlattenedBlock (f, choices)
+         val newBlock = createFlattenedBlock (b, choices)
          val newB = Block.label newBlock
          val _ = Control.diagnostic (fn () => doLogChoice newB)
          val _ = List.push (flattenedBlockList, (choices, newB))
