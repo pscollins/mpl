@@ -3,6 +3,7 @@
 local
    ../atoms/sources.mlb
    sources.mlb
-   pre-flatten-test.sml
+   pre-flatten-test-common.sml
+   pre-flatten-test-1.sml
 in
 end
