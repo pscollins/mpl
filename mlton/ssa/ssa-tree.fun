@@ -282,7 +282,13 @@ structure Type =
                (default ()) handle BadPrimApp => false
          in
             case prim of
-               _ => default ()
+                (* Tuple is not a valid input to noTuple: it prevents
+                flattening, and so produces uninteresting cases. For simplicity,
+                we just catch it here. *)
+                Prim.Trace_noTuple =>
+                (default ()) andalso
+                (not (Vector.exists (targs, isTuple)))
+              | _ => default ()
          end
    end
 
