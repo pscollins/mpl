@@ -113,6 +113,11 @@ in
               main = main}
 end
 
+fun foldTransformation (steps: 'a list,
+                        stepF: ('a * 'b -> 'b option),
+                        init: 'b): 'b option =
+    Error.unimplemented "TODO"
+
 (* Applies an effectful expression to each `Function.t` in `p` *)
 fun foreachFunction (p: Program.t, funcF: (Function.t -> unit)): unit = let
    val Program.T {functions, ...} = p

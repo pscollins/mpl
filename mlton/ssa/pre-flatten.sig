@@ -45,6 +45,19 @@ sig
    the containing `Function.t` for any instances that return SOME (..). *)
    val mapBlocks: (Program.t * (Block.t -> Block.t option)) -> Program.t
 
+   (* Given:
+
+
+      * a list of 'a steps
+      * a partial transformation on ('b * 'a)
+      * an initial 'b
+
+     runs each step on 'b, keeping the SOME result at each step, and returns
+     SOME if any step returned SOME, else NONE.
+    *)
+   val foldTransformation: ('a list * ('a * 'b -> 'b option)) ->
+                           'b option
+
    type typedVar = Var.t * Type.t
    (* If the provided `typedVar` is a tuple type, returns a sequence of
    `typedVar`s that correspond to fresh `Var.t`s bound to the constituent types
