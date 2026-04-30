@@ -1496,6 +1496,27 @@ val preFlattenPostSteps =
             default = [PreFlattenPostStep.Shrink],
             toString = List.toString PreFlattenPostStep.toString}
 
+structure PreFlattenLevelStep =
+   struct
+      datatype t = Block | Function
+
+      val toString =
+         fn Block => "block"
+          | Function => "function"
+
+      val fromString =
+         fn "block" => SOME Block
+          | "function" => SOME Function
+          | _ => NONE
+   end
+
+datatype preFlattenLevelStep = datatype PreFlattenLevelStep.t
+
+val preFlattenLevelSteps =
+   control {name = "pre-flatten-level-steps",
+            default = [PreFlattenLevelStep.Function],
+            toString = List.toString PreFlattenLevelStep.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =

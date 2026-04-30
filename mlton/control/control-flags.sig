@@ -445,6 +445,14 @@ signature CONTROL_FLAGS =
          end
       val preFlattenPostSteps: PreFlattenPostStep.t list ref
 
+      structure PreFlattenLevelStep:
+         sig
+            datatype t = Block | Function
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val preFlattenLevelSteps: PreFlattenLevelStep.t list ref
+
       structure PositionIndependentStyle:
          sig
             datatype t =

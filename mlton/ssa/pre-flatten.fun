@@ -1471,10 +1471,11 @@ fun transform (p: Program.t): Program.t =
              fn Control.PreFlattenPostStep.Shrink => postShrink
               | Control.PreFlattenPostStep.Flatten => postFlatten)
        fun applyPostSteps p = doPostSteps (postSteps, p)
-       (* TODO: use a flag, Control.preFlattenLevelSteps  *)
-       val levelSteps = [functionOnly]
-       fun applyLevels (p) = let
-          fun apply (step, p') =
+       val levelSteps =
+          List.map (!Control.preFlattenLevelSteps,
+             fn Control.PreFlattenLevelStep.Block => blockOnly
+              | Control.PreFlattenLevelStep.Function => functionOnly)
+       fun applyLevels (p) = let          fun apply (step, p') =
               flattenOnce (policy, resolvePolicy, typesPolicy, step) p'
        in
           foldTransformation (levelSteps, apply, p)
