@@ -113,20 +113,22 @@ in
               main = main}
 end
 
-fun takeLhs (l: 'a option, r: 'a): 'a =
-             case (l, r) of
-                 (SOME l', _) => l'
-               | (NONE, _) => r
-
 fun foldTransformation (steps: 'a list,
                         stepF: ('a * 'b -> 'b option),
-                        init: 'b): 'b = let
+                        init: 'b): 'b option = let
+   val progress = ref false
+   fun takeLhs (l, r) =
+       case (l, r) of
+           (SOME l', _) => (progress := true; l')
+         | (NONE, _) => r
    fun apply (ss: 'a list, curr: 'b) =
        case ss of
            s::ss' => apply (ss', takeLhs (stepF (s, curr), curr))
         | [] => curr
+   val result = apply (steps, init)
 in
-   apply (steps, init)
+   if !progress then (SOME result)
+   else NONE
 end
 
 (* Applies an effectful expression to each `Function.t` in `p` *)
@@ -1382,6 +1384,10 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
       val Program.T {datatypes, functions, globals, main} = p'
       val maybeNewFuncs = List.map (functions, maybeAppendNewBlocksForF)
       fun buildProgram() = let
+         fun takeLhs (l: 'a option, r: 'a): 'a =
+             case (l, r) of
+                 (SOME l', _) => l'
+               | (NONE, _) => r
          val newFuncs: Function.t list = List.map2 (maybeNewFuncs, functions, takeLhs)
       in
          Program.T {datatypes = datatypes,
@@ -1460,18 +1466,26 @@ fun transform (p: Program.t): Program.t =
              Control.PreFlattenTypesPolicy.Any => FlattenAnyType
            | Control.PreFlattenTypesPolicy.Tuple => FlattenOnlyTuple
            | Control.PreFlattenTypesPolicy.Con => FlattenOnlyConApp
-       val kPostSteps =
+       val postSteps =
           List.map (!Control.preFlattenPostSteps,
              fn Control.PreFlattenPostStep.Shrink => postShrink
               | Control.PreFlattenPostStep.Flatten => postFlatten)
-       fun applySteps p = doPostSteps (kPostSteps, p)
+       fun applyPostSteps p = doPostSteps (postSteps, p)
+       (* TODO: use a flag, Control.preFlattenLevelSteps  *)
+       val levelSteps = [functionOnly]
+       fun applyLevels (p) = let
+          fun apply (step, p') =
+              flattenOnce (policy, resolvePolicy, typesPolicy, step) p'
+       in
+          foldTransformation (levelSteps, apply, p)
+       end
        fun loop (p, n) =
           if n >= !Control.preFlattenMaxIters
              then p
           else
-             case flattenOnce (policy, resolvePolicy, typesPolicy, functionOnly) p of
+             case applyLevels p of
                 NONE => p
-              | SOME p' => loop (applySteps p', n + 1)
+              | SOME p' => loop (applyPostSteps p', n + 1)
     in
        loop (p, 0)
     end
