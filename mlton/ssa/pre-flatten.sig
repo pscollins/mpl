@@ -20,6 +20,13 @@ sig
        -pre-flatten-post-steps=$STEP1,$STEP2,...
           where $STEPN={shrink|flatten}
           sets the sequence of `postStep`s to run (below)
+
+       -pre-flatten-level-steps=$STEP1,$STEP2,...
+          where $STEPN={function|block}
+
+          sets the sequence of `flattenLevel`s within each iteration; results
+          from each 'level' are merged according to the rules of
+          `foldTransformation` (below)
     *)
    include SSA_TRANSFORM
 
