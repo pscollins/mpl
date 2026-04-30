@@ -454,4 +454,60 @@ in
    in () end
 
    (* Test 9: buildBindBlock with empty binds *)
+   val _ = let
+      val _ = print "Test 9: buildBindBlock with empty binds\n"
+      val targetLabel = Label.fromString "target3"
+      val block = PreFlatten.buildBindBlock (Vector.new0 (), targetLabel)
+      val Block.T {statements, transfer, ...} = block
+      val _ = assert (Vector.length statements = 0, "empty binds should have 0 statements")
+      val _ =
+         case transfer of
+            Transfer.Goto {dst, ...} => assert (Label.equals (dst, targetLabel), "goto dst mismatch")
+          | _ => printFail "transfer should be a goto"
+      val _ = print "Test 9 passed\n"
+   in () end
+
+   (* Test 10: foldTransformation empty *)
+   val _ = let
+      val _ = print "Test 10: foldTransformation empty\n"
+      val res = PreFlatten.foldTransformation ([], fn _ => NONE, 0)
+      val _ = assert (Option.isNone res, "foldTransformation empty should return NONE")
+      val _ = print "Test 10 passed\n"
+   in () end
+
+   (* Test 11: foldTransformation all NONE *)
+   val _ = let
+      val _ = print "Test 11: foldTransformation all NONE\n"
+      val steps = [1, 2, 3]
+      fun stepF (s, b) = NONE
+      val res = PreFlatten.foldTransformation (steps, stepF, 0)
+      val _ = assert (Option.isNone res, "foldTransformation all NONE should return NONE")
+      val _ = print "Test 11 passed\n"
+   in () end
+
+   (* Test 12: foldTransformation with SOME *)
+   val _ = let
+      val _ = print "Test 12: foldTransformation with SOME\n"
+      val steps = [1, 2, 3]
+      fun stepF (s, b) = if s = 2 then SOME (b + s) else NONE
+      val res = PreFlatten.foldTransformation (steps, stepF, 10)
+      val _ =
+         case res of
+            SOME v => assert (v = 12, "foldTransformation SOME value mismatch")
+          | NONE => printFail "foldTransformation SOME should return SOME"
+      val _ = print "Test 12 passed\n"
+   in () end
+
+   (* Test 13: foldTransformation order and accumulation *)
+   val _ = let
+      val _ = print "Test 13: foldTransformation order and accumulation\n"
+      val steps = ["a", "b", "c"]
+      fun stepF (s, b) = SOME (b ^ s)
+      val res = PreFlatten.foldTransformation (steps, stepF, "")
+      val _ =
+         case res of
+            SOME v => assert (v = "abc", "foldTransformation order/accumulation mismatch")
+          | NONE => printFail "foldTransformation SOME should return SOME"
+      val _ = print "Test 13 passed\n"
+   in () end
 end

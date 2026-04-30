@@ -113,10 +113,21 @@ in
               main = main}
 end
 
+fun takeLhs (l: 'a option, r: 'a): 'a =
+             case (l, r) of
+                 (SOME l', _) => l'
+               | (NONE, _) => r
+
 fun foldTransformation (steps: 'a list,
                         stepF: ('a * 'b -> 'b option),
-                        init: 'b): 'b option =
-    Error.unimplemented "TODO"
+                        init: 'b): 'b = let
+   fun apply (ss: 'a list, curr: 'b) =
+       case ss of
+           s::ss' => apply (ss', takeLhs (stepF (s, curr), curr))
+        | [] => curr
+in
+   apply (steps, init)
+end
 
 (* Applies an effectful expression to each `Function.t` in `p` *)
 fun foreachFunction (p: Program.t, funcF: (Function.t -> unit)): unit = let
@@ -1371,10 +1382,6 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
       val Program.T {datatypes, functions, globals, main} = p'
       val maybeNewFuncs = List.map (functions, maybeAppendNewBlocksForF)
       fun buildProgram() = let
-         fun takeLhs (l: Function.t option, r: Function.t): Function.t =
-             case (l, r) of
-                 (SOME l', _) => l'
-               | (NONE, _) => r
          val newFuncs: Function.t list = List.map2 (maybeNewFuncs, functions, takeLhs)
       in
          Program.T {datatypes = datatypes,

@@ -55,7 +55,7 @@ sig
      runs each step on 'b, keeping the SOME result at each step, and returns
      SOME if any step returned SOME, else NONE.
     *)
-   val foldTransformation: ('a list * ('a * 'b -> 'b option)) ->
+   val foldTransformation: ('a list * ('a * 'b -> 'b option) * 'b) ->
                            'b option
 
    type typedVar = Var.t * Type.t
