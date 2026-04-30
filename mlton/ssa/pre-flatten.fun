@@ -1242,9 +1242,11 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    fun getConsumers v = resolve (getVarConsumers (vc, v))
    fun getFunc (original, argChoices) =
        getOrCreateFunc (fm, original, argChoices)
-   fun getBlock (original, argChoices) =
-       Error.unimplemented "TODO"
-       (* getOrCreateBlock (bm, original, argChoices) *)
+   fun getBlock (original, argChoices) = let
+      val bm = getBlockManagerForBlock (bmm, original)
+   in
+      getOrCreateBlock (bm, original, argChoices)
+   end
    val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
    fun buildLogThunk (t, varChoices, varConsumers, varChoices') = let
