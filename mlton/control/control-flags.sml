@@ -1408,6 +1408,11 @@ val preFlattenMaxIters =
             default = 1,
             toString = Int.toString}
 
+val flattenIters =
+   control {name = "flatten-iters",
+            default = 1,
+            toString = Int.toString}
+
 structure PreFlattenConsumerPolicy =
    struct
       datatype t = Always | AnyUnpack | AllUnpack

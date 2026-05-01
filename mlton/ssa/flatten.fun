@@ -67,9 +67,11 @@ structure Rep =
       fun unifys (rs, rs') = Vector.foreach2 (rs, rs', unify)
    end
 
-fun transform (Program.T {datatypes, globals, functions, main}) =
+fun transform p =
    let
-      val {get = conInfo: Con.t -> {argsTypes: Type.t vector,
+      fun transformOnce (Program.T {datatypes, globals, functions, main}) =
+         let
+            val {get = conInfo: Con.t -> {argsTypes: Type.t vector,
                                     args: Rep.t vector},
            set = setConInfo, ...} =
          Property.getSetOnce
@@ -596,5 +598,12 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
    in
       program
    end
+   fun loop (p, n) =
+      if n >= !Control.flattenIters
+         then p
+      else loop (transformOnce p, n + 1)
+in
+   loop (p, 0)
+end
 
 end
