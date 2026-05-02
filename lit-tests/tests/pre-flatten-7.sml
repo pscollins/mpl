@@ -24,8 +24,8 @@
    RUN: egrep    'call.*doAdd'  %t/*preFlatten*.post.ssa
 
    Flattened verison is not present.
-   RUN: egrep -v 'doAdd.*flat' %t/*preFlatten*.post.ssa
-   RUN: egrep -v 'call.*doAdd.*flat'  %t/*preFlatten*.post.ssa
+   RUN: ! egrep 'doAdd.*flat' %t/*preFlatten*.post.ssa
+   RUN: ! egrep 'call.*doAdd.*flat'  %t/*preFlatten*.post.ssa
  *)
 
 

@@ -1,5 +1,5 @@
 (* RUN: mpl-print-c %s > %t 2>&1
-   RUN: grep -v 'Found forbidden tuple operations' %t
+   RUN: ! grep 'Found forbidden tuple operations' %t
 
    Test `Trace_noTuple` on components of an (real * real) array` element
 
