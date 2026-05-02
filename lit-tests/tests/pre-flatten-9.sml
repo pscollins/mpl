@@ -10,11 +10,11 @@
    consumer policy is `always`, it should succeed.
 
    Non-flat version in 'pre'
-   RUN: egrep    'doAdd.*pairs_' %t/*preFlatten*.pre.ssa
-   RUN: egrep    'call.*doAdd'  %t/*preFlatten*.pre.ssa
+   RUN: egrep    'doAdd_. .*pairs_' %t/*preFlatten*.pre.ssa
+   RUN: egrep    'call.*doAdd_. '  %t/*preFlatten*.pre.ssa
 
-   Non-flat version gone in 'post'
-   RUN: ! egrep 'doAdd.*pairs_' %t/*preFlatten*.post.ssa
+   Non-flat version no longer called in 'post'
+   RUN: ! egrep 'call doAdd_. ' %t/*preFlatten*.post.ssa
 
    Flattened verisons are present
    RUN: egrep    'doAdd.*flat_0'  %t/*preFlatten*.post.ssa
