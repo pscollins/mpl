@@ -389,6 +389,37 @@ sig
             contain) *)
             | functionOnly
 
+   (* Policy for handling recursive flattening of functions
+
+      This policy matters for the situation:
+
+        t = tuple(x1, x2)
+        f(t)
+
+        f(t):
+          ... body ...
+          t' = tuple(...)
+          f(t')
+
+      which is naively flattened to:
+
+        f_flat(x1, x2):
+          t = tuple(x1, x2)
+          ... body ...
+          t' = tuple(...)
+          f(t')
+
+      since the flattening transformation applies to the *original* function
+
+      Setting `noRecursiveFlatten` preserves this behavior; setting
+      `recursiveFlattenSteps n` iteratively applies the flattening
+      transformation to newly-produced function bodies; returning an error if it
+      fails to converge within `n` iterations.
+    *)
+   datatype recursiveFlatten =
+            noRecursiveFlatten
+            | recursiveFlattenSteps of int
+
    (* Runs one iteration of flattening.
 
       Behavior depends on the policy arguments: for flattening functions --
@@ -440,7 +471,9 @@ sig
      outlined above, with consumer information resolved according to
      `varAliasPolicy` (above).
     *)
-   val flattenOnce: flatteningPolicy * varAliasPolicy * flattenableTypesPolicy * flattenLevel
+   val flattenOnce: (flatteningPolicy * varAliasPolicy *
+                     flattenableTypesPolicy * flattenLevel *
+                     recursiveFlattenPolicy)
                     -> Program.t -> Program.t option
 
 end

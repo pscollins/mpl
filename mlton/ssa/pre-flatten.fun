@@ -1248,9 +1248,14 @@ fun flattenLevelToString l =
         blockOnly => "blockOnly"
       | functionOnly => "functionOnly"
 
+datatype recursiveFlattenPolicy =
+            noRecursiveFlatten
+            | recursiveFlattenSteps of int
 
 fun flattenOnce (flattenPolicy, resolvePolicy,
-                 allowedTypesPolicy, flattenLevel) (p: Program.t) = let
+                 allowedTypesPolicy, flattenLevel,
+                 recursiveFlattenPolicy) (p: Program.t) = let
+   (* TODO: support recursiveFlattenPolicy *)
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
    val fm = newFunctionManager p
@@ -1475,8 +1480,11 @@ fun transform (p: Program.t): Program.t =
           List.map (!Control.preFlattenLevelSteps,
              fn Control.PreFlattenLevelStep.Block => blockOnly
               | Control.PreFlattenLevelStep.Function => functionOnly)
+       (* TODO(gemini): Use a flag *)
+       val recursiveFlatten = noRecursiveFlatten
        fun applyLevels (p) = let          fun apply (step, p') =
-              flattenOnce (policy, resolvePolicy, typesPolicy, step) p'
+           flattenOnce (policy, resolvePolicy, typesPolicy, step,
+                        recursiveFlatten) p'
        in
           foldTransformation (levelSteps, apply, p)
        end
