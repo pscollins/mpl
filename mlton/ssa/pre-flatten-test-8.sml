@@ -28,7 +28,7 @@ in
          main = mainFunc
       }
 
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly, PreFlatten.noRecursiveFlatten) p of
                  SOME _ => printFail "Test 47: expected NONE (No-Op), got SOME"
                | NONE => print "Test 47: OK (got NONE)\n"
    in () end
@@ -78,7 +78,7 @@ in
          main = mainFunc
       }
 
-      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly) p of
+      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly, PreFlatten.noRecursiveFlatten) p of
                   SOME p' => p'
                 | NONE => printFail "Test 48: expected SOME, got NONE"
       
@@ -154,7 +154,7 @@ in
          main = mainFunc
       }
 
-      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly) p of
+      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly, PreFlatten.noRecursiveFlatten) p of
                   SOME p' => p'
                 | NONE => printFail "Test 49: expected SOME, got NONE"
       
@@ -229,7 +229,7 @@ in
          main = mainFunc
       }
 
-      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly) p of
+      val p' = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly, PreFlatten.noRecursiveFlatten) p of
                   SOME p' => p'
                 | NONE => printFail "Test 50: expected SOME, got NONE"
       

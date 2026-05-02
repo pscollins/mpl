@@ -416,7 +416,7 @@ sig
       transformation to newly-produced function bodies; returning an error if it
       fails to converge within `n` iterations.
     *)
-   datatype recursiveFlatten =
+   datatype recursiveFlattenPolicy =
             noRecursiveFlatten
             | recursiveFlattenSteps of int
 
