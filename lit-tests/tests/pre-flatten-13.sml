@@ -17,8 +17,8 @@
    RUN: egrep    'call.*doAdd_. '  %t/*preFlatten*.pre.ssa
 
    Non-flat version gone from 'post'
-   RUN: egrep -v 'doAdd_. \(' %t/*preFlatten*.pre.ssa
-   RUN: egrep -v 'call.*doAdd_. '  %t/*preFlatten*.pre.ssa
+   RUN: ! egrep 'doAdd_. \(' %t/*preFlatten*.pre.ssa
+   RUN: ! egrep 'call.*doAdd_. '  %t/*preFlatten*.pre.ssa
 
    Flattened verison is present instead
    RUN: egrep    'doAdd_.flat.*\('       %t/*preFlatten*.pre.ssa
