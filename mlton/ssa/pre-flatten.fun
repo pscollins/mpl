@@ -1415,10 +1415,11 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    end
 
    (* Extracts pending functions and applies `recursiveFlattenPolicy` *)
-   fun doExtractFunctions() = let
-      fun apply newFns = mapBlocksInFuncs (newFns, maybeRewriteBlock)
-      fun step state = let
-         val cur = extractNewFunctions fm
+   fun doExtractFunctions(): Function.t list = let
+      fun apply newFns: Function.t list = mapBlocksInFuncs (newFns, maybeRewriteBlock)
+      fun step (state: recursiveFlattenPolicy): Function.t list = let
+         (* Grab newly produced functions from the previous iteration *)
+         val cur: Function.t list = extractNewFunctions fm
       in
          case (List.isEmpty cur, state) of
              (* No recursive flatten requested: just return the new functions *)
@@ -1427,15 +1428,15 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
            | (true, recursiveFlattenSteps _) => cur
            (* Recursive flatten finished, but new functions remain: error *)
            | (false, recursiveFlattenSteps 0) => Error.bug "Failed to converge"
-
            (* Recursive flatten steps remain: run the flattening transformation
            on the newly-produced functions and check for convergence on the next
            iteration *)
            | (false, recursiveFlattenSteps n) =>
-             [apply cur]::[step (recursiveFlattenSteps n-1)]
+             List.append (apply cur,
+                          step (recursiveFlattenSteps (n-1)))
       end
    in
-      List.concat (step recursiveFlattenPolicy)
+      step recursiveFlattenPolicy
    end
 
    (* Extracts new functions from `fm` and adds them to `p'`, or
