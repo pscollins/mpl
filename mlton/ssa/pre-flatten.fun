@@ -319,9 +319,9 @@ end
 
 fun buildFlattenedFunction (f: Function.t, choices: argChoice vector) = let
    val {args, blocks, inline, name, returns, raises, start} =
-       (* Use fresh variables in the clone to prevent errors in later analyses
-       (which assume that variables in distinct functions are distinct) *)
-       Function.dest (Function.alphaRename f)
+       (* Use the same variables in the clone: we'll `alphaRename` inside
+       `transformOnce`, but this simplifies handling recursive flattening *)
+       Function.dest f
    val (newArgs, bindBlock) = applyChoicesToArgs (args, start, choices)
 in
    Function.new {args = newArgs,
@@ -1432,6 +1432,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
       in
          thunk
       end
+
       fun apply newFns: Function.t list = mapBlocksInFuncs (newFns, maybeRewriteBlock)
       fun step (state: recursiveFlattenPolicy): Function.t list = let
          (* Grab newly produced functions from the previous iteration *)
@@ -1453,7 +1454,13 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
                           step (recursiveFlattenSteps (n-1)))
       end
    in
-      step recursiveFlattenPolicy
+
+      (* After we've finished the recursive edits, we can apply `alphaRename` to
+      the returned functions: we need fresh names in the final program, but
+      waiting until this point means that we don't need to add the new functions
+      to `vm`/`vc`/`fm` before doing this step *)
+      List.map (step recursiveFlattenPolicy,
+                Function.alphaRename)
    end
 
    (* Extracts new functions from `fm` and adds them to `p'`, or
