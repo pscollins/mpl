@@ -412,6 +412,7 @@ signature CONTROL_FLAGS =
          } option ref
 
       val preFlattenMaxIters: int ref
+      val preFlattenRecursiveSteps: int ref
       val flattenIters: int ref
 
       structure PreFlattenConsumerPolicy:

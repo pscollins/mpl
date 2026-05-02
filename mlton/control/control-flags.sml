@@ -1408,6 +1408,11 @@ val preFlattenMaxIters =
             default = 1,
             toString = Int.toString}
 
+val preFlattenRecursiveSteps =
+   control {name = "pre-flatten-recursive-steps",
+            default = 0,
+            toString = Int.toString}
+
 val flattenIters =
    control {name = "flatten-iters",
             default = 1,

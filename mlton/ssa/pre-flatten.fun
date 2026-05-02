@@ -1537,8 +1537,10 @@ fun transform (p: Program.t): Program.t =
           List.map (!Control.preFlattenLevelSteps,
              fn Control.PreFlattenLevelStep.Block => blockOnly
               | Control.PreFlattenLevelStep.Function => functionOnly)
-       (* TODO(gemini): Use a flag *)
-       val recursiveFlatten = noRecursiveFlatten
+       val recursiveFlatten =
+          if !Control.preFlattenRecursiveSteps = 0
+             then noRecursiveFlatten
+          else recursiveFlattenSteps (!Control.preFlattenRecursiveSteps)
        fun applyLevels (p) = let          fun apply (step, p') =
            flattenOnce (policy, resolvePolicy, typesPolicy, step,
                         recursiveFlatten) p'

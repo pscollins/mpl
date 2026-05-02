@@ -270,5 +270,81 @@ in
                  handle _ => print "Test 62 passed (caught expected error)\n"
       in () end
 
+      (* Test 63: pre-flatten-recursive-steps = 1 via transform *)
+      val _ = let
+         val _ = print "Running Test 63 (pre-flatten-recursive-steps = 1 via transform)...\n"
+         val _ = Control.preFlattenRecursiveSteps := 1
+         val _ = Control.preFlattenMaxIters := 1
+         val _ = Control.preFlattenLevelSteps := [Control.PreFlattenLevelStep.Function]
+         
+         val p' = PreFlatten.transform p
+         val _ = printProgram ("63 (after)", p')
+         
+         val Program.T {functions, ...} = p'
+         val fFlat = case List.peek (functions, fn f => not (Func.equals (Function.name f, fRecName)) andalso not (Func.equals (Function.name f, mainRecName))) of
+                        SOME f => f
+                      | NONE => printFail "Test 63 failed: flattened function not found"
+         
+         fun findCall f =
+            let
+               val blocks = Function.blocks f
+               fun loop i =
+                  if i >= Vector.length blocks then NONE
+                  else
+                     case Vector.sub (blocks, i) of
+                        Block.T {transfer = Transfer.Call {func, ...}, ...} => SOME func
+                      | _ => loop (i + 1)
+            in
+               loop 0
+            end
+
+         val target = case findCall fFlat of
+                         SOME func => func
+                       | NONE => printFail "Test 63 failed: fFlat does not have a call transfer"
+         
+         val _ = if Func.equals (target, Function.name fFlat) then ()
+                 else printFail ("Test 63 failed: fFlat calls " ^ (Func.toString target) ^ " instead of itself " ^ (Func.toString (Function.name fFlat)))
+         
+         val _ = print "Test 63 passed\n"
+      in () end
+
+      (* Test 64: pre-flatten-recursive-steps = 0 via transform (no recursive flatten) *)
+      val _ = let
+         val _ = print "Running Test 64 (pre-flatten-recursive-steps = 0 via transform)...\n"
+         val _ = Control.preFlattenRecursiveSteps := 0
+         val _ = Control.preFlattenMaxIters := 1
+         val _ = Control.preFlattenLevelSteps := [Control.PreFlattenLevelStep.Function]
+         
+         val p' = PreFlatten.transform p
+         val _ = printProgram ("64 (after)", p')
+         
+         val Program.T {functions, ...} = p'
+         val fFlat = case List.peek (functions, fn f => not (Func.equals (Function.name f, fRecName)) andalso not (Func.equals (Function.name f, mainRecName))) of
+                        SOME f => f
+                      | NONE => printFail "Test 64 failed: flattened function not found"
+         
+         fun findCall f =
+            let
+               val blocks = Function.blocks f
+               fun loop i =
+                  if i >= Vector.length blocks then NONE
+                  else
+                     case Vector.sub (blocks, i) of
+                        Block.T {transfer = Transfer.Call {func, ...}, ...} => SOME func
+                      | _ => loop (i + 1)
+            in
+               loop 0
+            end
+
+         val target = case findCall fFlat of
+                         SOME func => func
+                       | NONE => printFail "Test 64 failed: fFlat does not have a call transfer"
+         
+         val _ = if Func.equals (target, fRecName) then ()
+                 else printFail ("Test 64 failed: fFlat calls " ^ (Func.toString target) ^ " instead of " ^ (Func.toString fRecName))
+         
+         val _ = print "Test 64 passed\n"
+      in () end
+
    in () end
 end
