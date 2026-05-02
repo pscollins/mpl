@@ -27,6 +27,10 @@ sig
           sets the sequence of `flattenLevel`s within each iteration; results
           from each 'level' are merged according to the rules of
           `foldTransformation` (below)
+
+       -pre-flatten-recursive-steps=$N
+          sets the `recursiveFlattenPolicy` (below): 0 means
+          `noRecursiveFlatten`
     *)
    include SSA_TRANSFORM
 
