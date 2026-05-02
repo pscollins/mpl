@@ -75,11 +75,9 @@ in
    Program.dfs (p, doWalkFunc)
 end
 
-(* If `blockF` returns SOME for any `Block.t` in the `Function.t`, rewrites
-   the `Function.t` to point to the modified block list. Otherwise, returns the
-   original `Function.t` *)
-fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
-   val Program.T {datatypes, functions, globals, main} = p
+
+fun mapBlocksInFuncs (fs: Function.t list,
+                      blockF: (Block.t -> Block.t option)): Function.t list = let
    fun doFunc (f: Function.t) = let
       val oldBlocks = Function.blocks f
       val maybeNewBlocks = Vector.map (oldBlocks, blockF)
@@ -107,8 +105,17 @@ fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
       else buildNewF()
    end
 in
+   List.map (fs, doFunc)
+end
+
+(* If `blockF` returns SOME for any `Block.t` in the `Function.t`, rewrites
+   the `Function.t` to point to the modified block list. Otherwise, returns the
+   original `Function.t` *)
+fun mapBlocks (p: Program.t, blockF: (Block.t -> Block.t option)) = let
+   val Program.T {datatypes, functions, globals, main} = p
+in
    Program.T {datatypes = datatypes,
-              functions = List.map (functions, doFunc),
+              functions = mapBlocksInFuncs (functions, blockF),
               globals = globals,
               main = main}
 end
@@ -1272,6 +1279,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    end
    val updateChoice = (updateChoiceForAllowedTypes allowedTypesPolicy)
                       o updateChoiceForPolicy flattenPolicy
+
    fun buildLogThunk (t, varChoices, varConsumers, varChoices') = let
       val name = concat ["rewriteTransfer (", flattenLevelToString flattenLevel,
                          "): "]
@@ -1406,6 +1414,30 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
       else SOME (buildProgram())
    end
 
+   (* Extracts pending functions and applies `recursiveFlattenPolicy` *)
+   fun doExtractFunctions() = let
+      fun apply newFns = mapBlocksInFuncs (newFns, maybeRewriteBlock)
+      fun step state = let
+         val cur = extractNewFunctions fm
+      in
+         case (List.isEmpty cur, state) of
+             (* No recursive flatten requested: just return the new functions *)
+             (_, noRecursiveFlatten) => cur
+           (* Recursive flatten requested, but no new functions: we're done *)
+           | (true, recursiveFlattenSteps _) => cur
+           (* Recursive flatten finished, but new functions remain: error *)
+           | (false, recursiveFlattenSteps 0) => Error.bug "Failed to converge"
+
+           (* Recursive flatten steps remain: run the flattening transformation
+           on the newly-produced functions and check for convergence on the next
+           iteration *)
+           | (false, recursiveFlattenSteps n) =>
+             [apply cur]::[step (recursiveFlattenSteps n-1)]
+      end
+   in
+      List.concat (step recursiveFlattenPolicy)
+   end
+
    (* Extracts new functions from `fm` and adds them to `p'`, or
       returns `NONE`
 
@@ -1413,7 +1445,7 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    fun maybeAppendNewFns (p': Program.t) = let
       val Program.T {datatypes, functions, globals, main} = p'
    in
-      case extractNewFunctions fm of
+      case doExtractFunctions() of
           [] => NONE
         | newFns => SOME (Program.T {datatypes=datatypes,
                                      functions=List.append (newFns,
