@@ -1259,6 +1259,12 @@ datatype recursiveFlattenPolicy =
             noRecursiveFlatten
             | recursiveFlattenSteps of int
 
+fun recursiveFlattenPolicyToLayout p =
+    case p of
+        noRecursiveFlatten => Layout.str "noRecursiveFlatten"
+      | recursiveFlattenSteps n =>
+        Layout.seq [Layout.str "recursiveFlattenSteps ", Int.layout n]
+
 fun flattenOnce (flattenPolicy, resolvePolicy,
                  allowedTypesPolicy, flattenLevel,
                  recursiveFlattenPolicy) (p: Program.t) = let
@@ -1416,10 +1422,21 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
 
    (* Extracts pending functions and applies `recursiveFlattenPolicy` *)
    fun doExtractFunctions(): Function.t list = let
+      fun buildLogThunk (state, cur) = let
+         fun thunk() = Layout.seq [
+                Layout.str "doExtractFunctions(): state=",
+                recursiveFlattenPolicyToLayout state,
+                Layout.str ", found count=",
+                Layout.str (Int.toString (List.length cur))
+             ]
+      in
+         thunk
+      end
       fun apply newFns: Function.t list = mapBlocksInFuncs (newFns, maybeRewriteBlock)
       fun step (state: recursiveFlattenPolicy): Function.t list = let
          (* Grab newly produced functions from the previous iteration *)
          val cur: Function.t list = extractNewFunctions fm
+         val _ = Control.diagnostic (buildLogThunk (state, cur))
       in
          case (List.isEmpty cur, state) of
              (* No recursive flatten requested: just return the new functions *)

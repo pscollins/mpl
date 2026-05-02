@@ -10,7 +10,8 @@ fun programToString program =
        val segments = ref []
        (* Accumulate each layout part into the segments list *)
        val _ = Ssa.Program.layouts (program, fn l =>
-                                                Layout.print (l, fn s => segments := s :: !segments))
+                                                (Layout.print (l, fn s => segments := s :: !segments)
+                                                ; segments := "\n" :: !segments))
     in
        String.concat (List.rev (!segments))
     end
