@@ -3,6 +3,7 @@
    RUN:    -pre-flatten-max-iters 1 \
    RUN:    -pre-flatten-consumer-policy always \
    RUN:    -pre-flatten-resolve-policy global \
+   RUN:    -pre-flatten-recursive-steps 1 \
    RUN:    %s %t
 
    Test that `preFlatten` handles a recursive call
@@ -20,8 +21,8 @@
    RUN: ! egrep 'call.*doAdd_. '  %t/*preFlatten*.post.ssa
 
    Flattened verison is present instead
-   RUN: egrep    'doAdd_.flat.*\('       %t/*preFlatten*.post.ssa
-   RUN: egrep    'call.*doAdd_.flat.* '  %t/*preFlatten*.post.ssa
+   RUN: egrep    'doAdd_._flat.*\('       %t/*preFlatten*.post.ssa
+   RUN: egrep    'call.*doAdd_._flat.* '  %t/*preFlatten*.post.ssa
  *)
 
 
