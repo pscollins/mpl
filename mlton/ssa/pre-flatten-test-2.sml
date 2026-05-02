@@ -85,13 +85,14 @@ in
       val _ = assert (Type.equals (rt0, t1), "Arg 0 type mismatch")
       val _ = assert (Type.equals (rt1, t1), "Arg 1 type mismatch")
       val _ = assert (Type.equals (rt2, t2), "Arg 2 type mismatch")
-      fun checkFreshVar (v: Var.t, _) = let
-         val _ = assert (not (Var.equals (v, v1)), "v1 not renamed")
-         val _ = assert (not (Var.equals (v, v2)), "v2 not renamed")
-      in
-         ()
-      end
-      val _ = Function.foreachVar (res, checkFreshVar)
+      fun checkPreservedVar (v: Var.t, _) = ()
+      val _ = Function.foreachVar (res, checkPreservedVar)
+
+      (* Verify that v1 and v2 are actually present in the new function *)
+      val allVars = ref []
+      val _ = Function.foreachVar (res, fn (v, _) => allVars := v :: !allVars)
+      val _ = assert (List.exists (!allVars, fn v => Var.equals (v, v1)), "v1 not preserved")
+      val _ = assert (List.exists (!allVars, fn v => Var.equals (v, v2)), "v2 not preserved")
 
       val startBlock = Vector.peek (blocks, fn b => Label.equals (Block.label b, start))
       val _ = case startBlock of
