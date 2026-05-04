@@ -7,7 +7,7 @@ sig
       (* Transform the given statements (block body or globals) *)
       doStatements: Statement.t vector -> Statement.t vector,
       (* Transform the given typed variables (block or function arguments) *)
-      doArgs: (Var.t * Type.t) -> (Var.t * Type.t),
+      doArgs: (Var.t * Type.t) vector -> (Var.t * Type.t) vector,
       (* Transform the given transfer *)
       doTransfer: Transfer.t -> Transfer.t
    }

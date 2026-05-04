@@ -194,9 +194,9 @@ in
                 | NONE => log "Stmt: <no var>");
             stmts
          ),
-         doArgs = fn (v, t) => (
-            log ("Arg: " ^ Var.toString v);
-            (v, t)
+         doArgs = fn args => (
+            Vector.foreach (args, fn (v, t) => log ("Arg: " ^ Var.toString v));
+            args
          ),
          doTransfer = fn t => (
             log "Transfer";
