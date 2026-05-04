@@ -4,7 +4,7 @@ open S
 
 type rewriter = {
    doStatements: Statement.t vector -> Statement.t vector,
-   doArgs: (Var.t * Type.t),
+   doArgs: (Var.t * Type.t) -> (Var.t * Type.t),
    doTransfer: Transfer.t -> Transfer.t
 }
 

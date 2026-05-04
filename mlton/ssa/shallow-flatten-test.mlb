@@ -4,6 +4,6 @@ local
    ../atoms/sources.mlb
    sources.mlb
    shallow-flatten-test-common.sml
-   shallow-flatten-test-1.sml
+   shallow-flatten-test.sml
 in
 end
