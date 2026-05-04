@@ -15,7 +15,14 @@ sig
    (* Applies `rewriter` to the `Program.t`
 
       Guarantees that all constructs are visited in BFS order, i.e. the
-      definition of any `Var.t` is always visted before its use.
+      definition of any `Var.t` is always visted before its use. Consequently:
+
+        * Globals are visited before any `Function.t`
+        * `Function.t`s are visited in some topological order
+        * The args of a `Function.t` are visited before any block in the
+          `Function.t`
+        * `Block.t`s within a function are visited in some topological order
+        * `Block.t` arguments are visited before any statement in the block body
    *)
    val rewriteBfs: rewriter -> Program.t -> Program.t
 end
