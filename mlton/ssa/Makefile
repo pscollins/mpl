@@ -5,13 +5,23 @@ MLTON := mlton
 DEBUG_FLAGS = 
 
 .PHONY: unittest
-unittest: parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin pre-flatten-tests rewrite-ir rewrite-ssa2
+unittest: parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin shallow-flatten-tests pre-flatten-tests rewrite-ir rewrite-ssa2
 
 rewrite-ir: rewrite-ir.mlb rewrite-ir.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
 
 parse-ssa-test.bin: parse-ssa-test.mlb parse-ssa-test.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
+	./$@
+
+SHALLOW_FLATTEN_TEST_MLBS := $(wildcard shallow-flatten-test-[0-9]*.mlb)
+SHALLOW_FLATTEN_TEST_BINS := $(SHALLOW_FLATTEN_TEST_MLBS:.mlb=.bin)
+
+.PHONY: shallow-flatten-tests
+shallow-flatten-tests: $(SHALLOW_FLATTEN_TEST_BINS)
+
+shallow-flatten-test-%.bin: shallow-flatten-test-%.mlb shallow-flatten-test-%.sml shallow-flatten-test-common.sml $(wildcard *.fun *.sig)
+	$(MLTON) $(DEBUG_FLAGS) -output $@ $<
 	./$@
 
 PRE_FLATTEN_TEST_MLBS := $(wildcard pre-flatten-test-[0-9]*.mlb)
