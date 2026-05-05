@@ -14,6 +14,7 @@ signature SSA2
 signature PARSE_SSA2
 
 functor Ssa
+functor FlattenUtil
 functor Ssa2
 functor ParseSsa2
 functor SsaToSsa2
@@ -67,6 +68,8 @@ deep-flatten.fun
 drop-spork.fun
 drop-spork2.fun
 duplicate-globals.fun
+flatten-util.sig
+flatten-util.fun
 flatten.fun
 inline.sig
 inline.fun

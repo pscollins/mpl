@@ -40,6 +40,8 @@ local
    restore.fun
 
    ssa-transform.sig
+   flatten-util.sig
+   flatten-util.fun
    flatten.fun
    shallow-flatten.sig
    shallow-flatten.fun
@@ -112,6 +114,7 @@ in
    signature REWRITE_SSA2
 
    functor PreFlatten
+   functor FlattenUtil
    functor ShallowFlatten
    functor Ssa
    functor Ssa2
