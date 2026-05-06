@@ -7,10 +7,14 @@ sig
 
    (* Manages Func.t -> Function + Label.t -> Block mappings *)
    type funcsMap = {
+      (* Returns the `Function.t` for each `Func.t` in the program  *)
       getFunc: Func.t -> Function.t,
+      (* Returns the `Block.t` corresponding to the provided `Label.t` *)
       getBlock: Label.t -> Block.t,
+      (* Cleans up state associated with this object *)
       destroyFuncsMap: unit -> unit
    }
 
+   (* Builds a new `funcsMap` over the provided program *)
    val newFuncsMap: Program.t -> funcsMap
 end
