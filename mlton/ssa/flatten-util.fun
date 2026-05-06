@@ -17,6 +17,15 @@ type funcsMap = {
    destroyFuncsMap: unit -> unit
 }
 
+fun collectCallees (f: Function.t): Func.t vector = let
+   fun maybeGetCallee b =
+       case Block.transfer b of
+           Transfer.Call {func, ...} => SOME func
+         | _ => NONE
+in
+   Vector.keepAllMap (Function.blocks f, maybeGetCallee)
+end
+
 fun newFuncsMap (p: Program.t): funcsMap = let
    val {get=getFunc, set=setFunc, destroy=destroyFuncsMapFuncs} =
        Property.destGetSetOnce (Func.plist,
@@ -25,18 +34,23 @@ fun newFuncsMap (p: Program.t): funcsMap = let
    val {get=getBlock, set=setBlock, destroy=destroyFuncsMapBlocks} =
        Property.destGetSetOnce (Label.plist,
                                 Property.initRaise ("block lookup", Label.layout))
+
+   val {get=getCallees, set=setCallees, destroy=destroyCallees} =
+       Property.destGetSetOnce (Func.plist,
+                                Property.initRaise ("callees lookup", Func.layout))
+
    fun destroyFuncsMap() = let
       val _ = destroyFuncsMapFuncs()
       val _ = destroyFuncsMapBlocks()
+      val _ = destroyCallees()
    in
       ()
    end
 
-   fun getCallees func = Error.unimplemented "TODO"
-
    fun addBlockToMapping (b: Block.t) = setBlock (Block.label b, b)
    fun addFuncToMapping (f: Function.t) = let
       val _ = Vector.foreach (Function.blocks f, addBlockToMapping)
+      val _ = setCallees (Function.name f, collectCallees f)
    in
       setFunc (Function.name f, f)
    end
@@ -47,6 +61,7 @@ fun newFuncsMap (p: Program.t): funcsMap = let
       the mapping for all functions. *)
    val _ = foreachFunction (p, addFuncToMapping)
 in
-   {getFunc = getFunc, getBlock = getBlock, destroyFuncsMap = destroyFuncsMap}
+   {getFunc = getFunc,
+    getBlock = getBlock, getCallees = getCallees, destroyFuncsMap = destroyFuncsMap}
 end
 end

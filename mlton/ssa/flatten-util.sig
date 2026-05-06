@@ -12,7 +12,7 @@ sig
       (* Returns the `Block.t` corresponding to the provided `Label.t` *)
       getBlock: Label.t -> Block.t,
       (* Given a `Func.t`, returns all of the functions that it calls *)
-      getCallees: Func.t -> Func.t vector
+      getCallees: Func.t -> Func.t vector,
       (* Cleans up state associated with this object *)
       destroyFuncsMap: unit -> unit
    }
