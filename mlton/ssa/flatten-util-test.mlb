@@ -1,0 +1,9 @@
+../../lib/mlton/sources.mlb
+../control/sources.mlb
+local
+   ../atoms/sources.mlb
+   sources.mlb
+   flatten-util-test-common.sml
+   flatten-util-test.sml
+in
+end

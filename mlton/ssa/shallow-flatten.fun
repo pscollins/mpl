@@ -1,6 +1,8 @@
 functor ShallowFlatten (S: SSA_TRANSFORM_STRUCTS): SHALLOW_FLATTEN =
 struct
 open S
+structure FlattenUtil = FlattenUtil (S)
+open FlattenUtil
 
 type rewriter = {
    doStatements: Statement.t vector -> Statement.t vector,
@@ -46,22 +48,50 @@ fun mkQueue inits = let
 in
    {push = push, pop = pop}
 end
-
+                        
 fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val {doStatements, doArgs, doTransfer} = r
    val Program.T {datatypes, functions, globals, main} = p
-   (* TODO(gemini): refactor out of pre-flatten.fun into flatten-util.fun *)
-   val {getFunc, getBlock, destroyFuncsMap} = newFuncsMap p
+   val {getFunc, destroyFuncsMap, getCallees, ...} = newFuncsMap p
    fun rewriteFuncs () = let
       val {popRemaining, ...} = mkQueue [functions]
       val {pushFunc, popFunc} = mkQueue [main]
       val {markVisited, destroyVisited} = mkVisited Func.plist
+      val {getRewrittenFunc, setRewrittenFunc, destroyRewrittenFunc} =
+          Property.destGetSetOnce (Func.plist, Property.initRaise ("result lookup",
+                                                                   Func.layout))
+      fun getNext() =
+          case popFunc() of
+              NONE => pushLeftovers()
+            | x => x
+      and pushLeftovers() =
+          case popRemaining of
+              NONE => NONE
+            | SOME f => (pushFunc f; getNext())
+
       fun visitFunc f = let
-         if markVisited f then ()
-         else getCallees f
-      and visit () = let
-         fun visitF = 
-          case popFunc of 
+         (* Add callees to the queue *)
+         val _ = Vector.foreach (getCallees f, pushFunc)
+         val {args, blocks, inline, name, raises, returns, starts} =
+             Function.dest f
+      in
+         Function.new {doArgs args,
+                       (* TODO: rewrite blocks *)
+                       blocks,
+                       inline,
+                       name,
+                       raises,
+                       returns,
+                       starts}
+      end
+      fun maybeVisit f =
+          if markVisited f then ()
+          else (setRewrittenFunc (f, visitFunc f))
+
+      fun doVisit () =
+          case getNext() of
+              NONE => ()
+            | SOME f => (maybeVisit f; doVisit())
    in
 
    end
