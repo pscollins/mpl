@@ -49,6 +49,61 @@ in
    {push = push, pop = pop}
 end
 
+type ('a, 'label) bfsArg = {
+   getLabel: 'a -> 'label,
+   getPlist: 'label -> PropertyList.t,
+   labelLayout: 'label -> Layout.t,
+   getChildren: 'label -> 'label vector,
+   rewriteElement: 'label -> 'a
+}
+
+fun rewriteBfs (init: 'label, all: 'a list, arg: ('a, 'label) bfsArg): 'a list = let
+   val {getLabel, getPlist, labelLayout, getChildren,
+        rewriteElement} = arg
+   val allLabels = List.map (all, getLabel)
+   val {pop=popRemaining, ...} : 'label mutableQueue
+       = mkQueue allLabels
+   val {push=pushFunc, pop=popFunc} : 'label mutableQueue
+       = mkQueue [init]
+   val {markVisited, destroyVisited} = mkVisited getPlist
+   val {get=getRewrittenFunc: 'label -> 'a,
+        set=setRewrittenFunc: 'label * 'a -> unit,
+        destroy=destroyRewrittenFunc} =
+       Property.destGetSetOnce (getPlist, Property.initRaise ("result lookup",
+                                                              labelLayout))
+   fun getNext(): 'label option =
+       case popFunc() of
+           NONE => pushLeftovers()
+         | x => x
+   and pushLeftovers(): 'label option =
+       case (popRemaining(): 'label option) of
+           NONE => NONE
+         | SOME f  => (pushFunc f; getNext())
+
+   fun visitFunc f = let
+      (* Add callees to the queue *)
+      val _ = Vector.foreach (getChildren f, pushFunc)
+   in
+      rewriteElement f
+   end
+   fun maybeVisit f =
+       if markVisited f then ()
+       else (setRewrittenFunc (f, visitFunc f))
+
+   fun doVisit () =
+       case getNext() of
+           NONE => ()
+         | SOME f => (maybeVisit f; doVisit())
+
+   val _ = doVisit ()
+   val results = List.map (allLabels, getRewrittenFunc)
+   val _ = (destroyVisited();
+            destroyRewrittenFunc())
+in
+   results
+end
+
+
 fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val {doStatements, doArgs, doTransfer} = r
    val Program.T {datatypes, functions, globals, main} = p
