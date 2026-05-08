@@ -54,8 +54,9 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val Program.T {datatypes, functions, globals, main} = p
    val {getFunc, destroyFuncsMap, getCallees, ...} = newFuncsMap p
    fun rewriteFuncs () = let
+      val funcs = List.map (functions, Function.name)
       val {pop=popRemaining, ...} : Func.t mutableQueue
-          = mkQueue (List.map (functions, Function.name))
+          = mkQueue funcs
       val {push=pushFunc, pop=popFunc} : Func.t mutableQueue
           = mkQueue [main]
       val {markVisited, destroyVisited} = mkVisited Func.plist
@@ -97,15 +98,19 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
               NONE => ()
             | SOME f => (maybeVisit f; doVisit())
 
+      val _ = doVisit ()
+      val results = List.map (funcs, getRewrittenFunc)
+      val _ = (destroyVisited();
+               destroyRewrittenFunc())
    in
-      []
+      results
    end
 
-   (* val _ = Error.unimplemented "TODO" *)
 in
    Program.T {datatypes = datatypes,
-              functions = rewriteFuncs(),
+              (* Order is important *)
               globals = doStatements globals,
+              functions = rewriteFuncs(),
               main = main}
 end
 
