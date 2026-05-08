@@ -44,7 +44,7 @@ fun mkQueue inits = let
        case Queue.deque (!q) of
            SOME (q', el) => (q := q'; SOME el)
          | NONE => NONE
-   val = List.foreach (inits, push)
+   val _ = List.foreach (inits, push)
 in
    {push = push, pop = pop}
 end
@@ -75,14 +75,14 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
          val {args, blocks, inline, name, raises, returns, starts} =
              Function.dest f
       in
-         Function.new {doArgs args,
+         Function.new {args = doArgs args,
                        (* TODO: rewrite blocks *)
-                       blocks,
-                       inline,
-                       name,
-                       raises,
-                       returns,
-                       starts}
+                       blocks = blocks,
+                       inline = inline,
+                       name = name,
+                       raises = raises,
+                       returns = returns,
+                       starts = starts}
       end
       fun maybeVisit f =
           if markVisited f then ()
@@ -93,10 +93,10 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
               NONE => ()
             | SOME f => (maybeVisit f; doVisit())
    in
-
+      []
    end
 
-   val _ = Error.unimplemented "TODO"
+   (* val _ = Error.unimplemented "TODO" *)
 in
    Program.T {datatypes = datatypes,
               functions = rewriteFuncs(),
