@@ -19,7 +19,7 @@ type 'a visited = {
 
 fun mkVisited plist = let
    fun init _ = ref false
-   val {get=getVisited, dest=destroyVisited, ...} =
+   val {get=getVisited, destroy=destroyVisited, ...} =
        Property.destGet (plist, Property.initFun init)
    fun markVisited p = let 
       val seenRef = getVisited p
@@ -38,8 +38,8 @@ type 'a mutableQueue = {
    pop: unit -> 'a option
 }
 fun mkQueue inits = let
-   val q = ref Queue.empty
-   fun push f = q := Queue.enqueue (!q, f)
+   val q = ref (Queue.empty())
+   fun push f = q := Queue.enque (!q, f)
    fun pop () =
        case Queue.deque (!q) of
            SOME (q', el) => (q := q'; SOME el)
@@ -48,32 +48,36 @@ fun mkQueue inits = let
 in
    {push = push, pop = pop}
 end
-                        
+
 fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val {doStatements, doArgs, doTransfer} = r
    val Program.T {datatypes, functions, globals, main} = p
    val {getFunc, destroyFuncsMap, getCallees, ...} = newFuncsMap p
    fun rewriteFuncs () = let
-      val {popRemaining, ...} = mkQueue [functions]
-      val {pushFunc, popFunc} = mkQueue [main]
+      val {pop=popRemaining, ...} : Func.t mutableQueue
+          = mkQueue (List.map (functions, Function.name))
+      val {push=pushFunc, pop=popFunc} : Func.t mutableQueue
+          = mkQueue [main]
       val {markVisited, destroyVisited} = mkVisited Func.plist
-      val {getRewrittenFunc, setRewrittenFunc, destroyRewrittenFunc} =
+      val {get=getRewrittenFunc,
+           set=setRewrittenFunc,
+           destroy=destroyRewrittenFunc} =
           Property.destGetSetOnce (Func.plist, Property.initRaise ("result lookup",
                                                                    Func.layout))
-      fun getNext() =
+      fun getNext(): Func.t option =
           case popFunc() of
               NONE => pushLeftovers()
             | x => x
       and pushLeftovers() =
-          case popRemaining of
+          case (popRemaining(): Func.t option) of
               NONE => NONE
-            | SOME f => (pushFunc f; getNext())
+            | SOME (f: Func.t) => (pushFunc f; getNext())
 
       fun visitFunc f = let
          (* Add callees to the queue *)
          val _ = Vector.foreach (getCallees f, pushFunc)
-         val {args, blocks, inline, name, raises, returns, starts} =
-             Function.dest f
+         val {args, blocks, inline, name, raises, returns, start} =
+             Function.dest (getFunc f)
       in
          Function.new {args = doArgs args,
                        (* TODO: rewrite blocks *)
@@ -82,7 +86,7 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
                        name = name,
                        raises = raises,
                        returns = returns,
-                       starts = starts}
+                       start = start}
       end
       fun maybeVisit f =
           if markVisited f then ()
@@ -92,6 +96,7 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
           case getNext() of
               NONE => ()
             | SOME f => (maybeVisit f; doVisit())
+
    in
       []
    end
