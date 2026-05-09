@@ -25,14 +25,14 @@ exception SuiteFail
 (* Summarizes the result of this run on stdout and raises SuiteFail for any failures *)
 fun summarize(): unit =
     let
-        val numPassed = List.length (!passedTests)
-        val numFailed = List.length (!failedTests)
-        val numDisabled = List.length (!disabledTests)
+        val numPassed = length (!passedTests)
+        val numFailed = length (!failedTests)
+        val numDisabled = length (!disabledTests)
         val total = numPassed + numFailed + numDisabled
         val _ = print ("Summary of " ^ Int.toString total ^ " tests:\n")
-        val _ = List.app (fn title => print ("PASS: " ^ title ^ "\n")) (List.rev (!passedTests))
-        val _ = List.app (fn (title, reason) => print ("FAIL: " ^ title ^ " (" ^ reason ^ ")\n")) (List.rev (!failedTests))
-        val _ = List.app (fn title => print ("DISABLED: " ^ title ^ "\n")) (List.rev (!disabledTests))
+        val _ = app (fn title => print ("PASS: " ^ title ^ "\n")) (rev (!passedTests))
+        val _ = app (fn (title, reason) => print ("FAIL: " ^ title ^ " (" ^ reason ^ ")\n")) (rev (!failedTests))
+        val _ = app (fn title => print ("DISABLED: " ^ title ^ "\n")) (rev (!disabledTests))
         val _ = passedTests := []
         val _ = failedTests := []
         val _ = disabledTests := []
