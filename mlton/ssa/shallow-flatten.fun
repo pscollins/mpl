@@ -57,7 +57,7 @@ type ('a, 'label) bfsArg = {
    rewriteElement: 'label -> 'a
 }
 
-fun rewriteBfs (init: 'label, all: 'a list, arg: ('a, 'label) bfsArg): 'a list = let
+fun applyRewrite (init: 'label, all: 'a list, arg: ('a, 'label) bfsArg): 'a list = let
    val {getLabel, getPlist, labelLayout, getChildren,
         rewriteElement} = arg
    val allLabels = List.map (all, getLabel)
@@ -103,62 +103,58 @@ in
    results
 end
 
+fun getBlockCallees b = Error.unimplemented "TODO"
 
 fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val {doStatements, doArgs, doTransfer} = r
    val Program.T {datatypes, functions, globals, main} = p
-   val {getFunc, destroyFuncsMap, getCallees, ...} = newFuncsMap p
+   val {getFunc, getBlock, destroyFuncsMap, getCallees} = newFuncsMap p
+   fun getLabelCallees l = getBlockCallees (getBlock l)
+   fun rewriteBlock l = let
+      val Block.T {args, label, statements, transfer} = getBlock l
+   in
+      Block.T {args = doArgs args,
+               label = label,
+               statements = doStatements statements,
+               transfer = doTransfer transfer}
+   end
+   fun rewriteBlocks (start, allVec) = let
+      val blockBfsArg: (Block.t, Label.t) bfsArg = {
+         getLabel = Block.label,
+         getPlist = Label.plist,
+         labelLayout = Label.layout,
+         getChildren = getBlockCallees,
+         rewriteElement = rewriteBlock
+      }
+   in
+      applyRewrite (start, allVec, blockBfsArg)
+   end
    fun rewriteFuncs () = let
-      val funcs = List.map (functions, Function.name)
-      val {pop=popRemaining, ...} : Func.t mutableQueue
-          = mkQueue funcs
-      val {push=pushFunc, pop=popFunc} : Func.t mutableQueue
-          = mkQueue [main]
-      val {markVisited, destroyVisited} = mkVisited Func.plist
-      val {get=getRewrittenFunc,
-           set=setRewrittenFunc,
-           destroy=destroyRewrittenFunc} =
-          Property.destGetSetOnce (Func.plist, Property.initRaise ("result lookup",
-                                                                   Func.layout))
-      fun getNext(): Func.t option =
-          case popFunc() of
-              NONE => pushLeftovers()
-            | x => x
-      and pushLeftovers() =
-          case (popRemaining(): Func.t option) of
-              NONE => NONE
-            | SOME (f: Func.t) => (pushFunc f; getNext())
-
-      fun visitFunc f = let
-         (* Add callees to the queue *)
-         val _ = Vector.foreach (getCallees f, pushFunc)
+      fun doRewriteFunc fName = let
          val {args, blocks, inline, name, raises, returns, start} =
-             Function.dest (getFunc f)
+             Function.dest (getFunc fName)
+         (* TODO: avoid list->vector *)
+         val newBlocks = rewriteBlocks (start, Vector.toList blocks)
       in
          Function.new {args = doArgs args,
                        (* TODO: rewrite blocks *)
-                       blocks = blocks,
+                       blocks = Vector.fromList newBlocks,
                        inline = inline,
                        name = name,
                        raises = raises,
                        returns = returns,
                        start = start}
       end
-      fun maybeVisit f =
-          if markVisited f then ()
-          else (setRewrittenFunc (f, visitFunc f))
-
-      fun doVisit () =
-          case getNext() of
-              NONE => ()
-            | SOME f => (maybeVisit f; doVisit())
-
-      val _ = doVisit ()
-      val results = List.map (funcs, getRewrittenFunc)
-      val _ = (destroyVisited();
-               destroyRewrittenFunc())
+      val funcBfs: (Function.t, Func.t) bfsArg = {
+         getLabel = Function.name,
+         getPlist = Func.plist,
+         labelLayout = Func.layout,
+         getChildren = getCallees,
+         rewriteElement = doRewriteFunc
+      }
    in
-      results
+      applyRewrite (main, functions,
+                    funcBfs)
    end
 
 in
