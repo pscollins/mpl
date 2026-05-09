@@ -132,6 +132,7 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    fun rewriteBlock l = let
       val Block.T {args, label, statements, transfer} = getBlock l
    in
+      (* Order is important *)
       Block.T {args = doArgs args,
                label = label,
                statements = doStatements statements,
@@ -152,12 +153,13 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
       fun doRewriteFunc fName = let
          val {args, blocks, inline, name, raises, returns, start} =
              Function.dest (getFunc fName)
+         val newArgs = doArgs args
          (* TODO: avoid list->vector *)
          val newBlocks = rewriteBlocks (start, Vector.toList blocks)
       in
+         (* Order is important *)
          Function.new {args = doArgs args,
-                       (* TODO: rewrite blocks *)
-                       blocks = Vector.fromList newBlocks,
+                       blocks = (Vector.fromList o rewriteBlocks) (start, Vector.toList blocks),
                        inline = inline,
                        name = name,
                        raises = raises,

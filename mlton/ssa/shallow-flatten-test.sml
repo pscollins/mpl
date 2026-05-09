@@ -60,53 +60,59 @@ in
 
       (* f_dep1: Takes an arg, returns it *)
       val v_arg_dep1 = Var.fromString "v_arg_dep1"
+      val v_s_dep1 = Var.fromString "v_s_dep1"
+      val L_dep1 = Label.fromString "L_dep1"
       val f_dep1_func = Function.new {
          args = Vector.fromList [(v_arg_dep1, ty)],
          blocks = Vector.fromList [
             Block.T {
                args = Vector.new0 (),
-               label = Label.fromString "L_dep1",
-               statements = Vector.fromList [stmt (Var.fromString "v_s_dep1", Exp.Var v_arg_dep1)],
-               transfer = Transfer.Return (Vector.fromList [Var.fromString "v_s_dep1"])
+               label = L_dep1,
+               statements = Vector.fromList [stmt (v_s_dep1, Exp.Var v_arg_dep1)],
+               transfer = Transfer.Return (Vector.fromList [v_s_dep1])
             }
          ],
          inline = InlineAttr.Auto,
          name = f_dep1,
          raises = NONE,
          returns = SOME (Vector.fromList [ty]),
-         start = Label.fromString "L_dep1"
+         start = L_dep1
       }
 
       (* f_dep2: Calls f_dep1 *)
+      val v_s_dep2 = Var.fromString "v_s_dep2"
+      val L_dep2 = Label.fromString "L_dep2"
+      val L_dep2_cont = Label.fromString "L_dep2_cont"
+      val v_ret_dep1 = Var.fromString "v_ret_dep1"
       val f_dep2_func = Function.new {
          args = Vector.new0 (),
          blocks = Vector.fromList [
             Block.T {
                args = Vector.new0 (),
-               label = Label.fromString "L_dep2",
-               statements = Vector.fromList [stmt (Var.fromString "v_s_dep2", Exp.Var v_g2)],
+               label = L_dep2,
+               statements = Vector.fromList [stmt (v_s_dep2, Exp.Var v_g2)],
                transfer = Transfer.Call {
-                  args = Vector.fromList [Var.fromString "v_s_dep2"],
+                  args = Vector.fromList [v_s_dep2],
                   func = f_dep1,
                   inline = InlineAttr.Auto,
                   return = Return.NonTail {
-                     cont = Label.fromString "L_dep2_cont",
+                     cont = L_dep2_cont,
                      handler = Handler.Caller
                   }
                }
             },
             Block.T {
-               args = Vector.fromList [(Var.fromString "v_ret_dep1", ty)],
-               label = Label.fromString "L_dep2_cont",
+               args = Vector.fromList [(v_ret_dep1, ty)],
+               label = L_dep2_cont,
                statements = Vector.new0 (),
-               transfer = Transfer.Return (Vector.fromList [Var.fromString "v_ret_dep1"])
+               transfer = Transfer.Return (Vector.fromList [v_ret_dep1])
             }
          ],
          inline = InlineAttr.Auto,
          name = f_dep2,
          raises = NONE,
          returns = SOME (Vector.fromList [ty]),
-         start = Label.fromString "L_dep2"
+         start = L_dep2
       }
 
       (* f_main: Calls f_dep2, has complex CFG *)
@@ -156,13 +162,15 @@ in
       }
 
       (* f_disc: Disconnected function *)
+      val L_disc_f = Label.fromString "L_disc_f"
+      val v_s_disc_f = Var.fromString "v_s_disc_f"
       val f_disc_func = Function.new {
          args = Vector.new0 (),
          blocks = Vector.fromList [
             Block.T {
                args = Vector.new0 (),
-               label = Label.fromString "L_disc_f",
-               statements = Vector.fromList [stmt (Var.fromString "v_s_disc_f", Exp.Const (Const.IntInf 15))],
+               label = L_disc_f,
+               statements = Vector.fromList [stmt (v_s_disc_f, Exp.Const (Const.IntInf 15))],
                transfer = Transfer.Return (Vector.new0 ())
             }
          ],
@@ -170,7 +178,7 @@ in
          name = f_disc,
          raises = NONE,
          returns = SOME (Vector.new0 ()),
-         start = Label.fromString "L_disc_f"
+         start = L_disc_f
       }
 
       val p = Program.T {
@@ -199,7 +207,7 @@ in
             args
          ),
          doTransfer = fn t => (
-            log "Transfer";
+            log ("Transfer: " ^ (Layout.toString (Transfer.layout t)));
             t
          )
       }
@@ -214,7 +222,7 @@ in
       fun indexOf s =
          let
             fun loop (i, []) = NONE
-              | loop (i, x::xs) = if x = s then SOME i else loop (i + 1, xs)
+              | loop (i, x::xs) = if String.hasSubstring (x, {substring = s}) then SOME i else loop (i + 1, xs)
          in loop (0, visitOrder) end
 
       fun checkBefore (a, b, msg) =
@@ -239,7 +247,7 @@ in
       val _ = checkBefore ("Stmt: v_s_L2", "Stmt: v_s_L3", "L_2 before L_3")
 
       (* 5. Block args before block body *)
-      val _ = checkBefore ("Arg: v_ret_dep1", "Transfer", "L_dep2_cont arg before its transfer")
+      val _ = checkBefore ("Arg: v_ret_dep1", "return (v_ret_dep1)", "L_dep2_cont arg before its transfer")
 
       (* 6. Disconnected components visited *)
       val _ = assert (Option.isSome (indexOf "Stmt: v_s_Ldisc"), "Disconnected block L_disc visited")
