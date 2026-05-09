@@ -205,5 +205,7 @@ in
    ()
 end
 
+fun maybeFlattenType (t: Type.t) = NONE
+
 fun transform (p: Program.t): Program.t = p
 end

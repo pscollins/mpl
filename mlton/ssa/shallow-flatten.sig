@@ -38,4 +38,12 @@ sig
    (* Like above, but for side-effecting expressions *)
    val foreachBfs: visitor -> Program.t -> unit
 
+   (* If the provided `Type.t` is an array of tuples, returns the corresponding
+   tuple of arrays, i.e.:
+
+     ('a * 'b) array -> SOME ('a array * 'b array)
+
+     Otherwise, returns NONE.
+    *)
+   val maybeFlattenType: Type.t -> Type.t option
 end
