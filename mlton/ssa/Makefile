@@ -5,7 +5,11 @@ MLTON := mlton
 DEBUG_FLAGS = 
 
 .PHONY: unittest
-unittest: parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin shallow-flatten-tests pre-flatten-tests rewrite-ir rewrite-ssa2 flatten-util-test.bin
+unittest: test-util-tests.bin parse-ssa-test.bin parse-ssa2-test.bin parse-ssa2-roundtrip-test.bin shallow-flatten-tests pre-flatten-tests rewrite-ir rewrite-ssa2 flatten-util-test.bin
+
+test-util-tests.bin: test-util-tests.mlb test-util-tests.sml test-util.sml
+	$(MLTON) -output $@ $<
+	./$@
 
 rewrite-ir: rewrite-ir.mlb rewrite-ir.sml $(wildcard *.fun *.sig)
 	$(MLTON) -output $@ $<
