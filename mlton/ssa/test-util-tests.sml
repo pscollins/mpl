@@ -51,4 +51,28 @@ val _ = (
     end
 )
 
+(* Test runTestDisabled *)
+val _ = (
+    print "Testing runTestDisabled...\n";
+    passedTests := [];
+    failedTests := [];
+    disabledTests := [];
+    runTestDisabled ("DisabledTest", fn () => raise TestFail "should not run");
+    assert ("DisabledTest should be in disabledTests", List.exists (fn s => s = "DisabledTest") (!disabledTests));
+    assert ("passedTests should be empty", List.length (!passedTests) = 0);
+    assert ("failedTests should be empty", List.length (!failedTests) = 0)
+)
+
+(* Test summarize with disabled tests *)
+val _ = (
+    print "Testing summarize (with disabled)...\n";
+    passedTests := ["Test1"];
+    failedTests := [];
+    disabledTests := ["Test2"];
+    summarize ();
+    assert ("passedTests should be reset", List.length (!passedTests) = 0);
+    assert ("failedTests should be reset", List.length (!failedTests) = 0);
+    assert ("disabledTests should be reset", List.length (!disabledTests) = 0)
+)
+
 val _ = print "All test-util-tests completed (unexpectedly if using stubs)!\n"

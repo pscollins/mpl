@@ -5,6 +5,8 @@
 val passedTests: string list ref = ref []
 (* Titles + reasons of failed *)
 val failedTests: (string * string) list ref = ref  []
+(* Titles of disabled tests *)
+val disabledTests: string list ref = ref []
 
 exception TestFail of string
 
@@ -16,18 +18,25 @@ fun runTest (title: string, thunk: unit -> unit): unit =
         (print ("Test failed: " ^ title ^ " - " ^ reason ^ "\n");
          failedTests := (title, reason) :: !failedTests)
 
+fun runTestDisabled (title: string, _: unit -> unit): unit =
+    disabledTests := title :: !disabledTests
+
 exception SuiteFail
 (* Summarizes the result of this run on stdout and raises SuiteFail for any failures *)
 fun summarize(): unit =
     let
         val numPassed = List.length (!passedTests)
         val numFailed = List.length (!failedTests)
-        val total = numPassed + numFailed
+        val numDisabled = List.length (!disabledTests)
+        val total = numPassed + numFailed + numDisabled
         val _ = print ("Summary of " ^ Int.toString total ^ " tests:\n")
         val _ = List.app (fn title => print ("PASS: " ^ title ^ "\n")) (List.rev (!passedTests))
         val _ = List.app (fn (title, reason) => print ("FAIL: " ^ title ^ " (" ^ reason ^ ")\n")) (List.rev (!failedTests))
+        val _ = List.app (fn title => print ("DISABLED: " ^ title ^ "\n")) (List.rev (!disabledTests))
         val _ = passedTests := []
         val _ = failedTests := []
+        val _ = disabledTests := []
+        val _ = if numDisabled > 0 then print ("WARNING: " ^ Int.toString numDisabled ^ " TESTS DID NOT RUN!\n") else ()
     in
         if numFailed > 0 then raise SuiteFail else ()
     end
