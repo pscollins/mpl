@@ -474,4 +474,44 @@ in
       val _ = print "Test 3 passed\n"
    in () end
 
+   (* Test 4: maybeFlattenType *)
+   val _ = let
+      val _ = print "Test 4: maybeFlattenType\n"
+      
+      fun check (input, expected, msg) =
+         let
+            val res = ShallowFlatten.maybeFlattenType input
+         in
+            case (res, expected) of
+               (NONE, NONE) => ()
+             | (SOME r, SOME e) => 
+               if Type.equals (r, e) then ()
+               else assert (false, msg ^ ": type mismatch")
+             | (SOME _, NONE) => assert (false, msg ^ ": expected NONE, got SOME")
+             | (NONE, SOME _) => assert (false, msg ^ ": expected SOME, got NONE")
+         end
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val expected2 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val arrayTuple3Ty = Type.array tuple3Ty
+      val expected3 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy, Type.array intTy])
+
+      val nestedTupleTy = Type.tuple (Vector.fromList [intTy, tuple2Ty])
+      val arrayNestedTupleTy = Type.array nestedTupleTy
+      val expectedNested = Type.tuple (Vector.fromList [Type.array intTy, Type.array tuple2Ty])
+   in
+      check (arrayTuple2Ty, SOME expected2, "simple 2-tuple array");
+      check (arrayTuple3Ty, SOME expected3, "simple 3-tuple array");
+      check (arrayNestedTupleTy, SOME expectedNested, "nested tuple array");
+      check (intTy, NONE, "not an array");
+      check (Type.array intTy, NONE, "array of non-tuple");
+      check (tuple2Ty, NONE, "tuple but not array");
+      
+      print "Test 4 passed\n"
+   end
+
 end
