@@ -24,7 +24,7 @@ sig
         * `Block.t`s within a function are visited in some topological order
         * `Block.t` arguments are visited before any statement in the block body
         * Every program construct is visited, even if the program CFG is disconnected
-   *)
+        *)
    val rewriteBfs: rewriter -> Program.t -> Program.t
 
 
@@ -65,4 +65,19 @@ sig
     *)
    val maybeFlattenArg: flattenedVars * (Var.t * Type.t) ->
                         Var.t * Type.t
+
+   (* Flattens the provided `Statement.t` into a sequence of statements, if
+   possible. Otherwise, returns NONE.
+
+   The following expressions are flattenable:
+
+      x: ('a * 'b) array = Array_alloc['a * 'b]
+      -->
+      arr_a = Select(arr, #1)
+      xa = Array_sub['a](#1
+     
+    *)
+
+   val maybeFlattenStatement: Statement.t ->
+                              Statement.t vector option
 end
