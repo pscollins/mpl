@@ -55,4 +55,13 @@ sig
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
+
+                                                        
+   (* If the provided `Var.t` is not marked for flattening, returns the original
+   (var, type). Otherwise, returns (var, flattenedType), where `flattenedType`
+   is flattened according to the rules of `maybeFlattenType`: if `type` is not
+   flattenable, raises BadFlattenError.
+    *)
+   val maybeFlattenArg: flattenedVars * (Var.t * Type.t) ->
+                        Var.t * Type.t
 end
