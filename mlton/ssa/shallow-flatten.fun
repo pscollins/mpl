@@ -207,10 +207,10 @@ end
 
 fun maybeFlattenType (t: Type.t) = NONE
 
-type flattenedVars = {}
-
-fun markForFlatten (fv: flattendVars, v: Var.t): unit = ()
-fun isMarkedForFlatten (fv: flattenedVars, Var.t): bool = false
+type flattenedVars = unit
+fun newFlattenedVars () = ()
+fun markForFlatten (fv: flattenedVars, v: Var.t): unit = ()
+fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = false
 
 fun transform (p: Program.t): Program.t = p
 end

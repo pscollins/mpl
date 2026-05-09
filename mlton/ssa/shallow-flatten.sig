@@ -49,9 +49,9 @@ sig
 
    (* Tracks flattening decisions for variables. *)
    type flattenedVars
+   val newFlattenedVars: unit -> flattenedVars
    (* Marks the provided `Var.t` for flattening *)
    val markForFlatten: flattenedVars * Var.t -> unit
-
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool

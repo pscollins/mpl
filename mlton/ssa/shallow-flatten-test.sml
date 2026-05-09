@@ -514,4 +514,19 @@ in
       print "Test 4 passed\n"
    end
 
+   (* Test 5: flattenedVars *)
+   val _ = let
+      val _ = print "Test 5: flattenedVars\n"
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v1)), "v1 should not be marked initially")
+      val _ = ShallowFlatten.markForFlatten (fv, v1)
+      val _ = assert (ShallowFlatten.isMarkedForFlatten (fv, v1), "v1 should be marked after markForFlatten")
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "v2 should not be marked")
+      
+      val _ = print "Test 5 passed\n"
+   in () end
+
 end
