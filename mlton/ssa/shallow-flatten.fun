@@ -192,7 +192,18 @@ type visitor = {
    foreachTransfer: Transfer.t -> unit
 }
 
-fun foreachBfs (v: visitor) (p: Program.t): unit = ()
+fun foreachBfs (v: visitor) (p: Program.t): unit = let
+   val {foreachStatements, foreachArgs, foreachTransfer} = v
+   fun ignore f x = (f x; x)
+   val r: rewriter = {
+      doStatements = ignore foreachStatements,
+      doArgs = ignore foreachArgs,
+      doTransfer = ignore foreachTransfer
+   }
+   val _ = rewriteBfs r p
+in
+   ()
+end
 
 fun transform (p: Program.t): Program.t = p
 end
