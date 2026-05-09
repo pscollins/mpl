@@ -107,8 +107,8 @@ fun getBlockCallees (b: Block.t): Label.t vector = let
    fun getLabel (_, l) = l
    fun extractCases (c: (Con.t, Label.t) Cases.t): Label.t vector =
        case c of
-           Cases.Con of cons => Vector.map (cons, getLabel)
-                      | Cases.Word (_, cons) => Vector.map (cons, getLabel)
+           Cases.Con cons => Vector.map (cons, getLabel)
+         | Cases.Word (_, cons) => Vector.map (cons, getLabel)
    fun extractDefault d =
        case d of
            SOME d' => Vector.new1 d'

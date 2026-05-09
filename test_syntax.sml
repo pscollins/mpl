@@ -1,11 +1,4 @@
-
-fun fromProgram (program) = let
-   val x = 5
-   fun getTransferUses (t) = 
-   fun addEdges (froms, tos) = let
-   in
-      ()
-   end
-in
-   ()
-end
+datatype t = Con of int vector
+val c = Con (Vector.fromList [1, 2])
+val _ = case c of
+    Con of cons => ()
