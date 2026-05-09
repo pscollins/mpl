@@ -103,7 +103,26 @@ in
    results
 end
 
-fun getBlockCallees b = Error.unimplemented "TODO"
+fun getBlockCallees (b: Block.t): Label.t vector = let
+   fun getLabel (_, l) = l
+   fun extractCases (c: (Con.t, Label.t) Cases.t): Label.t vector =
+       case c of
+           Cases.Con of cons => Vector.map (cons, getLabel)
+                      | Cases.Word (_, cons) => Vector.map (cons, getLabel)
+   fun extractDefault d =
+       case d of
+           SOME d' => Vector.new1 d'
+         | NONE => Vector.new0()
+in
+   case Block.transfer b of
+       Transfer.Goto {dst, ...} => Vector.new1 dst
+     | Transfer.Case {cases, default, ...} =>
+       Vector.concat [extractCases cases,
+                      extractDefault default]
+     (* `Call`/`Return` are handled by the inter-function traversal: here, we
+     only care about intra-function jumps *)
+     | _ => Vector.new0()
+end
 
 fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val {doStatements, doArgs, doTransfer} = r
@@ -123,7 +142,7 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
          getLabel = Block.label,
          getPlist = Label.plist,
          labelLayout = Label.layout,
-         getChildren = getBlockCallees,
+         getChildren = getLabelCallees,
          rewriteElement = rewriteBlock
       }
    in
