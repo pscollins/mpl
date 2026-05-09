@@ -26,4 +26,16 @@ sig
         * Every program construct is visited, even if the program CFG is disconnected
    *)
    val rewriteBfs: rewriter -> Program.t -> Program.t
+
+
+   (* Effectful version of the interface above *)
+   type visitor = {
+      foreachStatements: Statement.t vector -> unit,
+      foreachArgs: (Var.t * Type.t) vector -> unit,
+      foreachTransfer: Transfer.t -> unit
+   }
+
+   (* Like above, but for side-effecting expressions *)
+   val foreachBfs: visitor -> Program.t -> unit
+
 end

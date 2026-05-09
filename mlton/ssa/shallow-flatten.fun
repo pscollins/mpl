@@ -186,5 +186,13 @@ in
               main = main}
 end
 
+type visitor = {
+   foreachStatements: Statement.t vector -> unit,
+   foreachArgs: (Var.t * Type.t) vector -> unit,
+   foreachTransfer: Transfer.t -> unit
+}
+
+fun foreachBfs (v: visitor) (p: Program.t): unit = ()
+
 fun transform (p: Program.t): Program.t = p
 end
