@@ -212,5 +212,8 @@ fun newFlattenedVars () = ()
 fun markForFlatten (fv: flattenedVars, v: Var.t): unit = ()
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = false
 
+exception BadFlattenError
+fun maybeFlattenArg (fv, (v, t)) = (v, t)
+
 fun transform (p: Program.t): Program.t = p
 end

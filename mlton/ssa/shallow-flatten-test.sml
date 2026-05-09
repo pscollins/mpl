@@ -529,4 +529,38 @@ in
       val _ = print "Test 5 passed\n"
    in () end
 
+   (* Test 6: maybeFlattenArg *)
+   val _ = let
+      val _ = print "Test 6: maybeFlattenArg\n"
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val v3 = Var.fromString "v3"
+      
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val expected2 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      (* Case 1: Not marked for flattening *)
+      val (rv1, rt1) = ShallowFlatten.maybeFlattenArg (fv, (v1, arrayTuple2Ty))
+      val _ = assert (Var.equals (rv1, v1), "Case 1: var mismatch")
+      val _ = assert (Type.equals (rt1, arrayTuple2Ty), "Case 1: type mismatch")
+
+      (* Case 2: Marked for flattening, valid type *)
+      val _ = ShallowFlatten.markForFlatten (fv, v2)
+      val (rv2, rt2) = ShallowFlatten.maybeFlattenArg (fv, (v2, arrayTuple2Ty))
+      val _ = assert (Var.equals (rv2, v2), "Case 2: var mismatch")
+      val _ = assert (Type.equals (rt2, expected2), "Case 2: type mismatch")
+
+      (* Case 3: Marked for flattening, invalid type *)
+      val _ = ShallowFlatten.markForFlatten (fv, v3)
+      val _ = (ShallowFlatten.maybeFlattenArg (fv, (v3, intTy)); 
+               assert (false, "Case 3: should have raised BadFlattenError"))
+              handle ShallowFlatten.BadFlattenError => ()
+                   | _ => assert (false, "Case 3: raised wrong exception")
+
+      val _ = print "Test 6 passed\n"
+   in () end
+
 end
