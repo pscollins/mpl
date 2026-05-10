@@ -259,7 +259,11 @@ in
    (v, maybeFlat)
 end
 
-(* Given the `targs` of an array, returns the corresponding flattened type *)
+(* Given the `targs` of an array, returns the corresponding flattened type
+
+    {('a * 'b)} -> 'a array * 'b array
+
+ *)
 fun getFlattenedArrayTArg targs =
        if Vector.length targs = 1 then
           (* Wrap in `array` to get the array type:
@@ -268,6 +272,23 @@ fun getFlattenedArrayTArg targs =
            *)
           maybeFlattenType (Type.array (Vector.first targs))
        else NONE
+
+(* Given flattened array targs, returns the nth element type
+
+  ('a array * 'b array, 0) -> 'a
+ *)
+fun getNthElemType (flatArg, idx) = let
+   (* {'a array, 'b array} *)
+   val components = Type.deTuple flatArg
+in
+   (* -> 'a *)
+   Type.deArray (Vector.sub (components, idx))
+end
+
+fun getUniqueElement (xs: 'a vector): 'a =
+    if Vector.length xs = 1 then
+       Vector.first xs
+    else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
 
 (* Returns the unique variable bound by `s`, else crash *)
 fun extractBind (s: Statement.t): Var.t =
@@ -299,6 +320,18 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       ty = Type.array targ,
                       var = SOME (Var.newString "flatBind")}
       end
+      (* arr_n = select(arr, n) *)
+      fun mkSelect (flatArg, idx) = let
+         val arrTy = Type.array (getNthElemType (flatArg, idx))
+         val selectExp = Exp.Select {offset = idx,
+                                     tuple = getUniqueElement args}
+         val varBasename = "flatArr_" ^ (Int.toString idx)
+         val newVar = Var.newString varBasename
+      in
+         Statement.T {exp = selectExp,
+                      ty = arrTy,
+                      var = SOME newVar}
+      end
       fun buildArrayAlloc flatArg = let
          val components = Type.deTuple flatArg
          (*
@@ -324,11 +357,28 @@ fun maybeFlattenStatement (s: Statement.t) = let
          *)
          Vector.concatV (Vector.fromList [newAllocs, Vector.new1 newTuple])
       end
+      fun buildArrayLength flatArg = let
+         val elemTy = getNthElemType (flatArg, 0)
+         (* arr_a = select(arr, 0) *)
+         val arrStmt = mkSelect (flatArg, 0)
+         (* Array_length['a](arr_a) *)
+         val lenExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
+                                   prim = Prim.Array_length,
+                                   targs = Vector.new1 elemTy}
+         (* len: int = $lenExp *)
+         val lenStmt = Statement.T {exp = lenExp,
+                                    ty = ty,
+                                    var = var}
+      in
+         Vector.new2 (arrStmt, lenStmt)
+      end
    in
       case (prim, getFlattenedArrayTArg targs)  of
           (* TODO: handle raw == true *)
           (Prim.Array_alloc {raw=false}, SOME flatArg) =>
           SOME (buildArrayAlloc flatArg)
+        | (Prim.Array_length, SOME flatArg) =>
+          SOME (buildArrayLength flatArg)
         | _ => NONE
    end
 in

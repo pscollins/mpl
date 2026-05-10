@@ -541,7 +541,7 @@ in
    in () end)
 
    (* Test 7: maybeFlattenStatement *)
-   val _ = runTestDisabled ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
+   val _ = runTest ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
