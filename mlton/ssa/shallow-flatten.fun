@@ -261,8 +261,18 @@ end
 
 fun maybeFlattenStatement (s: Statement.t) = NONE
 
-fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool =
-   false
+fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
+   val vars = ref []
+   fun push x = List.push (vars, x)
+   val _ =
+       case Statement.var s of
+           SOME x => push x
+         | _ => ()
+   val _ = Exp.foreachVar (Statement.exp s, push)
+   fun isFlattened x = isMarkedForFlatten (fv, x)
+in
+   List.exists (!vars, isFlattened)
+end
 
 fun transform (p: Program.t): Program.t = p
 end
