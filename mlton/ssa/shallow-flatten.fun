@@ -313,18 +313,16 @@ fun maybeFlattenStatement (s: Statement.t) = let
                 ty=flatArg,
                 var=var
              }
-         val _ = print ("num allocs: " ^ ((Int.toString o Vector.length) newAllocs))
-         val res = Vector.concat [newAllocs, Vector.new1 newTuple]
-         val _ = print ("num total: " ^ ((Int.toString o Vector.length) res))
       in
          (*
            arr_a = ...
            arr_b = ...
            ...
            arr = tuple (...)
+
+          TODO(pscollins): For some reason, `Vector.concat` fails
          *)
-         (* Vector.concat [newAllocs, Vector.new1 newTuple] *)
-         res
+         Vector.concatV (Vector.fromList [newAllocs, Vector.new1 newTuple])
       end
    in
       case (prim, getFlattenedArrayTArg targs)  of
@@ -335,8 +333,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
    end
 in
    case exp of
-       Exp.PrimApp {args, prim, targs} => doPrimApp (args, prim, targs)
-    | _ => NONE
+       Exp.PrimApp {args, prim, targs} =>
+       doPrimApp (args, prim, targs)
+     | _ => NONE
 end
 
 fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
