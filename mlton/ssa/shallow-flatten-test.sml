@@ -613,13 +613,13 @@ in
    in () end)
 
    (* Test 9: maybeFlattenStatement (Array_sub) *)
-   val _ = runTestDisabled ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
+   val _ = runTest ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
       val v1 = Var.fromString "v1"
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
-      
+
       fun primApp (p, args, targs) = 
          Exp.PrimApp {args = Vector.fromList args,
                       prim = p,

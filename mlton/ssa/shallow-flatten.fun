@@ -285,6 +285,14 @@ in
    Type.deArray (Vector.sub (components, idx))
 end
 
+(* ('a array * 'b array) tuple -> 2  *)
+fun getNumElementTypes flatArg = let
+   (* {'a array, 'b array} *)
+   val components = Type.deTuple flatArg
+in
+   Vector.length components
+end
+
 fun getUniqueElement (xs: 'a vector): 'a =
     if Vector.length xs = 1 then
        Vector.first xs
@@ -296,6 +304,16 @@ fun extractBind (s: Statement.t): Var.t =
         SOME v => v
       | _ => Error.bug ("No bind in statement: " ^
                         Layout.toString (Statement.layout s))
+
+(* Returns the type of the given statement *)
+fun extractType (s: Statement.t): Type.t = let
+   val Statement.T {ty, ...} = s
+in
+   ty
+end
+
+fun concatVecs (vecs: 'a vector list): 'a vector =
+    Vector.concatV (Vector.fromList vecs)
 
 fun maybeFlattenStatement (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
@@ -311,26 +329,61 @@ fun maybeFlattenStatement (s: Statement.t) = let
                 Statement.layout s]
           ]
       val _ = Control.diagnostic logThunk
+      (* flatBind = Array_alloc[targ](n) *)
       fun mkAlloc targ =  let
          val allocExp = Exp.PrimApp {args=args,
                                      prim=Prim.Array_alloc {raw = false},
                                      targs=Vector.new1 targ}
       in
-         Statement.T {exp=allocExp,
+         Statement.T {exp = allocExp,
                       ty = Type.array targ,
                       var = SOME (Var.newString "flatBind")}
       end
       (* arr_n = select(arr, n) *)
-      fun mkSelect (flatArg, idx) = let
+      fun mkSelect flatArg idx = let
          val arrTy = Type.array (getNthElemType (flatArg, idx))
          val selectExp = Exp.Select {offset = idx,
-                                     tuple = getUniqueElement args}
+                                     (* TODO: should this vary by the prim type? *)
+                                     tuple = Vector.first args}
          val varBasename = "flatArr_" ^ (Int.toString idx)
          val newVar = Var.newString varBasename
       in
          Statement.T {exp = selectExp,
                       ty = arrTy,
                       var = SOME newVar}
+      end
+      (* arr: 'a array = ...
+         ->
+         x = Array_sub['a](arr, n)
+       *)
+      fun mkLoad (stmt: Statement.t): Statement.t = let
+         val Statement.T {ty=arrTy, ...} = stmt
+         val elTy = Type.deArray arrTy
+         val subExp = Exp.PrimApp {args = Vector.new1 (extractBind stmt),
+                                   prim = Prim.Array_sub {readBarrier=false},
+                                   targs = Vector.new1 elTy}
+      in
+         Statement.T {
+            exp = subExp,
+            ty = elTy,
+            var = SOME (Var.newString "flatLoad")}
+
+      end
+      (* v1: 'a = ...
+         v2: 'b = ...
+         ...
+         -->
+         bindTo: ('a * b * ...) = tuple (v1, v2, ...)
+      *)
+      fun mkTuple (bindTo: Var.t option,
+                   stmts: Statement.t vector): Statement.t = let
+         val binds = Vector.map (stmts, extractBind)
+         val tys = Vector.map (stmts, extractType)
+         val tupleExp = Exp.Tuple binds
+      in
+         Statement.T {exp = tupleExp,
+                      ty = Type.tuple tys,
+                      var = bindTo}
       end
       fun buildArrayAlloc flatArg = let
          val components = Type.deTuple flatArg
@@ -360,7 +413,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       fun buildArrayLength flatArg = let
          val elemTy = getNthElemType (flatArg, 0)
          (* arr_a = select(arr, 0) *)
-         val arrStmt = mkSelect (flatArg, 0)
+         val arrStmt = mkSelect flatArg 0
          (* Array_length['a](arr_a) *)
          val lenExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
                                    prim = Prim.Array_length,
@@ -370,7 +423,30 @@ fun maybeFlattenStatement (s: Statement.t) = let
                                     ty = ty,
                                     var = var}
       in
+         (*
+            arr_a: 'a array = select(arr, 0)
+            len: int = Array_length['a](arr_a)
+         *)
          Vector.new2 (arrStmt, lenStmt)
+      end
+      fun buildArraySub flatArg = let
+         val numTypes = getNumElementTypes flatArg
+         (* arr_a = select(arr, 0)
+            arr_b = select(arr, 1)
+            ...
+          *)
+         val selectStmts = Vector.tabulate (numTypes, mkSelect flatArg)
+         (* x_a = Array_sub['a](arr_a, n)
+            x_b = Array_sub['b](arr_b, n)
+            ...
+          *)
+         val loadStmts = Vector.map (selectStmts, mkLoad)
+         (* res = tuple (x_a, x_b, ...) *)
+         val tupleStmt = mkTuple (var, loadStmts)
+      in
+         concatVecs [selectStmts,
+                     loadStmts,
+                     Vector.new1 tupleStmt]
       end
    in
       case (prim, getFlattenedArrayTArg targs)  of
@@ -379,6 +455,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
           SOME (buildArrayAlloc flatArg)
         | (Prim.Array_length, SOME flatArg) =>
           SOME (buildArrayLength flatArg)
+        (* TODO: handle readBarrier == true *)
+        | (Prim.Array_sub {readBarrier=false}, SOME flatArg) =>
+          SOME (buildArraySub flatArg)
         | _ => NONE
    end
 in
