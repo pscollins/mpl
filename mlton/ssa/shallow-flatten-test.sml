@@ -607,7 +607,9 @@ in
       val stmts = case res3 of
                      SOME s => s
                    | NONE => raise TestFail "s3 should be flattenable"
-      val _ = assert (Vector.length stmts = 3, "s3 should flatten to 3 statements")
+      val _ = assert (Vector.length stmts = 3,
+                      concat ["s3 should flatten to 3 statements, got",
+                              Int.toString (Vector.length stmts)])
    in () end)
 
    (* Test 9: maybeFlattenStatement (Array_sub) *)

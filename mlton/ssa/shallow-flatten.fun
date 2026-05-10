@@ -259,10 +259,14 @@ in
    (v, maybeFlat)
 end
 
-(* Returns the flattened version of the unique type in `targs`, else NONE *)
-fun flattenUniqueTArg targs =
+(* Given the `targs` of an array, returns the corresponding flattened type *)
+fun getFlattenedArrayTArg targs =
        if Vector.length targs = 1 then
-          maybeFlattenType (Vector.first targs)
+          (* Wrap in `array` to get the array type:
+             Array_alloc['a * b'] ->
+             ('a * 'b) array
+           *)
+          maybeFlattenType (Type.array (Vector.first targs))
        else NONE
 
 (* Returns the unique variable bound by `s`, else crash *)
@@ -309,6 +313,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
                 ty=flatArg,
                 var=var
              }
+         val _ = print ("num allocs: " ^ ((Int.toString o Vector.length) newAllocs))
+         val res = Vector.concat [newAllocs, Vector.new1 newTuple]
+         val _ = print ("num total: " ^ ((Int.toString o Vector.length) res))
       in
          (*
            arr_a = ...
@@ -316,10 +323,11 @@ fun maybeFlattenStatement (s: Statement.t) = let
            ...
            arr = tuple (...)
          *)
-         Vector.concat [newAllocs, Vector.new1 newTuple]
+         (* Vector.concat [newAllocs, Vector.new1 newTuple] *)
+         res
       end
    in
-      case (prim, flattenUniqueTArg targs)  of
+      case (prim, getFlattenedArrayTArg targs)  of
           (* TODO: handle raw == true *)
           (Prim.Array_alloc {raw=false}, SOME flatArg) =>
           SOME (buildArrayAlloc flatArg)
