@@ -57,6 +57,24 @@ sig
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
 
+   (* What array types should be flattened? *)
+   type flattenPolicy =
+        (* Flatten all tuple array types over less than `MaxWidth` tuple members *)
+        MaxWidth of int
+
+   (* Marks any vars in `Statement.t` that must be flattened according to the
+   provided policy. The following statement types may induce flattening:
+
+     * Any binding introducing a new array-typed variable:
+       x: ('a * 'b ...) array = ...
+
+     * TODO(pscollins): More types?
+    *)
+
+   val markStatementForPolicy: (flattenedVars * flattenPolicy) ->
+                               Statement.t -> unit
+
+
    (* If the provided `Var.t` is not marked for flattening, returns the original
    (var, type). Otherwise, returns (var, flattenedType), where `flattenedType`
    is flattened according to the rules of `maybeFlattenType`: if `type` is not
