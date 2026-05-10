@@ -267,7 +267,7 @@ fun flattenUniqueTArg targs =
 
 (* Returns the unique variable bound by `s`, else crash *)
 fun extractBind (s: Statement.t): Var.t =
-    case Statement.exp s of
+    case Statement.var s of
         SOME v => v
       | _ => Error.bug ("No bind in statement: " ^
                         Layout.toString (Statement.layout s))
@@ -277,7 +277,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
    fun doPrimApp (args, prim, targs) = let
       fun mkAlloc targ =  let
          val allocExp = Exp.PrimApp {args=args,
-                                     prim=Prim.Array_Alloc,
+                                     prim=Prim.Array_alloc {raw = false},
                                      targs=Vector.new1 targ}
       in
          Statement.T {exp=allocExp,
@@ -285,24 +285,33 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       var = SOME (Var.newString "flatBind")}
       end
       fun buildArrayAlloc flatArg = let
-         val components = Type.deTuple flatTarg
+         val components = Type.deTuple flatArg
          (*
             arr_a = Array_Alloc['a]
             arr_b = Array_Alloc['b]
             ...
          *)
-         val newAllocs = Vector.map (mkAlloc components)
+         val newAllocs = Vector.map (components, mkAlloc)
          (* arr = tuple (arr_a, arr_b, ...) *)
          val newTuple = Statement.T {
-                exp=Exp.Tuple (Vector.map (newAllocs, mkAlloc)),
+                exp=Exp.Tuple (Vector.map (newAllocs, extractBind)),
                 ty=flatArg,
                 var=var
              }
+      in
+         (*
+           arr_a = ...
+           arr_b = ...
+           ...
+           arr = tuple (...)
+         *)
+         SOME (Vector.concat [newAllocs, Vector.new1 newTuple])
+      end
    in
       case (prim, flattenUniqueTArg targs)  of
           (* TODO: handle raw == true *)
           (Prim.Array_alloc {raw=false}, SOME flatArg) =>
-          doPrimApp (args, prim, flatArg)
+          buildArrayAlloc flatArg
         | _ => NONE
    end
 in
