@@ -249,7 +249,15 @@ in
 end
 
 exception BadFlattenError
-fun maybeFlattenArg (fv, (v, t)) = (v, t)
+fun maybeFlattenArg (fv, (v, t)) = let
+   val maybeFlat =
+       case (isMarkedForFlatten (fv, v), maybeFlattenType t) of
+           (true, SOME t') => t'
+        |  (false, _) => t
+        | _ => raise BadFlattenError
+in
+   (v, maybeFlat)
+end
 
 fun maybeFlattenStatement (s: Statement.t) = NONE
 
