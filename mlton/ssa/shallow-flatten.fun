@@ -248,6 +248,11 @@ in
    getFlattenedProp v
 end
 
+datatype flattenPolicy = MaxWidth of int
+
+fun markStatementForPolicy (fv: flattenedVars, policy: flattenPolicy) (s: Statement.t): unit =
+   ()
+
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
    val maybeFlat =

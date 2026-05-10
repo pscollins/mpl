@@ -58,7 +58,7 @@ sig
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
 
    (* What array types should be flattened? *)
-   type flattenPolicy =
+   datatype flattenPolicy =
         (* Flatten all tuple array types over less than `MaxWidth` tuple members *)
         MaxWidth of int
 

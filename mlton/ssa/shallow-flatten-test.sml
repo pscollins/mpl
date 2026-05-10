@@ -733,5 +733,65 @@ in
       val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s5), "Case 5: should be true (uses v1 in tuple)")
    in () end)
 
+   (* Test 12: markStatementForPolicy *)
+   val _ = runTest ("Test 12: markStatementForPolicy", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+      val allocPrim = Prim.Array_alloc {raw = false}
+
+      (* Policy: Flatten if tuple width < 3 *)
+      val policy = ShallowFlatten.MaxWidth 3
+
+      (* Case 1: Array of 2-tuple. Should be marked. *)
+      val s1 = Statement.T {
+         exp = primApp (allocPrim, [n], [tuple2Ty]),
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      val _ = ShallowFlatten.markStatementForPolicy (fv, policy) s1
+      val _ = assert (ShallowFlatten.isMarkedForFlatten (fv, v1), "Case 1: v1 should be marked")
+
+      (* Case 2: Array of 4-tuple. Should NOT be marked (MaxWidth 3). *)
+      val v2 = Var.fromString "v2"
+      val tuple4Ty = Type.tuple (Vector.tabulate (4, fn _ => intTy))
+      val s2 = Statement.T {
+         exp = primApp (allocPrim, [n], [tuple4Ty]),
+         ty = Type.array tuple4Ty,
+         var = SOME v2
+      }
+      val _ = ShallowFlatten.markStatementForPolicy (fv, policy) s2
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "Case 2: v2 should NOT be marked")
+
+      (* Case 4: Array of 3-tuple. Should NOT be marked (MaxWidth 3, 3 < 3 is false). *)
+      val v4 = Var.fromString "v4"
+      val tuple3Ty = Type.tuple (Vector.tabulate (3, fn _ => intTy))
+      val s4 = Statement.T {
+         exp = primApp (allocPrim, [n], [tuple3Ty]),
+         ty = Type.array tuple3Ty,
+         var = SOME v4
+      }
+      val _ = ShallowFlatten.markStatementForPolicy (fv, policy) s4
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v4)), "Case 4: v4 should NOT be marked")
+
+      (* Case 3: Non-array binding. Should NOT be marked. *)
+      val v3 = Var.fromString "v3"
+      val s3 = Statement.T {
+         exp = Exp.Const (Const.IntInf 1),
+         ty = intTy,
+         var = SOME v3
+      }
+      val _ = ShallowFlatten.markStatementForPolicy (fv, policy) s3
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 should NOT be marked")
+   in () end)
+
    val _ = summarize ()
 end
