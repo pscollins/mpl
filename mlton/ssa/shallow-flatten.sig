@@ -66,6 +66,8 @@ sig
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
+   (* Returns the total number of variables marked for flattening *)
+   val markedCount: flattenedVars -> int
 
    (* What array types should be flattened? *)
    datatype flattenPolicy =
