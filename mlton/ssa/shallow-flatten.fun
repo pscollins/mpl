@@ -216,8 +216,27 @@ in
     | _ => NONE
 end
 
-type flattenedVars = unit
-fun newFlattenedVars () = ()
+type flattenedVars = {
+   getFlattenedProp: Var.t -> bool,
+   setFlattenedProp: Var.t * bool -> unit,
+   destroyFlattenedProp: unit -> unit
+}
+fun newFlattenedVars () = let
+   val {get, set, destroy} =
+       Property.destGetSetOnce (Var.plist, Property.initRaise ("flattenedVars lookup",
+                                                               Var.layout))
+in
+   {getFlattenedProp=get,
+    setFlattenedProp=set,
+    destroyFlattenedProp=destroy}
+end
+   
+fun destroyFlattenedVars (fv: flattenedVars): unit = let
+   val {destroyFlattenedProp, ...} = fv
+in
+   destroyFlattenedProp()
+end
+
 fun markForFlatten (fv: flattenedVars, v: Var.t): unit = ()
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = false
 
