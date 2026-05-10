@@ -793,5 +793,42 @@ in
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 should NOT be marked")
    in () end)
 
+   (* Test 13: markArgForPolicy *)
+   val _ = runTest ("Test 13: markArgForPolicy", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val intTy = Type.intInf
+      val policy = ShallowFlatten.MaxWidth 3
+
+      (* Case 1: Array of 2-tuple argument. Should be marked. *)
+      val v1 = Var.fromString "v1"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val arg1 = (v1, arrayTuple2Ty)
+      val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg1
+      val _ = assert (ShallowFlatten.isMarkedForFlatten (fv, v1), "Case 1: v1 (arg) should be marked")
+
+      (* Case 2: Array of 4-tuple argument. Should NOT be marked (MaxWidth 3). *)
+      val v2 = Var.fromString "v2"
+      val tuple4Ty = Type.tuple (Vector.tabulate (4, fn _ => intTy))
+      val arrayTuple4Ty = Type.array tuple4Ty
+      val arg2 = (v2, arrayTuple4Ty)
+      val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg2
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "Case 2: v2 (arg) should NOT be marked")
+
+      (* Case 3: Non-array argument. Should NOT be marked. *)
+      val v3 = Var.fromString "v3"
+      val arg3 = (v3, intTy)
+      val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg3
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 (arg) should NOT be marked")
+
+      (* Case 4: Array of 3-tuple argument. Should NOT be marked (MaxWidth 3). *)
+      val v4 = Var.fromString "v4"
+      val tuple3Ty = Type.tuple (Vector.tabulate (3, fn _ => intTy))
+      val arrayTuple3Ty = Type.array tuple3Ty
+      val arg4 = (v4, arrayTuple3Ty)
+      val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg4
+      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v4)), "Case 4: v4 (arg) should NOT be marked")
+   in () end)
+
    val _ = summarize ()
 end

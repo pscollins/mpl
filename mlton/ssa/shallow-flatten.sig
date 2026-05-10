@@ -76,6 +76,8 @@ sig
 
    val markStatementForPolicy: (flattenedVars * flattenPolicy) ->
                                Statement.t -> unit
+   val markArgForPolicy: (flattenedVars * flattenPolicy) ->
+                         (Var.t * Type.t) -> unit
 
 
    (* If the provided `Var.t` is not marked for flattening, returns the original
@@ -156,4 +158,10 @@ sig
    exception IllegalFlatteningDecision
    val flattenStatements: (flattenedVars * Statement.t vector) ->
                           Statement.t vector
+
+   (* Runs one iteration of flattening, collecting all flattenable array values
+      and transforming them appropriately. Returns (SOME ...) if any value was
+      successfully flattened, NONE otherwise.
+    *)
+   fun flattenOnce: flattenPolicy -> Program.t -> Program.t option
 end

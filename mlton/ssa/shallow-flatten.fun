@@ -253,6 +253,9 @@ datatype flattenPolicy = MaxWidth of int
 fun markStatementForPolicy (fv: flattenedVars, policy: flattenPolicy) (s: Statement.t): unit =
    ()
 
+fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy) (arg: (Var.t * Type.t)): unit =
+   ()
+
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
    val maybeFlat =
@@ -484,6 +487,9 @@ fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
 in
    List.exists (!vars, isFlattened)
 end
+
+exception IllegalFlatteningDecision
+fun flattenStatements (fv, ss) = ss
 
 fun transform (p: Program.t): Program.t = p
 end
