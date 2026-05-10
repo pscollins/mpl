@@ -80,8 +80,13 @@ sig
        x: 'a array * 'b array * ... = tuple(arr_a, arr_b, ...)
 
     * `Array_length` on tuple types:
-
-   
+      arr: ('a * 'b * ...) array = ...
+      n: int = Array_length['a * b * ...](arr)
+      -->
+      (* arr is now 'a array * b array * .. *)
+      arr_a = select (arr, 1)
+      n: int = Array_length['a](arr)
+      ...
     *)
 
    val maybeFlattenStatement: Statement.t ->
