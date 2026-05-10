@@ -99,7 +99,20 @@ sig
       x_b: 'b =  Array_sub['b](arr_b, i)
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
-      
+
+    3. `Array_update` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      x: ('a * 'b * ...) = ...
+      _ = Array_update['a * 'b * ...](arr, i, x)
+      -->
+      (* by 1., arr is now 'a array * b array * ... *)
+      arr_a: 'a array = select(arr, 1)
+      x_a: 'a = select(x, 1)
+      _ = Array_update['a])(arr_a, i, x_a)
+      arr_b: 'b array = select(arr, 2)
+      x_b: 'b = select(x, 2)
+      _ = Array_update['b])(arr_b, i, x_b)
+     ...
 
     *)
 
