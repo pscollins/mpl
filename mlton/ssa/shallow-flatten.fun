@@ -259,12 +259,21 @@ in
    (v, maybeFlat)
 end
 
-fun maybeFlattenStatement (s: Statement.t) = let
-   val Statement.T {exp, ty, var} = s
-   fun flattenUniqueTArg targs =
+(* Returns the flattened version of the unique type in `targs`, else NONE *)
+fun flattenUniqueTArg targs =
        if Vector.length targs = 1 then
           maybeFlattenType (Vector.first targs)
        else NONE
+
+(* Returns the unique variable bound by `s`, else crash *)
+fun extractBind (s: Statement.t): Var.t =
+    case Statement.exp s of
+        SOME v => v
+      | _ => Error.bug ("No bind in statement: " ^
+                        Layout.toString (Statement.layout s))
+
+fun maybeFlattenStatement (s: Statement.t) = let
+   val Statement.T {exp, ty, var} = s
    fun doPrimApp (args, prim, targs) = let
       fun mkAlloc targ =  let
          val allocExp = Exp.PrimApp {args=args,
@@ -276,13 +285,24 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       var = SOME (Var.newString "flatBind")}
       end
       fun buildArrayAlloc flatArg = let
-         val components = Type.deArray flatTarg
+         val components = Type.deTuple flatTarg
+         (*
+            arr_a = Array_Alloc['a]
+            arr_b = Array_Alloc['b]
+            ...
+         *)
          val newAllocs = Vector.map (mkAlloc components)
-         val newTuple = Statement.T
-          (*  *)
+         (* arr = tuple (arr_a, arr_b, ...) *)
+         val newTuple = Statement.T {
+                exp=Exp.Tuple (Vector.map (newAllocs, mkAlloc)),
+                ty=flatArg,
+                var=var
+             }
    in
       case (prim, flattenUniqueTArg targs)  of
-          (Prim.Array_alloc raw, SOME flatArg) => Error.unimplemented "TODO"
+          (* TODO: handle raw == true *)
+          (Prim.Array_alloc {raw=false}, SOME flatArg) =>
+          doPrimApp (args, prim, flatArg)
         | _ => NONE
    end
 in
