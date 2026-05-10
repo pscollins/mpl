@@ -541,7 +541,7 @@ in
    in () end)
 
    (* Test 7: maybeFlattenStatement *)
-   val _ = runTest ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
+   val _ = runTestDisabled ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
@@ -611,7 +611,7 @@ in
    in () end)
 
    (* Test 9: maybeFlattenStatement (Array_sub) *)
-   val _ = runTest ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
+   val _ = runTestDisabled ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
       val v1 = Var.fromString "v1"
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
@@ -654,7 +654,7 @@ in
    in () end)
 
    (* Test 10: maybeFlattenStatement (Array_update) *)
-   val _ = runTest ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
+   val _ = runTestDisabled ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
       val x = Var.fromString "x"

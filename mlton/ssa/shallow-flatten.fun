@@ -275,6 +275,17 @@ fun extractBind (s: Statement.t): Var.t =
 fun maybeFlattenStatement (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
    fun doPrimApp (args, prim, targs) = let
+      fun logThunk () =
+          Layout.align [
+             Layout.seq [Layout.str "doPrimApp: ",
+                         Prim.layout prim,
+                         Layout.str " with targs ",
+                         Vector.layout Type.layout targs],
+             Layout.seq [
+                Layout.str "whole_statement: ",
+                Statement.layout s]
+          ]
+      val _ = Control.diagnostic logThunk
       fun mkAlloc targ =  let
          val allocExp = Exp.PrimApp {args=args,
                                      prim=Prim.Array_alloc {raw = false},
@@ -305,13 +316,13 @@ fun maybeFlattenStatement (s: Statement.t) = let
            ...
            arr = tuple (...)
          *)
-         SOME (Vector.concat [newAllocs, Vector.new1 newTuple])
+         Vector.concat [newAllocs, Vector.new1 newTuple]
       end
    in
       case (prim, flattenUniqueTArg targs)  of
           (* TODO: handle raw == true *)
           (Prim.Array_alloc {raw=false}, SOME flatArg) =>
-          buildArrayAlloc flatArg
+          SOME (buildArrayAlloc flatArg)
         | _ => NONE
    end
 in
