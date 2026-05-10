@@ -259,7 +259,17 @@ in
    (v, maybeFlat)
 end
 
-fun maybeFlattenStatement (s: Statement.t) = NONE
+fun maybeFlattenStatement (s: Statement.t) = let
+   val Statement.T {exp, ty, var} = s
+   fun doPrimApp (args, prim, targs) =
+       case prim of
+           Prim.Array_alloc raw => Error.unimplemented "TODO"
+         | _ => NONE
+in
+   case exp of
+       Exp.PrimApp {args, prim, targs} => doPrimApp (args, prim, targs)
+    | _ =>  NONE
+end
 
 fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
    val vars = ref []
