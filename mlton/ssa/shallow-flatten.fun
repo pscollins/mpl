@@ -217,5 +217,8 @@ fun maybeFlattenArg (fv, (v, t)) = (v, t)
 
 fun maybeFlattenStatement (s: Statement.t) = NONE
 
+fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool =
+   false
+
 fun transform (p: Program.t): Program.t = p
 end

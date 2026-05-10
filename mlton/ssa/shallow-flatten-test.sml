@@ -697,5 +697,39 @@ in
           | _ => assert (false, "Unexpected expression in flattened Array_update"))
    in () end)
 
+   (* Test 11: mustFlattenStatement *)
+   val _ = runTest ("Test 11: mustFlattenStatement", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val v3 = Var.fromString "v3"
+      val intTy = Type.intInf
+      
+      (* Case 1: Defines marked variable *)
+      val _ = ShallowFlatten.markForFlatten (fv, v1)
+      val s1 = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = intTy, var = SOME v1}
+      val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s1), "Case 1: should be true (defines v1)")
+      
+      (* Case 2: Uses marked variable *)
+      val s2 = Statement.T {exp = Exp.Var v1, ty = intTy, var = SOME v2}
+      val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s2), "Case 2: should be true (uses v1)")
+      
+      (* Case 3: Neither defines nor uses marked variable *)
+      val s3 = Statement.T {exp = Exp.Var v2, ty = intTy, var = SOME v3}
+      val _ = assert (not (ShallowFlatten.mustFlattenStatement (fv, s3)), "Case 3: should be false")
+      
+      (* Case 4: Statement with NONE var, but uses marked variable *)
+      val s4 = Statement.T {exp = Exp.Var v1, ty = intTy, var = NONE}
+      val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s4), "Case 4: should be true (uses v1, var=NONE)")
+
+      (* Case 5: Complex expression using marked variable *)
+      val s5 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [v2, v1]),
+         ty = Type.tuple (Vector.fromList [intTy, intTy]),
+         var = SOME v3
+      }
+      val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s5), "Case 5: should be true (uses v1 in tuple)")
+   in () end)
+
    val _ = summarize ()
 end

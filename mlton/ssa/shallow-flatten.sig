@@ -124,5 +124,5 @@ sig
       A statement must be flattened if it uses or defines a `Var.t` that must be
       flattened.
     *)
-   val shouldFlatten: flattenedVars * Statement.t -> bool
+   val mustFlattenStatement: flattenedVars * Statement.t -> bool
 end
