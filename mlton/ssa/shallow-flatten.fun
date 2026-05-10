@@ -223,8 +223,7 @@ type flattenedVars = {
 }
 fun newFlattenedVars () = let
    val {get, set, destroy} =
-       Property.destGetSetOnce (Var.plist, Property.initRaise ("flattenedVars lookup",
-                                                               Var.layout))
+       Property.destGetSetOnce (Var.plist, Property.initConst false)
 in
    {getFlattenedProp=get,
     setFlattenedProp=set,
@@ -237,8 +236,17 @@ in
    destroyFlattenedProp()
 end
 
-fun markForFlatten (fv: flattenedVars, v: Var.t): unit = ()
-fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = false
+fun markForFlatten (fv: flattenedVars, v: Var.t): unit = let
+   val {setFlattenedProp, ...} = fv
+in
+   setFlattenedProp (v, true)
+end
+
+fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
+   val {getFlattenedProp, ...} = fv
+in
+   getFlattenedProp v
+end
 
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = (v, t)
