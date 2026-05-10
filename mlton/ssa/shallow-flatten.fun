@@ -205,7 +205,16 @@ in
    ()
 end
 
-fun maybeFlattenType (t: Type.t) = NONE
+fun maybeFlattenType (t: Type.t) = let
+   fun maybeFlattenArr xs =
+       case Type.dest xs of
+           Type.Tuple xs => SOME (Type.tuple (Vector.map (xs, Type.array)))
+        |  _ => NONE
+in
+   case Type.dest t of
+       Type.Array arr => maybeFlattenArr arr
+    | _ => NONE
+end
 
 type flattenedVars = unit
 fun newFlattenedVars () = ()
