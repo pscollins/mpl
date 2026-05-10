@@ -261,14 +261,34 @@ end
 
 fun maybeFlattenStatement (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
-   fun doPrimApp (args, prim, targs) =
-       case prim of
-           Prim.Array_alloc raw => Error.unimplemented "TODO"
-         | _ => NONE
+   fun flattenUniqueTArg targs =
+       if Vector.length targs = 1 then
+          maybeFlattenType (Vector.first targs)
+       else NONE
+   fun doPrimApp (args, prim, targs) = let
+      fun mkAlloc targ =  let
+         val allocExp = Exp.PrimApp {args=args,
+                                     prim=Prim.Array_Alloc,
+                                     targs=Vector.new1 targ}
+      in
+         Statement.T {exp=allocExp,
+                      ty = Type.array targ,
+                      var = SOME (Var.newString "flatBind")}
+      end
+      fun buildArrayAlloc flatArg = let
+         val components = Type.deArray flatTarg
+         val newAllocs = Vector.map (mkAlloc components)
+         val newTuple = Statement.T
+          (*  *)
+   in
+      case (prim, flattenUniqueTArg targs)  of
+          (Prim.Array_alloc raw, SOME flatArg) => Error.unimplemented "TODO"
+        | _ => NONE
+   end
 in
    case exp of
        Exp.PrimApp {args, prim, targs} => doPrimApp (args, prim, targs)
-    | _ =>  NONE
+    | _ => NONE
 end
 
 fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
