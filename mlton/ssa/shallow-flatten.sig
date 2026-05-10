@@ -68,6 +68,9 @@ sig
      * Any binding introducing a new array-typed variable:
        x: ('a * 'b ...) array = ...
 
+     * Any argument (block or function) introducing a new array-typed variable:
+       f(x: 'a * b * ... array, ...)
+
      * TODO(pscollins): More types?
     *)
 
@@ -141,4 +144,16 @@ sig
       flattened.
     *)
    val mustFlattenStatement: flattenedVars * Statement.t -> bool
+
+
+   (* Flattens (according to the rules of `maybeFlattenStatement`) all
+   statements in the provided `Statement.t vector` that require it (according to
+   the rules of `mustFlattenStatement`).
+
+   If some statement must be flattened, but cannot, raises
+   `IllegalFlatteningDecision`.
+    *)
+   exception IllegalFlatteningDecision
+   val flattenStatements: (flattenedVars * Statement.t vector) ->
+                          Statement.t vector
 end
