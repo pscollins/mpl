@@ -462,7 +462,7 @@ in
    in () end)
 
    (* Test 4: maybeFlattenType *)
-   val _ = runTestDisabled ("Test 4: maybeFlattenType", fn () => let
+   val _ = runTest ("Test 4: maybeFlattenType", fn () => let
       fun check (input, expected, msg) =
          let
             val res = ShallowFlatten.maybeFlattenType input
@@ -498,7 +498,7 @@ in
    end)
 
    (* Test 5: flattenedVars *)
-   val _ = runTestDisabled ("Test 5: flattenedVars", fn () => let
+   val _ = runTest ("Test 5: flattenedVars", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -510,7 +510,7 @@ in
    in () end)
 
    (* Test 6: maybeFlattenArg *)
-   val _ = runTestDisabled ("Test 6: maybeFlattenArg", fn () => let
+   val _ = runTest ("Test 6: maybeFlattenArg", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -541,7 +541,7 @@ in
    in () end)
 
    (* Test 7: maybeFlattenStatement *)
-   val _ = runTestDisabled ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
+   val _ = runTest ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
@@ -583,7 +583,7 @@ in
    in () end)
 
    (* Test 8: maybeFlattenStatement (Array_alloc) *)
-   val _ = runTestDisabled ("Test 8: maybeFlattenStatement (Array_alloc)", fn () => let
+   val _ = runTest ("Test 8: maybeFlattenStatement (Array_alloc)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
@@ -609,5 +609,93 @@ in
                    | NONE => raise TestFail "s3 should be flattenable"
       val _ = assert (Vector.length stmts = 3, "s3 should flatten to 3 statements")
    in () end)
+
+   (* Test 9: maybeFlattenStatement (Array_sub) *)
+   val _ = runTest ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
+      val v1 = Var.fromString "v1"
+      val arr = Var.fromString "arr"
+      val i = Var.fromString "i"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val subPrim = Prim.Array_sub {readBarrier = false}
+      val s = Statement.T {
+         exp = primApp (subPrim, [arr, i], [tuple2Ty]),
+         ty = tuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_sub should be flattenable"
+      
+      (* Expected:
+         1. arr_a = select(arr, 0)
+         2. x_a = Array_sub(arr_a, i)
+         3. arr_b = select(arr, 1)
+         4. x_b = Array_sub(arr_b, i)
+         5. v1 = tuple(x_a, x_b)
+      *)
+      val _ = assert (Vector.length stmts = 5, "Array_sub should flatten to 5 statements")
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ty, var} =>
+         case exp of
+            Exp.Select {offset, tuple} => assert (Var.equals (tuple, arr), "Select should be from arr")
+          | Exp.PrimApp {prim, ...} => 
+            (case prim of
+                Prim.Array_sub _ => ()
+              | _ => assert (false, "Expected Array_sub or Select or Tuple"))
+          | Exp.Tuple _ => ()
+          | _ => assert (false, "Unexpected expression in flattened Array_sub"))
+   in () end)
+
+   (* Test 10: maybeFlattenStatement (Array_update) *)
+   val _ = runTest ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
+      val arr = Var.fromString "arr"
+      val i = Var.fromString "i"
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val updatePrim = Prim.Array_update {writeBarrier = false}
+      val s = Statement.T {
+         exp = primApp (updatePrim, [arr, i, x], [tuple2Ty]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_update should be flattenable"
+      
+      (* Expected:
+         1. arr_a = select(arr, 0)
+         2. x_a = select(x, 0)
+         3. _ = Array_update(arr_a, i, x_a)
+         4. arr_b = select(arr, 1)
+         5. x_b = select(x, 1)
+         6. _ = Array_update(arr_b, i, x_b)
+      *)
+      val _ = assert (Vector.length stmts = 6, "Array_update should flatten to 6 statements")
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ty, var} =>
+         case exp of
+            Exp.Select {offset, tuple} => 
+            assert (Var.equals (tuple, arr) orelse Var.equals (tuple, x), "Select should be from arr or x")
+          | Exp.PrimApp {prim, ...} => 
+            (case prim of
+                Prim.Array_update _ => ()
+              | _ => assert (false, "Expected Array_update or Select"))
+          | _ => assert (false, "Unexpected expression in flattened Array_update"))
+   in () end)
+
    val _ = summarize ()
 end
