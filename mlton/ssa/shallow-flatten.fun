@@ -491,5 +491,8 @@ end
 exception IllegalFlatteningDecision
 fun flattenStatements (fv, ss) = ss
 
+fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option =
+   NONE
+
 fun transform (p: Program.t): Program.t = p
 end

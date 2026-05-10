@@ -1,5 +1,15 @@
 signature SHALLOW_FLATTEN =
 sig
+   (* Exports:
+        val transform: Program.t -> Program.t
+
+     which iteratively runs `flattenOnce` until convergence. The behavior of
+     this call is controlled by the following flags:
+
+       -shallow-flatten-max-iters=N: limit the number of iterations to N
+
+       -shallow-flatten-policy=maxWidth:$N sets the policy to `MaxWidth(n)`
+    *)
    include SSA_TRANSFORM
 
    (* Interface for applying a transformation to a specified program *)
@@ -163,5 +173,5 @@ sig
       and transforming them appropriately. Returns (SOME ...) if any value was
       successfully flattened, NONE otherwise.
     *)
-   fun flattenOnce: flattenPolicy -> Program.t -> Program.t option
+   val flattenOnce: flattenPolicy -> Program.t -> Program.t option
 end
