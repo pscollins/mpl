@@ -115,7 +115,14 @@ sig
      ...
 
     *)
-
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
+
+
+   (* Returns `true` if `Statement.` must be flattened.
+
+      A statement must be flattened if it uses or defines a `Var.t` that must be
+      flattened.
+    *)
+   val shouldFlatten: flattenedVars * Statement.t -> bool
 end
