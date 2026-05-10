@@ -71,7 +71,7 @@ sig
 
    The following expressions are flattenable:
 
-     * `Array_alloc` on tuple types
+     1. `Array_alloc` on tuple types
        x: ('a * 'b * ...) array = Array_alloc['a * 'b * ...](n)
        -->
        arr_a: 'a array = Array_alloc['a](n)
@@ -79,14 +79,28 @@ sig
        ...
        x: 'a array * 'b array * ... = tuple(arr_a, arr_b, ...)
 
-    * `Array_length` on tuple types:
+    2. `Array_length` on tuple types:
       arr: ('a * 'b * ...) array = ...
       n: int = Array_length['a * b * ...](arr)
       -->
-      (* arr is now 'a array * b array * .. *)
+      (* by 1., arr is now 'a array * b array * ... *)
       arr_a = select (arr, 1)
       n: int = Array_length['a](arr)
       ...
+
+    3. `Array_sub` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      x: ('a * 'b * ...) = Array_sub['a * 'b * ...](x, i)
+      -->
+      (* by 1., arr is now 'a array * b array * ... *)
+      arr_a: 'a array = select (arr, 1)
+      x_a: 'a =  Array_sub['a](arr_a, i)
+      arr_b: 'b array = select (arr, 2)
+      x_b: 'b =  Array_sub['b](arr_b, i)
+      ...
+      x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
+      
+
     *)
 
    val maybeFlattenStatement: Statement.t ->

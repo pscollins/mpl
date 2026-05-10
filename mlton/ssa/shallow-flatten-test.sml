@@ -578,6 +578,20 @@ in
                      SOME s => s
                    | NONE => raise TestFail "s3 should be flattenable"
       val _ = assert (Vector.length stmts = 3, "s3 should flatten to 3 statements")
+
+      (* Case 4: Array_length on tuple type *)
+      val lengthPrim = Prim.Array_length
+      val arr = Var.fromString "arr"
+      val s4 = Statement.T {
+         exp = primApp (lengthPrim, [arr], [tuple2Ty]),
+         ty = intTy,
+         var = SOME v1
+      }
+      val res4 = ShallowFlatten.maybeFlattenStatement s4
+      val stmts4 = case res4 of
+                      SOME s => s
+                    | NONE => raise TestFail "s4 should be flattenable"
+      val _ = assert (Vector.length stmts4 = 2, "s4 should flatten to 2 statements")
    in () end)
 
    val _ = summarize ()
