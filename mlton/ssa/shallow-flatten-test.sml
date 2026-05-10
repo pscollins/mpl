@@ -462,7 +462,7 @@ in
    in () end)
 
    (* Test 4: maybeFlattenType *)
-   val _ = runTestDisabled ("Test 4: maybeFlattenType", fn () => let
+   val _ = runTest ("Test 4: maybeFlattenType", fn () => let
       fun check (input, expected, msg) =
          let
             val res = ShallowFlatten.maybeFlattenType input
@@ -498,7 +498,7 @@ in
    end)
 
    (* Test 5: flattenedVars *)
-   val _ = runTestDisabled ("Test 5: flattenedVars", fn () => let
+   val _ = runTest ("Test 5: flattenedVars", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -510,7 +510,7 @@ in
    in () end)
 
    (* Test 6: maybeFlattenArg *)
-   val _ = runTestDisabled ("Test 6: maybeFlattenArg", fn () => let
+   val _ = runTest ("Test 6: maybeFlattenArg", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -538,6 +538,46 @@ in
                assert (false, "Case 3: should have raised BadFlattenError"))
               handle ShallowFlatten.BadFlattenError => ()
                    | _ => assert (false, "Case 3: raised wrong exception")
+   in () end)
+
+   (* Test 7: maybeFlattenStatement *)
+   val _ = runTest ("Test 7: maybeFlattenStatement", fn () => let
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val allocPrim = Prim.Array_alloc {raw = false}
+
+      (* Case 1: Non-flattenable statement (Const) *)
+      val s1 = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = intTy, var = SOME v1}
+      val _ = assert (Option.isNone (ShallowFlatten.maybeFlattenStatement s1), "s1 should not be flattenable")
+
+      (* Case 2: Array_alloc on non-tuple type *)
+      val s2 = Statement.T {
+         exp = primApp (allocPrim, [n], [intTy]),
+         ty = Type.array intTy,
+         var = SOME v1
+      }
+      val _ = assert (Option.isNone (ShallowFlatten.maybeFlattenStatement s2), "s2 should not be flattenable")
+
+      (* Case 3: Array_alloc on tuple type *)
+      val s3 = Statement.T {
+         exp = primApp (allocPrim, [n], [tuple2Ty]),
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      val res3 = ShallowFlatten.maybeFlattenStatement s3
+      val stmts = case res3 of
+                     SOME s => s
+                   | NONE => raise TestFail "s3 should be flattenable"
+      val _ = assert (Vector.length stmts = 3, "s3 should flatten to 3 statements")
    in () end)
 
    val _ = summarize ()

@@ -215,5 +215,7 @@ fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = false
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = (v, t)
 
+fun maybeFlattenStatement (s: Statement.t) = NONE
+
 fun transform (p: Program.t): Program.t = p
 end
