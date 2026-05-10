@@ -494,5 +494,19 @@ fun flattenStatements (fv, ss) = ss
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option =
    NONE
 
-fun transform (p: Program.t): Program.t = p
+fun transform (p: Program.t): Program.t =
+    let
+       val policy =
+           case !Control.shallowFlattenPolicy of
+               Control.ShallowFlattenPolicy.MaxWidth n => MaxWidth n
+       fun loop (p, n) =
+          if n >= !Control.shallowFlattenMaxIters
+             then p
+          else
+             case flattenOnce policy p of
+                NONE => p
+              | SOME p' => loop (p', n + 1)
+    in
+       loop (p, 0)
+    end
 end

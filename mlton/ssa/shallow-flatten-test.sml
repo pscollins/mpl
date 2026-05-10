@@ -907,5 +907,108 @@ in
       assert (Option.isSome res, "Should return SOME p' when flattening is applied")
    end)
 
+   (* Test 16: shallowFlattenMaxIters *)
+   val _ = runTest ("Test 16: shallowFlattenMaxIters", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val allocPrim = Prim.Array_alloc {raw = false}
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocPrim,
+                            targs = Vector.new1 tuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy)],
+         label = L0,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      val _ = Control.shallowFlattenMaxIters := 1
+      val p' = ShallowFlatten.transform p
+      val Program.T {functions = funcs', ...} = p'
+      val main' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest main'
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+   in
+      assert (Vector.length stmts' > 1, "Expected flattening to happen (maxIters=1)")
+   end)
+
+   (* Test 17: shallowFlattenPolicy *)
+   val _ = runTest ("Test 17: shallowFlattenPolicy", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val arrayTuple3Ty = Type.array tuple3Ty
+      
+      val allocPrim = Prim.Array_alloc {raw = false}
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocPrim,
+                            targs = Vector.new1 tuple3Ty},
+         ty = arrayTuple3Ty,
+         var = SOME v1
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy)],
+         label = L0,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      (* Policy MaxWidth 4 should flatten a 3-tuple array *)
+      val _ = Control.shallowFlattenPolicy := Control.ShallowFlattenPolicy.MaxWidth 4
+      val p' = ShallowFlatten.transform p
+      val Program.T {functions = funcs', ...} = p'
+      val main' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest main'
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+   in
+      assert (Vector.length stmts' > 1, "Expected flattening to happen (policy MaxWidth 4)")
+   end)
+
    val _ = summarize ()
 end

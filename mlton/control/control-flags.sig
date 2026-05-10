@@ -413,9 +413,19 @@ signature CONTROL_FLAGS =
 
       val preFlattenMaxIters: int ref
       val preFlattenRecursiveSteps: int ref
+      val shallowFlattenMaxIters: int ref
       val flattenIters: int ref
 
+      structure ShallowFlattenPolicy:
+         sig
+            datatype t = MaxWidth of int
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val shallowFlattenPolicy: ShallowFlattenPolicy.t ref
+
       structure PreFlattenConsumerPolicy:
+
          sig
             datatype t = Always | AnyUnpack | AllUnpack
             val toString: t -> string

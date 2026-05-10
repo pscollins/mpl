@@ -1413,10 +1413,39 @@ val preFlattenRecursiveSteps =
             default = 0,
             toString = Int.toString}
 
+val shallowFlattenMaxIters =
+   control {name = "shallow-flatten-max-iters",
+            default = 1,
+            toString = Int.toString}
+
 val flattenIters =
    control {name = "flatten-iters",
             default = 1,
             toString = Int.toString}
+
+structure ShallowFlattenPolicy =
+   struct
+      datatype t = MaxWidth of int
+
+      val toString =
+         fn MaxWidth n => concat ["maxWidth:", Int.toString n]
+
+      val fromString =
+         fn s =>
+            if String.hasPrefix (s, {prefix = "maxWidth:"})
+            then
+               let
+                  val nStr = String.extract (s, 9, NONE)
+               in
+                  Option.map (Int.fromString nStr, MaxWidth)
+               end
+            else NONE
+   end
+
+val shallowFlattenPolicy =
+   control {name = "shallow-flatten-policy",
+            default = ShallowFlattenPolicy.MaxWidth 3,
+            toString = ShallowFlattenPolicy.toString}
 
 structure PreFlattenConsumerPolicy =
    struct
