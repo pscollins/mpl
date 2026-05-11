@@ -1162,5 +1162,47 @@ in
           | _ => ())
    in () end)
 
+   (* Test 23: maybeFlattenStatement (Vector_sub, Vector_length, Vector_vector) *)
+   val _ = runTest ("Test 23: maybeFlattenStatement (Vector_sub, Vector_length, Vector_vector)", fn () => let
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      
+      val v_vec = Var.fromString "vec"
+      val v_i = Var.fromString "i"
+      val v_x = Var.fromString "x"
+      val v_res = Var.fromString "res"
+
+      (* Vector_length *)
+      val s_len = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v_vec],
+                            prim = Prim.Vector_length,
+                            targs = Vector.fromList [tuple2Ty]},
+         ty = intTy,
+         var = SOME v_res
+      }
+      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_len), "Vector_length should be flattenable")
+
+      (* Vector_sub *)
+      val s_sub = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v_vec, v_i],
+                            prim = Prim.Vector_sub,
+                            targs = Vector.fromList [tuple2Ty]},
+         ty = tuple2Ty,
+         var = SOME v_res
+      }
+      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_sub), "Vector_sub should be flattenable")
+
+      (* Vector_vector *)
+      val s_vec = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v_x],
+                            prim = Prim.Vector_vector,
+                            targs = Vector.fromList [tuple2Ty]},
+         ty = vectorTuple2Ty,
+         var = SOME v_res
+      }
+      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_vec), "Vector_vector should be flattenable")
+   in () end)
+
    val _ = summarize ()
 end
