@@ -586,12 +586,22 @@ end
 
 exception IllegalFlatteningDecision
 fun flattenStatements fv ss = let
-   fun doStmt s =
-       case (mustFlattenStatement (fv, s),
-             maybeFlattenStatement s) of
-           (false, _) => Vector.new1 s
-         | (true, SOME ss) => ss
-         | (true, NONE) => raise IllegalFlatteningDecision
+   fun mkLogThunk s = let
+      fun thunk() = 
+          Layout.seq [Layout.str "Maybe flatten? ",
+                      Statement.layout s]
+   in
+      thunk
+   end
+   fun doStmt s = let
+      val _ = Control.diagnostic (mkLogThunk s)
+      in
+         case (mustFlattenStatement (fv, s),
+               maybeFlattenStatement s) of
+             (false, _) => Vector.new1 s
+           | (true, SOME ss) => ss
+           | (true, NONE) => raise IllegalFlatteningDecision
+      end
 in
    Vector.concatV (Vector.map (ss, doStmt))
 end
