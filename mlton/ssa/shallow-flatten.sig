@@ -150,7 +150,7 @@ sig
       _ = Array_update['b])(arr_b, i, x_b)
      ...
 
-    4. `Array_toVector` on tuple types:
+    5. `Array_toVector` on tuple types:
       arr: ('a * 'b * ...) array = ...
       vec: ('a * 'b * ...) vector = Array_toVector['a * 'b * ...](arr)
       -->

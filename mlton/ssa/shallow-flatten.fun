@@ -458,6 +458,20 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       ty = Type.tuple tys,
                       var = bindTo}
       end
+      (* arr: 'a array = ....
+         ->
+         vec: 'a vec = Array_toVector['a](arr)
+      *)
+      fun mkArrToVec (arrStmt: Statement.t): Statement.t = let
+         val elTy = Type.array (extractType arrStmt)
+         val toVecExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
+                                     prim = Prim.Array_toVector,
+                                     targs = Vector.new1 elTy}
+      in
+         Statement.T {exp = toVecExp,
+                      ty = Type.vector elTy,
+                      var = SOME (Var.newString "flatVec")}
+      end
       fun buildArrayAlloc flatArg = let
          val components = Type.deTuple flatArg
          (*
@@ -549,6 +563,27 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      selectVars,
                      storeStmts]
       end
+      fun buildArrayToVector flatArg = let
+         val numTypes = getNumElementTypes flatArg
+         (* arr_a = select(arr, 0)
+            arr_b = select(arr, 1)
+            ...
+          *)
+         val arrValue = Vector.first args
+         val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
+                                                               arrValue))
+         (* vec_a = Array_toVector['a](arr_a)
+            vec_b = Array_toVector['b](arr_b)
+            ...
+         *)
+         val vecStmts = Vector.map (selectArrs, mkArrToVec)
+         (* vec = (vec_a * vec_b * ...) *)
+         val tupleStmt = mkTuple (var, vecStmts)
+      in
+         concatVecs [selectArrs,
+                     vecStmts,
+                     Vector.new1 tupleStmt]
+      end
    in
       case (prim, getFlattenedArrayTArg targs)  of
           (* TODO: handle raw == true *)
@@ -562,6 +597,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
         (* TODO: handle writeBarrier == true *)
         | (Prim.Array_update {writeBarrier=false}, SOME flatArg) =>
           SOME (buildArrayUpdate flatArg)
+        | (Prim.Array_toVector, SOME flatArg) =>
+          SOME (buildArrayToVector flatArg)
         | _ => NONE
    end
 in
