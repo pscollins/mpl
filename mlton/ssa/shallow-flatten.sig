@@ -61,7 +61,9 @@ sig
    type flattenedVars
    val newFlattenedVars: unit -> flattenedVars
    val destroyFlattenedVars: flattenedVars -> unit
-   (* Marks the provided `Var.t` for flattening *)
+
+   (* Marks the provided `Var.t` for flattening. It is only valid to call this
+   function once  on a particular `(fv, v)` pair *)
    val markForFlatten: flattenedVars * Var.t -> unit
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
@@ -71,7 +73,7 @@ sig
 
    (* What array types should be flattened? *)
    datatype flattenPolicy =
-        (* Flatten all tuple array types over less than `MaxWidth` tuple members *)
+        (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
         MaxWidth of int
 
    (* Marks any vars in `Statement.t` that must be flattened according to the

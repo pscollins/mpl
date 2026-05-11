@@ -523,10 +523,8 @@ in
       
       val _ = ShallowFlatten.markForFlatten (fv, v2)
       val _ = assert (ShallowFlatten.markedCount fv = 2, "Count should be 2 after marking v2")
-      
-      (* Marking the same variable again should not increase the count *)
-      val _ = ShallowFlatten.markForFlatten (fv, v1)
-      val _ = assert (ShallowFlatten.markedCount fv = 2, "Count should still be 2 after re-marking v1")
+
+      (* Re-marking the same variable is illegal *)
       
       val _ = ShallowFlatten.markForFlatten (fv, v3)
       val _ = assert (ShallowFlatten.markedCount fv = 3, "Count should be 3 after marking v3")
@@ -679,7 +677,7 @@ in
    in () end)
 
    (* Test 10: maybeFlattenStatement (Array_update) *)
-   val _ = runTestDisabled ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
+   val _ = runTest ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
       val x = Var.fromString "x"
@@ -771,8 +769,8 @@ in
                       targs = Vector.fromList targs}
       val allocPrim = Prim.Array_alloc {raw = false}
 
-      (* Policy: Flatten if tuple width < 3 *)
-      val policy = ShallowFlatten.MaxWidth 3
+      (* Policy: Flatten if tuple width <= 2 *)
+      val policy = ShallowFlatten.MaxWidth 2
 
       (* Case 1: Array of 2-tuple. Should be marked. *)
       val s1 = Statement.T {
@@ -794,7 +792,7 @@ in
       val _ = ShallowFlatten.markStatementForPolicy (fv, policy) s2
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "Case 2: v2 should NOT be marked")
 
-      (* Case 4: Array of 3-tuple. Should NOT be marked (MaxWidth 3, 3 < 3 is false). *)
+      (* Case 4: Array of 3-tuple. Should NOT be marked (MaxWidth 2, 3 <= 2 is false). *)
       val v4 = Var.fromString "v4"
       val tuple3Ty = Type.tuple (Vector.tabulate (3, fn _ => intTy))
       val s4 = Statement.T {
@@ -820,7 +818,7 @@ in
    val _ = runTest ("Test 13: markArgForPolicy", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val intTy = Type.intInf
-      val policy = ShallowFlatten.MaxWidth 3
+      val policy = ShallowFlatten.MaxWidth 2
 
       (* Case 1: Array of 2-tuple argument. Should be marked. *)
       val v1 = Var.fromString "v1"
@@ -830,7 +828,7 @@ in
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg1
       val _ = assert (ShallowFlatten.isMarkedForFlatten (fv, v1), "Case 1: v1 (arg) should be marked")
 
-      (* Case 2: Array of 4-tuple argument. Should NOT be marked (MaxWidth 3). *)
+      (* Case 2: Array of 4-tuple argument. Should NOT be marked (MaxWidth 2). *)
       val v2 = Var.fromString "v2"
       val tuple4Ty = Type.tuple (Vector.tabulate (4, fn _ => intTy))
       val arrayTuple4Ty = Type.array tuple4Ty
@@ -844,7 +842,7 @@ in
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg3
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 (arg) should NOT be marked")
 
-      (* Case 4: Array of 3-tuple argument. Should NOT be marked (MaxWidth 3). *)
+      (* Case 4: Array of 3-tuple argument. Should NOT be marked (MaxWidth 2). *)
       val v4 = Var.fromString "v4"
       val tuple3Ty = Type.tuple (Vector.tabulate (3, fn _ => intTy))
       val arrayTuple3Ty = Type.array tuple3Ty

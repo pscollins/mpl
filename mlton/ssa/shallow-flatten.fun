@@ -4,6 +4,20 @@ open S
 structure FlattenUtil = FlattenUtil (S)
 open FlattenUtil
 
+(* Returns the unique variable bound by `s`, else crash *)
+fun extractBind (s: Statement.t): Var.t =
+    case Statement.var s of
+        SOME v => v
+      | _ => Error.bug ("No bind in statement: " ^
+                        Layout.toString (Statement.layout s))
+
+(* Returns the type of the given statement *)
+fun extractType (s: Statement.t): Type.t = let
+   val Statement.T {ty, ...} = s
+in
+   ty
+end
+
 type rewriter = {
    doStatements: Statement.t vector -> Statement.t vector,
    doArgs: (Var.t * Type.t) vector -> (Var.t * Type.t) vector,
@@ -251,15 +265,52 @@ in
    getFlattenedProp v
 end
 
-fun markedCount (_: flattenedVars): int = 0
+fun markedCount (fv: flattenedVars): int = let
+   val {count, ...} = fv
+in
+   !count
+end
 
 datatype flattenPolicy = MaxWidth of int
 
-fun markStatementForPolicy (fv: flattenedVars, policy: flattenPolicy) (s: Statement.t): unit =
-   ()
+(* Returns:
 
-fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy) (arg: (Var.t * Type.t)): unit =
-   ()
+    * t == tuple? number of tuple elements
+    * t != tuple? 0
+*)
+fun getTupleTypeWidth (t: Type.t): int =
+    case Type.deTupleOpt t of
+        SOME ts => Vector.length ts
+      | _ => 0
+
+(* Like above, but requires that `t` is `(...) array` *)
+fun getArrayOfTupleTypeWidth (t: Type.t): int =
+    case Type.dest t of
+        Type.Array t' => getTupleTypeWidth t'
+      | _ => 0
+
+(* Should the value corresponding to `t` be marked, according to `policy`? *)
+fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
+   val MaxWidth (maxWidth) = policy
+   (* No reason to flatten tuples with <2 elements *)
+   val kMinWidth = 2
+   val currWidth = getArrayOfTupleTypeWidth t
+in
+   (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
+end
+
+fun markStatementForPolicy (fv: flattenedVars,
+                            policy: flattenPolicy)
+                           (s: Statement.t): unit =
+   case (shouldMarkType (policy, extractType s), Statement.var s) of
+       (true, SOME v') => markForFlatten (fv, v')
+     | _ => ()
+
+fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
+                     ((var, ty): (Var.t * Type.t)): unit =
+    if shouldMarkType (policy, ty) then
+       markForFlatten (fv, var)
+    else ()
 
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
@@ -310,20 +361,6 @@ fun getUniqueElement (xs: 'a vector): 'a =
     if Vector.length xs = 1 then
        Vector.first xs
     else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
-
-(* Returns the unique variable bound by `s`, else crash *)
-fun extractBind (s: Statement.t): Var.t =
-    case Statement.var s of
-        SOME v => v
-      | _ => Error.bug ("No bind in statement: " ^
-                        Layout.toString (Statement.layout s))
-
-(* Returns the type of the given statement *)
-fun extractType (s: Statement.t): Type.t = let
-   val Statement.T {ty, ...} = s
-in
-   ty
-end
 
 fun concatVecs (vecs: 'a vector list): 'a vector =
     Vector.concatV (Vector.fromList vecs)
