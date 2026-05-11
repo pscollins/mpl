@@ -169,9 +169,13 @@ sig
    If some statement must be flattened, but cannot, raises
    `IllegalFlatteningDecision`.
     *)
+   (* TODO: needs tests *)
    exception IllegalFlatteningDecision
-   val flattenStatements: (flattenedVars * Statement.t vector) ->
+   val flattenStatements: flattenedVars -> Statement.t vector ->
                           Statement.t vector
+   (* Like above, but for arguments *)
+   val flattenArgs: flattenedVars -> (Var.t * Type.t) vector ->
+                    (Var.t * Type.t) vector
 
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was

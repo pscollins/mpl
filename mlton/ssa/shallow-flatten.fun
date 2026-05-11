@@ -582,10 +582,57 @@ in
 end
 
 exception IllegalFlatteningDecision
-fun flattenStatements (fv, ss) = ss
+fun flattenStatements fv ss = let
+   fun doStmt s =
+       case (mustFlattenStatement (fv, s),
+             maybeFlattenStatement s) of
+           (false, _) => Vector.new1 s
+         | (true, SOME ss) => ss
+         | (true, NONE) => raise IllegalFlatteningDecision
+in
+   Vector.concatV (Vector.map (ss, doStmt))
+end
 
-fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option =
-   NONE
+fun flattenArgs fv args = let
+   fun doArg (t as (v, _)) =
+       if isMarkedForFlatten (fv, v) then
+          maybeFlattenArg t
+       else t
+in
+   Vector.map (args, doArg)
+end
+
+fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
+   val fv = newFlattenedVars()
+   fun foreachStatements ss =
+       Vector.foreach(ss, markStatementForPolicy (policy, fv))
+   fun foreachArgs args =
+       Vector.foreach (args, markStatementForPolicy (policy, fv))
+   fun foreachTransfer _ = ()
+
+   val visitor = {
+      foreachStatements = foreachStatements,
+      foreachArgs = foreachArgs,
+      foreachTransfer = foreachTransfer
+   }
+   val _ = foreachBfs visitor p
+in
+   fv
+end
+
+fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
+   (* Collect all of the variables in the program that need flattening *)
+   val fv = getFlattenedVarsInProgram (policy, p)
+   val rewriter = {
+      doStatement = flattenStatements fv,
+      doArgs = flattenArgs fv,
+      doTransfer = fn x => x
+   }
+   val p' = rewriteBfs rewriter p
+in
+   if markedCount fv > 0 then NONE
+   else SOME p'
+end
 
 fun transform (p: Program.t): Program.t =
     let
