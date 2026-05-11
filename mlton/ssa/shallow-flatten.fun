@@ -353,11 +353,11 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       var = SOME (Var.newString "flatBind")}
       end
       (* arr_n = select(arr, n) *)
-      fun mkSelect flatArg idx = let
+      fun mkSelect (flatArg, from) idx = let
          val arrTy = Type.array (getNthElemType (flatArg, idx))
          val selectExp = Exp.Select {offset = idx,
                                      (* TODO: should this vary by the prim type? *)
-                                     tuple = Vector.first args}
+                                     tuple = from}
          val varBasename = "flatArr_" ^ (Int.toString idx)
          val newVar = Var.newString varBasename
       in
@@ -448,7 +448,38 @@ fun maybeFlattenStatement (s: Statement.t) = let
             arr_b = select(arr, 1)
             ...
           *)
-         val selectStmts = Vector.tabulate (numTypes, mkSelect flatArg)
+         val arrValue = Vector.first args
+         val selectStmts = Vector.tabulate (numTypes,
+                                            mkSelect (flatArg, arrValue))
+         (* x_a = Array_sub['a](arr_a, n)
+            x_b = Array_sub['b](arr_b, n)
+            ...
+          *)
+         val loadStmts = Vector.map (selectStmts, mkLoad)
+         (* res = tuple (x_a, x_b, ...) *)
+         val tupleStmt = mkTuple (var, loadStmts)
+      in
+         concatVecs [selectStmts,
+                     loadStmts,
+                     Vector.new1 tupleStmt]
+      end
+      fun buildArrayUpdate flatArg = let
+         val numTypes = getNumElementTypes flatArg
+         (* arr_a = select(arr, 0)
+            arr_b = select(arr, 1)
+            ...
+          *)
+         val arrValue = Vector.first args
+         val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
+                                                               arrValue))
+         (* x_a = select(x, 0)
+            x_b = select(x, 1)
+            ...
+          *)
+         val xValue = Vector.last args
+         val selectVars = Vector.tabulate (numTypes, mkSelect (flatArg,
+                                                               xValue))
+         (* TODO: finish *)
          (* x_a = Array_sub['a](arr_a, n)
             x_b = Array_sub['b](arr_b, n)
             ...
@@ -471,6 +502,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
         (* TODO: handle readBarrier == true *)
         | (Prim.Array_sub {readBarrier=false}, SOME flatArg) =>
           SOME (buildArraySub flatArg)
+        (* TODO: handle writeBarrier == true *)
+        | (Prim.Array_update {writeBarrier=false}, SOME flatArg) =>
+          SOME (buildArrayUpdate flatArg)
         | _ => NONE
    end
 in
