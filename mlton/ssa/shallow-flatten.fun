@@ -382,6 +382,26 @@ fun maybeFlattenStatement (s: Statement.t) = let
             var = SOME (Var.newString "flatLoad")}
 
       end
+      (* {x_arr: 'a array = ...; x: 'a = ...}
+         ->
+         _ = Array_update(x_arr, n, x)
+      *)
+      fun mkStore (arrStmt: Statement.t, varStmt: Statement.t): Statement.t = let
+         val Statement.T {ty=elTy, ...} = varStmt
+         val idxArg = Vector.sub (args, 1)
+         val storeExp = Exp.PrimApp {args = Vector.new3 (extractBind arrStmt,
+                                                         idxArg,
+                                                         extractBind varStmt),
+                                     prim = Prim.Array_update {writeBarrier=false},
+                                     targs = Vector.new1 elTy}
+      in
+         Statement.T {
+            exp = storeExp,
+            ty = Type.unit,
+            var = NONE}
+
+      end
+
       (* v1: 'a = ...
          v2: 'b = ...
          ...
@@ -426,7 +446,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       fun buildArrayLength flatArg = let
          val elemTy = getNthElemType (flatArg, 0)
          (* arr_a = select(arr, 0) *)
-         val arrStmt = mkSelect flatArg 0
+         val arrStmt = mkSelect (flatArg, Vector.first args) 0
          (* Array_length['a](arr_a) *)
          val lenExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
                                    prim = Prim.Array_length,
@@ -479,18 +499,15 @@ fun maybeFlattenStatement (s: Statement.t) = let
          val xValue = Vector.last args
          val selectVars = Vector.tabulate (numTypes, mkSelect (flatArg,
                                                                xValue))
-         (* TODO: finish *)
-         (* x_a = Array_sub['a](arr_a, n)
-            x_b = Array_sub['b](arr_b, n)
+         (* _ = Array_update['a](arr_a, n, x_a)
+            _ = Array_update['b](arr_b, n, x_b)
             ...
-          *)
-         val loadStmts = Vector.map (selectStmts, mkLoad)
-         (* res = tuple (x_a, x_b, ...) *)
-         val tupleStmt = mkTuple (var, loadStmts)
+         *)
+         val storeStmts = Vector.map2 (selectArrs, selectVars, mkStore )
       in
-         concatVecs [selectStmts,
-                     loadStmts,
-                     Vector.new1 tupleStmt]
+         concatVecs [selectArrs,
+                     selectVars,
+                     storeStmts]
       end
    in
       case (prim, getFlattenedArrayTArg targs)  of
