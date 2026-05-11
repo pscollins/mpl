@@ -168,12 +168,11 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
          val {args, blocks, inline, name, raises, returns, start} =
              Function.dest (getFunc fName)
          val newArgs = doArgs args
-         (* TODO: avoid list->vector *)
          val newBlocks = rewriteBlocks (start, Vector.toList blocks)
       in
          (* Order is important *)
-         Function.new {args = doArgs args,
-                       blocks = (Vector.fromList o rewriteBlocks) (start, Vector.toList blocks),
+         Function.new {args = newArgs,
+                       blocks = Vector.fromList newBlocks,
                        inline = inline,
                        name = name,
                        raises = raises,
@@ -626,7 +625,6 @@ end
 
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* Collect all of the variables in the program that need flattening *)
-   val _ = print "START FLATTEN\n"
    val fv = getFlattenedVarsInProgram (policy, p)
    val rewriter = {
       doStatements = flattenStatements fv,
