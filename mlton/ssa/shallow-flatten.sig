@@ -120,7 +120,7 @@ sig
       n: int = Array_length['a * b * ...](arr)
       -->
       (* by 1., arr is now 'a array * b array * ... *)
-      arr_a = select (arr, 1)
+      arr_a = select (arr, 0)
       n: int = Array_length['a](arr)
       ...
 
@@ -129,9 +129,9 @@ sig
       x: ('a * 'b * ...) = Array_sub['a * 'b * ...](x, i)
       -->
       (* by 1., arr is now 'a array * b array * ... *)
-      arr_a: 'a array = select (arr, 1)
+      arr_a: 'a array = select (arr, 0)
       x_a: 'a =  Array_sub['a](arr_a, i)
-      arr_b: 'b array = select (arr, 2)
+      arr_b: 'b array = select (arr, 1)
       x_b: 'b =  Array_sub['b](arr_b, i)
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
@@ -142,14 +142,25 @@ sig
       _ = Array_update['a * 'b * ...](arr, i, x)
       -->
       (* by 1., arr is now 'a array * b array * ... *)
-      arr_a: 'a array = select(arr, 1)
+      arr_a: 'a array = select(arr, 0)
       x_a: 'a = select(x, 1)
       _ = Array_update['a])(arr_a, i, x_a)
-      arr_b: 'b array = select(arr, 2)
+      arr_b: 'b array = select(arr, 1)
       x_b: 'b = select(x, 2)
       _ = Array_update['b])(arr_b, i, x_b)
      ...
 
+    4. `Array_toVector` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      vec: ('a * 'b * ...) vector = Array_toVector['a * 'b * ...](arr)
+      -->
+      (* by 1., arr is now 'a array * b array * ... *)
+      arr_a: 'a array = select(arr, 0)
+      vec_a: 'a vector = Array_toVector['a](arr_a)
+      arr_b: 'b array = select(arr, 1)
+      vec_b: 'b vector = Array_toVector['b](arr_b)
+      ...
+      vec: a' vector * 'b vector * ... = tuple (vec_a, vec_b, ...)
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
