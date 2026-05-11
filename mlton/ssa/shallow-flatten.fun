@@ -596,7 +596,7 @@ end
 fun flattenArgs fv args = let
    fun doArg (t as (v, _)) =
        if isMarkedForFlatten (fv, v) then
-          maybeFlattenArg t
+          maybeFlattenArg (fv, t)
        else t
 in
    Vector.map (args, doArg)
@@ -605,9 +605,9 @@ end
 fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
    val fv = newFlattenedVars()
    fun foreachStatements ss =
-       Vector.foreach(ss, markStatementForPolicy (policy, fv))
+       Vector.foreach(ss, markStatementForPolicy (fv, policy))
    fun foreachArgs args =
-       Vector.foreach (args, markStatementForPolicy (policy, fv))
+       Vector.foreach (args, markArgForPolicy (fv, policy))
    fun foreachTransfer _ = ()
 
    val visitor = {
@@ -624,14 +624,16 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* Collect all of the variables in the program that need flattening *)
    val fv = getFlattenedVarsInProgram (policy, p)
    val rewriter = {
-      doStatement = flattenStatements fv,
+      doStatements = flattenStatements fv,
       doArgs = flattenArgs fv,
       doTransfer = fn x => x
    }
    val p' = rewriteBfs rewriter p
+   val count = markedCount fv
+   val _ = destroyFlattenedVars fv
 in
-   if markedCount fv > 0 then NONE
-   else SOME p'
+   if count > 0 then SOME p'
+   else NONE
 end
 
 fun transform (p: Program.t): Program.t =
