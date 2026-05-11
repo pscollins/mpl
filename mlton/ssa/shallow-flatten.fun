@@ -219,7 +219,8 @@ end
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
    setFlattenedProp: Var.t * bool -> unit,
-   destroyFlattenedProp: unit -> unit
+   destroyFlattenedProp: unit -> unit,
+   count: int ref
 }
 fun newFlattenedVars () = let
    val {get, set, destroy} =
@@ -227,7 +228,8 @@ fun newFlattenedVars () = let
 in
    {getFlattenedProp=get,
     setFlattenedProp=set,
-    destroyFlattenedProp=destroy}
+    destroyFlattenedProp=destroy,
+    count=ref 0}
 end
    
 fun destroyFlattenedVars (fv: flattenedVars): unit = let
@@ -237,7 +239,8 @@ in
 end
 
 fun markForFlatten (fv: flattenedVars, v: Var.t): unit = let
-   val {setFlattenedProp, ...} = fv
+   val {setFlattenedProp, count, ...} = fv
+   val _ = count := (!count + 1)
 in
    setFlattenedProp (v, true)
 end
@@ -247,6 +250,8 @@ fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
 in
    getFlattenedProp v
 end
+
+fun markedCount (_: flattenedVars): int = 0
 
 datatype flattenPolicy = MaxWidth of int
 

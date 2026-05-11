@@ -509,6 +509,29 @@ in
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "v2 should not be marked")
    in () end)
 
+   (* Test 18: markedCount *)
+   val _ = runTest ("Test 18: markedCount", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val v1 = Var.fromString "v1"
+      val v2 = Var.fromString "v2"
+      val v3 = Var.fromString "v3"
+
+      val _ = assert (ShallowFlatten.markedCount fv = 0, "Initial count should be 0")
+      
+      val _ = ShallowFlatten.markForFlatten (fv, v1)
+      val _ = assert (ShallowFlatten.markedCount fv = 1, "Count should be 1 after marking v1")
+      
+      val _ = ShallowFlatten.markForFlatten (fv, v2)
+      val _ = assert (ShallowFlatten.markedCount fv = 2, "Count should be 2 after marking v2")
+      
+      (* Marking the same variable again should not increase the count *)
+      val _ = ShallowFlatten.markForFlatten (fv, v1)
+      val _ = assert (ShallowFlatten.markedCount fv = 2, "Count should still be 2 after re-marking v1")
+      
+      val _ = ShallowFlatten.markForFlatten (fv, v3)
+      val _ = assert (ShallowFlatten.markedCount fv = 3, "Count should be 3 after marking v3")
+   in () end)
+
    (* Test 6: maybeFlattenArg *)
    val _ = runTest ("Test 6: maybeFlattenArg", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
