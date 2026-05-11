@@ -255,6 +255,10 @@ end
 fun markForFlatten (fv: flattenedVars, v: Var.t): unit = let
    val {setFlattenedProp, count, ...} = fv
    val _ = count := (!count + 1)
+   fun logThunk () =
+       Layout.seq [Layout.str "markForFlatten: ",
+                   Var.layout v]
+   val _ = Control.diagnostic logThunk
 in
    setFlattenedProp (v, true)
 end
@@ -622,6 +626,7 @@ end
 
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* Collect all of the variables in the program that need flattening *)
+   val _ = print "START FLATTEN\n"
    val fv = getFlattenedVarsInProgram (policy, p)
    val rewriter = {
       doStatements = flattenStatements fv,
