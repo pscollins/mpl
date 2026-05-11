@@ -368,6 +368,11 @@ fun getUniqueElement (xs: 'a vector): 'a =
 fun concatVecs (vecs: 'a vector list): 'a vector =
     Vector.concatV (Vector.fromList vecs)
 
+fun maybeStmtsToLayout (maybeStmts: Statement.t vector option) =
+    case maybeStmts of
+        SOME ss => Layout.align (Vector.map (ss, Statement.layout))
+      | NONE => Layout.str "(none)"
+
 fun maybeFlattenStatement (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
    fun doPrimApp (args, prim, targs) = let
@@ -382,10 +387,20 @@ fun maybeFlattenStatement (s: Statement.t) = let
                 Statement.layout s]
           ]
       val _ = Control.diagnostic logThunk
-      (* flatBind = Array_alloc[targ](n) *)
-      fun mkAlloc targ =  let
+      fun mkLogResultThunk (res) = let
+         fun logThunk() = Layout.seq [
+                Layout.str, "Result: ",
+                maybeStmtsToLayout res
+             ]
+      in
+         logThunk
+      end
+      (* flatBind = Array_alloc[targ](n)
+         `primArg` is {raw=true/false}`
+       *)
+      fun mkAlloc primArg targ =  let
          val allocExp = Exp.PrimApp {args=args,
-                                     prim=Prim.Array_alloc {raw = false},
+                                     prim=Prim.Array_alloc primArg,
                                      targs=Vector.new1 targ}
       in
          Statement.T {exp = allocExp,
@@ -396,7 +411,6 @@ fun maybeFlattenStatement (s: Statement.t) = let
       fun mkSelect (flatArg, from) idx = let
          val arrTy = Type.array (getNthElemType (flatArg, idx))
          val selectExp = Exp.Select {offset = idx,
-                                     (* TODO: should this vary by the prim type? *)
                                      tuple = from}
          val varBasename = "flatArr_" ^ (Int.toString idx)
          val newVar = Var.newString varBasename
@@ -408,12 +422,14 @@ fun maybeFlattenStatement (s: Statement.t) = let
       (* arr: 'a array = ...
          ->
          x = Array_sub['a](arr, n)
+
+         `primArg` is `{readBarrier=true/false}`
        *)
-      fun mkLoad (stmt: Statement.t): Statement.t = let
+      fun mkLoad primArg (stmt: Statement.t): Statement.t = let
          val Statement.T {ty=arrTy, ...} = stmt
          val elTy = Type.deArray arrTy
          val subExp = Exp.PrimApp {args = Vector.new1 (extractBind stmt),
-                                   prim = Prim.Array_sub {readBarrier=false},
+                                   prim = Prim.Array_sub primArg,
                                    targs = Vector.new1 elTy}
       in
          Statement.T {
@@ -425,14 +441,16 @@ fun maybeFlattenStatement (s: Statement.t) = let
       (* {x_arr: 'a array = ...; x: 'a = ...}
          ->
          _ = Array_update(x_arr, n, x)
+
+         `primArg` is `{writeBarrier=true/false}`
       *)
-      fun mkStore (arrStmt: Statement.t, varStmt: Statement.t): Statement.t = let
+      fun mkStore primArg (arrStmt: Statement.t, varStmt: Statement.t): Statement.t = let
          val Statement.T {ty=elTy, ...} = varStmt
          val idxArg = Vector.sub (args, 1)
          val storeExp = Exp.PrimApp {args = Vector.new3 (extractBind arrStmt,
                                                          idxArg,
                                                          extractBind varStmt),
-                                     prim = Prim.Array_update {writeBarrier=false},
+                                     prim = Prim.Array_update primArg,
                                      targs = Vector.new1 elTy}
       in
          Statement.T {
@@ -472,14 +490,14 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       ty = Type.vector elTy,
                       var = SOME (Var.newString "flatVec")}
       end
-      fun buildArrayAlloc flatArg = let
+      fun buildArrayAlloc (primArg, flatArg) = let
          val components = Type.deTuple flatArg
          (*
             arr_a = Array_Alloc['a]
             arr_b = Array_Alloc['b]
             ...
          *)
-         val newAllocs = Vector.map (components, mkAlloc)
+         val newAllocs = Vector.map (components, mkAlloc primArg)
          (* arr = tuple (arr_a, arr_b, ...) *)
          val newTuple = Statement.T {
                 exp=Exp.Tuple (Vector.map (newAllocs, extractBind)),
@@ -516,7 +534,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
          *)
          Vector.new2 (arrStmt, lenStmt)
       end
-      fun buildArraySub flatArg = let
+      fun buildArraySub (primArg, flatArg) = let
          val numTypes = getNumElementTypes flatArg
          (* arr_a = select(arr, 0)
             arr_b = select(arr, 1)
@@ -529,7 +547,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
             x_b = Array_sub['b](arr_b, n)
             ...
           *)
-         val loadStmts = Vector.map (selectStmts, mkLoad)
+         val loadStmts = Vector.map (selectStmts, mkLoad primArg)
          (* res = tuple (x_a, x_b, ...) *)
          val tupleStmt = mkTuple (var, loadStmts)
       in
@@ -537,7 +555,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      loadStmts,
                      Vector.new1 tupleStmt]
       end
-      fun buildArrayUpdate flatArg = let
+      fun buildArrayUpdate (primArg, flatArg) = let
          val numTypes = getNumElementTypes flatArg
          (* arr_a = select(arr, 0)
             arr_b = select(arr, 1)
@@ -557,7 +575,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
             _ = Array_update['b](arr_b, n, x_b)
             ...
          *)
-         val storeStmts = Vector.map2 (selectArrs, selectVars, mkStore )
+         val storeStmts = Vector.map2 (selectArrs, selectVars, mkStore primArg)
       in
          concatVecs [selectArrs,
                      selectVars,
@@ -584,22 +602,22 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      vecStmts,
                      Vector.new1 tupleStmt]
       end
+      val result =
+          case (prim, getFlattenedArrayTArg targs)  of
+              (Prim.Array_alloc primArg, SOME flatArg) =>
+              SOME (buildArrayAlloc (primArg, flatArg))
+            | (Prim.Array_length, SOME flatArg) =>
+              SOME (buildArrayLength flatArg)
+            | (Prim.Array_sub primArg, SOME flatArg) =>
+              SOME (buildArraySub (primArg, flatArg))
+            | (Prim.Array_update primArg, SOME flatArg) =>
+              SOME (buildArrayUpdate (primArg, flatArg))
+            | (Prim.Array_toVector, SOME flatArg) =>
+              SOME (buildArrayToVector flatArg)
+            | _ => NONE
+      val _ = Control.diagnostic (mkLogResultThunk result)
    in
-      case (prim, getFlattenedArrayTArg targs)  of
-          (* TODO: handle raw == true *)
-          (Prim.Array_alloc {raw=false}, SOME flatArg) =>
-          SOME (buildArrayAlloc flatArg)
-        | (Prim.Array_length, SOME flatArg) =>
-          SOME (buildArrayLength flatArg)
-        (* TODO: handle readBarrier == true *)
-        | (Prim.Array_sub {readBarrier=false}, SOME flatArg) =>
-          SOME (buildArraySub flatArg)
-        (* TODO: handle writeBarrier == true *)
-        | (Prim.Array_update {writeBarrier=false}, SOME flatArg) =>
-          SOME (buildArrayUpdate flatArg)
-        | (Prim.Array_toVector, SOME flatArg) =>
-          SOME (buildArrayToVector flatArg)
-        | _ => NONE
+      result
    end
 in
    case exp of

@@ -1065,5 +1065,102 @@ in
       val _ = assert (Vector.length stmts = 5, "Array_toVector should flatten to 5 statements")
    in () end)
 
+   (* Test 20: maybeFlattenStatement (Array_alloc {raw = false}) *)
+   val _ = runTest ("Test 20: maybeFlattenStatement (Array_alloc {raw = false})", fn () => let
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val allocPrim = Prim.Array_alloc {raw = false}
+
+      val s = Statement.T {
+         exp = primApp (allocPrim, [n], [tuple2Ty]),
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_alloc {raw = false} should be flattenable"
+      
+      (* Verify that the generated allocs also have raw = false *)
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
+         case exp of
+            Exp.PrimApp {prim = Prim.Array_alloc {raw, ...}, ...} =>
+               assert (not raw, "Generated Array_alloc should have raw = false")
+          | _ => ())
+   in () end)
+
+   (* Test 21: maybeFlattenStatement (Array_sub {readBarrier = true}) *)
+   val _ = runTest ("Test 21: maybeFlattenStatement (Array_sub {readBarrier = true})", fn () => let
+      val v1 = Var.fromString "v1"
+      val arr = Var.fromString "arr"
+      val i = Var.fromString "i"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val subPrim = Prim.Array_sub {readBarrier = true}
+      val s = Statement.T {
+         exp = primApp (subPrim, [arr, i], [tuple2Ty]),
+         ty = tuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_sub {readBarrier = true} should be flattenable"
+      
+      (* Verify that the generated subs also have readBarrier = true *)
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
+         case exp of
+            Exp.PrimApp {prim = Prim.Array_sub {readBarrier, ...}, ...} =>
+               assert (readBarrier, "Generated Array_sub should have readBarrier = true")
+          | _ => ())
+   in () end)
+
+   (* Test 22: maybeFlattenStatement (Array_update {writeBarrier = true}) *)
+   val _ = runTest ("Test 22: maybeFlattenStatement (Array_update {writeBarrier = true})", fn () => let
+      val arr = Var.fromString "arr"
+      val i = Var.fromString "i"
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val updatePrim = Prim.Array_update {writeBarrier = true}
+      val s = Statement.T {
+         exp = primApp (updatePrim, [arr, i, x], [tuple2Ty]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_update {writeBarrier = true} should be flattenable"
+      
+      (* Verify that the generated updates also have writeBarrier = true *)
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
+         case exp of
+            Exp.PrimApp {prim = Prim.Array_update {writeBarrier, ...}, ...} =>
+               assert (writeBarrier, "Generated Array_update should have writeBarrier = true")
+          | _ => ())
+   in () end)
+
    val _ = summarize ()
 end

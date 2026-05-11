@@ -105,6 +105,10 @@ sig
    (* Flattens the provided `Statement.t` into a sequence of statements, if
    possible. Otherwise, returns NONE.
 
+   All transformations below preserve any applicable flags (e.g. `raw` for
+   `Array_alloc`, `readBarrier` for `Array_sub`, `writeBarrier` for
+   `Array_update`).
+
    The following expressions are flattenable:
 
      1. `Array_alloc` on tuple types
