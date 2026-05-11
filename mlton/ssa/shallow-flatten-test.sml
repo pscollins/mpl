@@ -1031,5 +1031,39 @@ in
       assert (Vector.length stmts' > 1, "Expected flattening to happen (policy MaxWidth 4)")
    end)
 
+   (* Test 19: maybeFlattenStatement (Array_toVector) *)
+   val _ = runTest ("Test 19: maybeFlattenStatement (Array_toVector)", fn () => let
+      val v1 = Var.fromString "v1"
+      val arr = Var.fromString "arr"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val vectorTuple2Ty = Type.vector tuple2Ty
+
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val toVectorPrim = Prim.Array_toVector
+      val s = Statement.T {
+         exp = primApp (toVectorPrim, [arr], [tuple2Ty]),
+         ty = vectorTuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_toVector should be flattenable"
+      
+      (* Expected:
+         1. arr_a = select(arr, 0)
+         2. v_a = Array_toVector['a](arr_a)
+         3. arr_b = select(arr, 1)
+         4. v_b = Array_toVector['b](arr_b)
+         5. v1 = tuple(v_a, v_b)
+      *)
+      val _ = assert (Vector.length stmts = 5, "Array_toVector should flatten to 5 statements")
+   in () end)
+
    val _ = summarize ()
 end
