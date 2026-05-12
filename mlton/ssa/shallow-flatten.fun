@@ -229,6 +229,13 @@ in
     | _ => NONE
 end
 
+(* ('a array * 'b array * ...)
+   ->
+   {'a, 'b, ...}
+*)
+fun getFlattenedElementTypes (flatType: Type.t) =
+    Vector.map (Type.deTuple flatType, Type.deArray)
+
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
    setFlattenedProp: Var.t * bool -> unit,
@@ -491,7 +498,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       var = SOME (Var.newString "flatVec")}
       end
       fun buildArrayAlloc (primArg, flatArg) = let
-         val components = Type.deTuple flatArg
+         val components = getFlattenedElementTypes flatArg
          (*
             arr_a = Array_Alloc['a]
             arr_b = Array_Alloc['b]
