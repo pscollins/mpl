@@ -35,11 +35,11 @@ fun mkVisited plist = let
    fun init _ = ref false
    val {get=getVisited, destroy=destroyVisited, ...} =
        Property.destGet (plist, Property.initFun init)
-   fun markVisited p = let 
+   fun markVisited p = let
       val seenRef = getVisited p
       val wasSeen = !seenRef
       val _ = seenRef := true
-   in 
+   in
       wasSeen
    end
 in
@@ -251,7 +251,7 @@ in
     destroyFlattenedProp=destroy,
     count=ref 0}
 end
-   
+
 fun destroyFlattenedVars (fv: flattenedVars): unit = let
    val {destroyFlattenedProp, ...} = fv
 in
@@ -359,6 +359,17 @@ in
    Vector.sub (components, idx)
 end
 
+(* {('a * 'b * ...), 1}
+   ->
+   'b
+ *)
+fun getNthTupleType (t: Type.t, idx: int) = let
+   val elts = Type.deTuple t
+in
+   Vector.sub (elts, idx)
+end
+
+
 (* ('a array * 'b array) tuple -> 2  *)
 fun getNumElementTypes flatArg = let
    (* {'a array, 'b array} *)
@@ -416,7 +427,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       end
       (* arr_n = select(arr, n) *)
       fun mkSelect (flatArg, from) idx = let
-         val arrTy = Type.array (getNthElemType (flatArg, idx))
+         val arrTy = getNthTupleType (flatArg, idx)
          val selectExp = Exp.Select {offset = idx,
                                      tuple = from}
          val varBasename = "flatArr_" ^ (Int.toString idx)
@@ -649,7 +660,7 @@ end
 exception IllegalFlatteningDecision
 fun flattenStatements fv ss = let
    fun mkLogThunk s = let
-      fun thunk() = 
+      fun thunk() =
           Layout.seq [Layout.str "Maybe flatten? ",
                       Statement.layout s]
    in

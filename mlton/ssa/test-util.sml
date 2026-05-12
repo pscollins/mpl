@@ -13,7 +13,8 @@ exception TestFail of string
 (* Runs `thunk` and catches `TestFail` to indicate failure: passing tests are
 collected in `passedTests` and failing tests + failing reasons in `failedTests` *)
 fun runTest (title: string, thunk: unit -> unit): unit =
-    (thunk (); passedTests := title :: !passedTests)
+    (print ("Running test: " ^ title ^ "\n");
+     thunk (); passedTests := title :: !passedTests)
     handle TestFail reason =>
         (print ("Test failed: " ^ title ^ " - " ^ reason ^ "\n");
          failedTests := (title, reason) :: !failedTests)

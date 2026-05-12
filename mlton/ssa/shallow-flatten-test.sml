@@ -699,7 +699,11 @@ in
       val x = Var.fromString "x"
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
-      
+
+      fun assertType (Statement.T {ty, ...}, expected, msg) =
+         if Type.equals (ty, expected) then ()
+         else assert (false, msg ^ ": type mismatch (got " ^ (Layout.toString (Type.layout ty)) ^ ")")
+
       fun primApp (p, args, targs) = 
          Exp.PrimApp {args = Vector.fromList args,
                       prim = p,
