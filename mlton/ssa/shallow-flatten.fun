@@ -223,18 +223,31 @@ fun maybeFlattenType (t: Type.t) = let
        case Type.dest xs of
            Type.Tuple xs => SOME (Type.tuple (Vector.map (xs, Type.array)))
         |  _ => NONE
+   fun maybeFlattenVec xs =
+       case Type.dest xs of
+           Type.Tuple xs => SOME (Type.tuple (Vector.map (xs, Type.vector)))
+        |  _ => NONE
 in
    case Type.dest t of
        Type.Array arr => maybeFlattenArr arr
-    | _ => NONE
+     | Type.Vector vec => maybeFlattenVec vec
+     | _ => NONE
 end
+
+fun deContainer (t: Type.t) =
+    case Type.dest t of
+        Type.Array arr => arr
+      | Type.Vector vec => vec
+      | _ => Error.bug "Bad deContainer"
 
 (* ('a array * 'b array * ...)
    ->
    {'a, 'b, ...}
+
+  (and likewise for `vector`)
 *)
 fun getFlattenedElementTypes (flatType: Type.t) =
-    Vector.map (Type.deTuple flatType, Type.deArray)
+    Vector.map (Type.deTuple flatType, deContainer)
 
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
@@ -369,7 +382,7 @@ fun getFlattenedPrimTArg (prim, targs) =
        maybeFlattenType (Type.vector (Vector.first targs))
      | _ => NONE
 
-(* Given flattened array targs, returns the nth element type
+(* Given flattened array/vector targs, returns the nth element type
 
   ('a array * 'b array, 0) -> 'a
  *)
