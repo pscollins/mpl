@@ -587,7 +587,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
             ...
           *)
          val xValue = Vector.last args
-         val selectVars = Vector.tabulate (numTypes, mkSelect (flatArg,
+         (* ('a, 'b, ...) *)
+         val xTypes = Type.tuple (getFlattenedElementTypes flatArg)
+         val selectVars = Vector.tabulate (numTypes, mkSelect (xTypes,
                                                                xValue))
          (* _ = Array_update['a](arr_a, n, x_a)
             _ = Array_update['b](arr_b, n, x_b)
