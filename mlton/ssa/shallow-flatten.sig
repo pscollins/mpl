@@ -48,10 +48,11 @@ sig
    (* Like above, but for side-effecting expressions *)
    val foreachBfs: visitor -> Program.t -> unit
 
-   (* If the provided `Type.t` is an array of tuples, returns the corresponding
-   tuple of arrays, i.e.:
+   (* If the provided `Type.t` is an array or vector of tuples, returns the
+   corresponding tuple of arrays or vectors, i.e.:
 
      ('a * 'b) array -> SOME ('a array * 'b array)
+     ('a * 'b) vector -> SOME ('a vector * 'b vector)
 
      Otherwise, returns NONE.
     *)
@@ -164,7 +165,38 @@ sig
       arr_b: 'b array = select(arr, 1)
       vec_b: 'b vector = Array_toVector['b](arr_b)
       ...
-      vec: a' vector * 'b vector * ... = tuple (vec_a, vec_b, ...)
+      vec: 'a vector * 'b vector * ... = tuple (vec_a, vec_b, ...)
+
+    6. `Vector_length` on tuple types:
+      vec: ('a * 'b * ...) vector = ...
+      n: int = Vector_length['a * b * ...](vec)
+      -->
+      (* vec is now 'a vector * b vector * ... *)
+      vec_a = select (vec, 0)
+      n: int = Vector_length['a](vec_a)
+
+    7. `Vector_sub` on tuple types:
+      vec: ('a * 'b * ...) vector = ...
+      x: ('a * 'b * ...) = Vector_sub['a * 'b * ...](vec, i)
+      -->
+      (* vec is now 'a vector * b vector * ... *)
+      vec_a: 'a vector = select (vec, 0)
+      x_a: 'a =  Vector_sub['a](vec_a, i)
+      vec_b: 'b vector = select (vec, 1)
+      x_b: 'b =  Vector_sub['b](vec_b, i)
+      ...
+      x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
+
+    8. `Vector_vector` on tuple types:
+      x: ('a * 'b * ...) = ...
+      vec: ('a * 'b * ...) vector = Vector_vector['a * 'b * ...](x)
+      -->
+      x_a: 'a = select(x, 0)
+      vec_a: 'a vector = Vector_vector['a](x_a)
+      x_b: 'b = select(x, 1)
+      vec_b: 'b vector = Vector_vector['b](x_b)
+      ...
+      vec: 'a vector * 'b vector * ... = tuple(vec_a, vec_b, ...)
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option

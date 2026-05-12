@@ -3,6 +3,10 @@ local
 
    fun assert (cond, msg) =
       if cond then () else raise TestFail msg
+
+   fun assertType (Statement.T {ty, ...}, expected, msg) =
+      if Type.equals (ty, expected) then ()
+      else assert (false, msg ^ ": type mismatch")
 in
    (* Test 1: Simple program *)
    val _ = runTest ("Test 1: Simple program", fn () => let
@@ -601,6 +605,8 @@ in
                       SOME s => s
                     | NONE => raise TestFail "s4 should be flattenable"
       val _ = assert (Vector.length stmts4 = 2, "s4 should flatten to 2 statements")
+      val _ = assertType (Vector.sub (stmts4, 0), Type.array intTy, "s4 stmt 0 type")
+      val _ = assertType (Vector.sub (stmts4, 1), intTy, "s4 stmt 1 type")
    in () end)
 
    (* Test 8: maybeFlattenStatement (Array_alloc) *)
@@ -629,8 +635,13 @@ in
                      SOME s => s
                    | NONE => raise TestFail "s3 should be flattenable"
       val _ = assert (Vector.length stmts = 3,
-                      concat ["s3 should flatten to 3 statements, got",
+                      concat ["s3 should flatten to 3 statements, got ",
                               Int.toString (Vector.length stmts)])
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "s3 stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "s3 stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), 
+                          Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy]), 
+                          "s3 stmt 2 type")
    in () end)
 
    (* Test 9: maybeFlattenStatement (Array_sub) *)
@@ -665,6 +676,11 @@ in
          5. v1 = tuple(x_a, x_b)
       *)
       val _ = assert (Vector.length stmts = 5, "Array_sub should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_sub stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_sub stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), intTy, "Array_sub stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), intTy, "Array_sub stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), tuple2Ty, "Array_sub stmt 4 type")
       val _ = Vector.foreach (stmts, fn Statement.T {exp, ty, var} =>
          case exp of
             Exp.Select {offset, tuple} => assert (Var.equals (tuple, arr), "Select should be from arr")
@@ -709,6 +725,12 @@ in
          6. _ = Array_update(arr_b, i, x_b)
       *)
       val _ = assert (Vector.length stmts = 6, "Array_update should flatten to 6 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_update stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_update stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), intTy, "Array_update stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), intTy, "Array_update stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), Type.unit, "Array_update stmt 4 type")
+      val _ = assertType (Vector.sub (stmts, 5), Type.unit, "Array_update stmt 5 type")
       val _ = Vector.foreach (stmts, fn Statement.T {exp, ty, var} =>
          case exp of
             Exp.Select {offset, tuple} => 
@@ -1063,6 +1085,13 @@ in
          5. v1 = tuple(v_a, v_b)
       *)
       val _ = assert (Vector.length stmts = 5, "Array_toVector should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_toVector stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_toVector stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), Type.vector intTy, "Array_toVector stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), Type.vector intTy, "Array_toVector stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), 
+                          Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy]), 
+                          "Array_toVector stmt 4 type")
    in () end)
 
    (* Test 20: maybeFlattenStatement (Array_alloc {raw = false}) *)
@@ -1090,6 +1119,13 @@ in
                      SOME s => s
                    | NONE => raise TestFail "Array_alloc {raw = false} should be flattenable"
       
+      val _ = assert (Vector.length stmts = 3, "Array_alloc {raw = false} should flatten to 3 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_alloc stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_alloc stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), 
+                          Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy]), 
+                          "Array_alloc stmt 2 type")
+
       (* Verify that the generated allocs also have raw = false *)
       val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
          case exp of
@@ -1122,6 +1158,13 @@ in
                      SOME s => s
                    | NONE => raise TestFail "Array_sub {readBarrier = true} should be flattenable"
       
+      val _ = assert (Vector.length stmts = 5, "Array_sub {readBarrier = true} should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_sub stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_sub stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), intTy, "Array_sub stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), intTy, "Array_sub stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), tuple2Ty, "Array_sub stmt 4 type")
+
       (* Verify that the generated subs also have readBarrier = true *)
       val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
          case exp of
@@ -1154,6 +1197,14 @@ in
                      SOME s => s
                    | NONE => raise TestFail "Array_update {writeBarrier = true} should be flattenable"
       
+      val _ = assert (Vector.length stmts = 6, "Array_update {writeBarrier = true} should flatten to 6 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.array intTy, "Array_update stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.array intTy, "Array_update stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), intTy, "Array_update stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), intTy, "Array_update stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), Type.unit, "Array_update stmt 4 type")
+      val _ = assertType (Vector.sub (stmts, 5), Type.unit, "Array_update stmt 5 type")
+
       (* Verify that the generated updates also have writeBarrier = true *)
       val _ = Vector.foreach (stmts, fn Statement.T {exp, ...} =>
          case exp of
@@ -1181,7 +1232,13 @@ in
          ty = intTy,
          var = SOME v_res
       }
-      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_len), "Vector_length should be flattenable")
+      val res_len = ShallowFlatten.maybeFlattenStatement s_len
+      val stmts_len = case res_len of
+                         SOME s => s
+                       | NONE => raise TestFail "Vector_length should be flattenable"
+      val _ = assert (Vector.length stmts_len = 2, "Vector_length should flatten to 2 statements")
+      val _ = assertType (Vector.sub (stmts_len, 0), Type.vector intTy, "Vector_length stmt 0 type")
+      val _ = assertType (Vector.sub (stmts_len, 1), intTy, "Vector_length stmt 1 type")
 
       (* Vector_sub *)
       val s_sub = Statement.T {
@@ -1191,7 +1248,16 @@ in
          ty = tuple2Ty,
          var = SOME v_res
       }
-      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_sub), "Vector_sub should be flattenable")
+      val res_sub = ShallowFlatten.maybeFlattenStatement s_sub
+      val stmts_sub = case res_sub of
+                         SOME s => s
+                       | NONE => raise TestFail "Vector_sub should be flattenable"
+      val _ = assert (Vector.length stmts_sub = 5, "Vector_sub should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts_sub, 0), Type.vector intTy, "Vector_sub stmt 0 type")
+      val _ = assertType (Vector.sub (stmts_sub, 1), Type.vector intTy, "Vector_sub stmt 1 type")
+      val _ = assertType (Vector.sub (stmts_sub, 2), intTy, "Vector_sub stmt 2 type")
+      val _ = assertType (Vector.sub (stmts_sub, 3), intTy, "Vector_sub stmt 3 type")
+      val _ = assertType (Vector.sub (stmts_sub, 4), tuple2Ty, "Vector_sub stmt 4 type")
 
       (* Vector_vector *)
       val s_vec = Statement.T {
@@ -1201,7 +1267,18 @@ in
          ty = vectorTuple2Ty,
          var = SOME v_res
       }
-      val _ = assert (Option.isSome (ShallowFlatten.maybeFlattenStatement s_vec), "Vector_vector should be flattenable")
+      val res_vec = ShallowFlatten.maybeFlattenStatement s_vec
+      val stmts_vec = case res_vec of
+                         SOME s => s
+                       | NONE => raise TestFail "Vector_vector should be flattenable"
+      val _ = assert (Vector.length stmts_vec = 5, "Vector_vector should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts_vec, 0), intTy, "Vector_vector stmt 0 type")
+      val _ = assertType (Vector.sub (stmts_vec, 1), intTy, "Vector_vector stmt 1 type")
+      val _ = assertType (Vector.sub (stmts_vec, 2), Type.vector intTy, "Vector_vector stmt 2 type")
+      val _ = assertType (Vector.sub (stmts_vec, 3), Type.vector intTy, "Vector_vector stmt 3 type")
+      val _ = assertType (Vector.sub (stmts_vec, 4), 
+                          Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy]), 
+                          "Vector_vector stmt 4 type")
    in () end)
 
    val _ = summarize ()
