@@ -1217,18 +1217,14 @@ in
           | _ => ())
    in () end)
 
-   (* Test 23: maybeFlattenStatement (Vector_sub, Vector_length, Vector_vector) *)
-   val _ = runTest ("Test 23: maybeFlattenStatement (Vector_sub, Vector_length, Vector_vector)", fn () => let
+   (* Test 23: maybeFlattenStatement (Vector_length) *)
+   val _ = runTest ("Test 23: maybeFlattenStatement (Vector_length)", fn () => let
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
-      val vectorTuple2Ty = Type.vector tuple2Ty
       
       val v_vec = Var.fromString "vec"
-      val v_i = Var.fromString "i"
-      val v_x = Var.fromString "x"
       val v_res = Var.fromString "res"
 
-      (* Vector_length *)
       val s_len = Statement.T {
          exp = Exp.PrimApp {args = Vector.fromList [v_vec],
                             prim = Prim.Vector_length,
@@ -1243,8 +1239,17 @@ in
       val _ = assert (Vector.length stmts_len = 2, "Vector_length should flatten to 2 statements")
       val _ = assertType (Vector.sub (stmts_len, 0), Type.vector intTy, "Vector_length stmt 0 type")
       val _ = assertType (Vector.sub (stmts_len, 1), intTy, "Vector_length stmt 1 type")
+   in () end)
 
-      (* Vector_sub *)
+   (* Test 24: maybeFlattenStatement (Vector_sub) *)
+   val _ = runTest ("Test 24: maybeFlattenStatement (Vector_sub)", fn () => let
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      val v_vec = Var.fromString "vec"
+      val v_i = Var.fromString "i"
+      val v_res = Var.fromString "res"
+
       val s_sub = Statement.T {
          exp = Exp.PrimApp {args = Vector.fromList [v_vec, v_i],
                             prim = Prim.Vector_sub,
@@ -1262,8 +1267,17 @@ in
       val _ = assertType (Vector.sub (stmts_sub, 2), intTy, "Vector_sub stmt 2 type")
       val _ = assertType (Vector.sub (stmts_sub, 3), intTy, "Vector_sub stmt 3 type")
       val _ = assertType (Vector.sub (stmts_sub, 4), tuple2Ty, "Vector_sub stmt 4 type")
+   in () end)
 
-      (* Vector_vector *)
+   (* Test 25: maybeFlattenStatement (Vector_vector) *)
+   val _ = runTest ("Test 25: maybeFlattenStatement (Vector_vector)", fn () => let
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      
+      val v_x = Var.fromString "x"
+      val v_res = Var.fromString "res"
+
       val s_vec = Statement.T {
          exp = Exp.PrimApp {args = Vector.fromList [v_x],
                             prim = Prim.Vector_vector,
