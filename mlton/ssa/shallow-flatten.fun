@@ -333,19 +333,41 @@ in
    (v, maybeFlat)
 end
 
-(* Given the `targs` of an array, returns the corresponding flattened type
+fun isArrayPrim prim =
+    case prim of
+        Prim.Array_alloc _ => true
+      | Prim.Array_array => true
+      | Prim.Array_length => true
+      | Prim.Array_sub _ =>  true
+      | Prim.Array_toVector =>  true
+      | Prim.Array_update _ => true
+      (* TODO: more cases *)
+      | _ =>  false
 
-    {('a * 'b)} -> 'a array * 'b array
+fun isVectorPrim prim =
+    case prim of
+        Prim.Vector_length => true
+      | Prim.Vector_sub =>  true
+      (* TODO: more cases *)
+      | _ =>  false
+
+(* Given the `targs` of a vector/array, returns the corresponding flattened type
+
+    {('a * 'b), Prim.Array_...} -> 'a array * 'b array
+    {('a * 'b), Prim.Vector_...} -> 'a array * 'b array
 
  *)
-fun getFlattenedArrayTArg targs =
-       if Vector.length targs = 1 then
-          (* Wrap in `array` to get the array type:
+fun getFlattenedPrimTArg (prim, targs) =
+    case (isArrayPrim prim, isVectorPrim prim, Vector.length targs) of
+        (true, false, 1) =>
+       (* Wrap in `array` to get the array type:
              Array_alloc['a * b'] ->
              ('a * 'b) array
-           *)
-          maybeFlattenType (Type.array (Vector.first targs))
-       else NONE
+        *)
+       maybeFlattenType (Type.array (Vector.first targs))
+     | (false, true, 1) => 
+       maybeFlattenType (Type.vector (Vector.first targs))
+     | _ => NONE
 
 (* Given flattened array targs, returns the nth element type
 
@@ -539,7 +561,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
          val arrStmt = mkSelect (flatArg, Vector.first args) 0
          (* Array_length['a](arr_a) *)
          val lenExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
-                                   prim = Prim.Array_length,
+                                   (* Pick either `Array_` or `Vector_` length *)
+                                   prim = prim,
                                    targs = Vector.new1 elemTy}
          (* len: int = $lenExp *)
          val lenStmt = Statement.T {exp = lenExp,
@@ -623,10 +646,12 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      Vector.new1 tupleStmt]
       end
       val result =
-          case (prim, getFlattenedArrayTArg targs)  of
+          case (prim, getFlattenedPrimTArg (prim, targs))  of
               (Prim.Array_alloc primArg, SOME flatArg) =>
               SOME (buildArrayAlloc (primArg, flatArg))
             | (Prim.Array_length, SOME flatArg) =>
+              SOME (buildArrayLength flatArg)
+            | (Prim.Vector_length, SOME flatArg) =>
               SOME (buildArrayLength flatArg)
             | (Prim.Array_sub primArg, SOME flatArg) =>
               SOME (buildArraySub (primArg, flatArg))
