@@ -352,11 +352,11 @@ fun getFlattenedArrayTArg targs =
   ('a array * 'b array, 0) -> 'a
  *)
 fun getNthElemType (flatArg, idx) = let
-   (* {'a array, 'b array} *)
-   val components = Type.deTuple flatArg
+   (* {'a, 'b } *)
+   val components = getFlattenedElementTypes flatArg
 in
    (* -> 'a *)
-   Type.deArray (Vector.sub (components, idx))
+   Vector.sub (components, idx)
 end
 
 (* ('a array * 'b array) tuple -> 2  *)
