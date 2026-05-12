@@ -499,7 +499,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
          vec: 'a vec = Array_toVector['a](arr)
       *)
       fun mkArrToVec (arrStmt: Statement.t): Statement.t = let
-         val elTy = Type.array (extractType arrStmt)
+         val elTy = Type.deArray (extractType arrStmt)
          val toVecExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
                                      prim = Prim.Array_toVector,
                                      targs = Vector.new1 elTy}
