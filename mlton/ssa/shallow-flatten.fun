@@ -370,7 +370,7 @@ fun concatVecs (vecs: 'a vector list): 'a vector =
 
 fun maybeStmtsToLayout (maybeStmts: Statement.t vector option) =
     case maybeStmts of
-        SOME ss => Layout.align (Vector.map (ss, Statement.layout))
+        SOME ss => Layout.align (Vector.toList (Vector.map (ss, Statement.layout)))
       | NONE => Layout.str "(none)"
 
 fun maybeFlattenStatement (s: Statement.t) = let
@@ -389,7 +389,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       val _ = Control.diagnostic logThunk
       fun mkLogResultThunk (res) = let
          fun logThunk() = Layout.seq [
-                Layout.str, "Result: ",
+                Layout.str "Result: ",
                 maybeStmtsToLayout res
              ]
       in
