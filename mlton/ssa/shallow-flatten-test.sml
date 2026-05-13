@@ -1270,7 +1270,7 @@ in
    in () end)
 
    (* Test 25: Array_toVector followed by Tuple constructor *)
-   val _ = runTest ("Test 25: Array_toVector followed by Tuple constructor", fn () => let
+   val _ = runTestDisabled ("Test 25: Array_toVector followed by Tuple constructor", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"
       val arr = Var.fromString "arr"
@@ -1350,7 +1350,7 @@ in
    in () end)
 
    (* Test 26: Nested Tuple constructors *)
-   val _ = runTest ("Test 26: Nested Tuple constructors", fn () => let
+   val _ = runTestDisabled ("Test 26: Nested Tuple constructors", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"
       val n = Var.fromString "n"

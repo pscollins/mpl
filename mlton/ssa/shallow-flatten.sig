@@ -77,6 +77,16 @@ sig
         (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
         MaxWidth of int
 
+   (* Tracks types of `Var.t`s  *)
+   type varTypes
+   val newVarTypes: unit -> varTypes
+
+   (* Sets the type for a future `getVarType` call. Must call at most once per
+   `Var.t`. *)
+   val setVarType: varTypes * Var.t * Type.t -> unit
+   (* Returns the type set by a previous `setVarType` call. *)
+   val getVarType: varTypes * Var.t -> Type.t
+
    (* Marks any vars in `Statement.t` that must be flattened according to the
    provided policy. The following statement types may induce flattening:
 
