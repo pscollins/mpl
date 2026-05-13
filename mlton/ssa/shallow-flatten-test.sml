@@ -565,8 +565,8 @@ in
                    | _ => assert (false, "Case 3: raised wrong exception")
    in () end)
 
-   (* Test 7: maybeFlattenStatement *)
-   val _ = runTest ("Test 7: maybeFlattenStatement (Array_length)", fn () => let
+   (* Test 8: maybeFlattenStatement *)
+   val _ = runTest ("Test 8: maybeFlattenStatement (Array_length)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
@@ -609,8 +609,8 @@ in
       val _ = assertType (Vector.sub (stmts4, 1), intTy, "s4 stmt 1 type")
    in () end)
 
-   (* Test 8: maybeFlattenStatement (Array_alloc) *)
-   val _ = runTest ("Test 8: maybeFlattenStatement (Array_alloc)", fn () => let
+   (* Test 9: maybeFlattenStatement (Array_alloc) *)
+   val _ = runTest ("Test 9: maybeFlattenStatement (Array_alloc)", fn () => let
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
       val intTy = Type.intInf
@@ -644,8 +644,8 @@ in
                           "s3 stmt 2 type")
    in () end)
 
-   (* Test 9: maybeFlattenStatement (Array_sub) *)
-   val _ = runTest ("Test 9: maybeFlattenStatement (Array_sub)", fn () => let
+   (* Test 10: maybeFlattenStatement (Array_sub) *)
+   val _ = runTest ("Test 10: maybeFlattenStatement (Array_sub)", fn () => let
       val v1 = Var.fromString "v1"
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
@@ -692,8 +692,8 @@ in
           | _ => assert (false, "Unexpected expression in flattened Array_sub"))
    in () end)
 
-   (* Test 10: maybeFlattenStatement (Array_update) *)
-   val _ = runTest ("Test 10: maybeFlattenStatement (Array_update)", fn () => let
+   (* Test 11: maybeFlattenStatement (Array_update) *)
+   val _ = runTest ("Test 11: maybeFlattenStatement (Array_update)", fn () => let
       val arr = Var.fromString "arr"
       val i = Var.fromString "i"
       val x = Var.fromString "x"
@@ -746,8 +746,8 @@ in
           | _ => assert (false, "Unexpected expression in flattened Array_update"))
    in () end)
 
-   (* Test 11: mustFlattenStatement *)
-   val _ = runTest ("Test 11: mustFlattenStatement", fn () => let
+   (* Test 12: mustFlattenStatement *)
+   val _ = runTest ("Test 12: mustFlattenStatement", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -780,8 +780,8 @@ in
       val _ = assert (ShallowFlatten.mustFlattenStatement (fv, s5), "Case 5: should be true (uses v1 in tuple)")
    in () end)
 
-   (* Test 12: markStatementForPolicy *)
-   val _ = runTest ("Test 12: markStatementForPolicy", fn () => let
+   (* Test 13: markStatementForPolicy *)
+   val _ = runTest ("Test 13: markStatementForPolicy", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val n = Var.fromString "n"
@@ -840,8 +840,8 @@ in
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 should NOT be marked")
    in () end)
 
-   (* Test 13: markArgForPolicy *)
-   val _ = runTest ("Test 13: markArgForPolicy", fn () => let
+   (* Test 14: markArgForPolicy *)
+   val _ = runTest ("Test 14: markArgForPolicy", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val intTy = Type.intInf
       val policy = ShallowFlatten.MaxWidth 2
@@ -877,8 +877,8 @@ in
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v4)), "Case 4: v4 (arg) should NOT be marked")
    in () end)
 
-   (* Test 14: flattenOnce (no flattening needed) *)
-   val _ = runTest ("Test 14: flattenOnce (no flattening needed)", fn () => let
+   (* Test 15: flattenOnce (no flattening needed) *)
+   val _ = runTest ("Test 15: flattenOnce (no flattening needed)", fn () => let
       val mainFunc = Func.fromString "main"
       val mainLabel = Label.fromString "L0"
       val mainBlock = Block.T {
@@ -908,8 +908,8 @@ in
       assert (Option.isNone res, "Should return NONE when no flattening is possible")
    end)
 
-   (* Test 15: flattenOnce (flattening applied) *)
-   val _ = runTest ("Test 15: flattenOnce (flattening applied)", fn () => let
+   (* Test 16: flattenOnce (flattening applied) *)
+   val _ = runTest ("Test 16: flattenOnce (flattening applied)", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"
       val v1 = Var.fromString "v1"
@@ -954,8 +954,8 @@ in
       assert (Option.isSome res, "Should return SOME p' when flattening is applied")
    end)
 
-   (* Test 16: shallowFlattenMaxIters *)
-   val _ = runTest ("Test 16: shallowFlattenMaxIters", fn () => let
+   (* Test 17: shallowFlattenMaxIters *)
+   val _ = runTest ("Test 17: shallowFlattenMaxIters", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"
       val v1 = Var.fromString "v1"
@@ -1005,8 +1005,8 @@ in
       assert (Vector.length stmts' > 1, "Expected flattening to happen (maxIters=1)")
    end)
 
-   (* Test 17: shallowFlattenPolicy *)
-   val _ = runTest ("Test 17: shallowFlattenPolicy", fn () => let
+   (* Test 18: shallowFlattenPolicy *)
+   val _ = runTest ("Test 18: shallowFlattenPolicy", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"
       val v1 = Var.fromString "v1"
@@ -1431,7 +1431,8 @@ in
                                  " expected " ^ (Layout.toString (Type.layout expectedZty)))
    in () end)
 
-   val _ = runTest ("Test: non-PrimApp flattening (array)", fn () => let
+   (* Test 27: non-PrimApp flattening (array) *)
+   val _ = runTest ("Test 27: non-PrimApp flattening (array)", fn () => let
       val v1 = Var.newString "v1"
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
@@ -1455,7 +1456,8 @@ in
       assert (Type.equals (resTy, expectedTy), "Resulting type should be flattened")
    end)
 
-   val _ = runTest ("Test: non-PrimApp flattening (vector)", fn () => let
+   (* Test 28: non-PrimApp flattening (vector) *)
+   val _ = runTest ("Test 28: non-PrimApp flattening (vector)", fn () => let
       val v1 = Var.newString "v1"
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
@@ -1479,7 +1481,8 @@ in
       assert (Type.equals (resTy, expectedTyVec), "Resulting type should be flattened to vectors")
    end)
 
-   val _ = runTest ("Test: non-PrimApp no-flattening (not a tuple)", fn () => let
+   (* Test 29: non-PrimApp no-flattening (not a tuple) *)
+   val _ = runTest ("Test 29: non-PrimApp no-flattening (not a tuple)", fn () => let
       val v1 = Var.newString "v1"
       val intTy = Type.intInf
       val arrayIntTy = Type.array intTy
