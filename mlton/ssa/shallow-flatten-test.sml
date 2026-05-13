@@ -1269,35 +1269,5 @@ in
       val _ = assertType (Vector.sub (stmts_sub, 4), tuple2Ty, "Vector_sub stmt 4 type")
    in () end)
 
-   (* Test 25: maybeFlattenStatement (Vector_vector) *)
-   val _ = runTest ("Test 25: maybeFlattenStatement (Vector_vector)", fn () => let
-      val intTy = Type.intInf
-      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
-      val vectorTuple2Ty = Type.vector tuple2Ty
-      
-      val v_x = Var.fromString "x"
-      val v_res = Var.fromString "res"
-
-      val s_vec = Statement.T {
-         exp = Exp.PrimApp {args = Vector.fromList [v_x],
-                            prim = Prim.Vector_vector,
-                            targs = Vector.fromList [tuple2Ty]},
-         ty = vectorTuple2Ty,
-         var = SOME v_res
-      }
-      val res_vec = ShallowFlatten.maybeFlattenStatement s_vec
-      val stmts_vec = case res_vec of
-                         SOME s => s
-                       | NONE => raise TestFail "Vector_vector should be flattenable"
-      val _ = assert (Vector.length stmts_vec = 5, "Vector_vector should flatten to 5 statements")
-      val _ = assertType (Vector.sub (stmts_vec, 0), intTy, "Vector_vector stmt 0 type")
-      val _ = assertType (Vector.sub (stmts_vec, 1), intTy, "Vector_vector stmt 1 type")
-      val _ = assertType (Vector.sub (stmts_vec, 2), Type.vector intTy, "Vector_vector stmt 2 type")
-      val _ = assertType (Vector.sub (stmts_vec, 3), Type.vector intTy, "Vector_vector stmt 3 type")
-      val _ = assertType (Vector.sub (stmts_vec, 4), 
-                          Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy]), 
-                          "Vector_vector stmt 4 type")
-   in () end)
-
    val _ = summarize ()
 end

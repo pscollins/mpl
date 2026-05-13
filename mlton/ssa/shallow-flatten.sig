@@ -186,17 +186,6 @@ sig
       x_b: 'b =  Vector_sub['b](vec_b, i)
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
-
-    8. `Vector_vector` on tuple types:
-      x: ('a * 'b * ...) = ...
-      vec: ('a * 'b * ...) vector = Vector_vector['a * 'b * ...](x)
-      -->
-      x_a: 'a = select(x, 0)
-      vec_a: 'a vector = Vector_vector['a](x_a)
-      x_b: 'b = select(x, 1)
-      vec_b: 'b vector = Vector_vector['b](x_b)
-      ...
-      vec: 'a vector * 'b vector * ... = tuple(vec_a, vec_b, ...)
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
