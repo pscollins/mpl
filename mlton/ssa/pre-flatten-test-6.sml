@@ -274,13 +274,13 @@ in
       val _ = check (tDeep, 0, "(((bool, bool) tuple, bool) tuple, bool) tuple")
 
       val _ = print "Testing depth 1\n"
-      val _ = check (tDeep, 1, "(..., ...) tuple")
+      val _ = check (tDeep, 1, "(...) tuple")
 
       val _ = print "Testing depth 2\n"
-      val _ = check (tDeep, 2, "((..., ...) tuple, bool) tuple")
+      val _ = check (tDeep, 2, "((...) tuple, bool) tuple")
 
       val _ = print "Testing depth 3\n"
-      val _ = check (tDeep, 3, "(((..., ...) tuple, bool) tuple, bool) tuple")
+      val _ = check (tDeep, 3, "(((...) tuple, bool) tuple, bool) tuple")
 
       val _ = print "Testing depth 4\n"
       val _ = check (tDeep, 4, "(((bool, bool) tuple, bool) tuple, bool) tuple")
@@ -445,4 +445,27 @@ in
    in () end
 
    (* Test 56: blockManager destroy error if pending *)
+
+   (* Test 57: Type.layout with 5-element tuple at depth 1 *)
+   val _ = let
+      val _ = print "Test 57: Type.layout with 5-element tuple at depth 1\n"
+      val tBool = Type.bool
+      val tW32 = Type.word WordSize.word32
+      val tTup = Type.tuple (Vector.fromList [tBool, tBool, tBool, tBool, tW32])
+      
+      val oldDepth = !Control.maxTypePrintDepth
+      val _ = Control.maxTypePrintDepth := 1
+      val actual = Layout.toString (Type.layout tTup)
+      val _ = Control.maxTypePrintDepth := oldDepth
+      
+      val expected = "(...) tuple"
+   in
+      if actual = expected then
+         print "Test 57 passed\n"
+      else
+         (print ("Test 57 failed\n");
+          print ("Expected: " ^ expected ^ "\n");
+          print ("Actual:   " ^ actual ^ "\n");
+          OS.Process.exit OS.Process.failure)
+   end
 end

@@ -169,7 +169,7 @@ structure Type =
       local
          open Layout
 
-         fun initLayout (t, layout) = let
+         fun initLayout' (t, layout, isAtLimit) = let
             fun unary (t, tc) =
                 seq [paren (layout t), str " ", str tc]
          in
@@ -185,13 +185,17 @@ structure Type =
                 if Vector.isEmpty ts
                 then str "unit"
                 else seq [str "(",
-                          (mayAlign o separateRight)
-                              (Vector.toListMap (ts, layout), ","),
+                          if isAtLimit
+                             then str "..."
+                             else (mayAlign o separateRight)
+                                      (Vector.toListMap (ts, layout), ","),
                           str ") tuple"]
               | Vector t => unary (t, "vector")
               | Weak t => unary (t, "weak")
               | Word s => str (concat ["word", WordSize.toString s])
          end
+
+         fun initLayout (t, layout) = initLayout' (t, layout, false)
 
          val {get = initLayoutCached, ...} =
           Property.get
@@ -201,7 +205,7 @@ structure Type =
             fun doLayout currDepth t =
                if currDepth = 0
                then str "..."
-               else initLayout (t, doLayout (currDepth - 1))
+               else initLayout' (t, doLayout (currDepth - 1), currDepth = 1)
          in
             doLayout depth t
          end
