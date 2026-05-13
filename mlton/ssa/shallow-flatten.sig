@@ -110,7 +110,7 @@ sig
    `Array_alloc`, `readBarrier` for `Array_sub`, `writeBarrier` for
    `Array_update`).
 
-   The following expressions are flattenable:
+   The following `PrimApp` expressions are flattenable:
 
      1. `Array_alloc` on tuple types
        x: ('a * 'b * ...) array = Array_alloc['a * 'b * ...](n)
@@ -186,6 +186,15 @@ sig
       x_b: 'b =  Vector_sub['b](vec_b, i)
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
+
+    For a non-`PrimApp` expression, flattening replaces a flattenable LHS type
+    with the flattened equivalent, 
+
+      x: ('a * b * ...) array = ...
+      -->
+      x: 'a array * 'b array ... = ...
+
+    (and likewise for `vector`)
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
