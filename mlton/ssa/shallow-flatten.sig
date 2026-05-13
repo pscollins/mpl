@@ -188,7 +188,7 @@ sig
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
 
     For a non-`PrimApp` expression, flattening replaces a flattenable LHS type
-    with the flattened equivalent, 
+    with the flattened equivalent,
 
       x: ('a * b * ...) array = ...
       -->
