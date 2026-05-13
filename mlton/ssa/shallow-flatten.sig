@@ -219,6 +219,25 @@ sig
    val mustFlattenStatement: flattenedVars * Statement.t -> bool
 
 
+   (* For all *non*-PrimApp statements:
+
+        1. Recomputes the type on the LHS given the new RHS types in `varTypes`
+        2. Updates the type of any LHS bound variable in `varTypes`
+        3. Returns a new `Statement.t` with the updated types
+
+     For `PrimApp` statements: no-op
+
+     e.g. for
+       * varTypes = {x -> int, y -> bool * bool}
+       * statement = {y: bool * bool = tuple (x, x)}
+
+     this call:
+       1. Updates `varTypes` so that `y -> int * int`
+       2. Returns the modified statement
+          y: int * int = tuple (int, int)
+   *)
+   val propagateTypesInStatement: varTypes * Statement.t -> Statement.t
+
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to
    the rules of `mustFlattenStatement`).

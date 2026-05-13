@@ -323,6 +323,9 @@ in
    getType v
 end
 
+fun propagateTypesInStatement (_: varTypes, s: Statement.t): Statement.t =
+   s
+
 datatype flattenPolicy = MaxWidth of int
 
 (* Returns:

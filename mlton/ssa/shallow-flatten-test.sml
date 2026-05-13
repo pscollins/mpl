@@ -1520,5 +1520,161 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+   (* Test 31: propagateTypesInStatement (Tuple) *)
+   val _ = runTest ("Test 31: propagateTypesInStatement (Tuple)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      val word2Ty = Type.tuple (Vector.fromList [word32Ty, word32Ty])
+      val _ = ShallowFlatten.setVarType (vt, y, word2Ty)
+      
+      val s = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [x, x]),
+         ty = word2Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val expectedTy = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      val _ = assertType (s', expectedTy, "Tuple type should be updated")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), expectedTy), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 32: propagateTypesInStatement (Select) *)
+   val _ = runTest ("Test 32: propagateTypesInStatement (Select)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val xTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val _ = ShallowFlatten.setVarType (vt, x, xTy)
+      
+      val s = Statement.T {
+         exp = Exp.Select {offset = 1, tuple = x},
+         ty = intTy,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', word32Ty, "Select(1, x) type should be word32")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 33: propagateTypesInStatement (Var) *)
+   val _ = runTest ("Test 33: propagateTypesInStatement (Var)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      
+      val s = Statement.T {
+         exp = Exp.Var x,
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', intTy, "Var(x) type should be intInf")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 34: propagateTypesInStatement (Const) *)
+   val _ = runTest ("Test 34: propagateTypesInStatement (Const)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, y, word32Ty)
+      val s = Statement.T {
+         exp = Exp.Const (Const.IntInf 1),
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', intTy, "Const type should match the constant")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 35: propagateTypesInStatement (PrimApp - noop) *)
+   val _ = runTest ("Test 35: propagateTypesInStatement (PrimApp - noop)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      val s = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 x,
+                            prim = Prim.IntInf_add,
+                            targs = Vector.new0 ()},
+         ty = intTy,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      (* Should be exactly the same (no-op) *)
+      val Statement.T {ty, ...} = s'
+      val _ = assert (Type.equals (ty, intTy), "PrimApp type preserved")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes should be unchanged/preserved")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 36: propagateTypesInStatement (ConApp) *)
+   val _ = runTest ("Test 36: propagateTypesInStatement (ConApp)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      val c = Con.fromString "C"
+      val s = Statement.T {
+         exp = Exp.ConApp {args = Vector.new0 (), con = c},
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', word32Ty, "ConApp type preserved/recomputed")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 37: propagateTypesInStatement (NONE var) *)
+   val _ = runTest ("Test 37: propagateTypesInStatement (NONE var)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      
+      val s = Statement.T {
+         exp = Exp.Var x,
+         ty = word32Ty,
+         var = NONE
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', intTy, "Statement type updated even if var is NONE")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
    val _ = summarize ()
 end
