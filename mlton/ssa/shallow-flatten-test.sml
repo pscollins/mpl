@@ -513,8 +513,8 @@ in
       val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "v2 should not be marked")
    in () end)
 
-   (* Test 18: markedCount *)
-   val _ = runTest ("Test 18: markedCount", fn () => let
+   (* Test 6: markedCount *)
+   val _ = runTest ("Test 6: markedCount", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -534,8 +534,8 @@ in
       val _ = assert (ShallowFlatten.markedCount fv = 3, "Count should be 3 after marking v3")
    in () end)
 
-   (* Test 6: maybeFlattenArg *)
-   val _ = runTest ("Test 6: maybeFlattenArg", fn () => let
+   (* Test 7: maybeFlattenArg *)
+   val _ = runTest ("Test 7: maybeFlattenArg", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val v1 = Var.fromString "v1"
       val v2 = Var.fromString "v2"
@@ -1347,6 +1347,88 @@ in
       val _ = if Type.equals (y_ty, expectedYty) then ()
               else assert (false, "y_tuple type mismatch: " ^ (Layout.toString (Type.layout y_ty)) ^ 
                                  " expected " ^ (Layout.toString (Type.layout expectedYty)))
+   in () end)
+
+   (* Test 26: Nested Tuple constructors *)
+   val _ = runTest ("Test 26: Nested Tuple constructors", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val n = Var.fromString "n"
+      val other = Var.fromString "other"
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val z = Var.fromString "z"
+      
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = Prim.Array_alloc {raw = false},
+                            targs = Vector.new1 tuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME x
+      }
+      
+      val s2 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [x, other]),
+         ty = Type.tuple (Vector.fromList [arrayTuple2Ty, word32Ty]),
+         var = SOME y
+      }
+
+      val s3 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [y, other]),
+         ty = Type.tuple (Vector.fromList [Type.tuple (Vector.fromList [arrayTuple2Ty, word32Ty]), word32Ty]),
+         var = SOME z
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy), (other, word32Ty)],
+         label = L0,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 2
+      val res = ShallowFlatten.flattenOnce policy p
+      val p' = case res of
+                  SOME p' => p'
+                | NONE => raise TestFail "Should have flattened"
+      
+      val Program.T {functions = funcs', ...} = p'
+      val mainFunction' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest mainFunction'
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+      
+      (* Check the type of z in the rewritten stmts *)
+      val z_stmt = Vector.last stmts'
+      val Statement.T {ty = z_ty, ...} = z_stmt
+      
+      val flattenedXty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val expectedYty = Type.tuple (Vector.fromList [flattenedXty, word32Ty])
+      val expectedZty = Type.tuple (Vector.fromList [expectedYty, word32Ty])
+      
+      val _ = if Type.equals (z_ty, expectedZty) then ()
+              else assert (false, "z type mismatch: " ^ (Layout.toString (Type.layout z_ty)) ^ 
+                                 " expected " ^ (Layout.toString (Type.layout expectedZty)))
    in () end)
 
    val _ = runTest ("Test: non-PrimApp flattening (array)", fn () => let

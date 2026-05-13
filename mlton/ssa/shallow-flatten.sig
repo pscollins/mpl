@@ -190,6 +190,8 @@ sig
     For a non-`PrimApp` expression, flattening replaces a flattenable LHS type
     with the flattened equivalent,
 
+    TODO: WRONG!
+
       x: ('a * b * ...) array = ...
       -->
       x: 'a array * 'b array ... = ...
