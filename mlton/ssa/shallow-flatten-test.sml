@@ -1500,5 +1500,25 @@ in
         | NONE => ()
    end)
 
+   (* Test 30: varTypes *)
+   val _ = runTest ("Test 30: varTypes", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      (* First set *)
+      val _ = ShallowFlatten.setVarType (vt, v1, intTy)
+      val resTy1 = ShallowFlatten.getVarType (vt, v1)
+      val _ = assert (Type.equals (resTy1, intTy), "getVarType should return the first set type")
+      
+      (* Second set (update) *)
+      val _ = ShallowFlatten.setVarType (vt, v1, word32Ty)
+      val resTy2 = ShallowFlatten.getVarType (vt, v1)
+      val _ = assert (Type.equals (resTy2, word32Ty), "getVarType should return the updated type")
+
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
    val _ = summarize ()
 end
