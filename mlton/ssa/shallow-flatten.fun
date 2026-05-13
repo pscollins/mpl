@@ -476,13 +476,13 @@ fun maybeFlattenStatement (s: Statement.t) = let
          ->
          x = Array_sub['a](arr, n)
 
-         `primArg` is `{readBarrier=true/false}`
+         Assumes `prim` is `Vector_sub` or `Array_sub`
        *)
-      fun mkLoad primArg (stmt: Statement.t): Statement.t = let
+      fun mkLoad (stmt: Statement.t): Statement.t = let
          val Statement.T {ty=arrTy, ...} = stmt
-         val elTy = Type.deArray arrTy
+         val elTy = deContainer arrTy
          val subExp = Exp.PrimApp {args = Vector.new1 (extractBind stmt),
-                                   prim = Prim.Array_sub primArg,
+                                   prim = prim,
                                    targs = Vector.new1 elTy}
       in
          Statement.T {
@@ -588,7 +588,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
          *)
          Vector.new2 (arrStmt, lenStmt)
       end
-      fun buildArraySub (primArg, flatArg) = let
+      fun buildArraySub flatArg = let
          val numTypes = getNumElementTypes flatArg
          (* arr_a = select(arr, 0)
             arr_b = select(arr, 1)
@@ -601,7 +601,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
             x_b = Array_sub['b](arr_b, n)
             ...
           *)
-         val loadStmts = Vector.map (selectStmts, mkLoad primArg)
+         val loadStmts = Vector.map (selectStmts, mkLoad)
          (* res = tuple (x_a, x_b, ...) *)
          val tupleStmt = mkTuple (var, loadStmts)
       in
@@ -667,7 +667,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
             | (Prim.Vector_length, SOME flatArg) =>
               SOME (buildArrayLength flatArg)
             | (Prim.Array_sub primArg, SOME flatArg) =>
-              SOME (buildArraySub (primArg, flatArg))
+              SOME (buildArraySub flatArg)
+            | (Prim.Vector_sub, SOME flatArg) =>
+              SOME (buildArraySub flatArg)
             | (Prim.Array_update primArg, SOME flatArg) =>
               SOME (buildArrayUpdate (primArg, flatArg))
             | (Prim.Array_toVector, SOME flatArg) =>
