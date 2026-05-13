@@ -294,6 +294,35 @@ in
    !count
 end
 
+type varTypes = {
+   getType: Var.t -> Type.t,
+   setType: Var.t * Type.t -> unit,
+   destroy: unit -> unit
+}
+fun newVarTypes () = let
+   val {get, set, destroy} =
+       Property.destGetSet (Var.plist, Property.initRaise (TODO))
+in
+   {getType = get, setType = set, destroy = destroy}
+end
+fun destroyVarTypes (vt: varTypes) = let
+   val {destroy, ...} = vt
+in
+   destroy()
+end
+
+fun setVarType (vt: varTypes, v, t) = let
+   val {setVarType, ...} = vt
+in
+   setVarType (v, t)
+end
+
+fun getVarType (vt: varTypes, v) = let
+   val {getVarType, ...} = vt
+in
+   getVarType v
+end
+
 datatype flattenPolicy = MaxWidth of int
 
 (* Returns:
