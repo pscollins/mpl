@@ -1269,6 +1269,86 @@ in
       val _ = assertType (Vector.sub (stmts_sub, 4), tuple2Ty, "Vector_sub stmt 4 type")
    in () end)
 
+   (* Test 25: Array_toVector followed by Tuple constructor *)
+   val _ = runTest ("Test 25: Array_toVector followed by Tuple constructor", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val arr = Var.fromString "arr"
+      val x_vec = Var.fromString "x_vec"
+      val y_tuple = Var.fromString "y_tuple"
+      val other = Var.fromString "other"
+      
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      val word32Ty = Type.word WordSize.word32
+
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 arr,
+                            prim = Prim.Array_toVector,
+                            targs = Vector.new1 tuple2Ty},
+         ty = vectorTuple2Ty,
+         var = SOME x_vec
+      }
+      
+      val s2 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [x_vec, other]),
+         ty = Type.tuple (Vector.fromList [vectorTuple2Ty, word32Ty]),
+         var = SOME y_tuple
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.fromList [(arr, arrayTuple2Ty), (other, word32Ty)],
+         label = L0,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 2
+      val res = ShallowFlatten.flattenOnce policy p
+      val p' = case res of
+                  SOME p' => p'
+                | NONE => raise TestFail "Should have flattened"
+      
+      val Program.T {functions = funcs', ...} = p'
+      val mainFunction' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest mainFunction'
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+      
+      (* s1 should be flattened into 5 statements *)
+      (* s2 should be rewritten because x_vec is now a tuple *)
+      
+      val _ = assert (Vector.length stmts' >= 6, "Expected at least 6 statements")
+      
+      (* Check the type of y_tuple in the rewritten s2 *)
+      val y_stmt = Vector.last stmts'
+      val Statement.T {ty = y_ty, ...} = y_stmt
+      
+      val expectedXty = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+      val expectedYty = Type.tuple (Vector.fromList [expectedXty, word32Ty])
+      
+      val _ = if Type.equals (y_ty, expectedYty) then ()
+              else assert (false, "y_tuple type mismatch: " ^ (Layout.toString (Type.layout y_ty)) ^ 
+                                 " expected " ^ (Layout.toString (Type.layout expectedYty)))
+   in () end)
+
    val _ = runTest ("Test: non-PrimApp flattening (array)", fn () => let
       val v1 = Var.newString "v1"
       val intTy = Type.intInf
