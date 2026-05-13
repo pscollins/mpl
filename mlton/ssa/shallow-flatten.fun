@@ -301,7 +301,7 @@ type varTypes = {
 }
 fun newVarTypes () = let
    val {get, set, destroy} =
-       Property.destGetSet (Var.plist, Property.initRaise (TODO))
+       Property.destGetSet (Var.plist, Property.initRaise ("varType", Var.layout))
 in
    {getType = get, setType = set, destroy = destroy}
 end
@@ -312,15 +312,15 @@ in
 end
 
 fun setVarType (vt: varTypes, v, t) = let
-   val {setVarType, ...} = vt
+   val {setType, ...} = vt
 in
-   setVarType (v, t)
+   setType (v, t)
 end
 
 fun getVarType (vt: varTypes, v) = let
-   val {getVarType, ...} = vt
+   val {getType, ...} = vt
 in
-   getVarType v
+   getType v
 end
 
 datatype flattenPolicy = MaxWidth of int
