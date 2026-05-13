@@ -1269,5 +1269,71 @@ in
       val _ = assertType (Vector.sub (stmts_sub, 4), tuple2Ty, "Vector_sub stmt 4 type")
    in () end)
 
+   val _ = runTest ("Test: non-PrimApp flattening (array)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = arrayTuple2Ty,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val _ = case res of
+                  SOME _ => ()
+                | NONE => raise TestFail "Should flatten non-PrimApp array with flattenable type"
+      val ss = valOf res
+      val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
+      val Statement.T {ty = resTy, ...} = Vector.sub (ss, 0)
+      val expectedTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+   in
+      assert (Type.equals (resTy, expectedTy), "Resulting type should be flattened")
+   end)
+
+   val _ = runTest ("Test: non-PrimApp flattening (vector)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = vectorTuple2Ty,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val _ = case res of
+                  SOME _ => ()
+                | NONE => raise TestFail "Should flatten non-PrimApp vector with flattenable type"
+      val ss = valOf res
+      val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
+      val Statement.T {ty = resTy, ...} = Vector.sub (ss, 0)
+      val expectedTyVec = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+   in
+      assert (Type.equals (resTy, expectedTyVec), "Resulting type should be flattened to vectors")
+   end)
+
+   val _ = runTest ("Test: non-PrimApp no-flattening (not a tuple)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val arrayIntTy = Type.array intTy
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = arrayIntTy,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+   in
+      case res of
+          SOME _ => raise TestFail "Should NOT flatten non-PrimApp with non-flattenable type"
+        | NONE => ()
+   end)
+
    val _ = summarize ()
 end
