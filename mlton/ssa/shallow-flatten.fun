@@ -786,8 +786,8 @@ fun flattenStatements fv ss = let
                maybeFlattenStatement s) of
              (false, _) => Vector.new1 s
            | (true, SOME ss) => ss
-           (* | (true, NONE) => raise IllegalFlatteningDecision *)
-           | (true, NONE) => ss
+           (* For now, we only report missing flattening for PrimApp *)
+           | (true, NONE) => raise IllegalFlatteningDecision
       end
 in
    Vector.concatV (Vector.map (ss, doStmt))
