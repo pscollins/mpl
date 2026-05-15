@@ -313,9 +313,6 @@ in
    getFlattenedConProp c
 end
 
-fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool =
-   Error.bug "isConMarkedForFlatten not implemented"
-
 fun markedCount (fv: flattenedVars): int = let
    val {count, ...} = fv
 in
