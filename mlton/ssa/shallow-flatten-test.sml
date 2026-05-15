@@ -4,6 +4,15 @@ local
    fun assert (cond, msg) =
       if cond then () else raise TestFail msg
 
+   fun statementEquals (Statement.T {exp=e1, ty=t1, var=v1},
+                        Statement.T {exp=e2, ty=t2, var=v2}) =
+      Exp.equals (e1, e2) andalso
+      Type.equals (t1, t2) andalso
+      (case (v1, v2) of
+          (SOME v1', SOME v2') => Var.equals (v1', v2')
+        | (NONE, NONE) => true
+        | _ => false)
+
    fun assertType (Statement.T {ty, ...}, expected, msg) =
       if Type.equals (ty, expected) then ()
       else assert (false, msg ^ ": type mismatch")
@@ -582,7 +591,11 @@ in
 
       (* Case 1: Non-flattenable statement (Const) *)
       val s1 = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = intTy, var = SOME v1}
-      val _ = assert (Option.isNone (ShallowFlatten.maybeFlattenStatement s1), "s1 should not be flattenable")
+      val res1 = ShallowFlatten.maybeFlattenStatement s1
+      val _ = case res1 of
+                 SOME ss => assert (Vector.length ss = 1 andalso statementEquals (s1, Vector.sub (ss, 0)), 
+                                   "s1 should return SOME (original)")
+               | NONE => raise TestFail "s1 should return SOME (original)"
 
       (* Case 2: Array_alloc on non-tuple type *)
       val s2 = Statement.T {
@@ -609,8 +622,8 @@ in
       val _ = assertType (Vector.sub (stmts4, 1), intTy, "s4 stmt 1 type")
    in () end)
 
-   (* Test 8b: maybeFlattenStatement (non-PrimApp always returns NONE) *)
-   val _ = runTest ("Test 8b: maybeFlattenStatement (non-PrimApp always returns NONE)", fn () => let
+   (* Test 8b: maybeFlattenStatement (non-PrimApp always returns SOME original) *)
+   val _ = runTest ("Test 8b: maybeFlattenStatement (non-PrimApp always returns SOME original)", fn () => let
       val v1 = Var.fromString "v1"
       val x = Var.fromString "x"
       val intTy = Type.intInf
@@ -618,33 +631,40 @@ in
       val arrayTuple2Ty = Type.array tuple2Ty
       val vectorTuple2Ty = Type.vector tuple2Ty
 
-      fun checkNone (s, msg) =
-         if Option.isNone (ShallowFlatten.maybeFlattenStatement s) then ()
-         else raise TestFail (msg ^ ": expected NONE, got SOME")
+      fun checkSome (s, msg) =
+         case ShallowFlatten.maybeFlattenStatement s of
+            SOME ss => 
+               if Vector.length ss = 1 then
+                  let val s' = Vector.sub (ss, 0)
+                  in if statementEquals (s, s') then ()
+                     else raise TestFail (msg ^ ": statement changed")
+                  end
+               else raise TestFail (msg ^ ": expected 1 statement")
+          | NONE => raise TestFail (msg ^ ": expected SOME, got NONE")
 
       (* Exp.Const *)
       val s_const = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = arrayTuple2Ty, var = SOME v1}
-      val _ = checkNone (s_const, "Const with array-of-tuple type")
+      val _ = checkSome (s_const, "Const with array-of-tuple type")
 
       (* Exp.Var *)
       val s_var = Statement.T {exp = Exp.Var x, ty = arrayTuple2Ty, var = SOME v1}
-      val _ = checkNone (s_var, "Var with array-of-tuple type")
+      val _ = checkSome (s_var, "Var with array-of-tuple type")
 
       (* Exp.Tuple *)
       val s_tuple = Statement.T {exp = Exp.Tuple (Vector.new1 x), ty = arrayTuple2Ty, var = SOME v1}
-      val _ = checkNone (s_tuple, "Tuple with array-of-tuple type")
+      val _ = checkSome (s_tuple, "Tuple with array-of-tuple type")
 
       (* Exp.Select *)
       val s_select = Statement.T {exp = Exp.Select {offset = 0, tuple = x}, ty = arrayTuple2Ty, var = SOME v1}
-      val _ = checkNone (s_select, "Select with array-of-tuple type")
+      val _ = checkSome (s_select, "Select with array-of-tuple type")
 
       (* Exp.Profile *)
       val s_profile = Statement.T {exp = Exp.Profile (ProfileExp.Enter SourceInfo.unknown), ty = Type.unit, var = NONE}
-      val _ = checkNone (s_profile, "Profile")
+      val _ = checkSome (s_profile, "Profile")
       
       (* Check Vector as well *)
       val s_vec_const = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = vectorTuple2Ty, var = SOME v1}
-      val _ = checkNone (s_vec_const, "Const with vector-of-tuple type")
+      val _ = checkSome (s_vec_const, "Const with vector-of-tuple type")
 
    in () end)
 
@@ -1484,15 +1504,13 @@ in
       }
 
       val res = ShallowFlatten.maybeFlattenStatement s
-      val _ = case res of
-                  SOME _ => ()
-                | NONE => raise TestFail "Should flatten non-PrimApp array with flattenable type"
-      val ss = valOf res
+      val ss = case res of
+                  SOME ss => ss
+                | NONE => raise TestFail "Should return SOME (original) for non-PrimApp"
       val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
-      val Statement.T {ty = resTy, ...} = Vector.sub (ss, 0)
-      val expectedTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val s' = Vector.sub (ss, 0)
    in
-      assert (Type.equals (resTy, expectedTy), "Resulting type should be flattened")
+      assert (statementEquals (s, s'), "Resulting statement should be the original")
    end)
 
    (* Test 28: non-PrimApp flattening (vector) *)
@@ -1509,15 +1527,13 @@ in
       }
 
       val res = ShallowFlatten.maybeFlattenStatement s
-      val _ = case res of
-                  SOME _ => ()
-                | NONE => raise TestFail "Should flatten non-PrimApp vector with flattenable type"
-      val ss = valOf res
+      val ss = case res of
+                  SOME ss => ss
+                | NONE => raise TestFail "Should return SOME (original) for non-PrimApp"
       val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
-      val Statement.T {ty = resTy, ...} = Vector.sub (ss, 0)
-      val expectedTyVec = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+      val s' = Vector.sub (ss, 0)
    in
-      assert (Type.equals (resTy, expectedTyVec), "Resulting type should be flattened to vectors")
+      assert (statementEquals (s, s'), "Resulting statement should be the original")
    end)
 
    (* Test 29: non-PrimApp no-flattening (not a tuple) *)
@@ -1535,8 +1551,9 @@ in
       val res = ShallowFlatten.maybeFlattenStatement s
    in
       case res of
-          SOME _ => raise TestFail "Should NOT flatten non-PrimApp with non-flattenable type"
-        | NONE => ()
+          SOME ss => assert (Vector.length ss = 1 andalso statementEquals (s, Vector.sub (ss, 0)), 
+                            "Should return SOME (original)")
+        | NONE => raise TestFail "Should return SOME (original)"
    end)
 
    (* Test 30: varTypes *)
