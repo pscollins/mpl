@@ -20,6 +20,13 @@ fun runTest (title: string, thunk: unit -> unit): unit =
     handle TestFail reason =>
         (print ("Test failed: " ^ title ^ " - " ^ reason ^ "\n");
          failedTests := (title, reason) :: !failedTests)
+    | exn =>
+        let
+            val reason = "Unexpected exception: " ^ exnMessage exn
+        in
+            print ("Test failed: " ^ title ^ " - " ^ reason ^ "\n");
+            failedTests := (title, reason) :: !failedTests
+        end
 
 fun runTestDisabled (title: string, _: unit -> unit): unit =
     disabledTests := title :: !disabledTests
