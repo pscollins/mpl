@@ -197,7 +197,7 @@ sig
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
 
-    Non-`PrimApp` expressions always return `NONE`.
+    Non-`PrimApp` expressions always return `SOME (originalStatement)`
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option

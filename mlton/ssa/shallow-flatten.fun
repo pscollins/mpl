@@ -754,7 +754,7 @@ in
    case exp of
        Exp.PrimApp {args, prim, targs} =>
        doPrimApp (args, prim, targs)
-     | _ => NONE
+     | _ => SOME (Vector.new1 s)
 end
 
 fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
@@ -786,7 +786,8 @@ fun flattenStatements fv ss = let
                maybeFlattenStatement s) of
              (false, _) => Vector.new1 s
            | (true, SOME ss) => ss
-           | (true, NONE) => raise IllegalFlatteningDecision
+           (* | (true, NONE) => raise IllegalFlatteningDecision *)
+           | (true, NONE) => ss
       end
 in
    Vector.concatV (Vector.map (ss, doStmt))
@@ -820,7 +821,8 @@ in
 end
 
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
-   (* Collect all of the variables in the program that need flattening *)
+   (* First pass: collect all of the variables in the program that need
+   flattening *)
    val fv = getFlattenedVarsInProgram (policy, p)
    val rewriter = {
       doStatements = flattenStatements fv,
@@ -829,9 +831,33 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    }
    val p' = rewriteBfs rewriter p
    val count = markedCount fv
+
+   (* Second pass: propagate types *)
+   val vt = newVarTypes ()
+   fun propagateThroughStatements ss = let
+      fun doStmt s = let
+         val Statement.T {var, ty, ...} = s
+         (* Set the initial type before tyring to propagate *)
+         val _ = case var of
+                     SOME v' => setVarType (vt, v', ty)
+                   | _ => ()
+      in
+         propagateTypesInStatement (vt, s)
+      end
+   in
+      Vector.map (ss, doStmt)
+   end
+   val propagator = {
+      doStatements = propagateThroughStatements,
+      doArgs = fn x => x,
+      doTransfer = fn x => x
+   }
+   val p'' = rewriteBfs propagator p'
+   (* Cleanup *)
+   val _ = destroyVarTypes vt
    val _ = destroyFlattenedVars fv
 in
-   if count > 0 then SOME p'
+   if count > 0 then SOME p''
    else NONE
 end
 
