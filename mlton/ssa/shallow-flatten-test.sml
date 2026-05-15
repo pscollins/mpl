@@ -609,6 +609,45 @@ in
       val _ = assertType (Vector.sub (stmts4, 1), intTy, "s4 stmt 1 type")
    in () end)
 
+   (* Test 8b: maybeFlattenStatement (non-PrimApp always returns NONE) *)
+   val _ = runTest ("Test 8b: maybeFlattenStatement (non-PrimApp always returns NONE)", fn () => let
+      val v1 = Var.fromString "v1"
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val vectorTuple2Ty = Type.vector tuple2Ty
+
+      fun checkNone (s, msg) =
+         if Option.isNone (ShallowFlatten.maybeFlattenStatement s) then ()
+         else raise TestFail (msg ^ ": expected NONE, got SOME")
+
+      (* Exp.Const *)
+      val s_const = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = arrayTuple2Ty, var = SOME v1}
+      val _ = checkNone (s_const, "Const with array-of-tuple type")
+
+      (* Exp.Var *)
+      val s_var = Statement.T {exp = Exp.Var x, ty = arrayTuple2Ty, var = SOME v1}
+      val _ = checkNone (s_var, "Var with array-of-tuple type")
+
+      (* Exp.Tuple *)
+      val s_tuple = Statement.T {exp = Exp.Tuple (Vector.new1 x), ty = arrayTuple2Ty, var = SOME v1}
+      val _ = checkNone (s_tuple, "Tuple with array-of-tuple type")
+
+      (* Exp.Select *)
+      val s_select = Statement.T {exp = Exp.Select {offset = 0, tuple = x}, ty = arrayTuple2Ty, var = SOME v1}
+      val _ = checkNone (s_select, "Select with array-of-tuple type")
+
+      (* Exp.Profile *)
+      val s_profile = Statement.T {exp = Exp.Profile (ProfileExp.Enter SourceInfo.unknown), ty = Type.unit, var = NONE}
+      val _ = checkNone (s_profile, "Profile")
+      
+      (* Check Vector as well *)
+      val s_vec_const = Statement.T {exp = Exp.Const (Const.IntInf 1), ty = vectorTuple2Ty, var = SOME v1}
+      val _ = checkNone (s_vec_const, "Const with vector-of-tuple type")
+
+   in () end)
+
    (* Test 9: maybeFlattenStatement (Array_alloc) *)
    val _ = runTest ("Test 9: maybeFlattenStatement (Array_alloc)", fn () => let
       val v1 = Var.fromString "v1"

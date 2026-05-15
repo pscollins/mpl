@@ -750,18 +750,11 @@ fun maybeFlattenStatement (s: Statement.t) = let
    in
       result
    end
-   fun doNonPrimApp () = 
-      (* Rewrite LHS type to flat equivalent, if possible *)
-      case maybeFlattenType ty of
-          SOME flatTy => SOME (Vector.new1 (Statement.T {exp=exp,
-                                                         ty=flatTy,
-                                                         var=var}))
-        | _ => NONE
 in
    case exp of
        Exp.PrimApp {args, prim, targs} =>
        doPrimApp (args, prim, targs)
-     | _ => doNonPrimApp ()
+     | _ => NONE
 end
 
 fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
