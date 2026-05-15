@@ -820,6 +820,23 @@ in
    fv
 end
 
+fun bindTypeInStatement (vt, s) = let
+   val Statement.T {var, ty, ...} = s
+in
+   case var of
+       SOME v' => setVarType (vt, v', ty)
+     | _ => ()
+end
+
+fun bindTypesInArgs (vt: varTypes)
+                    (args: (Var.t * Type.t) vector): (Var.t * Type.t) vector
+    = let
+   fun bindType (v, t) =
+       setVarType (vt, v, t)
+in
+   (Vector.foreach (args, bindType); args)
+end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
@@ -838,9 +855,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       fun doStmt s = let
          val Statement.T {var, ty, ...} = s
          (* Set the initial type before tyring to propagate *)
-         val _ = case var of
-                     SOME v' => setVarType (vt, v', ty)
-                   | _ => ()
+         val _ = bindTypeInStatement (vt, s)
       in
          propagateTypesInStatement (vt, s)
       end
@@ -849,7 +864,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    end
    val propagator = {
       doStatements = propagateThroughStatements,
-      doArgs = fn x => x,
+      doArgs = bindTypesInArgs vt,
       doTransfer = fn x => x
    }
    val p'' = rewriteBfs propagator p'
