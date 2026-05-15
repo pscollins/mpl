@@ -323,8 +323,47 @@ in
    getType v
 end
 
-fun propagateTypesInStatement (_: varTypes, s: Statement.t): Statement.t =
-   s
+(* If possible, infer a new return type from `exp` under `vt`
+
+   Only the cases that can change due to flattening are supported.
+*)
+fun maybeReinferType (vt: varTypes, exp: Exp.t): Type.t option = let
+   fun getType v = getVarType (vt, v)
+   fun getNthTupleType (n, ty) = let
+      val tys = Type.deTuple ty
+   in
+      Vector.sub (tys, n)
+   end
+in
+   case exp of
+       Exp.Select {offset, tuple} =>
+       SOME (getNthTupleType (offset, getType tuple))
+     | Exp.Tuple vs => SOME (Type.tuple (Vector.map (vs, getType)))
+     | Exp.Var v => SOME (getType v)
+     (* This case should work, but we don't support it for now *)
+     | Exp.ConApp _ => NONE
+     (* These types can't be changed due to flattening, no need to update *)
+     | Exp.Const _ => NONE
+     | Exp.PrimApp _ => NONE
+     | Exp.Profile _ => NONE
+end
+
+fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
+    Statement.t = let
+   val Statement.T {exp, ty, var} = s
+   val newTy =
+       (* Update type if necessary, otherwise keep the existing one *)
+       case maybeReinferType (vt, exp) of
+           SOME ty' => ty'
+         | _ => ty
+   val _ =
+       case var of
+           (* Update the type of the bound variable (if any) *)
+           SOME v => setVarType (vt, v, newTy)
+         | _ => ()
+in
+   Statement.T {exp = exp, ty = newTy, var = var}
+end
 
 datatype flattenPolicy = MaxWidth of int
 
