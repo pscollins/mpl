@@ -252,23 +252,32 @@ fun getFlattenedElementTypes (flatType: Type.t) =
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
    setFlattenedProp: Var.t * bool -> unit,
-   destroyFlattenedProp: unit -> unit,
+   getFlattenedConProp: Con.t -> bool,
+   setFlattenedConProp: Con.t * bool -> unit,
+   destroyFlattenedProps: unit -> unit,
    count: int ref
 }
 fun newFlattenedVars () = let
    val {get, set, destroy} =
        Property.destGetSetOnce (Var.plist, Property.initConst false)
+
+   val {get=get', set=set', destroy=destroy'} =
+       Property.destGetSetOnce (Con.plist, Property.initConst false)
+   fun doDestroy() =
+       (destroy(); destroy'())
 in
    {getFlattenedProp=get,
     setFlattenedProp=set,
-    destroyFlattenedProp=destroy,
+    getFlattenedConProp=get',
+    setFlattenedConProp=set',
+    destroyFlattenedProps=doDestroy,
     count=ref 0}
 end
 
 fun destroyFlattenedVars (fv: flattenedVars): unit = let
-   val {destroyFlattenedProp, ...} = fv
+   val {destroyFlattenedProps, ...} = fv
 in
-   destroyFlattenedProp()
+   destroyFlattenedProps()
 end
 
 fun markForFlatten (fv: flattenedVars, v: Var.t): unit = let
@@ -282,13 +291,26 @@ in
    setFlattenedProp (v, true)
 end
 
-fun markConForFlatten (fv: flattenedVars, c: Con.t): unit =
-   Error.bug "markConForFlatten not implemented"
+fun markConForFlatten (fv: flattenedVars, c: Con.t): unit = let
+   val {setFlattenedConProp, ...} = fv
+   fun logThunk () =
+       Layout.seq [Layout.str "markConForFlatten: ",
+                   Con.layout c]
+   val _ = Control.diagnostic logThunk
+in
+   setFlattenedConProp (c, true)
+end
 
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
    val {getFlattenedProp, ...} = fv
 in
    getFlattenedProp v
+end
+
+fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool = let
+   val {getFlattenedConProp, ...} = fv
+in
+   getFlattenedConProp c
 end
 
 fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool =
