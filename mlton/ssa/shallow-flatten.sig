@@ -197,16 +197,7 @@ sig
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
 
-    For a non-`PrimApp` expression, flattening replaces a flattenable LHS type
-    with the flattened equivalent,
-
-    TODO: WRONG!
-
-      x: ('a * b * ...) array = ...
-      -->
-      x: 'a array * 'b array ... = ...
-
-    (and likewise for `vector`)
+    Non-`PrimApp` expressions always return `NONE`.
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
@@ -240,7 +231,8 @@ sig
 
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to
-   the rules of `mustFlattenStatement`).
+   the rules of `mustFlattenStatement`), then updates types via the rules of
+   `propagateTypesInStatement`.
 
    If some statement must be flattened, but cannot, raises
    `IllegalFlatteningDecision`.
