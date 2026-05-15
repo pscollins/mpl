@@ -282,11 +282,17 @@ in
    setFlattenedProp (v, true)
 end
 
+fun markConForFlatten (fv: flattenedVars, c: Con.t): unit =
+   Error.bug "markConForFlatten not implemented"
+
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
    val {getFlattenedProp, ...} = fv
 in
    getFlattenedProp v
 end
+
+fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool =
+   Error.bug "isConMarkedForFlatten not implemented"
 
 fun markedCount (fv: flattenedVars): int = let
    val {count, ...} = fv

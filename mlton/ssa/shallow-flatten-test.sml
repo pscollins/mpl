@@ -1732,5 +1732,21 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+   (* Test 38: Constructor flattening marks *)
+   val _ = runTest ("Test 38: Constructor flattening marks", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val c1 = Con.fromString "C1"
+      val c2 = Con.fromString "C2"
+
+      val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, c1)), "C1 should not be marked initially")
+      val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, c2)), "C2 should not be marked initially")
+
+      val _ = ShallowFlatten.markConForFlatten (fv, c1)
+      val _ = assert (ShallowFlatten.isConMarkedForFlatten (fv, c1), "C1 should be marked")
+      val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, c2)), "C2 should still not be marked")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
    val _ = summarize ()
 end
