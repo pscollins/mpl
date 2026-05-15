@@ -58,18 +58,23 @@ sig
     *)
    val maybeFlattenType: Type.t -> Type.t option
 
-   (* Tracks flattening decisions for variables. *)
+   (* Tracks flattening decisions for variables and constructors. *)
    type flattenedVars
    val newFlattenedVars: unit -> flattenedVars
    val destroyFlattenedVars: flattenedVars -> unit
-
    (* Marks the provided `Var.t` for flattening. It is only valid to call this
    function once  on a particular `(fv, v)` pair *)
    val markForFlatten: flattenedVars * Var.t -> unit
+   (* Like above, but for `Con.t` *)
+   val markConForFlatten: flattenedVars * Con.t -> unit
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
-   (* Returns the total number of variables marked for flattening *)
+   (* Like above, but for `Con.t` *)
+   val isConMarkedForFlatten: flattenedVars * Con.t -> bool
+
+   (* Returns the total number of variables marked for flattening (excluding
+   constructors) *)
    val markedCount: flattenedVars -> int
 
    (* What array types should be flattened? *)
