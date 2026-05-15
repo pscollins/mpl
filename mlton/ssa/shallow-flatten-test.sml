@@ -1606,8 +1606,8 @@ in
       }
       
       val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
-      val _ = assertType (s', intTy, "Const type should match the constant")
-      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes updated")
+      val _ = assertType (s', word32Ty, "Const type should be preserved")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
