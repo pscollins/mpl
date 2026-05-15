@@ -11,7 +11,9 @@ val disabledTests: string list ref = ref []
 exception TestFail of string
 
 (* Runs `thunk` and catches `TestFail` to indicate failure: passing tests are
-collected in `passedTests` and failing tests + failing reasons in `failedTests` *)
+collected in `passedTests` and failing tests + failing reasons in `failedTests`
+
+Unexpected exceptions are treated as test failures. *)
 fun runTest (title: string, thunk: unit -> unit): unit =
     (print ("Running test: " ^ title ^ "\n");
      thunk (); passedTests := title :: !passedTests)

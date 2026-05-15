@@ -26,6 +26,17 @@ val _ = (
     assert ("passedTests should be empty", List.length (!passedTests) = 0)
 )
 
+(* Test runTest with unexpected exception *)
+val _ = (
+    print "Testing runTest (unexpected exception)...\n";
+    passedTests := [];
+    failedTests := [];
+    (runTest ("UnexpectedExceptionTest", fn () => raise Fail "unexpected")
+     handle _ => ());
+    assert ("UnexpectedExceptionTest should be in failedTests", List.exists (fn (s, _) => s = "UnexpectedExceptionTest") (!failedTests));
+    assert ("passedTests should be empty", List.length (!passedTests) = 0)
+)
+
 (* Test summarize with success *)
 val _ = (
     print "Testing summarize (success)...\n";
