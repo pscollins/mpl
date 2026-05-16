@@ -294,15 +294,17 @@ end
 
 fun markConForFlatten (fv: flattenedVars, c: Con.t,
                        shouldFlattens: bool vector): unit = let
-   val {setFlattenedConProp, ...} = fv
+   val {setFlattenedConProp, count, ...} = fv
    fun logThunk () =
        Layout.seq [Layout.str "markConForFlatten: ",
                    Con.layout c]
    val _ = Control.diagnostic logThunk
+   val _ = if Vector.exists (shouldFlattens, fn b => b)
+           then count := (!count + 1)
+           else ()
 in
    setFlattenedConProp (c, shouldFlattens)
 end
-
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
    val {getFlattenedProp, ...} = fv
 in
@@ -862,6 +864,7 @@ in
 end
 
 fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
+   val Program.T {datatypes, ...} = p
    val fv = newFlattenedVars()
    fun foreachStatements ss =
        Vector.foreach(ss, markStatementForPolicy (fv, policy))
@@ -875,6 +878,7 @@ fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
       foreachTransfer = foreachTransfer
    }
    val _ = foreachBfs visitor p
+   val _ = Vector.foreach (datatypes, markDatatypeForPolicy (fv, policy))
 in
    fv
 end
@@ -896,6 +900,15 @@ in
    (Vector.foreach (args, bindType); args)
 end
 
+fun flattenDatatypesInProgram (fv: flattenedVars, p: Program.t): Program.t = let
+   val Program.T {datatypes, functions, globals, main} = p
+in
+   Program.T {datatypes = Vector.map (datatypes, flattenDatatype fv),
+              functions = functions,
+              globals = globals,
+              main = main}
+end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
@@ -908,7 +921,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    val p' = rewriteBfs rewriter p
    val count = markedCount fv
 
-   (* Second pass: propagate types *)
+   (* Second pass: propagate types + update datatype declarations *)
    val vt = newVarTypes ()
    fun propagateThroughStatements ss = let
       fun doStmt s = let
@@ -926,7 +939,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       doArgs = bindTypesInArgs vt,
       doTransfer = fn x => x
    }
-   val p'' = rewriteBfs propagator p'
+   val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p')
    (* Cleanup *)
    val _ = destroyVarTypes vt
    val _ = destroyFlattenedVars fv

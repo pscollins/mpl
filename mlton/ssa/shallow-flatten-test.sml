@@ -1827,6 +1827,72 @@ in
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)
 
+   (* Test 41: flattenOnce with datatypes *)
+   val _ = runTest ("Test 41: flattenOnce with datatypes", fn () => let
+      val policy = ShallowFlatten.MaxWidth 3
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      val tycon = Tycon.fromString "t"
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = tycon,
+         cons = Vector.new1 {con = con1, args = Vector.new1 arrayTuple2Ty}
+      }
+
+      val mainFunc = Func.fromString "main"
+      val mainLabel = Label.fromString "L0"
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      
+      (* v1 = Array_alloc[ (int * int) array ](n) *)
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.new1 n,
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.new1 tuple2Ty
+         },
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new1 (n, Type.intInf),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new1 dt,
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val p' = case ShallowFlatten.flattenOnce policy p of
+                  SOME p' => p'
+                | NONE => raise TestFail "flattenOnce failed to flatten"
+
+      val Program.T {datatypes = dts', ...} = p'
+      val dt' = Vector.sub (dts', 0)
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args1, ...} = Vector.sub (cons', 0)
+      
+      val _ = assert (Type.equals (Vector.sub (args1, 0), flattenedTuple2Ty), 
+                      "Datatype should be flattened in flattenOnce")
+   in () end)
+
       val _ = summarize ()
 
 end

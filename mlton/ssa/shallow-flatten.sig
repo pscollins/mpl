@@ -76,8 +76,8 @@ sig
    previously called *)
    val isConMarkedForFlatten: flattenedVars * Con.t -> bool vector
 
-   (* Returns the total number of variables marked for flattening (excluding
-   constructors) *)
+   (* Returns the total number of variables and constructors marked for
+   flattening *)
    val markedCount: flattenedVars -> int
 
    (* What array types should be flattened? *)
