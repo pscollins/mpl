@@ -65,13 +65,16 @@ sig
    (* Marks the provided `Var.t` for flattening. It is only valid to call this
    function once  on a particular `(fv, v)` pair *)
    val markForFlatten: flattenedVars * Var.t -> unit
-   (* Like above, but for `Con.t` *)
-   val markConForFlatten: flattenedVars * Con.t -> unit
+
+   (* Like above, but for `Con.t`: each entry in the vector corresponds to each
+   type argument. *)
+   val markConForFlatten: flattenedVars * Con.t * bool vector -> unit
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
-   (* Like above, but for `Con.t` *)
-   val isConMarkedForFlatten: flattenedVars * Con.t -> bool
+   (* Like above, but for `Con.t`. Requires that `markConForFlatten` was
+   previously called *)
+   val isConMarkedForFlatten: flattenedVars * Con.t -> bool vector
 
    (* Returns the total number of variables marked for flattening (excluding
    constructors) *)

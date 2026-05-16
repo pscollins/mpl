@@ -252,8 +252,8 @@ fun getFlattenedElementTypes (flatType: Type.t) =
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
    setFlattenedProp: Var.t * bool -> unit,
-   getFlattenedConProp: Con.t -> bool,
-   setFlattenedConProp: Con.t * bool -> unit,
+   getFlattenedConProp: Con.t -> bool vector,
+   setFlattenedConProp: Con.t * bool vector -> unit,
    destroyFlattenedProps: unit -> unit,
    count: int ref
 }
@@ -262,7 +262,8 @@ fun newFlattenedVars () = let
        Property.destGetSetOnce (Var.plist, Property.initConst false)
 
    val {get=get', set=set', destroy=destroy'} =
-       Property.destGetSetOnce (Con.plist, Property.initConst false)
+       Property.destGetSetOnce (Con.plist, Property.initRaise
+                                               ("flattenCon", Con.layout))
    fun doDestroy() =
        (destroy(); destroy'())
 in
@@ -291,14 +292,15 @@ in
    setFlattenedProp (v, true)
 end
 
-fun markConForFlatten (fv: flattenedVars, c: Con.t): unit = let
+fun markConForFlatten (fv: flattenedVars, c: Con.t,
+                       shouldFlattens: bool vector): unit = let
    val {setFlattenedConProp, ...} = fv
    fun logThunk () =
        Layout.seq [Layout.str "markConForFlatten: ",
                    Con.layout c]
    val _ = Control.diagnostic logThunk
 in
-   setFlattenedConProp (c, true)
+   setFlattenedConProp (c, shouldFlattens)
 end
 
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
@@ -307,7 +309,7 @@ in
    getFlattenedProp v
 end
 
-fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool = let
+fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool vector = let
    val {getFlattenedConProp, ...} = fv
 in
    getFlattenedConProp c
@@ -839,7 +841,26 @@ in
    Vector.map (args, doArg)
 end
 
-fun flattenDatatype fv dt = dt
+fun flattenDatatype (fv: flattenedVars)
+                    (dt: Datatype.t): Datatype.t = let
+   val Datatype.T {cons, tycon} = dt
+   fun maybeTryFlatten (shouldFlatten: bool, con: Type.t): Type.t =
+       case (shouldFlatten, maybeFlattenType con) of
+           (* No need to flatten *)
+           (false, _) => con
+         (* Need to flatten, and it succeeded *)
+         | (true, SOME con') => con'
+         (* Need to flatten, but it failed *)
+         | (true, NONE) => raise IllegalFlatteningDecision
+   fun maybeFlattenCon {args, con} = let
+      val shouldFlattens: bool vector = isConMarkedForFlatten (fv, con)
+   in
+      Vector.map2 (shouldFlattens, args, maybeTryFlatten)
+   end
+in
+   Datatype.T {cons = Vector.map (cons, maybeFlattenCon),
+               tycon = tycon}
+end
 
 fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
    val fv = newFlattenedVars()
