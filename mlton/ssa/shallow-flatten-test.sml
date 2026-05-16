@@ -1893,6 +1893,146 @@ in
                       "Datatype should be flattened in flattenOnce")
    in () end)
 
+   (* Test 42: Deep flatten (2 levels of nesting) *)
+   val _ = runTest ("Test 42: Deep flatten (2 levels of nesting)", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 2
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      (* Type: (((int * int) array) * int) *)
+      val argTy = Type.tuple (Vector.fromList [arrayTuple2Ty, intTy])
+      
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.new1 {con = con1, args = Vector.new1 argTy}
+      }
+      
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args', ...} = Vector.sub (cons', 0)
+      val newArgTy = Vector.sub (args', 0)
+      
+      (* Expected: ((int array * int array) * int) *)
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val expectedTy = Type.tuple (Vector.fromList [flattenedTuple2Ty, intTy])
+      
+      val _ = assert (Type.equals (newArgTy, expectedTy), 
+                      "Deep flatten 2 levels failed. Expected " ^ (Layout.toString (Type.layout expectedTy)) ^ 
+                      " but got " ^ (Layout.toString (Type.layout newArgTy)))
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
+   (* Test 43: Deep flatten (3 levels of nesting) *)
+   val _ = runTest ("Test 43: Deep flatten (3 levels of nesting)", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 2
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      (* Type: ((((int * int) array) * int) * int) *)
+      val nestedTy = Type.tuple (Vector.fromList [arrayTuple2Ty, intTy])
+      val argTy = Type.tuple (Vector.fromList [nestedTy, intTy])
+      
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.new1 {con = con1, args = Vector.new1 argTy}
+      }
+      
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args', ...} = Vector.sub (cons', 0)
+      val newArgTy = Vector.sub (args', 0)
+      
+      (* Expected: (((int array * int array) * int) * int) *)
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val expectedNestedTy = Type.tuple (Vector.fromList [flattenedTuple2Ty, intTy])
+      val expectedTy = Type.tuple (Vector.fromList [expectedNestedTy, intTy])
+      
+      val _ = assert (Type.equals (newArgTy, expectedTy), 
+                      "Deep flatten 3 levels failed. Expected " ^ (Layout.toString (Type.layout expectedTy)) ^ 
+                      " but got " ^ (Layout.toString (Type.layout newArgTy)))
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
+   (* Test 44: Deep flatten (multiple flattened types) *)
+   val _ = runTest ("Test 44: Deep flatten (multiple flattened types)", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 2
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      (* Type: (((int * int) array) * ((int * int) array)) *)
+      val argTy = Type.tuple (Vector.fromList [arrayTuple2Ty, arrayTuple2Ty])
+      
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.new1 {con = con1, args = Vector.new1 argTy}
+      }
+      
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args', ...} = Vector.sub (cons', 0)
+      val newArgTy = Vector.sub (args', 0)
+      
+      (* Expected: ((int array * int array) * (int array * int array)) *)
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val expectedTy = Type.tuple (Vector.fromList [flattenedTuple2Ty, flattenedTuple2Ty])
+      
+      val _ = assert (Type.equals (newArgTy, expectedTy), 
+                      "Deep flatten multiple types failed. Expected " ^ (Layout.toString (Type.layout expectedTy)) ^ 
+                      " but got " ^ (Layout.toString (Type.layout newArgTy)))
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
+   (* Test 45: Deep flatten (array + vector) *)
+   val _ = runTest ("Test 45: Deep flatten (array + vector)", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 2
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      
+      (* Type: (((int * int) array) * ((int * int) vector)) *)
+      val argTy = Type.tuple (Vector.fromList [arrayTuple2Ty, vectorTuple2Ty])
+      
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.new1 {con = con1, args = Vector.new1 argTy}
+      }
+      
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args', ...} = Vector.sub (cons', 0)
+      val newArgTy = Vector.sub (args', 0)
+      
+      (* Expected: ((int array * int array) * (int vector * int vector)) *)
+      val flattenedArrayTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val flattenedVectorTuple2Ty = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+      val expectedTy = Type.tuple (Vector.fromList [flattenedArrayTuple2Ty, flattenedVectorTuple2Ty])
+      
+      val _ = assert (Type.equals (newArgTy, expectedTy), 
+                      "Deep flatten array + vector failed. Expected " ^ (Layout.toString (Type.layout expectedTy)) ^ 
+                      " but got " ^ (Layout.toString (Type.layout newArgTy)))
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
       val _ = summarize ()
 
 end
