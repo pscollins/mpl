@@ -431,6 +431,10 @@ fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
        markForFlatten (fv, var)
     else ()
 
+fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
+                          (_: Datatype.t): unit =
+    ()
+
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
    val maybeFlat =

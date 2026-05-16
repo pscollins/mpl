@@ -101,6 +101,9 @@ sig
      * Any argument (block or function) introducing a new array-typed variable:
        f(x: 'a * b * ... array, ...)
 
+     * Any `Con.t` over an array type
+       datatype t = ConT of ('a * 'b * ...) array
+
      * TODO(pscollins): More types?
     *)
 
@@ -108,6 +111,8 @@ sig
                                Statement.t -> unit
    val markArgForPolicy: (flattenedVars * flattenPolicy) ->
                          (Var.t * Type.t) -> unit
+   val markDatatypeForPolicy: (flattenedVars * flattenPolicy) ->
+                              Datatype.t -> unit
 
 
    (* If the provided `Var.t` is not marked for flattening, returns the original

@@ -1746,7 +1746,44 @@ in
       val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, c2)), "C2 should still not be marked")
 
       val _ = ShallowFlatten.destroyFlattenedVars fv
-   in () end)
+      in () end)
 
-   val _ = summarize ()
+      (* Test 39: markDatatypeForPolicy *)
+      val _ = runTest ("Test 39: markDatatypeForPolicy", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 3
+
+      val tycon = Tycon.fromString "t"
+      val con1 = Con.fromString "Con1" (* (int * int) array -> Mark *)
+      val con2 = Con.fromString "Con2" (* (int * int * int * int) array -> No Mark (too wide) *)
+      val con3 = Con.fromString "Con3" (* int array -> No Mark (not a tuple) *)
+      val con4 = Con.fromString "Con4" (* (int * int * int) array -> Mark *)
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val tuple4Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy, intTy])
+
+      val dt = Datatype.T {
+        cons = Vector.fromList [
+           {args = Vector.fromList [Type.array tuple2Ty], con = con1},
+           {args = Vector.fromList [Type.array tuple4Ty], con = con2},
+           {args = Vector.fromList [Type.array intTy], con = con3},
+           {args = Vector.fromList [Type.array tuple3Ty], con = con4}
+        ],
+        tycon = tycon
+      }
+
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+
+      val _ = assert (ShallowFlatten.isConMarkedForFlatten (fv, con1), "Con1 should be marked")
+      val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, con2)), "Con2 should not be marked (too wide)")
+      val _ = assert (not (ShallowFlatten.isConMarkedForFlatten (fv, con3)), "Con3 should not be marked (not a tuple)")
+      val _ = assert (ShallowFlatten.isConMarkedForFlatten (fv, con4), "Con4 should be marked")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+      in () end)
+
+      val _ = summarize ()
+
 end
