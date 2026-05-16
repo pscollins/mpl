@@ -438,9 +438,7 @@ fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
    val Datatype.T {cons, ...} = dt
    fun shouldMark ty = shouldMarkType (policy, ty)
    fun doCon {args, con} =
-       if Vector.exists (args, shouldMark) then
-          markConForFlatten (fv, con)
-       else ()
+       markConForFlatten (fv, con, Vector.map (args, shouldMark))
 in
    Vector.foreach (cons, doCon)
 end
@@ -854,8 +852,9 @@ fun flattenDatatype (fv: flattenedVars)
          | (true, NONE) => raise IllegalFlatteningDecision
    fun maybeFlattenCon {args, con} = let
       val shouldFlattens: bool vector = isConMarkedForFlatten (fv, con)
+      val args = Vector.map2 (shouldFlattens, args, maybeTryFlatten)
    in
-      Vector.map2 (shouldFlattens, args, maybeTryFlatten)
+      {args = args, con = con}
    end
 in
    Datatype.T {cons = Vector.map (cons, maybeFlattenCon),
