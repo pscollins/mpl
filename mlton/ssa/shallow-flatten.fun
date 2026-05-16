@@ -71,7 +71,8 @@ type ('a, 'label) bfsArg = {
    rewriteElement: 'label -> 'a
 }
 
-fun applyRewrite (init: 'label, all: 'a list, arg: ('a, 'label) bfsArg): 'a list = let
+fun applyRewrite (init: 'label, all: 'a list,
+                  arg: ('a, 'label) bfsArg): 'a list = let
    val {getLabel, getPlist, labelLayout, getChildren,
         rewriteElement} = arg
    val allLabels = List.map (all, getLabel)
@@ -297,14 +298,14 @@ fun markConForFlatten (fv: flattenedVars, c: Con.t,
    val {setFlattenedConProp, count, ...} = fv
    fun logThunk () =
        Layout.seq [Layout.str "markConForFlatten: ",
-                   Con.layout c]
+                   Con.layout c,
+                   Layout.str ": ",
+                   Vector.layout Bool.layout shouldFlattens]
    val _ = Control.diagnostic logThunk
-   val _ = if Vector.exists (shouldFlattens, fn b => b)
-           then count := (!count + 1)
-           else ()
 in
    setFlattenedConProp (c, shouldFlattens)
 end
+
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
    val {getFlattenedProp, ...} = fv
 in
