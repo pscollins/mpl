@@ -219,7 +219,6 @@ sig
     *)
    val mustFlattenStatement: flattenedVars * Statement.t -> bool
 
-
    (* For all *non*-PrimApp statements:
 
         1. Recomputes the type on the LHS given the new RHS types in `varTypes`
@@ -254,6 +253,10 @@ sig
    (* Like above, but for arguments *)
    val flattenArgs: flattenedVars -> (Var.t * Type.t) vector ->
                     (Var.t * Type.t) vector
+
+   (* Like above, but for marked `Con.t`s *)
+   val flattenDatatype: flattenedVars -> Datatype.t ->
+                        Datatype.t
 
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was

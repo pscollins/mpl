@@ -432,8 +432,16 @@ fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
     else ()
 
 fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
-                          (_: Datatype.t): unit =
-    ()
+                          (dt: Datatype.t): unit = let
+   val Datatype.T {cons, ...} = dt
+   fun shouldMark ty = shouldMarkType (policy, ty)
+   fun doCon {args, con} =
+       if Vector.exists (args, shouldMark) then
+          markConForFlatten (fv, con)
+       else ()
+in
+   Vector.foreach (cons, doCon)
+end
 
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
@@ -830,6 +838,8 @@ fun flattenArgs fv args = let
 in
    Vector.map (args, doArg)
 end
+
+fun flattenDatatype fv dt = dt
 
 fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
    val fv = newFlattenedVars()

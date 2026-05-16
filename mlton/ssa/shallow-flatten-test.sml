@@ -1784,6 +1784,47 @@ in
       val _ = ShallowFlatten.destroyFlattenedVars fv
       in () end)
 
+   (* Test 40: flattenDatatype *)
+   val _ = runTest ("Test 40: flattenDatatype", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      val con1 = Con.fromString "Con1"
+      val con2 = Con.fromString "Con2"
+      
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.fromList [
+            {con = con1, args = Vector.new1 arrayTuple2Ty},
+            {con = con2, args = Vector.new1 arrayTuple2Ty}
+         ]
+      }
+
+      (* Mark only con1 for flattening *)
+      val _ = ShallowFlatten.markConForFlatten (fv, con1)
+      
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      val Datatype.T {cons = cons', ...} = dt'
+      
+      fun findCon c =
+         case Vector.peek (cons', fn {con, ...} => Con.equals (con, c)) of
+            SOME x => x
+          | NONE => raise TestFail ("Constructor " ^ Con.toString c ^ " not found")
+
+      val {args = args1, ...} = findCon con1
+      val {args = args2, ...} = findCon con2
+      
+      val _ = assert (Type.equals (Vector.sub (args1, 0), flattenedTuple2Ty), 
+                      "Con1 should be flattened")
+      val _ = assert (Type.equals (Vector.sub (args2, 0), arrayTuple2Ty), 
+                      "Con2 should NOT be flattened")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)
+
       val _ = summarize ()
 
 end
