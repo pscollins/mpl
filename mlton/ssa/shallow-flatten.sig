@@ -59,6 +59,33 @@ sig
     *)
    val maybeFlattenType: Type.t -> Type.t option
 
+
+   (* What array/vector types should be flattened? *)
+   datatype flattenPolicy =
+        (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
+        MaxWidth of int
+
+   (* Describes a flattening decision for a nested type *)
+   datatype conDecision =
+            (* Pass the existing type through unflattened and recurse *)
+            PreserveNode of conDecision vector
+            (* Apply `maybeFlattenType` to this type and recurse *)
+            | FlattenNode of conDecision vector
+
+   (* Calculates the flattening decision for this type according to the supplied
+      policy. *)
+   val getConDecisionForPolicy:
+       flattenPolicy -> Type.t -> conDecision
+
+   (* Recursively applies `conDecision` to the supplied type.
+
+    If the decision is invalid (i.e. `maybeFlattenType` returns NONE for a
+   `flattenNode` layer, raises InvalidConFlattening.
+   *)
+   exception InvalidConFlattening
+   val applyConDecision: conDecision * Type.t ->
+                         Type.t option
+
    (* Tracks flattening decisions for variables and constructors. *)
    type flattenedVars
    val newFlattenedVars: unit -> flattenedVars
@@ -73,6 +100,7 @@ sig
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
+
    (* Like above, but for `Con.t`. Requires that `markConForFlatten` was
    previously called *)
    val isConMarkedForFlatten: flattenedVars * Con.t -> bool vector
@@ -80,11 +108,6 @@ sig
    (* Returns the total number of variables and constructors marked for
    flattening *)
    val markedCount: flattenedVars -> int
-
-   (* What array types should be flattened? *)
-   datatype flattenPolicy =
-        (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
-        MaxWidth of int
 
    (* Tracks types of `Var.t`s  *)
    type varTypes
