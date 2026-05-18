@@ -2035,6 +2035,13 @@ in
 
    (* Test 46: getConDecisionForPolicy *)
    val _ = runTest ("Test 46: getConDecisionForPolicy", fn () => let
+      fun conDecisionToString cd =
+         case cd of
+            ShallowFlatten.PreserveNode v =>
+               "PreserveNode[" ^ String.concatWith (Vector.toListMap (v, conDecisionToString), ", ") ^ "]"
+          | ShallowFlatten.FlattenNode v =>
+               "FlattenNode[" ^ String.concatWith (Vector.toListMap (v, conDecisionToString), ", ") ^ "]"
+
       fun cdEquals (c1, c2) = 
          case (c1, c2) of
             (ShallowFlatten.PreserveNode v1, ShallowFlatten.PreserveNode v2) =>
@@ -2060,6 +2067,11 @@ in
       fun check (policy, ty, expected, msg) =
          let
             val res = ShallowFlatten.getConDecisionForPolicy policy ty
+            val _ = print (concat ["Compare: expected=",
+                                   conDecisionToString expected,
+                                   "\nactual=",
+                                   conDecisionToString res])
+                                   
          in
             if cdEquals (res, expected) then ()
             else assert (false, msg ^ ": conDecision mismatch")
@@ -2097,6 +2109,10 @@ in
       val e_nif = flatten [preserve [e_w3], preserve [base]]
 
    in
+      print ("t_inf: " ^ (Layout.toString (Type.layout t_inf)) ^ "\n");
+      print ("t_inf conDecision: " ^ conDecisionToString e_inf ^ "\n");
+      print ("t_nif: " ^ (Layout.toString (Type.layout t_nif)) ^ "\n");
+      print ("t_nif conDecision: " ^ conDecisionToString e_nif ^ "\n");
       check (policy2, t1, e1, "Level 1");
       check (policy2, t2, e2, "Level 2");
       check (policy2, t3, e3, "Level 3");
