@@ -1,0 +1,475 @@
+local
+   open Ssa
+
+   fun assert (cond, msg) =
+      if cond then () else raise TestFail msg
+
+   fun statementEquals (Statement.T {exp=e1, ty=t1, var=v1},
+                        Statement.T {exp=e2, ty=t2, var=v2}) =
+      Exp.equals (e1, e2) andalso
+      Type.equals (t1, t2) andalso
+      (case (v1, v2) of
+          (SOME v1', SOME v2') => Var.equals (v1', v2')
+        | (NONE, NONE) => true
+        | _ => false)
+
+   fun assertType (Statement.T {ty, ...}, expected, msg) =
+      if Type.equals (ty, expected) then ()
+      else assert (false, msg ^ ": type mismatch")
+in
+(* Test 26: Nested Tuple constructors *)
+   val _ = runTest ("Test 26: Nested Tuple constructors", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val n = Var.fromString "n"
+      val other = Var.fromString "other"
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val z = Var.fromString "z"
+      
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = Prim.Array_alloc {raw = false},
+                            targs = Vector.new1 tuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME x
+      }
+      
+      val s2 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [x, other]),
+         ty = Type.tuple (Vector.fromList [arrayTuple2Ty, word32Ty]),
+         var = SOME y
+      }
+
+      val s3 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [y, other]),
+         ty = Type.tuple (Vector.fromList [Type.tuple (Vector.fromList [arrayTuple2Ty, word32Ty]), word32Ty]),
+         var = SOME z
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy), (other, word32Ty)],
+         label = L0,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 2
+      val res = ShallowFlatten.flattenOnce policy p
+      val p' = case res of
+                  SOME p' => p'
+                | NONE => raise TestFail "Should have flattened"
+      
+      val Program.T {functions = funcs', ...} = p'
+      val mainFunction' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest mainFunction'
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+      
+      (* Check the type of z in the rewritten stmts *)
+      val z_stmt = Vector.last stmts'
+      val Statement.T {ty = z_ty, ...} = z_stmt
+      
+      val flattenedXty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val expectedYty = Type.tuple (Vector.fromList [flattenedXty, word32Ty])
+      val expectedZty = Type.tuple (Vector.fromList [expectedYty, word32Ty])
+      
+      val _ = if Type.equals (z_ty, expectedZty) then ()
+              else assert (false, "z type mismatch: " ^ (Layout.toString (Type.layout z_ty)) ^ 
+                                 " expected " ^ (Layout.toString (Type.layout expectedZty)))
+   in () end)(* Test 27: non-PrimApp flattening (array) *)
+   val _ = runTest ("Test 27: non-PrimApp flattening (array)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = arrayTuple2Ty,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val ss = case res of
+                  SOME ss => ss
+                | NONE => raise TestFail "Should return SOME (original) for non-PrimApp"
+      val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
+      val s' = Vector.sub (ss, 0)
+   in
+      assert (statementEquals (s, s'), "Resulting statement should be the original")
+   end)(* Test 28: non-PrimApp flattening (vector) *)
+   val _ = runTest ("Test 28: non-PrimApp flattening (vector)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val vectorTuple2Ty = Type.vector tuple2Ty
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = vectorTuple2Ty,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val ss = case res of
+                  SOME ss => ss
+                | NONE => raise TestFail "Should return SOME (original) for non-PrimApp"
+      val _ = assert (Vector.length ss = 1, "Should result in exactly one statement")
+      val s' = Vector.sub (ss, 0)
+   in
+      assert (statementEquals (s, s'), "Resulting statement should be the original")
+   end)(* Test 29: non-PrimApp no-flattening (not a tuple) *)
+   val _ = runTest ("Test 29: non-PrimApp no-flattening (not a tuple)", fn () => let
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val arrayIntTy = Type.array intTy
+      
+      val s = Statement.T {
+         exp = Exp.Var v1,
+         ty = arrayIntTy,
+         var = SOME (Var.newString "x")
+      }
+
+      val res = ShallowFlatten.maybeFlattenStatement s
+   in
+      case res of
+          SOME ss => assert (Vector.length ss = 1 andalso statementEquals (s, Vector.sub (ss, 0)), 
+                            "Should return SOME (original)")
+        | NONE => raise TestFail "Should return SOME (original)"
+   end)(* Test 30: varTypes *)
+   val _ = runTest ("Test 30: varTypes", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val v1 = Var.newString "v1"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      (* First set *)
+      val _ = ShallowFlatten.setVarType (vt, v1, intTy)
+      val resTy1 = ShallowFlatten.getVarType (vt, v1)
+      val _ = assert (Type.equals (resTy1, intTy), "getVarType should return the first set type")
+      
+      (* Second set (update) *)
+      val _ = ShallowFlatten.setVarType (vt, v1, word32Ty)
+      val resTy2 = ShallowFlatten.getVarType (vt, v1)
+      val _ = assert (Type.equals (resTy2, word32Ty), "getVarType should return the updated type")
+
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 31: propagateTypesInStatement (Tuple) *)
+   val _ = runTest ("Test 31: propagateTypesInStatement (Tuple)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      val word2Ty = Type.tuple (Vector.fromList [word32Ty, word32Ty])
+      val _ = ShallowFlatten.setVarType (vt, y, word2Ty)
+      
+      val s = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [x, x]),
+         ty = word2Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val expectedTy = Type.tuple (Vector.fromList [intTy, intTy])
+      
+      val _ = assertType (s', expectedTy, "Tuple type should be updated")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), expectedTy), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 32: propagateTypesInStatement (Select) *)
+   val _ = runTest ("Test 32: propagateTypesInStatement (Select)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val xTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val _ = ShallowFlatten.setVarType (vt, x, xTy)
+      
+      val s = Statement.T {
+         exp = Exp.Select {offset = 1, tuple = x},
+         ty = intTy,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', word32Ty, "Select(1, x) type should be word32")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 33: propagateTypesInStatement (Var) *)
+   val _ = runTest ("Test 33: propagateTypesInStatement (Var)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      
+      val s = Statement.T {
+         exp = Exp.Var x,
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', intTy, "Var(x) type should be intInf")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 34: propagateTypesInStatement (Const) *)
+   val _ = runTest ("Test 34: propagateTypesInStatement (Const)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, y, word32Ty)
+      val s = Statement.T {
+         exp = Exp.Const (Const.IntInf 1),
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', word32Ty, "Const type should be preserved")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 35: propagateTypesInStatement (PrimApp - noop) *)
+   val _ = runTest ("Test 35: propagateTypesInStatement (PrimApp - noop)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      val s = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 x,
+                            prim = Prim.IntInf_add,
+                            targs = Vector.new0 ()},
+         ty = intTy,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      (* Should be exactly the same (no-op) *)
+      val Statement.T {ty, ...} = s'
+      val _ = assert (Type.equals (ty, intTy), "PrimApp type preserved")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), intTy), "varTypes should be unchanged/preserved")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 36: propagateTypesInStatement (ConApp) *)
+   val _ = runTest ("Test 36: propagateTypesInStatement (ConApp)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      val c = Con.fromString "C"
+      val s = Statement.T {
+         exp = Exp.ConApp {args = Vector.new0 (), con = c},
+         ty = word32Ty,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', word32Ty, "ConApp type preserved/recomputed")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), word32Ty), "varTypes updated")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 37: propagateTypesInStatement (NONE var) *)
+   val _ = runTest ("Test 37: propagateTypesInStatement (NONE var)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      
+      val s = Statement.T {
+         exp = Exp.Var x,
+         ty = word32Ty,
+         var = NONE
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      val _ = assertType (s', intTy, "Statement type updated even if var is NONE")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 38: Constructor flattening marks *)
+   val _ = runTest ("Test 38: Constructor flattening marks", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val c1 = Con.fromString "C1"
+      val c2 = Con.fromString "C2"
+
+      val v1 = Vector.new1 true
+      val _ = ShallowFlatten.markConForFlatten (fv, c1, v1)
+      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, c1), 0), "C1 should be marked")
+      
+      val v2 = Vector.new1 false
+      val _ = ShallowFlatten.markConForFlatten (fv, c2, v2)
+      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, c2), 0)), "C2 should not be marked")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+      in () end)(* Test 39: markDatatypeForPolicy *)
+      val _ = runTest ("Test 39: markDatatypeForPolicy", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val policy = ShallowFlatten.MaxWidth 3
+
+      val tycon = Tycon.fromString "t"
+      val con1 = Con.fromString "Con1" (* (int * int) array -> Mark *)
+      val con2 = Con.fromString "Con2" (* (int * int * int * int) array -> No Mark (too wide) *)
+      val con3 = Con.fromString "Con3" (* int array -> No Mark (not a tuple) *)
+      val con4 = Con.fromString "Con4" (* (int * int * int) array -> Mark *)
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val tuple4Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy, intTy])
+
+      val dt = Datatype.T {
+        cons = Vector.fromList [
+           {args = Vector.fromList [Type.array tuple2Ty], con = con1},
+           {args = Vector.fromList [Type.array tuple4Ty], con = con2},
+           {args = Vector.fromList [Type.array intTy], con = con3},
+           {args = Vector.fromList [Type.array tuple3Ty], con = con4}
+        ],
+        tycon = tycon
+      }
+
+      val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
+
+      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con1), 0), "Con1 should be marked")
+      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con2), 0)), "Con2 should not be marked (too wide)")
+      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con3), 0)), "Con3 should not be marked (not a tuple)")
+      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con4), 0), "Con4 should be marked")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+      in () end)(* Test 40: flattenDatatype *)
+   val _ = runTest ("Test 40: flattenDatatype", fn () => let
+      val fv = ShallowFlatten.newFlattenedVars ()
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      val con1 = Con.fromString "Con1"
+      val con2 = Con.fromString "Con2"
+      
+      val dt = Datatype.T {
+         tycon = Tycon.fromString "t",
+         cons = Vector.fromList [
+            {con = con1, args = Vector.new1 arrayTuple2Ty},
+            {con = con2, args = Vector.new1 arrayTuple2Ty}
+         ]
+      }
+
+      (* Mark only con1 for flattening *)
+      val _ = ShallowFlatten.markConForFlatten (fv, con1, Vector.new1 true)
+      val _ = ShallowFlatten.markConForFlatten (fv, con2, Vector.new1 false)
+      
+      val dt' = ShallowFlatten.flattenDatatype fv dt
+      val Datatype.T {cons = cons', ...} = dt'
+      
+      fun findCon c =
+         case Vector.peek (cons', fn {con, ...} => Con.equals (con, c)) of
+            SOME x => x
+          | NONE => raise TestFail ("Constructor " ^ Con.toString c ^ " not found")
+
+      val {args = args1, ...} = findCon con1
+      val {args = args2, ...} = findCon con2
+      
+      val _ = assert (Type.equals (Vector.sub (args1, 0), flattenedTuple2Ty), 
+                      "Con1 should be flattened")
+      val _ = assert (Type.equals (Vector.sub (args2, 0), arrayTuple2Ty), 
+                      "Con2 should NOT be flattened")
+
+      val _ = ShallowFlatten.destroyFlattenedVars fv
+   in () end)(* Test 41: flattenOnce with datatypes *)
+   val _ = runTest ("Test 41: flattenOnce with datatypes", fn () => let
+      val policy = ShallowFlatten.MaxWidth 3
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val flattenedTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      val tycon = Tycon.fromString "t"
+      val con1 = Con.fromString "Con1"
+      val dt = Datatype.T {
+         tycon = tycon,
+         cons = Vector.new1 {con = con1, args = Vector.new1 arrayTuple2Ty}
+      }
+
+      val mainFunc = Func.fromString "main"
+      val mainLabel = Label.fromString "L0"
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      
+      (* v1 = Array_alloc[ (int * int) array ](n) *)
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.new1 n,
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.new1 tuple2Ty
+         },
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new1 (n, Type.intInf),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainLabel
+      }
+      val p = Program.T {
+         datatypes = Vector.new1 dt,
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val p' = case ShallowFlatten.flattenOnce policy p of
+                  SOME p' => p'
+                | NONE => raise TestFail "flattenOnce failed to flatten"
+
+      val Program.T {datatypes = dts', ...} = p'
+      val dt' = Vector.sub (dts', 0)
+      val Datatype.T {cons = cons', ...} = dt'
+      val {args = args1, ...} = Vector.sub (cons', 0)
+      
+      val _ = assert (Type.equals (Vector.sub (args1, 0), flattenedTuple2Ty), 
+                      "Datatype should be flattened in flattenOnce")
+   in () end)
+      val _ = summarize ()
+end

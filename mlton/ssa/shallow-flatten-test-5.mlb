@@ -5,6 +5,6 @@ local
    sources.mlb
    test-util.sml
    shallow-flatten-test-common.sml
-   shallow-flatten-test.sml
+   shallow-flatten-test-5.sml
 in
 end

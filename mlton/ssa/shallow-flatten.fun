@@ -481,9 +481,9 @@ fun applyConDecision (cd: conDecision,
            | (Type.Tuple ts', PreserveNode cds') =>
              Type.tuple (Vector.map2 (ts', cds', walk))
          (* Single-child, un-flattenable internal nodes *)
-         | (Type.Ref t', PreserveNode cd') => 
+         | (Type.Ref t', PreserveNode cd') =>
            Type.reff (walk (t', getUniqueElement cd'))
-         | (Type.Weak t', PreserveNode cd') => 
+         | (Type.Weak t', PreserveNode cd') =>
            Type.weak (walk (t', getUniqueElement cd'))
          (* Leaf nodes *)
          | (_, PreserveNode cd') =>
