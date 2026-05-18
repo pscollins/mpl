@@ -473,7 +473,7 @@ fun applyConDecision (cd: conDecision,
             Type.tuple (Vector.map2 (Type.deTuple t',
                                      cds',
                                      Type.array o walk))
-          | (Type.Array t', PreserveNode cd') =>
+          | (Type.Vector t', PreserveNode cd') =>
            Type.array (walk (t', getUniqueElement cd'))
          | (Type.Vector t', FlattenNode cd') =>
            Error.unimplemented "vector flatten not supported"
