@@ -2187,6 +2187,56 @@ in
            | e => assert (false, "Raised wrong exception: " ^ exnMessage e)
    end)
 
+   (* Test 48: round-trip getConDecisionForPolicy -> applyConDecision *)
+   val _ = runTest ("Test 48: round-trip getConDecisionForPolicy -> applyConDecision", fn () => let
+      fun check (policy, ty, expected, msg) =
+         let
+            val cd = ShallowFlatten.getConDecisionForPolicy policy ty
+            val res = ShallowFlatten.applyConDecision (cd, ty)
+         in
+            case (res, expected) of
+               (SOME r, SOME e) => 
+               if Type.equals (r, e) then ()
+               else assert (false, msg ^ ": type mismatch.\nGot:      " ^ (Layout.toString (Type.layout r)) ^ 
+                                 "\nExpected: " ^ (Layout.toString (Type.layout e)))
+             | (NONE, NONE) => ()
+             | (SOME _, NONE) => assert (false, msg ^ ": expected NONE, got SOME")
+             | (NONE, SOME _) => assert (false, msg ^ ": expected SOME, got NONE")
+         end
+
+      val intTy = Type.intInf
+      val policy2 = ShallowFlatten.MaxWidth 2
+      
+      (* 1. Simple 2-tuple array *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val e1 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      
+      (* 2. Width > MaxWidth (Preserved) *)
+      val t2 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
+      (* Expected to be the same because it's preserved *)
+      val e2 = t2
+
+      (* 3. Nested flattening: ((int * int) array * int) array *)
+      (* Inner array is flattened, outer array is flattened *)
+      val t3_inner = t1 (* (int*int) array *)
+      val t3 = Type.array (Type.tuple (Vector.fromList [t3_inner, intTy]))
+      
+      val e3_inner = e1 (* (int array * int array) *)
+      val e3 = Type.tuple (Vector.fromList [Type.array e3_inner, Type.array intTy])
+
+      (* 4. Mixed: ((int * int * int) array * int) array *)
+      (* Inner array is preserved (width 3), outer array is flattened *)
+      val t4_inner = t2 (* (int*int*int) array *)
+      val t4 = Type.array (Type.tuple (Vector.fromList [t4_inner, intTy]))
+      
+      val e4 = Type.tuple (Vector.fromList [Type.array t4_inner, Type.array intTy])
+   in
+      check (policy2, t1, SOME e1, "Level 1 flattening");
+      check (policy2, t2, SOME e2, "Width > MaxWidth preservation");
+      check (policy2, t3, SOME e3, "Level 2 nested flattening");
+      check (policy2, t4, SOME e4, "Mixed flattening/preservation")
+   end)
+
       val _ = summarize ()
 
 end

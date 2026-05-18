@@ -461,20 +461,6 @@ fun getUniqueElement (xs: 'a vector): 'a =
 exception InvalidConFlattening
 fun applyConDecision (cd: conDecision,
                       t: Type.t): Type.t option = let
-   (* fun walk (t, cd) = let *)
-   (*    val childTypes = getChildren t *)
-   (* in *)
-   (*    case cd of  *)
-   (* fun peel (t, cd) = *)
-   (*     case (maybeFlattenType t, cd) of *)
-   (*         (SOME t', FlattenNode cds') => *)
-   (*         (t', cds') *)
-   (*       | (NONE, FlattenNode _) => *)
-   (*         raise InvalidConFlattening *)
-   (*       | (_, PreserveNode cds') => *)
-   (*         (t, cds') *)
-   (* fun walk (t, cd) = *)
-   (*     case cd of *)
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
