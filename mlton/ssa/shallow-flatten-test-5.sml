@@ -250,24 +250,16 @@ in
          let
             val _ = print ("\n--- Test 47 Subcase: " ^ msg ^ " ---\n")
             val res = ShallowFlatten.applyConDecision (cd, ty)
-            fun optLayout topt =
-               case topt of
-                  NONE => "NONE"
-                | SOME t => Layout.toString (Type.layout t)
+            fun typeLayout t = Layout.toString (Type.layout t)
             val _ = print (concat ["Compare: ", msg,
-                                   "\ntype       = ", Layout.toString (Type.layout ty),
+                                   "\ntype       = ", typeLayout ty,
                                    "\nconDecision= ", conDecisionToString cd,
-                                   "\nexpected   = ", optLayout expected,
-                                   "\nactual     = ", optLayout res,
+                                   "\nexpected   = ", typeLayout expected,
+                                   "\nactual     = ", typeLayout res,
                                    "\n"])
          in
-            case (res, expected) of
-               (NONE, NONE) => ()
-             | (SOME r, SOME e) => 
-               if Type.equals (r, e) then ()
-               else assert (false, msg ^ ": type mismatch")
-             | (SOME _, NONE) => assert (false, msg ^ ": expected NONE, got SOME")
-             | (NONE, SOME _) => assert (false, msg ^ ": expected SOME, got NONE")
+            if Type.equals (res, expected) then ()
+            else assert (false, msg ^ ": type mismatch")
          end
 
       val intTy = Type.intInf
@@ -288,8 +280,8 @@ in
       val cd_err = flatten [base]
 
    in
-      check (cd1, t1, SOME e1, "Level 1");
-      check (cd2, t2, SOME e2, "Level 2");
+      check (cd1, t1, e1, "Level 1");
+      check (cd2, t2, e2, "Level 2");
 
       (* Error case: FlattenNode on non-flattenable type *)
       print ("\n--- Test 47 Subcase: Error case ---\n");
@@ -306,14 +298,9 @@ in
             val cd = ShallowFlatten.getConDecisionForPolicy policy ty
             val res = ShallowFlatten.applyConDecision (cd, ty)
          in
-            case (res, expected) of
-               (SOME r, SOME e) => 
-               if Type.equals (r, e) then ()
-               else assert (false, msg ^ ": type mismatch.\nGot:      " ^ (Layout.toString (Type.layout r)) ^ 
-                                 "\nExpected: " ^ (Layout.toString (Type.layout e)))
-             | (NONE, NONE) => ()
-             | (SOME _, NONE) => assert (false, msg ^ ": expected NONE, got SOME")
-             | (NONE, SOME _) => assert (false, msg ^ ": expected SOME, got NONE")
+            if Type.equals (res, expected) then ()
+            else assert (false, msg ^ ": type mismatch.\nGot:      " ^ (Layout.toString (Type.layout res)) ^ 
+                              "\nExpected: " ^ (Layout.toString (Type.layout expected)))
          end
 
       val intTy = Type.intInf
@@ -343,10 +330,10 @@ in
       
       val e4 = Type.tuple (Vector.fromList [Type.array t4_inner, Type.array intTy])
    in
-      check (policy2, t1, SOME e1, "Level 1 flattening");
-      check (policy2, t2, SOME e2, "Width > MaxWidth preservation");
-      check (policy2, t3, SOME e3, "Level 2 nested flattening");
-      check (policy2, t4, SOME e4, "Mixed flattening/preservation")
+      check (policy2, t1, e1, "Level 1 flattening");
+      check (policy2, t2, e2, "Width > MaxWidth preservation");
+      check (policy2, t3, e3, "Level 2 nested flattening");
+      check (policy2, t4, e4, "Mixed flattening/preservation")
    end)
 
       

@@ -84,7 +84,7 @@ sig
    *)
    exception InvalidConFlattening
    val applyConDecision: conDecision * Type.t ->
-                         Type.t option
+                         Type.t
 
    (* Tracks flattening decisions for variables and constructors. *)
    type flattenedVars

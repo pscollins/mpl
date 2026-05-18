@@ -460,7 +460,7 @@ fun getUniqueElement (xs: 'a vector): 'a =
 
 exception InvalidConFlattening
 fun applyConDecision (cd: conDecision,
-                      t: Type.t): Type.t option = let
+                      t: Type.t): Type.t = let
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
@@ -493,7 +493,7 @@ fun applyConDecision (cd: conDecision,
 
    val _ = ()
 in
-   SOME (walk (t, cd))
+   walk (t, cd)
 end
 
 fun markStatementForPolicy (fv: flattenedVars,
