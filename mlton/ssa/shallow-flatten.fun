@@ -395,8 +395,6 @@ in
    Statement.T {exp = exp, ty = newTy, var = var}
 end
 
-datatype flattenPolicy = MaxWidth of int
-
 (* Returns:
 
     * t == tuple? number of tuple elements
@@ -413,6 +411,8 @@ fun getArrayOfTupleTypeWidth (t: Type.t): int =
         Type.Array t' => getTupleTypeWidth t'
       | _ => 0
 
+datatype flattenPolicy = MaxWidth of int
+
 (* Should the value corresponding to `t` be marked, according to `policy`? *)
 fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
    val MaxWidth (maxWidth) = policy
@@ -421,6 +421,69 @@ fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
    val currWidth = getArrayOfTupleTypeWidth t
 in
    (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
+end
+
+fun getChildren (t: Type.t): Type.t vector =
+    case Type.dest t of
+        Type.Array t' => Vector.new1 t'
+      | Type.Ref t' => Vector.new1 t'
+      | Type.Tuple ts' => ts'
+      | Type.Vector t' => Vector.new1 t'
+      | Type.Weak t' => Vector.new1 t'
+      | _ => Vector.new0 ()
+
+datatype conDecision =
+         PreserveNode of conDecision vector
+         | FlattenNode of conDecision vector
+
+fun getConDecisionForPolicy (policy: flattenPolicy)
+                            (t: Type.t): conDecision = let
+   fun shouldMark t = shouldMarkType (policy, t)
+   val MaxWidth (width) = policy
+   fun walk (t: Type.t) = let
+      fun next t' = Vector.map (getChildren t', walk)
+   in
+      if shouldMark t then
+         (* Peel off a layer in the recursion for flattening *)
+         FlattenNode (next (Type.deArray t))
+      else
+         PreserveNode (next t)
+   end
+in
+   walk t
+end
+
+fun getUniqueElement (xs: 'a vector): 'a =
+    if Vector.length xs = 1 then
+       Vector.first xs
+    else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
+
+exception InvalidConFlattening
+fun applyConDecision (cd: conDecision,
+                      t: Type.t): Type.t option = let
+   (* fun walk (t, cd) = let *)
+   (*    val childTypes = getChildren t *)
+   (* in *)
+   (*    case cd of  *)
+   (* fun peel (t, cd) = *)
+   (*     case (maybeFlattenType t, cd) of *)
+   (*         (SOME t', FlattenNode cds') => *)
+   (*         (t', cds') *)
+   (*       | (NONE, FlattenNode _) => *)
+   (*         raise InvalidConFlattening *)
+   (*       | (_, PreserveNode cds') => *)
+   (*         (t, cds') *)
+   (* fun walk (t, cd) = *)
+   (*     case cd of *)
+           
+   (* fun walk (t, cd) = *)
+   (*     case (Type.dest t, cd) of *)
+   (*         (Type.Array t', PreserveNode cd') => *)
+   (*         Type.array (walk (t', getUniqueElement cd')) *)
+   (*       | (Type.Array t', FlattenNode cd') => *)
+   val _ = ()
+in
+   Error.bug "TODO: applyConDecision"
 end
 
 fun markStatementForPolicy (fv: flattenedVars,
@@ -523,11 +586,6 @@ fun getNumElementTypes flatArg = let
 in
    Vector.length components
 end
-
-fun getUniqueElement (xs: 'a vector): 'a =
-    if Vector.length xs = 1 then
-       Vector.first xs
-    else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
 
 fun concatVecs (vecs: 'a vector list): 'a vector =
     Vector.concatV (Vector.fromList vecs)

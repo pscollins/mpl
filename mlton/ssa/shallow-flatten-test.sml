@@ -2023,15 +2023,129 @@ in
       val newArgTy = Vector.sub (args', 0)
       
       (* Expected: ((int array * int array) * (int vector * int vector)) *)
-      val flattenedArrayTuple2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
-      val flattenedVectorTuple2Ty = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
-      val expectedTy = Type.tuple (Vector.fromList [flattenedArrayTuple2Ty, flattenedVectorTuple2Ty])
+      val flattenedArray2Ty = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val flattenedVector2Ty = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+      val expectedTy = Type.tuple (Vector.fromList [flattenedArray2Ty, flattenedVector2Ty])
       
       val _ = assert (Type.equals (newArgTy, expectedTy), 
                       "Deep flatten array + vector failed. Expected " ^ (Layout.toString (Type.layout expectedTy)) ^ 
                       " but got " ^ (Layout.toString (Type.layout newArgTy)))
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)
+
+   (* Test 46: getConDecisionForPolicy *)
+   val _ = runTest ("Test 46: getConDecisionForPolicy", fn () => let
+      fun cdEquals (c1, c2) = 
+         case (c1, c2) of
+            (ShallowFlatten.PreserveNode v1, ShallowFlatten.PreserveNode v2) =>
+               Vector.length v1 = Vector.length v2 andalso
+               let
+                  fun loop i =
+                     if i = Vector.length v1 then true
+                     else cdEquals (Vector.sub (v1, i), Vector.sub (v2, i)) andalso loop (i + 1)
+               in
+                  loop 0
+               end
+          | (ShallowFlatten.FlattenNode v1, ShallowFlatten.FlattenNode v2) =>
+               Vector.length v1 = Vector.length v2 andalso
+               let
+                  fun loop i =
+                     if i = Vector.length v1 then true
+                     else cdEquals (Vector.sub (v1, i), Vector.sub (v2, i)) andalso loop (i + 1)
+               in
+                  loop 0
+               end
+          | _ => false
+
+      fun check (policy, ty, expected, msg) =
+         let
+            val res = ShallowFlatten.getConDecisionForPolicy policy ty
+         in
+            if cdEquals (res, expected) then ()
+            else assert (false, msg ^ ": conDecision mismatch")
+         end
+
+      val intTy = Type.intInf
+      val policy2 = ShallowFlatten.MaxWidth 2
+      
+      fun preserve v = ShallowFlatten.PreserveNode (Vector.fromList v)
+      fun flatten v = ShallowFlatten.FlattenNode (Vector.fromList v)
+      val base = preserve []
+
+      (* Level 1: (int * int) array *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val e1 = flatten [base, base]
+
+      (* Level 2: ((int * int) array * int) array *)
+      val t2 = Type.array (Type.tuple (Vector.fromList [t1, intTy]))
+      val e2 = flatten [preserve [e1], preserve [base]]
+
+      (* Level 3: (((int * int) array * int) array * int) array *)
+      val t3 = Type.array (Type.tuple (Vector.fromList [t2, intTy]))
+      val e3 = flatten [preserve [e2], preserve [base]]
+
+      (* Width test: (int * int * int) array with MaxWidth 2 *)
+      val t_w3 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
+      val e_w3 = preserve [preserve [base, base, base]]
+
+      (* Flattened inside non-flattened: ((int * int) array * int) *)
+      val t_inf = Type.tuple (Vector.fromList [t1, intTy])
+      val e_inf = preserve [e1, base]
+
+      (* Non-flattened inside flattened: ((int * int * int) array * int) array *)
+      val t_nif = Type.array (Type.tuple (Vector.fromList [t_w3, intTy]))
+      val e_nif = flatten [preserve [e_w3], preserve [base]]
+
+   in
+      check (policy2, t1, e1, "Level 1");
+      check (policy2, t2, e2, "Level 2");
+      check (policy2, t3, e3, "Level 3");
+      check (policy2, t_w3, e_w3, "Width > MaxWidth");
+      check (policy2, t_inf, e_inf, "Flattened inside non-flattened");
+      check (policy2, t_nif, e_nif, "Non-flattened inside flattened")
+   end)
+
+   (* Test 47: applyConDecision *)
+   val _ = runTest ("Test 47: applyConDecision", fn () => let
+      fun check (cd, ty, expected, msg) =
+         let
+            val res = ShallowFlatten.applyConDecision (cd, ty)
+         in
+            case (res, expected) of
+               (NONE, NONE) => ()
+             | (SOME r, SOME e) => 
+               if Type.equals (r, e) then ()
+               else assert (false, msg ^ ": type mismatch")
+             | (SOME _, NONE) => assert (false, msg ^ ": expected NONE, got SOME")
+             | (NONE, SOME _) => assert (false, msg ^ ": expected SOME, got NONE")
+         end
+
+      val intTy = Type.intInf
+      fun preserve v = ShallowFlatten.PreserveNode (Vector.fromList v)
+      fun flatten v = ShallowFlatten.FlattenNode (Vector.fromList v)
+      val base = preserve []
+
+      (* Level 1 *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val cd1 = flatten [base, base]
+      val e1 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+
+      (* Level 2 *)
+      val t2 = Type.array (Type.tuple (Vector.fromList [t1, intTy]))
+      val cd2 = flatten [preserve [cd1], preserve [base]]
+      val e2 = Type.tuple (Vector.fromList [Type.array e1, Type.array intTy])
+
+      (* Error case: FlattenNode on non-flattenable type *)
+      val cd_err = flatten [base]
+      val _ = (ShallowFlatten.applyConDecision (cd_err, intTy);
+               assert (false, "Should have raised InvalidConFlattening"))
+              handle ShallowFlatten.InvalidConFlattening => ()
+                   | _ => assert (false, "Raised wrong exception")
+
+   in
+      check (cd1, t1, SOME e1, "Level 1");
+      check (cd2, t2, SOME e2, "Level 2")
+   end)
 
       val _ = summarize ()
 

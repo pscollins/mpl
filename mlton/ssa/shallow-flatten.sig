@@ -131,7 +131,7 @@ sig
      * Any `Con.t` over an array type
        datatype t = ConT of ('a * 'b * ...) array
 
-     * TODO(pscollins): More types?
+     * TODO(pscollins): More types? Should handle vector too
     *)
 
    val markStatementForPolicy: (flattenedVars * flattenPolicy) ->
