@@ -475,15 +475,39 @@ fun applyConDecision (cd: conDecision,
    (*         (t, cds') *)
    (* fun walk (t, cd) = *)
    (*     case cd of *)
-           
-   (* fun walk (t, cd) = *)
-   (*     case (Type.dest t, cd) of *)
-   (*         (Type.Array t', PreserveNode cd') => *)
-   (*         Type.array (walk (t', getUniqueElement cd')) *)
-   (*       | (Type.Array t', FlattenNode cd') => *)
+   fun assertEmpty xs =
+       if Vector.length xs = 0 then ()
+       else raise InvalidConFlattening
+   fun walk (t, cd): Type.t =
+       case (Type.dest t, cd) of
+           (* Single-child, flattenable nodes *)
+           (Type.Array t', PreserveNode cd') =>
+           Type.array (walk (t', getUniqueElement cd'))
+         | (Type.Array t', FlattenNode cds') =>
+            Type.tuple (Vector.map2 (Type.deTuple t',
+                                     cds',
+                                     Type.array o walk))
+          | (Type.Array t', PreserveNode cd') =>
+           Type.array (walk (t', getUniqueElement cd'))
+         | (Type.Vector t', FlattenNode cd') =>
+           Error.unimplemented "vector flatten not supported"
+         (* Multi-child, un-flattenable internal nodes *)
+           | (Type.Tuple ts', PreserveNode cds') =>
+             Type.tuple (Vector.map2 (ts', cds', walk))
+         (* Single-child, un-flattenable internal nodes *)
+         | (Type.Ref t', PreserveNode cd') => 
+           Type.reff (walk (t', getUniqueElement cd'))
+         | (Type.Weak t', PreserveNode cd') => 
+           Type.weak (walk (t', getUniqueElement cd'))
+         (* Leaf nodes *)
+         | (_, PreserveNode cd') =>
+           (assertEmpty cd'; t)
+         (* Invalid flattening decisions *)
+         | _ => raise InvalidConFlattening
+
    val _ = ()
 in
-   Error.bug "TODO: applyConDecision"
+   SOME (walk (t, cd))
 end
 
 fun markStatementForPolicy (fv: flattenedVars,
