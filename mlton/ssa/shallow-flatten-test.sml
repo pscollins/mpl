@@ -2085,17 +2085,18 @@ in
       fun flatten v = ShallowFlatten.FlattenNode (Vector.fromList v)
       val base = preserve []
 
+                          
       (* Level 1: (int * int) array *)
       val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val e1 = flatten [base, base]
 
       (* Level 2: ((int * int) array * int) array *)
       val t2 = Type.array (Type.tuple (Vector.fromList [t1, intTy]))
-      val e2 = flatten [preserve [e1], preserve [base]]
+      val e2 = flatten [e1, base]
 
       (* Level 3: (((int * int) array * int) array * int) array *)
       val t3 = Type.array (Type.tuple (Vector.fromList [t2, intTy]))
-      val e3 = flatten [preserve [e2], preserve [base]]
+      val e3 = flatten [e2, base]
 
       (* Width test: (int * int * int) array with MaxWidth 2 *)
       val t_w3 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
@@ -2107,7 +2108,7 @@ in
 
       (* Non-flattened inside flattened: ((int * int * int) array * int) array *)
       val t_nif = Type.array (Type.tuple (Vector.fromList [t_w3, intTy]))
-      val e_nif = flatten [preserve [e_w3], preserve [base]]
+      val e_nif = flatten [e_w3, base]
 
    in
       print ("t_inf: " ^ (Layout.toString (Type.layout t_inf)) ^ "\n");
@@ -2124,9 +2125,27 @@ in
 
    (* Test 47: applyConDecision *)
    val _ = runTest ("Test 47: applyConDecision", fn () => let
+      fun conDecisionToString cd =
+         case cd of
+            ShallowFlatten.PreserveNode v =>
+               "PreserveNode[" ^ String.concatWith (Vector.toListMap (v, conDecisionToString), ", ") ^ "]"
+          | ShallowFlatten.FlattenNode v =>
+               "FlattenNode[" ^ String.concatWith (Vector.toListMap (v, conDecisionToString), ", ") ^ "]"
+
       fun check (cd, ty, expected, msg) =
          let
+            val _ = print ("\n--- Test 47 Subcase: " ^ msg ^ " ---\n")
             val res = ShallowFlatten.applyConDecision (cd, ty)
+            fun optLayout topt =
+               case topt of
+                  NONE => "NONE"
+                | SOME t => Layout.toString (Type.layout t)
+            val _ = print (concat ["Compare: ", msg,
+                                   "\ntype       = ", Layout.toString (Type.layout ty),
+                                   "\nconDecision= ", conDecisionToString cd,
+                                   "\nexpected   = ", optLayout expected,
+                                   "\nactual     = ", optLayout res,
+                                   "\n"])
          in
             case (res, expected) of
                (NONE, NONE) => ()
@@ -2152,16 +2171,20 @@ in
       val cd2 = flatten [preserve [cd1], preserve [base]]
       val e2 = Type.tuple (Vector.fromList [Type.array e1, Type.array intTy])
 
-      (* Error case: FlattenNode on non-flattenable type *)
       val cd_err = flatten [base]
-      val _ = (ShallowFlatten.applyConDecision (cd_err, intTy);
-               assert (false, "Should have raised InvalidConFlattening"))
-              handle ShallowFlatten.InvalidConFlattening => ()
-                   | _ => assert (false, "Raised wrong exception")
 
    in
       check (cd1, t1, SOME e1, "Level 1");
-      check (cd2, t2, SOME e2, "Level 2")
+      check (cd2, t2, SOME e2, "Level 2");
+
+      (* Error case: FlattenNode on non-flattenable type *)
+      print ("\n--- Test 47 Subcase: Error case ---\n");
+      print ("type       = " ^ Layout.toString (Type.layout intTy) ^ "\n");
+      print ("conDecision= " ^ conDecisionToString cd_err ^ "\n");
+      (ShallowFlatten.applyConDecision (cd_err, intTy);
+       assert (false, "Should have raised InvalidConFlattening"))
+      handle ShallowFlatten.InvalidConFlattening => ()
+           | e => assert (false, "Raised wrong exception: " ^ exnMessage e)
    end)
 
       val _ = summarize ()
