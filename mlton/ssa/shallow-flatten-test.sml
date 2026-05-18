@@ -2067,11 +2067,12 @@ in
       fun check (policy, ty, expected, msg) =
          let
             val res = ShallowFlatten.getConDecisionForPolicy policy ty
-            val _ = print (concat ["Compare: expected=",
+            val _ = print (concat ["Compare: ", Layout.toString (Type.layout ty),
+                                   "\nexpected=",
                                    conDecisionToString expected,
-                                   "\nactual=",
-                                   conDecisionToString res])
-                                   
+                                   "\nactual  =",
+                                   conDecisionToString res,
+                                   "\n"])
          in
             if cdEquals (res, expected) then ()
             else assert (false, msg ^ ": conDecision mismatch")
