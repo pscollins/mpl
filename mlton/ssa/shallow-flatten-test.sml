@@ -2168,7 +2168,7 @@ in
 
       (* Level 2 *)
       val t2 = Type.array (Type.tuple (Vector.fromList [t1, intTy]))
-      val cd2 = flatten [preserve [cd1], preserve [base]]
+      val cd2 = flatten [cd1, base]
       val e2 = Type.tuple (Vector.fromList [Type.array e1, Type.array intTy])
 
       val cd_err = flatten [base]
