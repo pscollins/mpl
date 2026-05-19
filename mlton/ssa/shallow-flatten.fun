@@ -490,6 +490,10 @@ end
 
 fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
     Statement.t = let
+   fun logThunk () =
+      Layout.seq [Layout.str "propagateTypesInStatement: ",
+                  Statement.layout s]
+   val _ = Control.diagnostic logThunk
    val Statement.T {exp, ty, var} = s
    val newTy =
        (* Update type if necessary, otherwise keep the existing one *)
