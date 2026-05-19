@@ -96,14 +96,14 @@ sig
 
    (* Like above, but for `Con.t`: each entry in the vector corresponds to each
    type argument. *)
-   val markConForFlatten: flattenedVars * Con.t * bool vector -> unit
+   val setConFlatteningDecision: flattenedVars * Con.t * conDecision vector -> unit
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
 
-   (* Like above, but for `Con.t`. Requires that `markConForFlatten` was
+   (* Like above, but for `Con.t`. Requires that `setConFlatteningDecision` was
    previously called *)
-   val isConMarkedForFlatten: flattenedVars * Con.t -> bool vector
+   val getConFlatteningDecision: flattenedVars * Con.t -> conDecision vector
 
    (* Returns the total number of variables and constructors marked for
    flattening *)

@@ -250,11 +250,119 @@ fun deContainer (t: Type.t) =
 fun getFlattenedElementTypes (flatType: Type.t) =
     Vector.map (Type.deTuple flatType, deContainer)
 
+(* Returns:
+
+    * t == tuple? number of tuple elements
+    * t != tuple? 0
+*)
+fun getTupleTypeWidth (t: Type.t): int =
+    case Type.deTupleOpt t of
+        SOME ts => Vector.length ts
+      | _ => 0
+
+(* Like above, but requires that `t` is `(...) array` *)
+fun getArrayOfTupleTypeWidth (t: Type.t): int =
+    case Type.dest t of
+        Type.Array t' => getTupleTypeWidth t'
+      | _ => 0
+
+datatype flattenPolicy = MaxWidth of int
+
+(* Should the value corresponding to `t` be marked, according to `policy`? *)
+fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
+   val MaxWidth (maxWidth) = policy
+   (* No reason to flatten tuples with <2 elements *)
+   val kMinWidth = 2
+   val currWidth = getArrayOfTupleTypeWidth t
+in
+   (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
+end
+
+fun getChildren (t: Type.t): Type.t vector =
+    case Type.dest t of
+        Type.Array t' => Vector.new1 t'
+      | Type.Ref t' => Vector.new1 t'
+      | Type.Tuple ts' => ts'
+      | Type.Vector t' => Vector.new1 t'
+      | Type.Weak t' => Vector.new1 t'
+      | _ => Vector.new0 ()
+
+datatype conDecision =
+         PreserveNode of conDecision vector
+         | FlattenNode of conDecision vector
+
+fun layoutConDecision cd =
+    case cd of
+        PreserveNode cds =>
+        Layout.seq [Layout.str "Preserve", Layout.paren (Vector.layout layoutConDecision cds)]
+      | FlattenNode cds =>
+        Layout.seq [Layout.str "Flatten", Layout.paren (Vector.layout layoutConDecision cds)]
+
+fun getConDecisionForPolicy (policy: flattenPolicy)
+                            (t: Type.t): conDecision = let
+   fun shouldMark t = shouldMarkType (policy, t)
+   val MaxWidth (width) = policy
+   fun walk (t: Type.t) = let
+      fun next t' = Vector.map (getChildren t', walk)
+   in
+      if shouldMark t then
+         (* Peel off a layer in the recursion for flattening *)
+         FlattenNode (next (Type.deArray t))
+      else
+         PreserveNode (next t)
+   end
+in
+   walk t
+end
+
+fun getUniqueElement (xs: 'a vector): 'a =
+    if Vector.length xs = 1 then
+       Vector.first xs
+    else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
+
+exception InvalidConFlattening
+fun applyConDecision (cd: conDecision,
+                      t: Type.t): Type.t = let
+   fun assertEmpty xs =
+       if Vector.length xs = 0 then ()
+       else raise InvalidConFlattening
+   fun walk (t, cd): Type.t =
+       case (Type.dest t, cd) of
+           (* Single-child, flattenable nodes *)
+           (Type.Array t', PreserveNode cd') =>
+           Type.array (walk (t', getUniqueElement cd'))
+         | (Type.Array t', FlattenNode cds') =>
+            Type.tuple (Vector.map2 (Type.deTuple t',
+                                     cds',
+                                     Type.array o walk))
+          | (Type.Vector t', PreserveNode cd') =>
+           Type.vector (walk (t', getUniqueElement cd'))
+         | (Type.Vector t', FlattenNode cd') =>
+           Error.unimplemented "vector flatten not supported"
+         (* Multi-child, un-flattenable internal nodes *)
+           | (Type.Tuple ts', PreserveNode cds') =>
+             Type.tuple (Vector.map2 (ts', cds', walk))
+         (* Single-child, un-flattenable internal nodes *)
+         | (Type.Ref t', PreserveNode cd') =>
+           Type.reff (walk (t', getUniqueElement cd'))
+         | (Type.Weak t', PreserveNode cd') =>
+           Type.weak (walk (t', getUniqueElement cd'))
+         (* Leaf nodes *)
+         | (_, PreserveNode cd') =>
+           (assertEmpty cd'; t)
+         (* Invalid flattening decisions *)
+         | _ => raise InvalidConFlattening
+
+   val _ = ()
+in
+   walk (t, cd)
+end
+
 type flattenedVars = {
    getFlattenedProp: Var.t -> bool,
    setFlattenedProp: Var.t * bool -> unit,
-   getFlattenedConProp: Con.t -> bool vector,
-   setFlattenedConProp: Con.t * bool vector -> unit,
+   getFlattenedConProp: Con.t -> conDecision vector,
+   setFlattenedConProp: Con.t * conDecision vector -> unit,
    destroyFlattenedProps: unit -> unit,
    count: int ref
 }
@@ -293,17 +401,17 @@ in
    setFlattenedProp (v, true)
 end
 
-fun markConForFlatten (fv: flattenedVars, c: Con.t,
-                       shouldFlattens: bool vector): unit = let
+fun setConFlatteningDecision (fv: flattenedVars, c: Con.t,
+                       decisions: conDecision vector): unit = let
    val {setFlattenedConProp, count, ...} = fv
    fun logThunk () =
-       Layout.seq [Layout.str "markConForFlatten: ",
+       Layout.seq [Layout.str "setConFlatteningDecision: ",
                    Con.layout c,
                    Layout.str ": ",
-                   Vector.layout Bool.layout shouldFlattens]
+                   Vector.layout layoutConDecision decisions]
    val _ = Control.diagnostic logThunk
 in
-   setFlattenedConProp (c, shouldFlattens)
+   setFlattenedConProp (c, decisions)
 end
 
 fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
@@ -312,7 +420,7 @@ in
    getFlattenedProp v
 end
 
-fun isConMarkedForFlatten (fv: flattenedVars, c: Con.t): bool vector = let
+fun getConFlatteningDecision (fv: flattenedVars, c: Con.t): conDecision vector = let
    val {getFlattenedConProp, ...} = fv
 in
    getFlattenedConProp c
@@ -395,107 +503,6 @@ in
    Statement.T {exp = exp, ty = newTy, var = var}
 end
 
-(* Returns:
-
-    * t == tuple? number of tuple elements
-    * t != tuple? 0
-*)
-fun getTupleTypeWidth (t: Type.t): int =
-    case Type.deTupleOpt t of
-        SOME ts => Vector.length ts
-      | _ => 0
-
-(* Like above, but requires that `t` is `(...) array` *)
-fun getArrayOfTupleTypeWidth (t: Type.t): int =
-    case Type.dest t of
-        Type.Array t' => getTupleTypeWidth t'
-      | _ => 0
-
-datatype flattenPolicy = MaxWidth of int
-
-(* Should the value corresponding to `t` be marked, according to `policy`? *)
-fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
-   val MaxWidth (maxWidth) = policy
-   (* No reason to flatten tuples with <2 elements *)
-   val kMinWidth = 2
-   val currWidth = getArrayOfTupleTypeWidth t
-in
-   (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
-end
-
-fun getChildren (t: Type.t): Type.t vector =
-    case Type.dest t of
-        Type.Array t' => Vector.new1 t'
-      | Type.Ref t' => Vector.new1 t'
-      | Type.Tuple ts' => ts'
-      | Type.Vector t' => Vector.new1 t'
-      | Type.Weak t' => Vector.new1 t'
-      | _ => Vector.new0 ()
-
-datatype conDecision =
-         PreserveNode of conDecision vector
-         | FlattenNode of conDecision vector
-
-fun getConDecisionForPolicy (policy: flattenPolicy)
-                            (t: Type.t): conDecision = let
-   fun shouldMark t = shouldMarkType (policy, t)
-   val MaxWidth (width) = policy
-   fun walk (t: Type.t) = let
-      fun next t' = Vector.map (getChildren t', walk)
-   in
-      if shouldMark t then
-         (* Peel off a layer in the recursion for flattening *)
-         FlattenNode (next (Type.deArray t))
-      else
-         PreserveNode (next t)
-   end
-in
-   walk t
-end
-
-fun getUniqueElement (xs: 'a vector): 'a =
-    if Vector.length xs = 1 then
-       Vector.first xs
-    else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
-
-exception InvalidConFlattening
-fun applyConDecision (cd: conDecision,
-                      t: Type.t): Type.t = let
-   fun assertEmpty xs =
-       if Vector.length xs = 0 then ()
-       else raise InvalidConFlattening
-   fun walk (t, cd): Type.t =
-       case (Type.dest t, cd) of
-           (* Single-child, flattenable nodes *)
-           (Type.Array t', PreserveNode cd') =>
-           Type.array (walk (t', getUniqueElement cd'))
-         | (Type.Array t', FlattenNode cds') =>
-            Type.tuple (Vector.map2 (Type.deTuple t',
-                                     cds',
-                                     Type.array o walk))
-          | (Type.Vector t', PreserveNode cd') =>
-           Type.array (walk (t', getUniqueElement cd'))
-         | (Type.Vector t', FlattenNode cd') =>
-           Error.unimplemented "vector flatten not supported"
-         (* Multi-child, un-flattenable internal nodes *)
-           | (Type.Tuple ts', PreserveNode cds') =>
-             Type.tuple (Vector.map2 (ts', cds', walk))
-         (* Single-child, un-flattenable internal nodes *)
-         | (Type.Ref t', PreserveNode cd') =>
-           Type.reff (walk (t', getUniqueElement cd'))
-         | (Type.Weak t', PreserveNode cd') =>
-           Type.weak (walk (t', getUniqueElement cd'))
-         (* Leaf nodes *)
-         | (_, PreserveNode cd') =>
-           (assertEmpty cd'; t)
-         (* Invalid flattening decisions *)
-         | _ => raise InvalidConFlattening
-
-   val _ = ()
-in
-   walk (t, cd)
-end
-
 fun markStatementForPolicy (fv: flattenedVars,
                             policy: flattenPolicy)
                            (s: Statement.t): unit =
@@ -512,10 +519,9 @@ fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
 fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
                           (dt: Datatype.t): unit = let
    val Datatype.T {cons, ...} = dt
-   fun shouldMark ty = shouldMarkType (policy, ty)
+   fun getDecision ty = getConDecisionForPolicy policy ty
    fun doCon {args, con} =
-       markConForFlatten (fv, con, Vector.map (args, shouldMark))
-in
+       setConFlatteningDecision (fv, con, Vector.map (args, getDecision))in
    Vector.foreach (cons, doCon)
 end
 
@@ -913,18 +919,12 @@ end
 fun flattenDatatype (fv: flattenedVars)
                     (dt: Datatype.t): Datatype.t = let
    val Datatype.T {cons, tycon} = dt
-   fun maybeTryFlatten (shouldFlatten: bool, con: Type.t): Type.t =
-       case (shouldFlatten, maybeFlattenType con) of
-           (* No need to flatten *)
-           (false, _) => con
-         (* Need to flatten, and it succeeded *)
-         | (true, SOME con') => con'
-         (* Need to flatten, but it failed *)
-         | (true, NONE) => raise IllegalFlatteningDecision
+   fun applyDecision (cd, t) =
+       applyConDecision (cd, t)
+       handle InvalidConFlattening => raise IllegalFlatteningDecision
    fun maybeFlattenCon {args, con} = let
-      val shouldFlattens: bool vector = isConMarkedForFlatten (fv, con)
-      val args = Vector.map2 (shouldFlattens, args, maybeTryFlatten)
-   in
+      val decisions = getConFlatteningDecision (fv, con)
+      val args = Vector.map2 (decisions, args, applyDecision)   in
       {args = args, con = con}
    end
 in

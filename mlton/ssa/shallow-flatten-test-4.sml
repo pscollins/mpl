@@ -16,6 +16,11 @@ local
    fun assertType (Statement.T {ty, ...}, expected, msg) =
       if Type.equals (ty, expected) then ()
       else assert (false, msg ^ ": type mismatch")
+
+   fun isFlatten cd =
+      case cd of
+         ShallowFlatten.FlattenNode _ => true
+       | _ => false
 in
 (* Test 26: Nested Tuple constructors *)
    val _ = runTest ("Test 26: Nested Tuple constructors", fn () => let
@@ -323,13 +328,13 @@ in
       val c1 = Con.fromString "C1"
       val c2 = Con.fromString "C2"
 
-      val v1 = Vector.new1 true
-      val _ = ShallowFlatten.markConForFlatten (fv, c1, v1)
-      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, c1), 0), "C1 should be marked")
+      val v1 = Vector.new1 (ShallowFlatten.FlattenNode (Vector.new0 ()))
+      val _ = ShallowFlatten.setConFlatteningDecision (fv, c1, v1)
+      val _ = assert (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, c1), 0)), "C1 should be marked")
       
-      val v2 = Vector.new1 false
-      val _ = ShallowFlatten.markConForFlatten (fv, c2, v2)
-      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, c2), 0)), "C2 should not be marked")
+      val v2 = Vector.new1 (ShallowFlatten.PreserveNode (Vector.new0 ()))
+      val _ = ShallowFlatten.setConFlatteningDecision (fv, c2, v2)
+      val _ = assert (not (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, c2), 0))), "C2 should not be marked")
 
       val _ = ShallowFlatten.destroyFlattenedVars fv
       in () end)(* Test 39: markDatatypeForPolicy *)
@@ -360,10 +365,10 @@ in
 
       val _ = ShallowFlatten.markDatatypeForPolicy (fv, policy) dt
 
-      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con1), 0), "Con1 should be marked")
-      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con2), 0)), "Con2 should not be marked (too wide)")
-      val _ = assert (not (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con3), 0)), "Con3 should not be marked (not a tuple)")
-      val _ = assert (Vector.sub (ShallowFlatten.isConMarkedForFlatten (fv, con4), 0), "Con4 should be marked")
+      val _ = assert (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, con1), 0)), "Con1 should be marked")
+      val _ = assert (not (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, con2), 0))), "Con2 should not be marked (too wide)")
+      val _ = assert (not (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, con3), 0))), "Con3 should not be marked (not a tuple)")
+      val _ = assert (isFlatten (Vector.sub (ShallowFlatten.getConFlatteningDecision (fv, con4), 0)), "Con4 should be marked")
 
       val _ = ShallowFlatten.destroyFlattenedVars fv
       in () end)(* Test 40: flattenDatatype *)
@@ -386,8 +391,10 @@ in
       }
 
       (* Mark only con1 for flattening *)
-      val _ = ShallowFlatten.markConForFlatten (fv, con1, Vector.new1 true)
-      val _ = ShallowFlatten.markConForFlatten (fv, con2, Vector.new1 false)
+      val policy = ShallowFlatten.MaxWidth 10
+      val _ = ShallowFlatten.setConFlatteningDecision (fv, con1, Vector.new1 (ShallowFlatten.getConDecisionForPolicy policy arrayTuple2Ty))
+      val policy' = ShallowFlatten.MaxWidth 1
+      val _ = ShallowFlatten.setConFlatteningDecision (fv, con2, Vector.new1 (ShallowFlatten.getConDecisionForPolicy policy' arrayTuple2Ty))
       
       val dt' = ShallowFlatten.flattenDatatype fv dt
       val Datatype.T {cons = cons', ...} = dt'
