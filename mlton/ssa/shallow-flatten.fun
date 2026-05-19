@@ -365,6 +365,8 @@ type flattenedVars = {
    setFlattenedProp: Var.t * bool -> unit,
    getFlattenedConProp: Con.t -> conDecision vector,
    setFlattenedConProp: Con.t * conDecision vector -> unit,
+   getArgFlatteningProp: Var.t -> conDecision,
+   setArgFlatteningProp: Var.t * conDecision -> unit,
    destroyFlattenedProps: unit -> unit,
    count: int ref
 }
@@ -375,13 +377,19 @@ fun newFlattenedVars () = let
    val {get=get', set=set', destroy=destroy'} =
        Property.destGetSetOnce (Con.plist, Property.initRaise
                                                ("flattenCon", Con.layout))
+
+   val {get=get'', set=set'', destroy=destroy''} =
+       Property.destGetSetOnce (Var.plist, Property.initRaise
+                                               ("flattenArg", Var.layout))
    fun doDestroy() =
-       (destroy(); destroy'())
+       (destroy(); destroy'(); destroy''())
 in
    {getFlattenedProp=get,
     setFlattenedProp=set,
     getFlattenedConProp=get',
     setFlattenedConProp=set',
+    getArgFlatteningProp=get'',
+    setArgFlatteningProp=set'',
     destroyFlattenedProps=doDestroy,
     count=ref 0}
 end
@@ -427,6 +435,12 @@ fun getConFlatteningDecision (fv: flattenedVars, c: Con.t): conDecision vector =
 in
    getFlattenedConProp c
 end
+
+fun setArgFlatteningDecision (fv: flattenedVars, v: Var.t,
+                              decision: conDecision): unit = ()
+
+fun getArgFlatteningDecison (fv: flattenedVars, v: Var.t): conDecision =
+    PreserveNode (Vector.new0 ())
 
 fun markedCount (fv: flattenedVars): int = let
    val {count, ...} = fv
