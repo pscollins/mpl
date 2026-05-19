@@ -18,7 +18,7 @@ local
       else assert (false, msg ^ ": type mismatch")
 in
 (* Test 42: Deep flatten (2 levels of nesting) *)
-   val _ = runTestDisabled ("Test 42: Deep flatten (2 levels of nesting)", fn () => let
+   val _ = runTest ("Test 42: Deep flatten (2 levels of nesting)", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
@@ -50,7 +50,7 @@ in
                       " but got " ^ (Layout.toString (Type.layout newArgTy)))
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)(* Test 43: Deep flatten (3 levels of nesting) *)
-   val _ = runTestDisabled ("Test 43: Deep flatten (3 levels of nesting)", fn () => let
+   val _ = runTest ("Test 43: Deep flatten (3 levels of nesting)", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
@@ -84,7 +84,7 @@ in
                       " but got " ^ (Layout.toString (Type.layout newArgTy)))
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)(* Test 44: Deep flatten (multiple flattened types) *)
-   val _ = runTestDisabled ("Test 44: Deep flatten (multiple flattened types)", fn () => let
+   val _ = runTest ("Test 44: Deep flatten (multiple flattened types)", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
@@ -116,7 +116,7 @@ in
                       " but got " ^ (Layout.toString (Type.layout newArgTy)))
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)(* Test 45: Deep flatten (array + vector) *)
-   val _ = runTestDisabled ("Test 45: Deep flatten (array + vector)", fn () => let
+   val _ = runTest ("Test 45: Deep flatten (array + vector)", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
