@@ -86,24 +86,26 @@ sig
    val applyConDecision: conDecision * Type.t ->
                          Type.t
 
-   (* Tracks flattening decisions for variables and constructors. *)
+   (* Tracks flattening decisions for variables, arguments, and constructors. *)
    type flattenedVars
    val newFlattenedVars: unit -> flattenedVars
    val destroyFlattenedVars: flattenedVars -> unit
    (* Marks the provided `Var.t` for flattening. It is only valid to call this
    function once  on a particular `(fv, v)` pair *)
    val markForFlatten: flattenedVars * Var.t -> unit
-
-   (* Like above, but for `Con.t`: each entry in the vector corresponds to each
-   type argument. *)
-   val setConFlatteningDecision: flattenedVars * Con.t * conDecision vector -> unit
    (* If the provided `Var.t` was previously marked for flattening (above),
    returns true. Otherwise, returns false. *)
    val isMarkedForFlatten: flattenedVars * Var.t -> bool
-
-   (* Like above, but for `Con.t`. Requires that `setConFlatteningDecision` was
-   previously called *)
+   (* Like `markFlatten`, but for `Con.t` *)
+   val setConFlatteningDecision: flattenedVars * Con.t * conDecision vector -> unit
+   (* Like `isMarkedForFlatten`, but for `Con.t` *)
    val getConFlatteningDecision: flattenedVars * Con.t -> conDecision vector
+   (* Like `markFlatten`, but for function/block arguments. The user should
+   always have the pair (Var.t * Type.t) available, but there's no need to pass
+   the type here. *)
+   val setArgFlatteningDecision: flattenedVars * Var.t * conDecision -> unit
+   (* Like `isMarkedForFlatten`, but for function/block arguments. *)
+   val getArgFlatteningDecison: flattenedVars * Var.t -> conDecision
 
    (* Returns the total number of variables and constructors marked for
    flattening *)
