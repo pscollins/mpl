@@ -260,10 +260,11 @@ fun getTupleTypeWidth (t: Type.t): int =
         SOME ts => Vector.length ts
       | _ => 0
 
-(* Like above, but requires that `t` is `(...) array` *)
-fun getArrayOfTupleTypeWidth (t: Type.t): int =
+(* Like above, but requires that `t` is `(...) array` or `(...) vector` *)
+fun getContainerOfTupleTypeWidth (t: Type.t): int =
     case Type.dest t of
         Type.Array t' => getTupleTypeWidth t'
+      | Type.Vector t' => getTupleTypeWidth t'
       | _ => 0
 
 datatype flattenPolicy = MaxWidth of int
@@ -273,7 +274,7 @@ fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
    val MaxWidth (maxWidth) = policy
    (* No reason to flatten tuples with <2 elements *)
    val kMinWidth = 2
-   val currWidth = getArrayOfTupleTypeWidth t
+   val currWidth = getContainerOfTupleTypeWidth t
 in
    (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
 end
@@ -307,7 +308,7 @@ fun getConDecisionForPolicy (policy: flattenPolicy)
    in
       if shouldMark t then
          (* Peel off a layer in the recursion for flattening *)
-         FlattenNode (next (Type.deArray t))
+         FlattenNode (next (deContainer t))
       else
          PreserveNode (next t)
    end
@@ -337,9 +338,10 @@ fun applyConDecision (cd: conDecision,
                                      Type.array o walk))
           | (Type.Vector t', PreserveNode cd') =>
            Type.vector (walk (t', getUniqueElement cd'))
-         | (Type.Vector t', FlattenNode cd') =>
-           Error.unimplemented "vector flatten not supported"
-         (* Multi-child, un-flattenable internal nodes *)
+         | (Type.Vector t', FlattenNode cds') =>
+           Type.tuple (Vector.map2 (Type.deTuple t',
+                                    cds',
+                                    Type.vector o walk))         (* Multi-child, un-flattenable internal nodes *)
            | (Type.Tuple ts', PreserveNode cds') =>
              Type.tuple (Vector.map2 (ts', cds', walk))
          (* Single-child, un-flattenable internal nodes *)
@@ -666,7 +668,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
       fun mkLoad (stmt: Statement.t): Statement.t = let
          val Statement.T {ty=arrTy, ...} = stmt
          val elTy = deContainer arrTy
-         val subExp = Exp.PrimApp {args = Vector.new1 (extractBind stmt),
+         val idxArg = Vector.sub (args, 1)
+         val subExp = Exp.PrimApp {args = Vector.new2 (extractBind stmt, idxArg),
                                    prim = prim,
                                    targs = Vector.new1 elTy}
       in

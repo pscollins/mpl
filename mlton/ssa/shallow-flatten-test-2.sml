@@ -278,6 +278,53 @@ in
               | _ => assert (false, "Expected Array_sub or Select or Tuple"))
           | Exp.Tuple _ => ()
           | _ => assert (false, "Unexpected expression in flattened Array_sub"))
+   in () end)(* Test 10v: maybeFlattenStatement (Vector_sub) *)
+   val _ = runTest ("Test 10v: maybeFlattenStatement (Vector_sub)", fn () => let
+      val v1 = Var.fromString "v1"
+      val vec = Var.fromString "vec"
+      val i = Var.fromString "i"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val subPrim = Prim.Vector_sub
+      val s = Statement.T {
+         exp = primApp (subPrim, [vec, i], [tuple2Ty]),
+         ty = tuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Vector_sub should be flattenable"
+      
+      (* Expected:
+         1. vec_a = select(vec, 0)
+         2. x_a = Vector_sub(vec_a, i)
+         3. vec_b = select(vec, 1)
+         4. x_b = Vector_sub(vec_b, i)
+         5. v1 = tuple(x_a, x_b)
+      *)
+      val _ = assert (Vector.length stmts = 5, "Vector_sub should flatten to 5 statements")
+      val _ = assertType (Vector.sub (stmts, 0), Type.vector intTy, "Vector_sub stmt 0 type")
+      val _ = assertType (Vector.sub (stmts, 1), Type.vector intTy, "Vector_sub stmt 1 type")
+      val _ = assertType (Vector.sub (stmts, 2), intTy, "Vector_sub stmt 2 type")
+      val _ = assertType (Vector.sub (stmts, 3), intTy, "Vector_sub stmt 3 type")
+      val _ = assertType (Vector.sub (stmts, 4), tuple2Ty, "Vector_sub stmt 4 type")
+      val _ = Vector.foreach (stmts, fn Statement.T {exp, ty, var} =>
+         case exp of
+            Exp.Select {offset, tuple} => assert (Var.equals (tuple, vec), "Select should be from vec")
+          | Exp.PrimApp {prim, args, ...} => 
+            (case prim of
+                Prim.Vector_sub => 
+                   assert (Vector.length args = 2, "Vector_sub should have 2 arguments")
+              | _ => assert (false, "Expected Vector_sub or Select or Tuple"))
+          | Exp.Tuple _ => ()
+          | _ => assert (false, "Unexpected expression in flattened Vector_sub"))
    in () end)(* Test 11: maybeFlattenStatement (Array_update) *)
    val _ = runTest ("Test 11: maybeFlattenStatement (Array_update)", fn () => let
       val arr = Var.fromString "arr"

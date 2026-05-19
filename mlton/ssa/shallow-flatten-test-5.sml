@@ -117,6 +117,7 @@ in
       val _ = ShallowFlatten.destroyFlattenedVars fv
    in () end)(* Test 45: Deep flatten (array + vector) *)
    val _ = runTest ("Test 45: Deep flatten (array + vector)", fn () => let
+      (* TODO: vector is not currently supported *)
       val fv = ShallowFlatten.newFlattenedVars ()
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
@@ -226,6 +227,15 @@ in
       val t_nif = Type.array (Type.tuple (Vector.fromList [t_w3, intTy]))
       val e_nif = flatten [e_w3, base]
 
+      (* Vector cases *)
+      (* Level 1: (int * int) vector *)
+      val tv1 = Type.vector (Type.tuple (Vector.fromList [intTy, intTy]))
+      val ev1 = flatten [base, base]
+
+      (* Level 2: ((int * int) vector * int) vector *)
+      val tv2 = Type.vector (Type.tuple (Vector.fromList [tv1, intTy]))
+      val ev2 = flatten [ev1, base]
+
    in
       print ("t_inf: " ^ (Layout.toString (Type.layout t_inf)) ^ "\n");
       print ("t_inf conDecision: " ^ conDecisionToString e_inf ^ "\n");
@@ -236,7 +246,9 @@ in
       check (policy2, t3, e3, "Level 3");
       check (policy2, t_w3, e_w3, "Width > MaxWidth");
       check (policy2, t_inf, e_inf, "Flattened inside non-flattened");
-      check (policy2, t_nif, e_nif, "Non-flattened inside flattened")
+      check (policy2, t_nif, e_nif, "Non-flattened inside flattened");
+      check (policy2, tv1, ev1, "Vector Level 1");
+      check (policy2, tv2, ev2, "Vector Level 2")
    end)(* Test 47: applyConDecision *)
    val _ = runTest ("Test 47: applyConDecision", fn () => let
       fun conDecisionToString cd =
@@ -277,11 +289,23 @@ in
       val cd2 = flatten [cd1, base]
       val e2 = Type.tuple (Vector.fromList [Type.array e1, Type.array intTy])
 
+      (* Vector Level 1 *)
+      val tv1 = Type.vector (Type.tuple (Vector.fromList [intTy, intTy]))
+      val cdv1 = flatten [base, base]
+      val ev1 = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+
+      (* Vector Level 2 *)
+      val tv2 = Type.vector (Type.tuple (Vector.fromList [tv1, intTy]))
+      val cdv2 = flatten [cdv1, base]
+      val ev2 = Type.tuple (Vector.fromList [Type.vector ev1, Type.vector intTy])
+
       val cd_err = flatten [base]
 
    in
       check (cd1, t1, e1, "Level 1");
       check (cd2, t2, e2, "Level 2");
+      check (cdv1, tv1, ev1, "Vector Level 1");
+      check (cdv2, tv2, ev2, "Vector Level 2");
 
       (* Error case: FlattenNode on non-flattenable type *)
       print ("\n--- Test 47 Subcase: Error case ---\n");
