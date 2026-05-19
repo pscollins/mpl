@@ -437,10 +437,24 @@ in
 end
 
 fun setArgFlatteningDecision (fv: flattenedVars, v: Var.t,
-                              decision: conDecision): unit = ()
+                              decision: conDecision): unit = let
+   val {setArgFlatteningProp, count, ...} = fv
+   val _ = count := (!count + 1)
+   fun logThunk () =
+       Layout.seq [Layout.str "setArgFlatteningDecision: ",
+                   Var.layout v,
+                   Layout.str ": ",
+                   layoutConDecision decision]
+   val _ = Control.diagnostic logThunk
+in
+   setArgFlatteningProp (v, decision)
+end
 
-fun getArgFlatteningDecison (fv: flattenedVars, v: Var.t): conDecision =
-    PreserveNode (Vector.new0 ())
+fun getArgFlatteningDecison (fv: flattenedVars, v: Var.t): conDecision = let
+   val {getArgFlatteningProp, ...} = fv
+in
+   getArgFlatteningProp v
+end
 
 fun markedCount (fv: flattenedVars): int = let
    val {count, ...} = fv
