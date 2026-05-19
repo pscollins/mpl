@@ -105,7 +105,7 @@ sig
    the type here. *)
    val setArgFlatteningDecision: flattenedVars * Var.t * conDecision -> unit
    (* Like `isMarkedForFlatten`, but for function/block arguments. *)
-   val getArgFlatteningDecison: flattenedVars * Var.t -> conDecision
+   val getArgFlatteningDecision: flattenedVars * Var.t -> conDecision
 
    (* Returns the total number of variables and constructors marked for
    flattening *)

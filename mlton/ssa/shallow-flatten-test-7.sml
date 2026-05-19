@@ -12,7 +12,7 @@ in
       val _ = ShallowFlatten.setArgFlatteningDecision (fv, v, decision)
       
       (* Get the decision *)
-      val decision' = ShallowFlatten.getArgFlatteningDecison (fv, v)
+      val decision' = ShallowFlatten.getArgFlatteningDecision (fv, v)
       
       (* Check equality *)
       fun decisionEquals (d1, d2) =

@@ -92,19 +92,23 @@ in
       val arrayTuple2Ty = Type.array tuple2Ty
       val expected2 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
 
+      val policyFlatten = ShallowFlatten.MaxWidth 2
+      val policyPreserve = ShallowFlatten.MaxWidth 0
+
       (* Case 1: Not marked for flattening *)
+      val _ = ShallowFlatten.setArgFlatteningDecision (fv, v1, ShallowFlatten.getConDecisionForPolicy policyPreserve arrayTuple2Ty)
       val (rv1, rt1) = ShallowFlatten.maybeFlattenArg (fv, (v1, arrayTuple2Ty))
       val _ = assert (Var.equals (rv1, v1), "Case 1: var mismatch")
       val _ = assert (Type.equals (rt1, arrayTuple2Ty), "Case 1: type mismatch")
 
       (* Case 2: Marked for flattening, valid type *)
-      val _ = ShallowFlatten.markForFlatten (fv, v2)
+      val _ = ShallowFlatten.setArgFlatteningDecision (fv, v2, ShallowFlatten.getConDecisionForPolicy policyFlatten arrayTuple2Ty)
       val (rv2, rt2) = ShallowFlatten.maybeFlattenArg (fv, (v2, arrayTuple2Ty))
       val _ = assert (Var.equals (rv2, v2), "Case 2: var mismatch")
       val _ = assert (Type.equals (rt2, expected2), "Case 2: type mismatch")
 
       (* Case 3: Marked for flattening, invalid type *)
-      val _ = ShallowFlatten.markForFlatten (fv, v3)
+      val _ = ShallowFlatten.setArgFlatteningDecision (fv, v3, ShallowFlatten.FlattenNode (Vector.fromList []))
       val _ = (ShallowFlatten.maybeFlattenArg (fv, (v3, intTy)); 
                assert (false, "Case 3: should have raised BadFlattenError"))
               handle ShallowFlatten.BadFlattenError => ()
@@ -473,13 +477,18 @@ in
       val intTy = Type.intInf
       val policy = ShallowFlatten.MaxWidth 2
 
+      fun isFlattened v =
+          case ShallowFlatten.getArgFlatteningDecision (fv, v) of
+              ShallowFlatten.FlattenNode _ => true
+            | _ => false
+
       (* Case 1: Array of 2-tuple argument. Should be marked. *)
       val v1 = Var.fromString "v1"
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
       val arrayTuple2Ty = Type.array tuple2Ty
       val arg1 = (v1, arrayTuple2Ty)
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg1
-      val _ = assert (ShallowFlatten.isMarkedForFlatten (fv, v1), "Case 1: v1 (arg) should be marked")
+      val _ = assert (isFlattened v1, "Case 1: v1 (arg) should be marked")
 
       (* Case 2: Array of 4-tuple argument. Should NOT be marked (MaxWidth 2). *)
       val v2 = Var.fromString "v2"
@@ -487,13 +496,13 @@ in
       val arrayTuple4Ty = Type.array tuple4Ty
       val arg2 = (v2, arrayTuple4Ty)
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg2
-      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v2)), "Case 2: v2 (arg) should NOT be marked")
+      val _ = assert (not (isFlattened v2), "Case 2: v2 (arg) should NOT be marked")
 
       (* Case 3: Non-array argument. Should NOT be marked. *)
       val v3 = Var.fromString "v3"
       val arg3 = (v3, intTy)
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg3
-      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v3)), "Case 3: v3 (arg) should NOT be marked")
+      val _ = assert (not (isFlattened v3), "Case 3: v3 (arg) should NOT be marked")
 
       (* Case 4: Array of 3-tuple argument. Should NOT be marked (MaxWidth 2). *)
       val v4 = Var.fromString "v4"
@@ -501,7 +510,7 @@ in
       val arrayTuple3Ty = Type.array tuple3Ty
       val arg4 = (v4, arrayTuple3Ty)
       val _ = ShallowFlatten.markArgForPolicy (fv, policy) arg4
-      val _ = assert (not (ShallowFlatten.isMarkedForFlatten (fv, v4)), "Case 4: v4 (arg) should NOT be marked")
+      val _ = assert (not (isFlattened v4), "Case 4: v4 (arg) should NOT be marked")
    in () end)(* Test 15: flattenOnce (no flattening needed) *)
    val _ = runTest ("Test 15: flattenOnce (no flattening needed)", fn () => let
       val mainFunc = Func.fromString "main"

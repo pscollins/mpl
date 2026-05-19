@@ -450,7 +450,7 @@ in
    setArgFlatteningProp (v, decision)
 end
 
-fun getArgFlatteningDecison (fv: flattenedVars, v: Var.t): conDecision = let
+fun getArgFlatteningDecision (fv: flattenedVars, v: Var.t): conDecision = let
    val {getArgFlatteningProp, ...} = fv
 in
    getArgFlatteningProp v
@@ -546,9 +546,7 @@ fun markStatementForPolicy (fv: flattenedVars,
 
 fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
                      ((var, ty): (Var.t * Type.t)): unit =
-    if shouldMarkType (policy, ty) then
-       markForFlatten (fv, var)
-    else ()
+    setArgFlatteningDecision (fv, var, getConDecisionForPolicy policy ty)
 
 fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
                           (dt: Datatype.t): unit = let
@@ -561,13 +559,11 @@ end
 
 exception BadFlattenError
 fun maybeFlattenArg (fv, (v, t)) = let
-   val maybeFlat =
-       case (isMarkedForFlatten (fv, v), maybeFlattenType t) of
-           (true, SOME t') => t'
-        |  (false, _) => t
-        | _ => raise BadFlattenError
+   val decision = getArgFlatteningDecision (fv, v)
+   val t' = applyConDecision (decision, t)
+            handle InvalidConFlattening => raise BadFlattenError
 in
-   (v, maybeFlat)
+   (v, t')
 end
 
 fun isArrayPrim prim =
@@ -944,9 +940,7 @@ end
 
 fun flattenArgs fv args = let
    fun doArg (t as (v, _)) =
-       if isMarkedForFlatten (fv, v) then
-          maybeFlattenArg (fv, t)
-       else t
+       maybeFlattenArg (fv, t)
 in
    Vector.map (args, doArg)
 end
