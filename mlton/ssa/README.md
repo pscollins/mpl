@@ -39,6 +39,6 @@ make unittest
 ## Adding New Tests
 
 When adding new tests:
-1. If a test group has fewer than 10 tests, add it to the latest `pre-flatten-test-N.sml`.
-2. If all current groups are full, create a new `pre-flatten-test-(N+1).sml` and a corresponding `pre-flatten-test-(N+1).mlb`.
+1. If the latest test file (e.g., `pre-flatten-test-N.sml`) is less than approximately 500 lines, add new tests to it.
+2. Only create a new test file (e.g., `pre-flatten-test-(N+1).sml`) and its corresponding `.mlb` when the previous one has reached the 500-line threshold.
 3. The `Makefile` uses wildcards, so it will automatically pick up new `pre-flatten-test-[0-9]*.mlb` files.
