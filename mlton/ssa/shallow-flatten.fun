@@ -890,7 +890,10 @@ fun maybeFlattenStatement (s: Statement.t) = let
               SOME (buildArrayUpdate (primArg, flatArg))
             | (Prim.Array_toVector, SOME flatArg) =>
               SOME (buildArrayToVector flatArg)
-            | _ => NONE
+            | _ => if isArrayPrim prim orelse isVectorPrim prim then
+                      NONE
+                   else
+                      SOME (Vector.new1 s)
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
       result
@@ -1007,43 +1010,105 @@ in
               main = main}
 end
 
+fun updateType (policy: flattenPolicy) (t: Type.t): Type.t =
+    applyConDecision (getConDecisionForPolicy policy t, t)
+
+fun updateExp (policy: flattenPolicy) (exp: Exp.t): Exp.t =
+    case exp of
+        Exp.ConApp {con, args} => Exp.ConApp {con = con, args = args}
+      | Exp.Const c => Exp.Const c
+      | Exp.PrimApp {prim, targs, args} =>
+        Exp.PrimApp {prim = Prim.map (prim, updateType policy),
+                     targs = Vector.map (targs, updateType policy),
+                     args = args}
+      | Exp.Profile p => Exp.Profile p
+      | Exp.Select {offset, tuple} => Exp.Select {offset = offset, tuple = tuple}
+      | Exp.Tuple args => Exp.Tuple args
+      | Exp.Var v => Exp.Var v
+
+fun updateStatement (policy: flattenPolicy) (s: Statement.t): Statement.t =
+    case s of
+        Statement.T {exp, ty, var} =>
+        Statement.T {exp = updateExp policy exp,
+                     ty = updateType policy ty,
+                     var = var}
+
+fun updateTransfer (policy: flattenPolicy) (transfer: Transfer.t): Transfer.t =
+    case transfer of
+        Transfer.Runtime {prim, args, return} =>
+        Transfer.Runtime {prim = Prim.map (prim, updateType policy),
+                          args = args,
+                          return = return}
+      | _ => transfer
+
+fun updateBlock (policy: flattenPolicy) (b: Block.t): Block.t =
+    let
+       val Block.T {args, label, statements, transfer} = b
+    in
+       Block.T {args = Vector.map (args, fn (v, t) => (v, updateType policy t)),
+                label = label,
+                statements = Vector.map (statements, updateStatement policy),
+                transfer = updateTransfer policy transfer}
+    end
+
+fun updateDatatype (policy: flattenPolicy) (dt: Datatype.t): Datatype.t =
+    let
+       val Datatype.T {cons, tycon} = dt
+    in
+       Datatype.T {cons = Vector.map (cons, fn {args, con} =>
+                                             {args = Vector.map (args, updateType policy),
+                                              con = con}),
+                   tycon = tycon}
+    end
+
+fun updateFunction (policy: flattenPolicy) (f: Function.t): Function.t =
+    let
+       val {args, blocks, inline, name, raises, returns, start} = Function.dest f
+       val newArgs = Vector.map (args, fn (v, t) => (v, updateType policy t))
+       val newBlocks = Vector.map (blocks, updateBlock policy)
+       val newRaises = Option.map (raises, fn ts => Vector.map (ts, updateType policy))
+       val newReturns = Option.map (returns, fn ts => Vector.map (ts, updateType policy))
+    in
+       Function.new {args = newArgs,
+                     blocks = newBlocks,
+                     inline = inline,
+                     name = name,
+                     raises = newRaises,
+                     returns = newReturns,
+                     start = start}
+    end
+
+fun updateProgram (policy: flattenPolicy) (p: Program.t): Program.t =
+    let
+       val Program.T {datatypes, functions, globals, main} = p
+    in
+       Program.T {datatypes = Vector.map (datatypes, updateDatatype policy),
+                  functions = List.map (functions, updateFunction policy),
+                  globals = Vector.map (globals, updateStatement policy),
+                  main = main}
+    end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
    val fv = getFlattenedVarsInProgram (policy, p)
-   val rewriter = {
-      doStatements = flattenStatements fv,
-      doArgs = flattenArgs fv,
-      doTransfer = fn x => x
-   }
-   val p' = rewriteBfs rewriter p
    val count = markedCount fv
-
-   (* Second pass: propagate types + update datatype declarations *)
-   val vt = newVarTypes ()
-   fun propagateThroughStatements ss = let
-      fun doStmt s = let
-         val Statement.T {var, ty, ...} = s
-         (* Set the initial type before tyring to propagate *)
-         val _ = bindTypeInStatement (vt, s)
-      in
-         propagateTypesInStatement (vt, s)
-      end
-   in
-      Vector.map (ss, doStmt)
-   end
-   val propagator = {
-      doStatements = propagateThroughStatements,
-      doArgs = bindTypesInArgs vt,
-      doTransfer = fn x => x
-   }
-   val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p')
-   (* Cleanup *)
-   val _ = destroyVarTypes vt
-   val _ = destroyFlattenedVars fv
 in
-   if count > 0 then SOME p''
-   else NONE
+   if count > 0 then
+      let
+         val rewriter = {
+            doStatements = flattenStatements fv,
+            doArgs = flattenArgs fv,
+            doTransfer = fn x => x
+         }
+         val p' = rewriteBfs rewriter p
+         val p'' = updateProgram policy p'
+         val _ = destroyFlattenedVars fv
+      in
+         SOME p''
+      end
+   else
+      (destroyFlattenedVars fv; NONE)
 end
 
 fun transform (p: Program.t): Program.t =
