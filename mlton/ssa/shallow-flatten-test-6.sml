@@ -429,5 +429,77 @@ in
       val _ = assert (Type.equals (statementTy s6', expectedXTy), "s6 ty mismatch")
    in () end)
 
+   val _ = runTest ("Test 12: Nested Array_toVector flattening mismatch", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val arr = Var.fromString "arr"
+      val vec = Var.fromString "vec"
+      
+      val intTy = Type.intInf
+      val refTy = Type.reff intTy
+      (* The inner tuple: (refTy * intTy array * refTy) *)
+      val innerTupleTy = Type.tuple (Vector.fromList [refTy, Type.array intTy, refTy])
+      (* The elem tuple: (refTy * innerTupleTy * refTy) *)
+      val elemTupleTy = Type.tuple (Vector.fromList [refTy, innerTupleTy, refTy])
+      val arrTy = Type.array elemTupleTy
+      val vecTy = Type.vector elemTupleTy
+      
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.new1 arr,
+            prim = Prim.Array_toVector,
+            targs = Vector.new1 elemTupleTy
+         },
+         ty = vecTy,
+         var = SOME vec
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.new1 (arr, arrTy),
+         label = L0,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 5
+      val p' = case ShallowFlatten.flattenOnce policy p of
+                  SOME p' => p'
+                | NONE => raise TestFail "Should have flattened"
+      
+      val Program.T {functions = funcs', ...} = p'
+      val mainFunction' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest mainFunction'
+      
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+      
+      (* Check the type of the last statement (which binds the flattened vector) *)
+      val last_stmt = Vector.last stmts'
+      val Statement.T {ty = final_ty, ...} = last_stmt
+      
+      (* Expected type: the nested container (innerTupleTy vector) should also be flattened *)
+      val expectedInnerVecTy = Type.tuple (Vector.fromList [Type.vector refTy, Type.vector (Type.array intTy), Type.vector refTy])
+      val expectedVecTy = Type.tuple (Vector.fromList [Type.vector refTy, expectedInnerVecTy, Type.vector refTy])
+      
+      val _ = if Type.equals (final_ty, expectedVecTy) then ()
+              else assert (false, "final vec type mismatch: " ^ (Layout.toString (Type.layout final_ty)) ^
+                                 " expected " ^ (Layout.toString (Type.layout expectedVecTy)))
+   in () end)
+
    val _ = summarize ()
 end
