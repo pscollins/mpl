@@ -354,7 +354,7 @@ in
          transfer = Transfer.Return (Vector.new0 ())
       }
       val mainFunction = Function.new {
-         args = Vector.new1 (n, intTy),
+         args = Vector.new0 (),
          blocks = Vector.fromList [mainBlock],
          inline = InlineAttr.Auto,
          name = mainFunc,
@@ -413,18 +413,20 @@ in
                  Exp.Tuple _ => ()
                | _ => assert (false, "s6 should be Tuple")
                
-      val _ = assert (Type.equals (Statement.ty s0', Type.array refTy), "s0 ty mismatch")
-      val _ = assert (Type.equals (Statement.ty s1', Type.array refTy), "s1 ty mismatch")
-      val _ = assert (Type.equals (Statement.ty s2', Type.array (Type.array intTy)), "s2 ty mismatch")
-      val _ = assert (Type.equals (Statement.ty s3', Type.array refTy), "s3 ty mismatch")
+      fun statementTy (Statement.T {ty, ...}) = ty
+               
+      val _ = assert (Type.equals (statementTy s0', Type.array refTy), "s0 ty mismatch")
+      val _ = assert (Type.equals (statementTy s1', Type.array refTy), "s1 ty mismatch")
+      val _ = assert (Type.equals (statementTy s2', Type.array (Type.array intTy)), "s2 ty mismatch")
+      val _ = assert (Type.equals (statementTy s3', Type.array refTy), "s3 ty mismatch")
       
       val expectedT1Ty = Type.tuple (Vector.fromList [Type.array refTy, Type.array (Type.array intTy), Type.array refTy])
-      val _ = assert (Type.equals (Statement.ty s4', expectedT1Ty), "s4 ty mismatch")
+      val _ = assert (Type.equals (statementTy s4', expectedT1Ty), "s4 ty mismatch")
       
-      val _ = assert (Type.equals (Statement.ty s5', Type.array refTy), "s5 ty mismatch")
+      val _ = assert (Type.equals (statementTy s5', Type.array refTy), "s5 ty mismatch")
       
       val expectedXTy = Type.tuple (Vector.fromList [Type.array refTy, expectedT1Ty, Type.array refTy])
-      val _ = assert (Type.equals (Statement.ty s6', expectedXTy), "s6 ty mismatch")
+      val _ = assert (Type.equals (statementTy s6', expectedXTy), "s6 ty mismatch")
    in () end)
 
    val _ = summarize ()
