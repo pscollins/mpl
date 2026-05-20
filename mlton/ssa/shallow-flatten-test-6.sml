@@ -325,5 +325,107 @@ in
                | _ => assert (false, "Not a PrimApp")
    in () end)
 
+   val _ = runTest ("Test 11: Nested Array_alloc flattening", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val n = Var.fromString "n"
+      val x = Var.fromString "x"
+      
+      val intTy = Type.intInf
+      val refTy = Type.reff intTy
+      val innerTupleTy = Type.tuple (Vector.fromList [refTy, Type.array intTy, refTy])
+      val elemTupleTy = Type.tuple (Vector.fromList [refTy, innerTupleTy, refTy])
+      val arrTy = Type.array elemTupleTy
+      
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.new1 n,
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.new1 elemTupleTy
+         },
+         ty = arrTy,
+         var = SOME x
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.new1 (n, intTy),
+         label = L0,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new1 (n, intTy),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 5
+      val p' = case ShallowFlatten.flattenOnce policy p of
+                  SOME p' => p'
+                | NONE => raise TestFail "Should have flattened"
+      
+      val Program.T {functions = funcs', ...} = p'
+      val mainFunction' = List.first funcs'
+      val {blocks = blocks', ...} = Function.dest mainFunction'
+      
+      val block' = Vector.sub (blocks', 0)
+      val stmts' = Block.statements block'
+      
+      val _ = assert (Vector.length stmts' = 7, "Should have expanded to 7 statements")
+      
+      val s0' = Vector.sub (stmts', 0)
+      val s1' = Vector.sub (stmts', 1)
+      val s2' = Vector.sub (stmts', 2)
+      val s3' = Vector.sub (stmts', 3)
+      val s4' = Vector.sub (stmts', 4)
+      val s5' = Vector.sub (stmts', 5)
+      val s6' = Vector.sub (stmts', 6)
+      
+      val _ = case Statement.exp s0' of
+                 Exp.PrimApp {prim = Prim.Array_alloc _, ...} => ()
+               | _ => assert (false, "s0 should be Array_alloc")
+      val _ = case Statement.exp s1' of
+                 Exp.PrimApp {prim = Prim.Array_alloc _, ...} => ()
+               | _ => assert (false, "s1 should be Array_alloc")
+      val _ = case Statement.exp s2' of
+                 Exp.PrimApp {prim = Prim.Array_alloc _, ...} => ()
+               | _ => assert (false, "s2 should be Array_alloc")
+      val _ = case Statement.exp s3' of
+                 Exp.PrimApp {prim = Prim.Array_alloc _, ...} => ()
+               | _ => assert (false, "s3 should be Array_alloc")
+      val _ = case Statement.exp s4' of
+                 Exp.Tuple _ => ()
+               | _ => assert (false, "s4 should be Tuple")
+      val _ = case Statement.exp s5' of
+                 Exp.PrimApp {prim = Prim.Array_alloc _, ...} => ()
+               | _ => assert (false, "s5 should be Array_alloc")
+      val _ = case Statement.exp s6' of
+                 Exp.Tuple _ => ()
+               | _ => assert (false, "s6 should be Tuple")
+               
+      val _ = assert (Type.equals (Statement.ty s0', Type.array refTy), "s0 ty mismatch")
+      val _ = assert (Type.equals (Statement.ty s1', Type.array refTy), "s1 ty mismatch")
+      val _ = assert (Type.equals (Statement.ty s2', Type.array (Type.array intTy)), "s2 ty mismatch")
+      val _ = assert (Type.equals (Statement.ty s3', Type.array refTy), "s3 ty mismatch")
+      
+      val expectedT1Ty = Type.tuple (Vector.fromList [Type.array refTy, Type.array (Type.array intTy), Type.array refTy])
+      val _ = assert (Type.equals (Statement.ty s4', expectedT1Ty), "s4 ty mismatch")
+      
+      val _ = assert (Type.equals (Statement.ty s5', Type.array refTy), "s5 ty mismatch")
+      
+      val expectedXTy = Type.tuple (Vector.fromList [Type.array refTy, expectedT1Ty, Type.array refTy])
+      val _ = assert (Type.equals (Statement.ty s6', expectedXTy), "s6 ty mismatch")
+   in () end)
+
    val _ = summarize ()
 end

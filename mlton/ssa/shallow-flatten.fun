@@ -919,6 +919,17 @@ in
 end
 
 exception IllegalFlatteningDecision
+fun recursiveFlattenStatement (s: Statement.t): Statement.t vector =
+    case Statement.exp s of
+        Exp.PrimApp {prim, targs, ...} =>
+        (case getFlattenedPrimTArg (prim, targs) of
+             SOME _ =>
+             (case maybeFlattenStatement s of
+                  SOME ss => Vector.concatV (Vector.map (ss, recursiveFlattenStatement))
+                | NONE => raise IllegalFlatteningDecision)
+           | NONE => Vector.new1 s)
+      | _ => Vector.new1 s
+
 fun flattenStatements fv ss = let
    fun mkLogThunk s = let
       fun thunk() =
@@ -930,12 +941,10 @@ fun flattenStatements fv ss = let
    fun doStmt s = let
       val _ = Control.diagnostic (mkLogThunk s)
       in
-         case (mustFlattenStatement (fv, s),
-               maybeFlattenStatement s) of
-             (false, _) => Vector.new1 s
-           | (true, SOME ss) => ss
-           (* For now, we only report missing flattening for PrimApp *)
-           | (true, NONE) => raise IllegalFlatteningDecision
+         if mustFlattenStatement (fv, s) then
+            recursiveFlattenStatement s
+         else
+            Vector.new1 s
       end
 in
    Vector.concatV (Vector.map (ss, doStmt))
