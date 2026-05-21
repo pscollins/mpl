@@ -205,15 +205,15 @@ in
                           
       (* Level 1: (int * int) array *)
       val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
-      val e1 = flatten [base, base]
+      val e1 = flatten [preserve [base], preserve [base]]
 
       (* Level 2: ((int * int) array * int) array *)
       val t2 = Type.array (Type.tuple (Vector.fromList [t1, intTy]))
-      val e2 = flatten [e1, base]
+      val e2 = flatten [e1, preserve [base]]
 
       (* Level 3: (((int * int) array * int) array * int) array *)
       val t3 = Type.array (Type.tuple (Vector.fromList [t2, intTy]))
-      val e3 = flatten [e2, base]
+      val e3 = flatten [e2, preserve [base]]
 
       (* Width test: (int * int * int) array with MaxWidth 2 *)
       val t_w3 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
@@ -225,16 +225,16 @@ in
 
       (* Non-flattened inside flattened: ((int * int * int) array * int) array *)
       val t_nif = Type.array (Type.tuple (Vector.fromList [t_w3, intTy]))
-      val e_nif = flatten [e_w3, base]
+      val e_nif = flatten [preserve [e_w3], preserve [base]]
 
       (* Vector cases *)
       (* Level 1: (int * int) vector *)
       val tv1 = Type.vector (Type.tuple (Vector.fromList [intTy, intTy]))
-      val ev1 = flatten [base, base]
+      val ev1 = flatten [preserve [base], preserve [base]]
 
       (* Level 2: ((int * int) vector * int) vector *)
       val tv2 = Type.vector (Type.tuple (Vector.fromList [tv1, intTy]))
-      val ev2 = flatten [ev1, base]
+      val ev2 = flatten [ev1, preserve [base]]
 
    in
       print ("t_inf: " ^ (Layout.toString (Type.layout t_inf)) ^ "\n");

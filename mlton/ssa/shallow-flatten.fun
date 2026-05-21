@@ -302,22 +302,26 @@ fun layoutConDecision cd =
 fun getConDecisionForPolicy (policy: flattenPolicy)
                             (t: Type.t): conDecision = let
    fun shouldMark t = shouldMarkType (policy, t)
-   fun walk (t: Type.t, wrapper: (Type.t -> Type.t) option) = let
-      val conceptualType =
-          case wrapper of
-              SOME f => f t
-            | NONE => t
-   in
+    fun walk (t: Type.t, wrapper: (Type.t -> Type.t) option) = let
+       val conceptualType =
+           case wrapper of
+               SOME f =>
+               (case Type.dest t of
+                    Type.Array _ => t
+                  | Type.Vector _ => t
+                  | _ => f t)
+             | NONE => t
+    in
       if shouldMark conceptualType then
          let
             val (newWrapper, tuple) =
-                case wrapper of
-                    SOME f => (f, t)
-                  | NONE =>
-                    case Type.dest t of
-                        Type.Array t' => (Type.array, t')
-                      | Type.Vector t' => (Type.vector, t')
-                      | _ => Error.bug "shouldMarkType was true but not Array/Vector"
+                case Type.dest t of
+                    Type.Array t' => (Type.array, t')
+                  | Type.Vector t' => (Type.vector, t')
+                  | _ =>
+                    (case wrapper of
+                         SOME f => (f, t)
+                       | NONE => Error.bug "shouldMarkType was true but not Array/Vector")
             val children =
                 case Type.deTupleOpt tuple of
                     SOME ts => ts
@@ -327,7 +331,9 @@ fun getConDecisionForPolicy (policy: flattenPolicy)
             FlattenNode cds
          end
       else
-         PreserveNode (Vector.map (getChildren t, fn child => walk (child, NONE)))
+         case wrapper of
+             SOME _ => PreserveNode (Vector.new1 (walk (t, NONE)))
+           | NONE => PreserveNode (Vector.map (getChildren t, fn child => walk (child, NONE)))
    end
 in
    walk (t, NONE)
@@ -344,36 +350,40 @@ fun applyConDecision (cd: conDecision,
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
+   fun getDecisionOrPreserve cd' =
+       if Vector.length cd' = 0 then PreserveNode (Vector.new0 ())
+       else getUniqueElement cd'
    fun walk (t, cd, wrapper: (Type.t -> Type.t) option): Type.t =
-       case (Type.dest t, cd, wrapper) of
-           (Type.Tuple ts', FlattenNode cds', SOME f) =>
-           Type.tuple (Vector.map2 (ts', cds', fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME f)))
-         | (_, FlattenNode cds', NONE) =>
-           (case Type.dest t of
-                Type.Array t' =>
-                Type.tuple (Vector.map2 (Type.deTuple t',
-                                         cds',
-                                         fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME Type.array)))
-              | Type.Vector t' =>
-                Type.tuple (Vector.map2 (Type.deTuple t',
-                                         cds',
-                                         fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME Type.vector)))
-              | _ => raise InvalidConFlattening)
-         | (Type.Array t', PreserveNode cd', NONE) =>
-           Type.array (walk (t', getUniqueElement cd', NONE))
-         | (Type.Vector t', PreserveNode cd', NONE) =>
-           Type.vector (walk (t', getUniqueElement cd', NONE))
-         | (_, PreserveNode cd', SOME f) =>
-           f (walk (t, getUniqueElement cd', NONE))
-         | (Type.Tuple ts', PreserveNode cds', NONE) =>
-           Type.tuple (Vector.map2 (ts', cds', fn (t_sub, cd_sub) => walk (t_sub, cd_sub, NONE)))
-         | (Type.Ref t', PreserveNode cd', NONE) =>
-           Type.reff (walk (t', getUniqueElement cd', NONE))
-         | (Type.Weak t', PreserveNode cd', NONE) =>
-           Type.weak (walk (t', getUniqueElement cd', NONE))
-         | (_, PreserveNode cd', NONE) =>
-           (assertEmpty cd'; t)
-         | _ => raise InvalidConFlattening
+        case (Type.dest t, cd, wrapper) of
+            (Type.Tuple ts', FlattenNode cds', SOME f) =>
+            Type.tuple (Vector.map2 (ts', cds', fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME f)))
+          | (_, FlattenNode cds', SOME f) =>
+            f (walk (t, cd, NONE))
+          | (_, FlattenNode cds', NONE) =>
+            (case Type.dest t of
+                 Type.Array t' =>
+                 Type.tuple (Vector.map2 (Type.deTuple t',
+                                          cds',
+                                          fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME Type.array)))
+               | Type.Vector t' =>
+                 Type.tuple (Vector.map2 (Type.deTuple t',
+                                          cds',
+                                          fn (t_sub, cd_sub) => walk (t_sub, cd_sub, SOME Type.vector)))
+               | _ => raise InvalidConFlattening)
+          | (Type.Array t', PreserveNode cd', NONE) =>
+            Type.array (walk (t', getDecisionOrPreserve cd', NONE))
+          | (Type.Vector t', PreserveNode cd', NONE) =>
+            Type.vector (walk (t', getDecisionOrPreserve cd', NONE))
+          | (_, PreserveNode cd', SOME f) =>
+            f (walk (t, getDecisionOrPreserve cd', NONE))
+          | (Type.Tuple ts', PreserveNode cds', NONE) =>
+            Type.tuple (Vector.map2 (ts', cds', fn (t_sub, cd_sub) => walk (t_sub, cd_sub, NONE)))
+          | (Type.Ref t', PreserveNode cd', NONE) =>
+            Type.reff (walk (t', getDecisionOrPreserve cd', NONE))
+          | (Type.Weak t', PreserveNode cd', NONE) =>
+            Type.weak (walk (t', getDecisionOrPreserve cd', NONE))
+          | (_, PreserveNode cd', NONE) =>
+            (assertEmpty cd'; t)
 in
    walk (t, cd, NONE)
 end
@@ -1080,6 +1090,10 @@ fun updateBlock (policy: flattenPolicy) (b: Block.t): Block.t =
 
 fun updateDatatype (policy: flattenPolicy) (dt: Datatype.t): Datatype.t =
     let
+       fun logThunk () =
+           Layout.seq [Layout.str "updateDatatype: ",
+                       Datatype.layout dt]
+       val _ = Control.diagnostic logThunk
        val Datatype.T {cons, tycon} = dt
     in
        Datatype.T {cons = Vector.map (cons, fn {args, con} =>
@@ -1090,6 +1104,10 @@ fun updateDatatype (policy: flattenPolicy) (dt: Datatype.t): Datatype.t =
 
 fun updateFunction (policy: flattenPolicy) (f: Function.t): Function.t =
     let
+       fun logThunk () =
+           Layout.seq [Layout.str "updateFunction: ",
+                       Function.layout f]
+       val _ = Control.diagnostic logThunk
        val {args, blocks, inline, name, raises, returns, start} = Function.dest f
        val newArgs = Vector.map (args, fn (v, t) => (v, updateType policy t))
        val newBlocks = Vector.map (blocks, updateBlock policy)

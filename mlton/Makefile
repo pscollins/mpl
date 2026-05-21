@@ -73,8 +73,8 @@ $(eval $(MK_COMMON_GOALS))
 
 ######################################################################
 
-# EXTRA_FLAGS=-const 'Exn.keepHistory true'
-EXTRA_FLAGS=
+EXTRA_FLAGS=-const 'Exn.keepHistory true'
+# EXTRA_FLAGS=
 # hack above: keep exception history
 
 $(MLTON_OUTPUT): $(MLTON_SOURCES)
