@@ -938,6 +938,19 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      vecStmts,
                      Vector.new1 tupleStmt]
       end
+      fun buildArrayUninitIsNop () = let
+         (* For now, just hardcode false: since the original elements were
+          tuples, this should be no-worse performance than we had before
+          (although it might waste some performance in case we could have
+          avoided doing this initialization on the flattened elements) *)
+         val falseExp = Exp.ConApp {con = Con.falsee,
+                                    args = Vector.new0()}
+         val assignStmt = Statement.T {exp = falseExp,
+                                       ty = Type.bool,
+                                       var = var}
+      in
+         Vector.new1 assignStmt
+      end
       val result =
           case (prim, getFlattenedPrimTArg (prim, targs))  of
               (Prim.Array_alloc primArg, SOME flatArg) =>
@@ -954,6 +967,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
               SOME (buildArrayUpdate (primArg, flatArg))
             | (Prim.Array_toVector, SOME flatArg) =>
               SOME (buildArrayToVector flatArg)
+            | (Prim.Array_uninitIsNop, _) =>
+              (* This prim has an array-valued targ, so it returns NONE *)
+              SOME (buildArrayUninitIsNop ())
             | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
