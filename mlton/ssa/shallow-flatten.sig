@@ -263,9 +263,7 @@ sig
         * `tuple (x1, x2, x3)`
         * `Var (x)`
 
-       propagate `varTpes` in the obvious way.
-
-       `ConApp` is always passed through unchanged.
+       propagate `varTpes` in the obvious way. Other non-`PrimApp`s return NONE.
 
        TODO: ConApp should "unify"
        TODO: PrimApp
