@@ -823,6 +823,20 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       ty = Type.vector elTy,
                       var = SOME (Var.newString "flatVec")}
       end
+      (* arr: 'a array = ....
+         ->
+         arr': 'a array = Array_Array['a](arr)
+      *)
+      fun mkArrayArray (arrStmt: Statement.t): Statement.t = let
+         val elTy = Type.deArray (extractType arrStmt)
+         val arrayArrayExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
+                                          prim = Prim.Array_array,
+                                          targs = Vector.new1 elTy}
+      in
+         Statement.T {exp = arrayArrayExp,
+                      ty = Type.vector elTy,
+                      var = SOME (Var.newString "flatArr")}
+      end
       fun buildArrayAlloc (primArg, flatArg) = let
          val components = getFlattenedElementTypes flatArg
          (*
@@ -951,6 +965,27 @@ fun maybeFlattenStatement (s: Statement.t) = let
       in
          Vector.new1 assignStmt
       end
+      fun buildArrayArray flatArg = let
+         val numTypes = getNumElementTypes flatArg
+         (* arr_a = select(arr, 0)
+            arr_b = select(arr, 1)
+            ...
+          *)
+         val arrValue = Vector.first args
+         val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
+                                                               arrValue))
+         (* arr'_a = Array_toVector['a](arr_a)
+            arr'_b = Array_toVector['b](arr_b)
+            ...
+         *)
+         val newArrStmts = Vector.map (selectArrs, mkArrayArray)
+         (* arr' = (arr'_a * arr'_b * ...) *)
+         val tupleStmt = mkTuple (var, newArrStmts)
+      in
+         concatVecs [selectArrs,
+                     newArrStmts,
+                     Vector.new1 tupleStmt]
+      end
       val result =
           case (prim, getFlattenedPrimTArg (prim, targs))  of
               (Prim.Array_alloc primArg, SOME flatArg) =>
@@ -970,6 +1005,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
             | (Prim.Array_uninitIsNop, _) =>
               (* This prim has an array-valued targ, so it returns NONE *)
               SOME (buildArrayUninitIsNop ())
+            | (Prim.Array_array, SOME flatArg) =>
+              SOME (buildArrayArray flatArg)
             | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
