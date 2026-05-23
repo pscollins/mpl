@@ -587,18 +587,18 @@ fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
                   Statement.layout s]
    val _ = Control.diagnostic logThunk
    val Statement.T {exp, ty, var} = s
-   val newTy =
-       (* Update type if necessary, otherwise keep the existing one *)
-       case maybeReinferType (vt, exp) of
-           SOME ty' => ty'
-         | _ => ty
+   val (newExp, newTy) =
+       (* Update type/exp if necessary, otherwise keep the existing one *)
+       case maybePropagateTypesInExp (vt, exp) of
+           SOME new => new
+         | _ => (exp, ty)
    val _ =
        case var of
            (* Update the type of the bound variable (if any) *)
            SOME v => setVarType (vt, v, newTy)
          | _ => ()
 in
-   Statement.T {exp = exp, ty = newTy, var = var}
+   Statement.T {exp = newExp, ty = newTy, var = var}
 end
 
 fun markStatementForPolicy (fv: flattenedVars,

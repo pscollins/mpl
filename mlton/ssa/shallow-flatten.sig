@@ -270,6 +270,10 @@ sig
         * Ref_deref[_](arg) -> SOME (Ref_deref[type(arg)], type(arg))
         * Ref_ref[_](arg) -> SOME (Ref_ref[type(arg)], type(arg) ref)
 
+      Note that this function does NOT support `Array_` prims -- these require
+      more complicated rewrites (emitting multiple statements) and so aren't
+      supported here.
+
       TODO: ConApp should "unify"
       TODO: PrimApp
    *)

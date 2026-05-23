@@ -628,6 +628,43 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+   (* Test 48: propagateTypesInStatement (Ref_deref) *)
+   val _ = runTest ("Test 48: propagateTypesInStatement (Ref_deref)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val v = Var.fromString "v"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val innerTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      
+      val _ = ShallowFlatten.setVarType (vt, v, Type.reff innerTy)
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      
+      val s = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.fromList [v],
+            prim = Prim.Ref_deref {readBarrier = false},
+            targs = Vector.fromList [intTy]
+         },
+         ty = intTy,
+         var = SOME y
+      }
+      
+      val s' = ShallowFlatten.propagateTypesInStatement (vt, s)
+      
+      val expectedExp = Exp.PrimApp {
+         args = Vector.fromList [v],
+         prim = Prim.Ref_deref {readBarrier = false},
+         targs = Vector.fromList [innerTy]
+      }
+      
+      val Statement.T {exp=exp', ty=ty', var=var'} = s'
+      val _ = assert (Exp.equals (exp', expectedExp), "Exp should be updated with new innerTy")
+      val _ = assert (Type.equals (ty', innerTy), "Statement type should be updated to innerTy")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, y), innerTy), "varTypes should be updated for y")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
    val _ = summarize ()
 end
 
