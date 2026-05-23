@@ -516,6 +516,15 @@ in
      | Exp.Profile _ => NONE
 end
 
+fun propagateResultToLayout (result: (Exp.t * Type.t) option): Layout.t =
+    case result of
+        SOME (exp, ty) => Layout.seq [Layout.str "(",
+                                      Exp.layout exp,
+                                      Layout.str ", ",
+                                      Type.layout ty,
+                                      Layout.str ")"]
+      | NONE => Layout.str "(none)"
+
 fun maybePropagateTypesInExp (vt: varTypes, exp: Exp.t): (Exp.t * Type.t) option = let
    fun getType v = getVarType (vt, v)
    fun getNthTupleType (n, ty) = let
@@ -524,30 +533,51 @@ fun maybePropagateTypesInExp (vt: varTypes, exp: Exp.t): (Exp.t * Type.t) option
       Vector.sub (tys, n)
    end
    fun buildRefDeref (arg, rb) = let
-      val targ' = getType arg
+      val targ' = Type.deRef (getType arg)
    in
       (Exp.PrimApp {args = Vector.new1 arg,
                     prim = Prim.Ref_deref rb,
-                    ptargs = targ'},
-       Type.ref targ')
+                    targs = Vector.new1 targ'},
+      targ')
+end
+fun buildRefRef (arg) = let
+   val targ' = getType arg
+in
+   (Exp.PrimApp {args = Vector.new1 arg,
+                 prim = Prim.Ref_ref,
+                 targs = Vector.new1 targ'},
+       Type.reff targ')
    end
 
    fun reinferPrim {args, prim, targs} =
        case prim of
-           Prim.Ref_deref rb => SOME (buildRefDeref (args, prim))
+           Prim.Ref_deref rb => SOME (buildRefDeref (getUniqueElement args, rb))
+        |  Prim.Ref_ref => SOME (buildRefRef (getUniqueElement args))
         |  _ => NONE
+
+   val result =
+       case exp of
+           Exp.Select {offset, tuple} =>
+           SOME (exp, getNthTupleType (offset, getType tuple))
+         | Exp.Tuple vs => SOME (exp, Type.tuple (Vector.map (vs, getType)))
+         | Exp.Var v => SOME (exp, getType v)
+         (* This case should work, but we don't support it for now *)
+         | Exp.ConApp _ => NONE
+         (* These types can't be changed due to flattening, no need to update *)
+         | Exp.Const _ => NONE
+         | Exp.PrimApp prim => reinferPrim prim
+         | Exp.Profile _ => NONE
+   fun logThunk () =
+       Layout.seq [
+          Layout.str "maybePropagateTypesInExp: ",
+          Layout.str " original: ",
+          Exp.layout exp,
+          Layout.str ", result=",
+          propagateResultToLayout result
+       ]
+   val _ = Control.diagnostic logThunk
 in
-   case exp of
-       Exp.Select {offset, tuple} =>
-       SOME (exp, getNthTupleType (offset, getType tuple))
-     | Exp.Tuple vs => SOME (exp, Type.tuple (Vector.map (vs, getType)))
-     | Exp.Var v => SOME (exp, getType v)
-     (* This case should work, but we don't support it for now *)
-     | Exp.ConApp _ => NONE
-     (* These types can't be changed due to flattening, no need to update *)
-     | Exp.Const _ => NONE
-     | Exp.PrimApp prim => reinferPrim prim
-     | Exp.Profile _ => NONE
+   result
 end
 
 fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
