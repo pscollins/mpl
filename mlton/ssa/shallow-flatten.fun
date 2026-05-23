@@ -516,6 +516,14 @@ in
      | Exp.Profile _ => NONE
 end
 
+fun maybePropagateTypesInExp (vt: varTypes, exp: Exp.t): (Exp.t * Type.t) option = let
+   val newTy = maybeReinferType (vt, exp)
+in
+   case newTy of
+       SOME ty => SOME (exp, ty)
+    | NONE => NONE
+end
+
 fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
     Statement.t = let
    fun logThunk () =

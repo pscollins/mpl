@@ -478,5 +478,90 @@ in
       val _ = assert (Type.equals (Vector.sub (args1, 0), flattenedTuple2Ty), 
                       "Datatype should be flattened in flattenOnce")
    in () end)
-      val _ = summarize ()
+
+   (* Test 42: maybePropagateTypesInExp (Var) *)
+   val _ = runTest ("Test 42: maybePropagateTypesInExp (Var)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      
+      (* Var expression *)
+      val exp = Exp.Var x
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME (exp', ty') =>
+                  (assert (Exp.equals (exp, exp'), "Exp should be unchanged");
+                   assert (Type.equals (ty', intTy), "Returned type should be intInf"))
+                | NONE => raise TestFail "maybePropagateTypesInExp returned NONE for Var"
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 43: maybePropagateTypesInExp (Tuple) *)
+   val _ = runTest ("Test 43: maybePropagateTypesInExp (Tuple)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      val _ = ShallowFlatten.setVarType (vt, y, word32Ty)
+      
+      val exp = Exp.Tuple (Vector.fromList [x, y])
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME (exp', ty') =>
+                  let
+                     val expectedTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+                  in
+                     assert (Exp.equals (exp, exp'), "Exp should be unchanged");
+                     assert (Type.equals (ty', expectedTy), "Returned type should be intInf * word32")
+                  end
+                | NONE => raise TestFail "maybePropagateTypesInExp returned NONE for Tuple"
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 44: maybePropagateTypesInExp (Select) *)
+   val _ = runTest ("Test 44: maybePropagateTypesInExp (Select)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val xTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      
+      val _ = ShallowFlatten.setVarType (vt, x, xTy)
+      
+      val exp = Exp.Select {offset = 1, tuple = x}
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME (exp', ty') =>
+                  (assert (Exp.equals (exp, exp'), "Exp should be unchanged");
+                   assert (Type.equals (ty', word32Ty), "Returned type should be word32"))
+                | NONE => raise TestFail "maybePropagateTypesInExp returned NONE for Select"
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 45: maybePropagateTypesInExp (Const - noop) *)
+   val _ = runTest ("Test 45: maybePropagateTypesInExp (Const - noop)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val exp = Exp.Const (Const.Word (WordX.fromInt (1, WordSize.word32)))
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME _ => raise TestFail "maybePropagateTypesInExp should return NONE for Const"
+                | NONE => ()
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   val _ = summarize ()
 end
+
