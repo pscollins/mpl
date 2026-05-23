@@ -466,7 +466,7 @@ in
                val _ = assert (Vector.length args = 1, "Array_array should have 1 argument")
                val _ = assert (Vector.length targs = 1, "Array_array should have 1 targ")
                val _ = assert (Type.equals (Vector.sub (targs, 0), intTy), "targ mismatch")
-               val _ = assert (Type.equals (ty, Type.vector intTy), "array type mismatch")
+               val _ = assert (Type.equals (ty, Type.array intTy), "array type mismatch")
             in () end
           | _ => raise TestFail "Expected PrimApp statement with SOME var")
 

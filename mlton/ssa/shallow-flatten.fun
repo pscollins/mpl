@@ -834,7 +834,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
                                           targs = Vector.new1 elTy}
       in
          Statement.T {exp = arrayArrayExp,
-                      ty = Type.vector elTy,
+                      ty = Type.array elTy,
                       var = SOME (Var.newString "flatArr")}
       end
       fun buildArrayAlloc (primArg, flatArg) = let
@@ -974,8 +974,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
          val arrValue = Vector.first args
          val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
                                                                arrValue))
-         (* arr'_a = Array_toVector['a](arr_a)
-            arr'_b = Array_toVector['b](arr_b)
+         (* arr'_a = Array_array['a](arr_a)
+            arr'_b = Array_array['b](arr_b)
             ...
          *)
          val newArrStmts = Vector.map (selectArrs, mkArrayArray)
