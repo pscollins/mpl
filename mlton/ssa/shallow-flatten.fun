@@ -517,11 +517,37 @@ in
 end
 
 fun maybePropagateTypesInExp (vt: varTypes, exp: Exp.t): (Exp.t * Type.t) option = let
-   val newTy = maybeReinferType (vt, exp)
+   fun getType v = getVarType (vt, v)
+   fun getNthTupleType (n, ty) = let
+      val tys = Type.deTuple ty
+   in
+      Vector.sub (tys, n)
+   end
+   fun buildRefDeref (arg, rb) = let
+      val targ' = getType arg
+   in
+      (Exp.PrimApp {args = Vector.new1 arg,
+                    prim = Prim.Ref_deref rb,
+                    ptargs = targ'},
+       Type.ref targ')
+   end
+
+   fun reinferPrim {args, prim, targs} =
+       case prim of
+           Prim.Ref_deref rb => SOME (buildRefDeref (args, prim))
+        |  _ => NONE
 in
-   case newTy of
-       SOME ty => SOME (exp, ty)
-    | NONE => NONE
+   case exp of
+       Exp.Select {offset, tuple} =>
+       SOME (exp, getNthTupleType (offset, getType tuple))
+     | Exp.Tuple vs => SOME (exp, Type.tuple (Vector.map (vs, getType)))
+     | Exp.Var v => SOME (exp, getType v)
+     (* This case should work, but we don't support it for now *)
+     | Exp.ConApp _ => NONE
+     (* These types can't be changed due to flattening, no need to update *)
+     | Exp.Const _ => NONE
+     | Exp.PrimApp prim => reinferPrim prim
+     | Exp.Profile _ => NONE
 end
 
 fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
