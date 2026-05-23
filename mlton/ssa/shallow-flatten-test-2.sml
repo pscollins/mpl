@@ -381,6 +381,44 @@ in
                 Prim.Array_update _ => ()
               | _ => assert (false, "Expected Array_update or Select"))
           | _ => assert (false, "Unexpected expression in flattened Array_update"))
+   in () end)(* Test 11b: maybeFlattenStatement (Array_uninitIsNop) *)
+   val _ = runTest ("Test 11b: maybeFlattenStatement (Array_uninitIsNop)", fn () => let
+      val arr = Var.fromString "arr"
+      val v1 = Var.fromString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val boolTy = Type.bool
+
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val uninitIsNopPrim = Prim.Array_uninitIsNop
+      val s = Statement.T {
+         exp = primApp (uninitIsNopPrim, [arr], [tuple2Ty]),
+         ty = boolTy,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_uninitIsNop should be flattenable"
+      
+      (* Expected:
+         1. v1 = false
+      *)
+      val _ = assert (Vector.length stmts = 1, "Array_uninitIsNop should flatten to 1 statement")
+      val stmt0 = Vector.sub (stmts, 0)
+      val _ = assertType (stmt0, boolTy, "stmt0 type")
+      val Statement.T {exp, var, ...} = stmt0
+      val _ = case var of
+                 SOME v => assert (Var.equals (v, v1), "v1 mismatch")
+               | NONE => raise TestFail "expected SOME var"
+      val _ = case exp of
+                 Exp.ConApp {con, args} =>
+                 assert (Con.equals (con, Con.falsee) andalso Vector.length args = 0, "expected Con.falsee")
+               | _ => raise TestFail "expected ConApp false"
    in () end)(* Test 12: mustFlattenStatement *)
    val _ = runTest ("Test 12: mustFlattenStatement", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
