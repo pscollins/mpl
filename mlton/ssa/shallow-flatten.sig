@@ -248,6 +248,32 @@ sig
     *)
    val mustFlattenStatement: flattenedVars * Statement.t -> bool
 
+   (* Propages `varTypes` through the provided `Exp.t` (if necessary)
+
+      For `Exp.t`s that must be updated for flattening, returns
+        SOME (exp, ty)
+      where `exp` is the updated expression, and `ty` is the updated return
+      type.
+
+      For `Exp.t`s that do not change under flattening, `NONE`.
+
+      Non-`PrimApp`s pass through the `exp` unchanged and return, i.e.
+
+        * `select (t, n)`
+        * `tuple (x1, x2, x3)`
+        * `Var (x)`
+
+       propagate `varTpes` in the obvious way.
+
+       `ConApp` is always passed through unchanged.
+
+       TODO: ConApp should "unify"
+       TODO: PrimApp
+   *)
+   val maybePropagateTypesInExp: varTypes * Exp.t ->
+                                 (Exp.t * Type.t) option
+
+
    (* For all *non*-PrimApp statements:
 
         1. Recomputes the type on the LHS given the new RHS types in `varTypes`
@@ -266,6 +292,7 @@ sig
           y: int * int = tuple (int, int)
    *)
    val propagateTypesInStatement: varTypes * Statement.t -> Statement.t
+
 
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to
