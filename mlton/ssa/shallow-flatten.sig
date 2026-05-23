@@ -263,10 +263,15 @@ sig
         * `tuple (x1, x2, x3)`
         * `Var (x)`
 
-       propagate `varTpes` in the obvious way. Other non-`PrimApp`s return NONE.
+      propagate `varTpes` in the obvious way. Other non-`PrimApp`s return NONE.
 
-       TODO: ConApp should "unify"
-       TODO: PrimApp
+      For `PrimApp`s:
+
+        * Ref_deref[_](arg) -> SOME (Ref_deref[type(arg)], type(arg))
+        * Ref_ref[_](arg) -> SOME (Ref_ref[type(arg)], type(arg) ref)
+
+      TODO: ConApp should "unify"
+      TODO: PrimApp
    *)
    val maybePropagateTypesInExp: varTypes * Exp.t ->
                                  (Exp.t * Type.t) option

@@ -562,6 +562,72 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+   (* Test 46: maybePropagateTypesInExp (Ref_deref) *)
+   val _ = runTest ("Test 46: maybePropagateTypesInExp (Ref_deref)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val v = Var.fromString "v"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val innerTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val refTy = Type.reff innerTy
+      
+      val _ = ShallowFlatten.setVarType (vt, v, refTy)
+      
+      val exp = Exp.PrimApp {
+         args = Vector.fromList [v],
+         prim = Prim.Ref_deref {readBarrier = false},
+         targs = Vector.fromList [intTy]
+      }
+      
+      val expectedExp = Exp.PrimApp {
+         args = Vector.fromList [v],
+         prim = Prim.Ref_deref {readBarrier = false},
+         targs = Vector.fromList [innerTy]
+      }
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME (exp', ty') =>
+                  (assert (Exp.equals (exp', expectedExp), "Exp should be updated with new innerTy");
+                   assert (Type.equals (ty', innerTy), "Returned type should be innerTy"))
+                | NONE => raise TestFail "maybePropagateTypesInExp returned NONE for Ref_deref"
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 47: maybePropagateTypesInExp (Ref_ref) *)
+   val _ = runTest ("Test 47: maybePropagateTypesInExp (Ref_ref)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val v = Var.fromString "v"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val innerTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val refTy = Type.reff innerTy
+      
+      val _ = ShallowFlatten.setVarType (vt, v, innerTy)
+      
+      val exp = Exp.PrimApp {
+         args = Vector.fromList [v],
+         prim = Prim.Ref_ref,
+         targs = Vector.fromList [intTy]
+      }
+      
+      val expectedExp = Exp.PrimApp {
+         args = Vector.fromList [v],
+         prim = Prim.Ref_ref,
+         targs = Vector.fromList [innerTy]
+      }
+      
+      val res = ShallowFlatten.maybePropagateTypesInExp (vt, exp)
+      val _ = case res of
+                  SOME (exp', ty') =>
+                  (assert (Exp.equals (exp', expectedExp), "Exp should be updated with new innerTy");
+                   assert (Type.equals (ty', refTy), "Returned type should be refTy"))
+                | NONE => raise TestFail "maybePropagateTypesInExp returned NONE for Ref_ref"
+      
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
    val _ = summarize ()
 end
 
