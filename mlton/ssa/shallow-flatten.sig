@@ -236,6 +236,13 @@ sig
       ...
       x: ('a * 'b * ...) = tuple(x_a, x_b, ...)
 
+
+    8. `Array_uninitIsNop` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      isNop: bool = Array_uninitIsNop[('a * 'b * ...) array](arr)
+      -->
+      isNop: bool = false
+
     Non-`PrimApp` expressions always return `SOME (originalStatement)`
     *)
    val maybeFlattenStatement: Statement.t ->
