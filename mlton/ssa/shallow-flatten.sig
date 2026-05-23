@@ -243,6 +243,19 @@ sig
       -->
       isNop: bool = false
 
+    9. `Array_array` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      arr': ('a * 'b * ...) array = Array_array['a * 'b * ...](arr)
+      -->
+      (* by 1., arr is now 'a array * b array * ... *)
+      arr_a: 'a array = select (arr, 0)
+      arr'_a: 'a =  Array_array['a](arr_a)
+      arr_b: 'b array = select (arr, 1)
+      arr'_b: 'b =  Array_array['b](arr_b)
+      ...
+      arr' = tuple (arr'_a, arr'_b, ...)
+     ...
+
     Non-`PrimApp` expressions always return `SOME (originalStatement)`
     *)
    val maybeFlattenStatement: Statement.t ->
