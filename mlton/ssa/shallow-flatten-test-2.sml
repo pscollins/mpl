@@ -476,7 +476,7 @@ in
                  let
                     val _ = assert (Var.equals (v, v1), "v1 mismatch")
                     val _ = assert (Vector.length args = 2, "Tuple should have 2 arguments")
-                    val expectedTy = Type.tuple (Vector.fromList [Type.vector intTy, Type.vector intTy])
+                    val expectedTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
                     val _ = assert (Type.equals (ty, expectedTy), "tuple type mismatch")
                  in () end
                | _ => raise TestFail "Expected Tuple statement with SOME var"
