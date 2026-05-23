@@ -277,13 +277,12 @@ sig
                                  (Exp.t * Type.t) option
 
 
-   (* For all *non*-PrimApp statements:
+   (* For all statements `lhs: ty = rhs`
 
-        1. Recomputes the type on the LHS given the new RHS types in `varTypes`
-        2. Updates the type of any LHS bound variable in `varTypes`
+        1. Recomputes `(ty', rhs')` via propagation (defined above)
+
+        2. If needed, updates `lhs` to `ty'` in `varTypes`
         3. Returns a new `Statement.t` with the updated types
-
-     For `PrimApp` statements: no-op
 
      e.g. for
        * varTypes = {x -> int, y -> bool * bool}
