@@ -383,6 +383,53 @@ in
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")
        | SOME p' => let
+            val Program.T {functions = funcs', ...} = p'
+            val f_test' = List.first funcs'
+            val {args, blocks, returns, ...} = Function.dest f_test'
+            
+            val expectedRetTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+            
+            (* Assertion 1: Returns type of f_test should be updated/flattened *)
+            val _ = case returns of
+                       SOME retTys => 
+                          if Vector.length retTys = 1 andalso Type.equals (Vector.sub (retTys, 0), expectedRetTy) then ()
+                          else assert (false, "returns type mismatch")
+                     | NONE => assert (false, "expected SOME returns")
+            
+            (* Assertion 2: Statements check *)
+            val b = Vector.sub (blocks, 0)
+            val stmts = Block.statements b
+            val _ = assert (Vector.length stmts = 4, "expected 4 statements")
+            
+            val s0' = Vector.sub (stmts, 0)
+            val s1' = Vector.sub (stmts, 1)
+            val s2' = Vector.sub (stmts, 2)
+            val s3' = Vector.sub (stmts, 3)
+            
+            (* Check s0': val n = 1 *)
+             val Statement.T {ty = ty0, ...} = s0'
+             val _ = assert (Type.equals (ty0, seqIndexTy), "s0' type mismatch")
+             
+             (* Check s1' and s2': val flatBind_0 = Array_alloc[int](n) *)
+             fun checkAlloc (Statement.T {exp, ty, ...}) =
+                case exp of
+                   Exp.PrimApp {prim = Prim.Array_alloc _, targs, ...} =>
+                      assert (Type.equals (ty, Type.array intTy) andalso
+                              Vector.length targs = 1 andalso
+                              Type.equals (Vector.sub (targs, 0), intTy),
+                              "alloc statement check")
+                 | _ => assert (false, "expected Array_alloc")
+             val _ = checkAlloc s1'
+             val _ = checkAlloc s2'
+             
+             (* Check s3': val x = (flatBind_0, flatBind_1) *)
+             val _ = case s3' of
+                        Statement.T {exp = Exp.Tuple args, ty, ...} =>
+                           assert (Type.equals (ty, expectedRetTy) andalso
+                                   Vector.length args = 2,
+                                   "tuple statement check")
+                      | _ => assert (false, "expected Tuple")
+
             val _ = typeCheck p'
          in () end
    in () end)
