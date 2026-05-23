@@ -633,7 +633,7 @@ end
 fun isArrayPrim prim =
     case prim of
         Prim.Array_alloc _ => true
-      | Prim.Array_array => true
+      | Prim.Array_toArray => true
       | Prim.Array_length => true
       | Prim.Array_sub _ =>  true
       | Prim.Array_toVector =>  true
@@ -825,15 +825,15 @@ fun maybeFlattenStatement (s: Statement.t) = let
       end
       (* arr: 'a array = ....
          ->
-         arr': 'a array = Array_Array['a](arr)
+         arr': 'a array = Array_toArray['a](arr)
       *)
-      fun mkArrayArray (arrStmt: Statement.t): Statement.t = let
+      fun mkArrayToArray (arrStmt: Statement.t): Statement.t = let
          val elTy = Type.deArray (extractType arrStmt)
-         val arrayArrayExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
-                                          prim = Prim.Array_array,
-                                          targs = Vector.new1 elTy}
+         val arrayToArrayExp = Exp.PrimApp {args = Vector.new1 (extractBind arrStmt),
+                                            prim = Prim.Array_toArray,
+                                            targs = Vector.new1 elTy}
       in
-         Statement.T {exp = arrayArrayExp,
+         Statement.T {exp = arrayToArrayExp,
                       ty = Type.array elTy,
                       var = SOME (Var.newString "flatArr")}
       end
@@ -965,7 +965,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       in
          Vector.new1 assignStmt
       end
-      fun buildArrayArray flatArg = let
+      fun buildArrayToArray flatArg = let
          val numTypes = getNumElementTypes flatArg
          (* arr_a = select(arr, 0)
             arr_b = select(arr, 1)
@@ -974,11 +974,11 @@ fun maybeFlattenStatement (s: Statement.t) = let
          val arrValue = Vector.first args
          val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
                                                                arrValue))
-         (* arr'_a = Array_array['a](arr_a)
-            arr'_b = Array_array['b](arr_b)
+         (* arr'_a = Array_toArray['a](arr_a)
+            arr'_b = Array_toArray['b](arr_b)
             ...
          *)
-         val newArrStmts = Vector.map (selectArrs, mkArrayArray)
+         val newArrStmts = Vector.map (selectArrs, mkArrayToArray)
          (* arr' = (arr'_a * arr'_b * ...) *)
          val tupleStmt = mkTuple (var, newArrStmts)
       in
@@ -1005,8 +1005,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
             | (Prim.Array_uninitIsNop, _) =>
               (* This prim has an array-valued targ, so it returns NONE *)
               SOME (buildArrayUninitIsNop ())
-            | (Prim.Array_array, SOME flatArg) =>
-              SOME (buildArrayArray flatArg)
+            | (Prim.Array_toArray, SOME flatArg) =>
+              SOME (buildArrayToArray flatArg)
             | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in

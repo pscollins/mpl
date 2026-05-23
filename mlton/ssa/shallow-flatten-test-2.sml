@@ -419,8 +419,8 @@ in
                  Exp.ConApp {con, args} =>
                  assert (Con.equals (con, Con.falsee) andalso Vector.length args = 0, "expected Con.falsee")
                | _ => raise TestFail "expected ConApp false"
-   in () end)(* Test 11c: maybeFlattenStatement (Array_array) *)
-   val _ = runTest ("Test 11c: maybeFlattenStatement (Array_array)", fn () => let
+   in () end)(* Test 11c: maybeFlattenStatement (Array_toArray) *)
+   val _ = runTest ("Test 11c: maybeFlattenStatement (Array_toArray)", fn () => let
       val arr = Var.fromString "arr"
       val v1 = Var.fromString "v1"
       val intTy = Type.intInf
@@ -433,16 +433,16 @@ in
                       targs = Vector.fromList targs}
 
       val s = Statement.T {
-         exp = primApp (Prim.Array_array, [arr], [tuple2Ty]),
+         exp = primApp (Prim.Array_toArray, [arr], [tuple2Ty]),
          ty = arrayTuple2Ty,
          var = SOME v1
       }
       val res = ShallowFlatten.maybeFlattenStatement s
       val stmts = case res of
                      SOME s => s
-                   | NONE => raise TestFail "Array_array should be flattenable"
+                   | NONE => raise TestFail "Array_toArray should be flattenable"
       
-      val _ = assert (Vector.length stmts = 5, "Array_array should flatten to 5 statements")
+      val _ = assert (Vector.length stmts = 5, "Array_toArray should flatten to 5 statements")
       
       val selectStmts = Vector.tabulate (2, fn i => Vector.sub (stmts, i))
       val _ = Vector.foreach (selectStmts, fn stmt =>
@@ -461,10 +461,10 @@ in
             Statement.T {exp = Exp.PrimApp {args, prim, targs}, ty, var = SOME _} =>
             let
                val _ = case prim of
-                          Prim.Array_array => ()
-                        | _ => raise TestFail "Expected Array_array primitive"
-               val _ = assert (Vector.length args = 1, "Array_array should have 1 argument")
-               val _ = assert (Vector.length targs = 1, "Array_array should have 1 targ")
+                          Prim.Array_toArray => ()
+                        | _ => raise TestFail "Expected Array_toArray primitive"
+               val _ = assert (Vector.length args = 1, "Array_toArray should have 1 argument")
+               val _ = assert (Vector.length targs = 1, "Array_toArray should have 1 targ")
                val _ = assert (Type.equals (Vector.sub (targs, 0), intTy), "targ mismatch")
                val _ = assert (Type.equals (ty, Type.array intTy), "array type mismatch")
             in () end
