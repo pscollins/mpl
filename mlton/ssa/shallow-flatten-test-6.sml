@@ -325,5 +325,67 @@ in
                | _ => assert (false, "Not a PrimApp")
    in () end)
 
+   val _ = runTest ("Test 11: Return type propagation bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+      val f_test = Func.fromString "f_test"
+      val L_start = Label.fromString "L_start"
+      
+      val intTy = Type.intInf
+      val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val v_n = Var.fromString "n"
+      val v_x = Var.fromString "x"
+      
+      val s0 = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (1, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME v_n
+      }
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.fromList [v_n],
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.fromList [tuple2Ty]
+         },
+         ty = arrayTuple2Ty,
+         var = SOME v_x
+      }
+      
+      val block = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.fromList [s0, s1],
+         transfer = Transfer.Return (Vector.fromList [v_x])
+      }
+      
+      val func = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [block],
+         inline = InlineAttr.Auto,
+         name = f_test,
+         raises = NONE,
+         returns = SOME (Vector.fromList [arrayTuple2Ty]),
+         start = L_start
+      }
+      
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [func],
+         globals = Vector.new0 (),
+         main = f_test
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 2
+      val p_opt = ShallowFlatten.flattenOnce policy p
+      
+      val _ = case p_opt of
+         NONE => assert (false, "Should have flattened something")
+       | SOME p' => let
+            val _ = typeCheck p'
+         in () end
+   in () end)
+
    val _ = summarize ()
 end
