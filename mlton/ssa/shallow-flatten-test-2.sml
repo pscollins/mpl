@@ -419,6 +419,68 @@ in
                  Exp.ConApp {con, args} =>
                  assert (Con.equals (con, Con.falsee) andalso Vector.length args = 0, "expected Con.falsee")
                | _ => raise TestFail "expected ConApp false"
+   in () end)(* Test 11c: maybeFlattenStatement (Array_array) *)
+   val _ = runTest ("Test 11c: maybeFlattenStatement (Array_array)", fn () => let
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val v1 = Var.fromString "v1"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val s = Statement.T {
+         exp = primApp (Prim.Array_array, [x, y], [tuple2Ty]),
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_array should be flattenable"
+      
+      val _ = assert (Vector.length stmts = 7, "Array_array should flatten to 7 statements")
+      
+      val selectStmts = Vector.tabulate (4, fn i => Vector.sub (stmts, i))
+      val _ = Vector.foreach (selectStmts, fn stmt =>
+         case stmt of
+            Statement.T {exp = Exp.Select {offset, tuple}, ty, var = SOME _} =>
+            let
+               val _ = assert (Var.equals (tuple, x) orelse Var.equals (tuple, y), "offset tuple mismatch")
+               val _ = assert (offset = 0 orelse offset = 1, "offset mismatch")
+               val _ = assert (Type.equals (ty, intTy), "select type mismatch")
+            in () end
+          | _ => raise TestFail "Expected Select statement with SOME var")
+
+      val arrStmts = Vector.tabulate (2, fn i => Vector.sub (stmts, 4 + i))
+      val _ = Vector.foreach (arrStmts, fn stmt =>
+         case stmt of
+            Statement.T {exp = Exp.PrimApp {args, prim, targs}, ty, var = SOME _} =>
+            let
+               val _ = case prim of
+                          Prim.Array_array => ()
+                        | _ => raise TestFail "Expected Array_array primitive"
+               val _ = assert (Vector.length args = 2, "Array_array should have 2 arguments")
+               val _ = assert (Vector.length targs = 1, "Array_array should have 1 targ")
+               val _ = assert (Type.equals (Vector.sub (targs, 0), intTy), "targ mismatch")
+               val _ = assert (Type.equals (ty, Type.array intTy), "array type mismatch")
+            in () end
+          | _ => raise TestFail "Expected PrimApp statement with SOME var")
+
+      val tupleStmt = Vector.sub (stmts, 6)
+      val _ = case tupleStmt of
+                 Statement.T {exp = Exp.Tuple args, ty, var = SOME v} =>
+                 let
+                    val _ = assert (Var.equals (v, v1), "v1 mismatch")
+                    val _ = assert (Vector.length args = 2, "Tuple should have 2 arguments")
+                    val expectedTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+                    val _ = assert (Type.equals (ty, expectedTy), "tuple type mismatch")
+                 in () end
+               | _ => raise TestFail "Expected Tuple statement with SOME var"
    in () end)(* Test 12: mustFlattenStatement *)
    val _ = runTest ("Test 12: mustFlattenStatement", fn () => let
       val fv = ShallowFlatten.newFlattenedVars ()
