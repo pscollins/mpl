@@ -470,6 +470,7 @@ in
       val v_n = Var.fromString "n"
       val v_x = Var.fromString "x"
       val v_idx = Var.fromString "idx"
+      val v_val_elem = Var.fromString "val_elem"
       val v_val = Var.fromString "val"
       
       val s0 = Statement.T {
@@ -491,8 +492,13 @@ in
          ty = seqIndexTy,
          var = SOME v_idx
       }
+      val s_val_elem = Statement.T {
+         exp = Exp.Const (Const.IntInf 0),
+         ty = intTy,
+         var = SOME v_val_elem
+      }
       val s3 = Statement.T {
-         exp = Exp.Tuple (Vector.fromList [v_idx, v_idx]),
+         exp = Exp.Tuple (Vector.fromList [v_val_elem, v_val_elem]),
          ty = tuple2Ty,
          var = SOME v_val
       }
@@ -509,7 +515,7 @@ in
       val block = Block.T {
          args = Vector.new0 (),
          label = L_start,
-         statements = Vector.fromList [s0, s1, s2, s3, s4],
+         statements = Vector.fromList [s0, s1, s2, s_val_elem, s3, s4],
          transfer = Transfer.Return (Vector.fromList [v_x])
       }
       
@@ -551,30 +557,30 @@ in
             (* Assertion 2: Statements check *)
             val b = Vector.sub (blocks, 0)
             val stmts = Block.statements b
-            val _ = assert (Vector.length stmts = 12, "expected 12 statements")
+            val _ = assert (Vector.length stmts = 13, "expected 13 statements")
             
             (* The last 6 statements check *)
-            val s6 = Vector.sub (stmts, 6)
             val s7 = Vector.sub (stmts, 7)
             val s8 = Vector.sub (stmts, 8)
             val s9 = Vector.sub (stmts, 9)
             val s10 = Vector.sub (stmts, 10)
             val s11 = Vector.sub (stmts, 11)
+            val s12 = Vector.sub (stmts, 12)
 
-            (* Check that s6 and s7 are Selects from x *)
+            (* Check that s7 and s8 are Selects from x *)
             fun checkSelectFromVar (Statement.T {exp, ...}, expectedFrom) =
                case exp of
                   Exp.Select {tuple, ...} =>
                      assert (Var.equals (tuple, expectedFrom), "expected Select from variable")
-                | _ => assert (false, "expected Select")
-            val _ = checkSelectFromVar (s6, v_x)
+                 | _ => assert (false, "expected Select")
             val _ = checkSelectFromVar (s7, v_x)
+            val _ = checkSelectFromVar (s8, v_x)
             
-            (* Check that s8 and s9 are Selects from val *)
-            val _ = checkSelectFromVar (s8, v_val)
+            (* Check that s9 and s10 are Selects from val *)
             val _ = checkSelectFromVar (s9, v_val)
+            val _ = checkSelectFromVar (s10, v_val)
 
-            (* Check that s10 and s11 are Array_update PrimApps *)
+            (* Check that s11 and s12 are Array_update PrimApps *)
             fun checkStore (Statement.T {exp, ty, ...}) =
                case exp of
                   Exp.PrimApp {args, prim = Prim.Array_update _, targs} =>
@@ -583,9 +589,9 @@ in
                              Vector.length targs = 1 andalso
                              Type.equals (Vector.sub (targs, 0), intTy),
                              "store statement check")
-                | _ => assert (false, "expected Array_update")
-            val _ = checkStore s10
+                 | _ => assert (false, "expected Array_update")
             val _ = checkStore s11
+            val _ = checkStore s12
 
             val _ = typeCheck p'
          in () end

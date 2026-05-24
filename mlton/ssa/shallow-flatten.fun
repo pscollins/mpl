@@ -643,6 +643,7 @@ fun isArrayPrim prim =
       | Prim.Array_toVector  => true
       | Prim.Array_uninit  => true
       | Prim.Array_uninitIsNop  => true
+      | Prim.Array_update _  => true
       | _ =>  false
 
 fun isVectorPrim prim =
