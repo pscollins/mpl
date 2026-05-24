@@ -256,7 +256,9 @@ sig
       arr' = tuple (arr'_a, arr'_b, ...)
      ...
 
-    Non-`PrimApp` expressions always return `SOME (originalStatement)`
+    Non-`PrimApp` expressions and also non-array/vector `PrimApp` expressions
+    always return `SOME (originalStatement)`
+
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option

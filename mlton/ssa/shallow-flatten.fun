@@ -632,21 +632,30 @@ end
 
 fun isArrayPrim prim =
     case prim of
-        Prim.Array_alloc _ => true
-      | Prim.Array_toArray => true
-      | Prim.Array_length => true
-      | Prim.Array_sub _ =>  true
-      | Prim.Array_toVector =>  true
-      | Prim.Array_update _ => true
-      (* TODO: more cases *)
+        Prim.Array_alloc _=> true
+      | Prim.Array_array  => true
+      | Prim.Array_cas _=> true
+      | Prim.Array_copyArray  => true
+      | Prim.Array_copyVector  => true
+      | Prim.Array_length  => true
+      | Prim.Array_sub _=> true
+      | Prim.Array_toArray  => true
+      | Prim.Array_toVector  => true
+      | Prim.Array_uninit  => true
+      | Prim.Array_uninitIsNop  => true
       | _ =>  false
 
 fun isVectorPrim prim =
     case prim of
         Prim.Vector_length => true
       | Prim.Vector_sub =>  true
+      | Prim.Vector_vector =>  true
       (* TODO: more cases *)
       | _ =>  false
+
+fun isContainerPrim prim =
+    isArrayPrim prim orelse
+    isVectorPrim prim
 
 (* Given the `targs` of a vector/array, returns the corresponding flattened type
 
@@ -1015,7 +1024,9 @@ fun maybeFlattenStatement (s: Statement.t) = let
 in
    case exp of
        Exp.PrimApp {args, prim, targs} =>
-       doPrimApp (args, prim, targs)
+       if isContainerPrim prim then
+          doPrimApp (args, prim, targs)
+       else SOME (Vector.new1 s)
      | _ => SOME (Vector.new1 s)
 end
 
