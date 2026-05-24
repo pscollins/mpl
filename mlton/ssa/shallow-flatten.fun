@@ -1135,6 +1135,79 @@ in
               main = main}
 end
 
+fun layoutReturns (returns: Type.t vector option): Layout.t =
+    Option.layout (Vector.layout Type.layout) returns
+
+exception InconsistentTypes
+fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option = let
+   val {returns, ...} = Function.dest f
+   fun getType v = getVarType (vt, v)
+   fun getReturnTy (b: Block.t): Type.t vector =
+       case Block.transfer b of
+           Transfer.Return (vs) => Vector.map (vs, getType)
+         | _ => Vector.new0()
+   fun mergeReturnTys (l: Type.t vector, r: Type.t vector) =
+       case (Vector.length l, Vector.length r) of
+           (* We use emtpy vectors to encode non-Return transfers: if at least
+           one side is empty, return the other one *)
+           (0, 0) => l
+         | (0, y) => r
+         | (x, 0) => l
+         | (x, y) => 
+           if Vector.forall2 (l, r, Type.equals) then l
+           else raise InconsistentTypes
+   fun mergeAllReturnTys (types: Type.t vector vector) =
+       if Vector.length types > 0 then
+          Vector.fold (types, Vector.first types, mergeReturnTys)
+       else raise InconsistentTypes
+   fun validateReturnTys (tys: Type.t vector) =
+       if Vector.length tys = 0 then
+          (* `returns` was `SOME ...`, but we found `NONE`: error *)
+          raise InconsistentTypes
+       else SOME (tys)
+   val newReturns =
+       (* We might be able to simplify this a bit by skipping the `returns`
+          check, but this will give us a clear type error if something goes wrong *)
+       case returns of
+           SOME _ =>
+           validateReturnTys (mergeAllReturnTys (Vector.map (Function.blocks f, getReturnTy)))
+         | NONE => NONE
+   fun logThunk () =
+       Layout.seq [
+          Layout.str "propagateReturnTypes f=",
+          Func.layout (Function.name f),
+          Layout.str ", old=",
+          layoutReturns returns,
+          Layout.str ", new=",
+          layoutReturns newReturns
+       ]
+   val _ = Control.diagnostic logThunk
+in
+   newReturns
+end
+
+(* Applies `propgatateReturnTypes` to every function in `p` *)
+fun propagateAllReturnTypes (vt: varTypes, p: Program.t): Program.t = let
+   val Program.T {datatypes, functions, globals, main} = p
+   fun doPropagate f = let
+      val {args, blocks, inline, name, raises, returns, start} =
+          Function.dest f
+   in
+      Function.new {args = args,
+                    blocks = blocks,
+                    inline = inline,
+                    name = name,
+                    raises = raises,
+                    returns = propagateReturnTypes (vt, f),
+                    start = start}
+   end
+in
+   Program.T {datatypes = datatypes,
+              functions = List.map (functions, doPropagate),
+              globals = globals,
+              main = main}
+end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
@@ -1165,7 +1238,8 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       doArgs = bindTypesInArgs vt,
       doTransfer = fn x => x
    }
-   val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p')
+   val p'' = propagateAllReturnTypes (vt,
+                                      flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
    (* Cleanup *)
    val _ = destroyVarTypes vt
    val _ = destroyFlattenedVars fv
@@ -1174,40 +1248,6 @@ in
    else NONE
 end
 
-exception InconsistentTypes
-fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option = let
-   val {returns, ...} = Function.dest f
-   fun getType v = getVarType (vt, v)
-   fun getReturnTy (b: Block.t): Type.t vector =
-       case Block.transfer b of
-           Transfer.Return (vs) => Vector.map (vs, getType)
-         | _ => Vector.new0()
-   fun mergeReturnTys (l: Type.t vector, r: Type.t vector) =
-       case (Vector.length l, Vector.length r) of
-           (* We use emtpy vectors to encode non-Return transfers: if at least
-           one side is empty, return the other one *)
-           (0, 0) => l
-         | (0, y) => r
-         | (x, 0) => l
-         | (x, y) => 
-           if Vector.forall2 (l, r, Type.equals) then l
-           else raise InconsistentTypes
-   fun mergeAllReturnTys (types: Type.t vector vector) =
-       if Vector.length types > 0 then
-          Vector.fold (types, Vector.first types, mergeReturnTys)
-       else raise InconsistentTypes
-   fun validateReturnTys (tys: Type.t vector) =
-       if Vector.length tys = 0 then
-          (* `returns` was `SOME ...`, but we found `NONE`: error *)
-          raise InconsistentTypes
-       else SOME (tys)
-in
-   (* We might be able to simplify this a bit by skipping the `returns` check,
-   but this will give us a clear type error if something goes wrong *)
-   case returns of
-       SOME _ => validateReturnTys (mergeAllReturnTys (Vector.map (Function.blocks f, getReturnTy)))
-     | NONE => NONE
-end
 
 fun transform (p: Program.t): Program.t =
     let
