@@ -801,10 +801,11 @@ in
          returns = SOME (Vector.new1 Type.intInf),
          start = mainLabel
       }
-      val worked = (ShallowFlatten.propagateReturnTypes (vt, f); false)
-                   handle ShallowFlatten.InconsistentTypes => true
-                        | _ => false
-      val _ = assert (worked, "Expected InconsistentTypes exception")
+      val res = ShallowFlatten.propagateReturnTypes (vt, f)
+      val _ = case res of
+                  SOME tyVec =>
+                     assert (Vector.length tyVec = 0, "Expected SOME (Vector.new0())")
+                | NONE => raise TestFail "Expected SOME (Vector.new0())"
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 

@@ -1153,24 +1153,19 @@ fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option = l
            (0, 0) => l
          | (0, y) => r
          | (x, 0) => l
-         | (x, y) => 
+         | (x, y) =>
            if Vector.forall2 (l, r, Type.equals) then l
            else raise InconsistentTypes
    fun mergeAllReturnTys (types: Type.t vector vector) =
        if Vector.length types > 0 then
           Vector.fold (types, Vector.first types, mergeReturnTys)
        else raise InconsistentTypes
-   fun validateReturnTys (tys: Type.t vector) =
-       if Vector.length tys = 0 then
-          (* `returns` was `SOME ...`, but we found `NONE`: error *)
-          raise InconsistentTypes
-       else SOME (tys)
    val newReturns =
        (* We might be able to simplify this a bit by skipping the `returns`
           check, but this will give us a clear type error if something goes wrong *)
        case returns of
            SOME _ =>
-           validateReturnTys (mergeAllReturnTys (Vector.map (Function.blocks f, getReturnTy)))
+           SOME (mergeAllReturnTys (Vector.map (Function.blocks f, getReturnTy)))
          | NONE => NONE
    fun logThunk () =
        Layout.seq [
