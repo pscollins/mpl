@@ -319,6 +319,18 @@ sig
    *)
    val propagateTypesInStatement: varTypes * Statement.t -> Statement.t
 
+   (* Updates `returns` to match the type of all `Return`s.
+
+   If the function's current `returns` is `NONE`, returns `NONE`.
+
+   If the type of every `Return.t` matches, returns `SOME returnTy`
+
+   Otherwise, if the types of the `Return.t`s are inconsistent, raises
+   `InconsistentTypes`.
+   *)
+   exception InconsistentTypes
+   val propagateReturnTypes: varTypes * Function.t -> Type.t vector option
+
 
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to

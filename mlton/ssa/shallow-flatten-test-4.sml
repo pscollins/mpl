@@ -665,6 +665,151 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+
+   (* Test 49: propagateReturnTypes (returns = NONE) *)
+   val _ = runTest ("Test 49: propagateReturnTypes (returns = NONE)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val mainFunc = Func.fromString "main"
+      val mainLabel = Label.fromString "L0"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.new1 mainBlock,
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = NONE,
+         start = mainLabel
+      }
+      val res = ShallowFlatten.propagateReturnTypes (vt, f)
+      val _ = assert (Option.isNone res, "propagateReturnTypes should return NONE if returns is NONE")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 50: propagateReturnTypes (returns = SOME, matching returns) *)
+   val _ = runTest ("Test 50: propagateReturnTypes (returns = SOME, matching returns)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      val _ = ShallowFlatten.setVarType (vt, y, intTy)
+      
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val L1 = Label.fromString "L1"
+      
+      val b0 = Block.T {
+         args = Vector.new0 (),
+         label = L0,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new1 x)
+      }
+      val b1 = Block.T {
+         args = Vector.new0 (),
+         label = L1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new1 y)
+      }
+      
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [b0, b1],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new1 Type.bool),
+         start = L0
+      }
+      
+      val res = ShallowFlatten.propagateReturnTypes (vt, f)
+      val _ = case res of
+                  SOME tyVec =>
+                     assert (Vector.length tyVec = 1 andalso Type.equals (Vector.sub (tyVec, 0), intTy),
+                             "Expected SOME [intTy]")
+                | NONE => raise TestFail "Expected SOME return types"
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+   (* Test 51: propagateReturnTypes (returns = SOME, inconsistent returns) *)
+   val _ = runTest ("Test 51: propagateReturnTypes (returns = SOME, inconsistent returns)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val x = Var.fromString "x"
+      val y = Var.fromString "y"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val _ = ShallowFlatten.setVarType (vt, x, intTy)
+      val _ = ShallowFlatten.setVarType (vt, y, word32Ty)
+      
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val L1 = Label.fromString "L1"
+      
+      val b0 = Block.T {
+         args = Vector.new0 (),
+         label = L0,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new1 x)
+      }
+      val b1 = Block.T {
+         args = Vector.new0 (),
+         label = L1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new1 y)
+      }
+      
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [b0, b1],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new1 intTy),
+         start = L0
+      }
+      
+      val worked = (ShallowFlatten.propagateReturnTypes (vt, f); false)
+                   handle ShallowFlatten.InconsistentTypes => true
+                        | _ => false
+      val _ = assert (worked, "Expected InconsistentTypes exception")
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
+
+   (* Test 52: propagateReturnTypes (returns = SOME, no Return.t transfers) *)
+   val _ = runTest ("Test 52: propagateReturnTypes (returns = SOME, no Return.t transfers)", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val mainFunc = Func.fromString "main"
+      val mainLabel = Label.fromString "L0"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainLabel,
+         statements = Vector.new0 (),
+         transfer = Transfer.Bug
+      }
+      val f = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.new1 mainBlock,
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new1 Type.intInf),
+         start = mainLabel
+      }
+      val res = ShallowFlatten.propagateReturnTypes (vt, f)
+      val _ = case res of
+                  SOME tyVec =>
+                     assert (Vector.length tyVec = 1 andalso Type.equals (Vector.sub (tyVec, 0), Type.intInf),
+                             "Expected SOME [intInf]")
+                | NONE => raise TestFail "Expected SOME return types"
+      val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)
+
    val _ = summarize ()
 end
 

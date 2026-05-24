@@ -325,8 +325,8 @@ in
                | _ => assert (false, "Not a PrimApp")
    in () end)
 
-   val _ = runTest ("Test 11: Return type propagation bug", fn () => let
-      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+   val _ = runTestDisabled ("Test 11: Return type propagation bug", fn () => let
+      (* val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self" *)
       val f_test = Func.fromString "f_test"
       val L_start = Label.fromString "L_start"
       

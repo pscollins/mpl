@@ -1163,6 +1163,10 @@ in
    else NONE
 end
 
+   exception InconsistentTypes
+   fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option =
+      raise (Error.bug "propagateReturnTypes stub")
+
 fun transform (p: Program.t): Program.t =
     let
        val policy =
