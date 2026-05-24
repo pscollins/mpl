@@ -597,6 +597,180 @@ in
          in () end
    in () end)
 
+   (* Test 13: Tail call return type propagation bug
+    *
+    * Expected input IR:
+    *   fun f_g (arg_g: intInf): {returns = SOME (intInf)} =
+    *     L_start_g () =>
+    *       val alloc_n = 1
+    *       val alloc_x = prim Array_alloc [intInf * intInf] (alloc_n)
+    *       return (arg_g)
+    *
+    *   fun f_test (arg_f: intInf): {returns = SOME (intInf)} =
+    *     L_start_f () =>
+    *       call tail f_g (arg_f)
+    *
+    *   fun f_main (arg_main: intInf): {returns = SOME (intInf)} =
+    *     L_start_main () =>
+    *       call L_cont_main (f_test (arg_main))
+    *     L_cont_main (ret_main) =>
+    *       return (ret_main)
+    *
+    * Expected output IR (when flattened/propagated correctly):
+    *   fun f_g (arg_g: intInf): {returns = SOME (intInf)} =
+    *     L_start_g () =>
+    *       val alloc_n = 1
+    *       val flatBind_4 = prim Array_alloc [intInf] (alloc_n)
+    *       val flatBind_5 = prim Array_alloc [intInf] (alloc_n)
+    *       val alloc_x = (flatBind_4, flatBind_5)
+    *       return (arg_g)
+    *
+    *   fun f_test (arg_f: intInf): {returns = SOME (intInf)} =
+    *     L_start_f () =>
+    *       call tail f_g (arg_f)
+    *
+    *   fun f_main (arg_main: intInf): {returns = SOME (intInf)} =
+    *     L_start_main () =>
+    *       call L_cont_main (f_test (arg_main))
+    *     L_cont_main (ret_main) =>
+    *       return (ret_main)
+    *
+    * Bug details:
+    *   Due to the bug in propagateReturnTypes, the tail call transfer in f_test
+    *   is ignored, causing f_test's return type to propagate to SOME () (empty).
+    *   This type mismatch breaks f_main's call site and fails type-checking.
+    *)
+   val _ = runTest ("Test 13: Tail call return type propagation bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+      val f_test = Func.fromString "f_test"
+      val f_g = Func.fromString "f_g"
+      val f_main = Func.fromString "f_main"
+      val L_start_f = Label.fromString "L_start_f"
+      val L_start_g = Label.fromString "L_start_g"
+      val L_start_main = Label.fromString "L_start_main"
+      val L_cont_main = Label.fromString "L_cont_main"
+      
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val v_arg_g = Var.fromString "arg_g"
+      val v_arg_f = Var.fromString "arg_f"
+      val v_arg_main = Var.fromString "arg_main"
+      val v_ret_main = Var.fromString "ret_main"
+      val v_alloc_n = Var.fromString "alloc_n"
+      val v_alloc_x = Var.fromString "alloc_x"
+      
+      val s_alloc_n = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (1, Atoms.WordSize.seqIndex ()))),
+         ty = Type.word (Atoms.WordSize.seqIndex ()),
+         var = SOME v_alloc_n
+      }
+      val s_alloc_x = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.fromList [v_alloc_n],
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.fromList [tuple2Ty]
+         },
+         ty = arrayTuple2Ty,
+         var = SOME v_alloc_x
+      }
+
+      val block_g = Block.T {
+         args = Vector.new0 (),
+         label = L_start_g,
+         statements = Vector.fromList [s_alloc_n, s_alloc_x],
+         transfer = Transfer.Return (Vector.fromList [v_arg_g])
+      }
+      val func_g = Function.new {
+         args = Vector.fromList [(v_arg_g, intTy)],
+         blocks = Vector.fromList [block_g],
+         inline = InlineAttr.Auto,
+         name = f_g,
+         raises = NONE,
+         returns = SOME (Vector.fromList [intTy]),
+         start = L_start_g
+      }
+
+      val block_f = Block.T {
+         args = Vector.new0 (),
+         label = L_start_f,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.fromList [v_arg_f],
+            func = f_g,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val func_f = Function.new {
+         args = Vector.fromList [(v_arg_f, intTy)],
+         blocks = Vector.fromList [block_f],
+         inline = InlineAttr.Auto,
+         name = f_test,
+         raises = NONE,
+         returns = SOME (Vector.fromList [intTy]),
+         start = L_start_f
+      }
+
+      val block_main = Block.T {
+         args = Vector.new0 (),
+         label = L_start_main,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.fromList [v_arg_main],
+            func = f_test,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {
+               cont = L_cont_main,
+               handler = Handler.Caller
+            }
+         }
+      }
+      val block_main_cont = Block.T {
+         args = Vector.fromList [(v_ret_main, intTy)],
+         label = L_cont_main,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.fromList [v_ret_main])
+      }
+      val func_main = Function.new {
+         args = Vector.fromList [(v_arg_main, intTy)],
+         blocks = Vector.fromList [block_main, block_main_cont],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.fromList [intTy]),
+         start = L_start_main
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [func_g, func_f, func_main],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val policy = ShallowFlatten.MaxWidth 2
+      val p_opt = ShallowFlatten.flattenOnce policy p
+      
+      val _ = case p_opt of
+         NONE => assert (false, "Should have flattened something")
+       | SOME p' => let
+            val Program.T {functions = funcs', ...} = p'
+            val f_test' = case List.peek (funcs', fn f => Func.equals (Function.name f, f_test)) of
+                             SOME f => f
+                           | NONE => raise TestFail "f_test not found"
+            val {returns, ...} = Function.dest f_test'
+            
+            val _ = case returns of
+                       SOME retTys => 
+                          if Vector.length retTys = 1 andalso Type.equals (Vector.sub (retTys, 0), intTy) then ()
+                          else assert (false, "returns type mismatch: expected intInf, got length " ^ Int.toString (Vector.length retTys))
+                     | NONE => assert (false, "expected SOME returns")
+            
+            val _ = typeCheck p'
+         in () end
+   in () end)
+
    val _ = summarize ()
 end
-
