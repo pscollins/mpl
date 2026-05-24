@@ -430,9 +430,167 @@ in
                                    "tuple statement check")
                       | _ => assert (false, "expected Tuple")
 
+             val _ = typeCheck p'
+          in () end
+   in () end)
+
+   (* Test 12: Array_update flattening
+    *
+    * Expected input IR:
+    *   val n = 1
+    *   val x = prim Array_alloc [intInf * intInf] (n)
+    *   val idx = 0
+    *   val val = (idx, idx)
+    *   val _ = prim Array_update [intInf * intInf] (x, idx, val)
+    *
+    * Expected output IR (when flattened):
+    *   val n = 1
+    *   val flatBind_2 = prim Array_alloc [intInf] (n)
+    *   val flatBind_3 = prim Array_alloc [intInf] (n)
+    *   val x = (flatBind_2, flatBind_3)
+    *   val idx = 0
+    *   val val = (idx, idx)
+    *   val flatArr_0 = #0 (x)
+    *   val flatArr_1 = #1 (x)
+    *   val flatVal_0 = #0 (val)
+    *   val flatVal_1 = #1 (val)
+    *   val _ = prim Array_update [intInf] (flatArr_0, idx, flatVal_0)
+    *   val _ = prim Array_update [intInf] (flatArr_1, idx, flatVal_1)
+    *)
+   val _ = runTest ("Test 12: Array_update flattening", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+      val f_test = Func.fromString "f_test"
+      val L_start = Label.fromString "L_start"
+      
+      val intTy = Type.intInf
+      val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val v_n = Var.fromString "n"
+      val v_x = Var.fromString "x"
+      val v_idx = Var.fromString "idx"
+      val v_val = Var.fromString "val"
+      
+      val s0 = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (1, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME v_n
+      }
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.fromList [v_n],
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.fromList [tuple2Ty]
+         },
+         ty = arrayTuple2Ty,
+         var = SOME v_x
+      }
+      val s2 = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (0, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME v_idx
+      }
+      val s3 = Statement.T {
+         exp = Exp.Tuple (Vector.fromList [v_idx, v_idx]),
+         ty = tuple2Ty,
+         var = SOME v_val
+      }
+      val s4 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.fromList [v_x, v_idx, v_val],
+            prim = Prim.Array_update {writeBarrier = true},
+            targs = Vector.fromList [tuple2Ty]
+         },
+         ty = Type.unit,
+         var = NONE
+      }
+      
+      val block = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.fromList [s0, s1, s2, s3, s4],
+         transfer = Transfer.Return (Vector.fromList [v_x])
+      }
+      
+      val func = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [block],
+         inline = InlineAttr.Auto,
+         name = f_test,
+         raises = NONE,
+         returns = SOME (Vector.fromList [arrayTuple2Ty]),
+         start = L_start
+      }
+      
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [func],
+         globals = Vector.new0 (),
+         main = f_test
+      }
+      
+      val policy = ShallowFlatten.MaxWidth 2
+      val p_opt = ShallowFlatten.flattenOnce policy p
+      
+      val _ = case p_opt of
+         NONE => assert (false, "Should have flattened something")
+       | SOME p' => let
+            val Program.T {functions = funcs', ...} = p'
+            val f_test' = List.first funcs'
+            val {args, blocks, returns, ...} = Function.dest f_test'
+            
+            (* Assertion 1: Returns type of f_test should be updated/flattened *)
+            val expectedRetTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+            val _ = case returns of
+                       SOME retTys => 
+                          if Vector.length retTys = 1 andalso Type.equals (Vector.sub (retTys, 0), expectedRetTy) then ()
+                          else assert (false, "returns type mismatch")
+                     | NONE => assert (false, "expected SOME returns")
+            
+            (* Assertion 2: Statements check *)
+            val b = Vector.sub (blocks, 0)
+            val stmts = Block.statements b
+            val _ = assert (Vector.length stmts = 12, "expected 12 statements")
+            
+            (* The last 6 statements check *)
+            val s6 = Vector.sub (stmts, 6)
+            val s7 = Vector.sub (stmts, 7)
+            val s8 = Vector.sub (stmts, 8)
+            val s9 = Vector.sub (stmts, 9)
+            val s10 = Vector.sub (stmts, 10)
+            val s11 = Vector.sub (stmts, 11)
+
+            (* Check that s6 and s7 are Selects from x *)
+            fun checkSelectFromVar (Statement.T {exp, ...}, expectedFrom) =
+               case exp of
+                  Exp.Select {tuple, ...} =>
+                     assert (Var.equals (tuple, expectedFrom), "expected Select from variable")
+                | _ => assert (false, "expected Select")
+            val _ = checkSelectFromVar (s6, v_x)
+            val _ = checkSelectFromVar (s7, v_x)
+            
+            (* Check that s8 and s9 are Selects from val *)
+            val _ = checkSelectFromVar (s8, v_val)
+            val _ = checkSelectFromVar (s9, v_val)
+
+            (* Check that s10 and s11 are Array_update PrimApps *)
+            fun checkStore (Statement.T {exp, ty, ...}) =
+               case exp of
+                  Exp.PrimApp {args, prim = Prim.Array_update _, targs} =>
+                     assert (Type.equals (ty, Type.unit) andalso
+                             Vector.length args = 3 andalso
+                             Vector.length targs = 1 andalso
+                             Type.equals (Vector.sub (targs, 0), intTy),
+                             "store statement check")
+                | _ => assert (false, "expected Array_update")
+            val _ = checkStore s10
+            val _ = checkStore s11
+
             val _ = typeCheck p'
          in () end
    in () end)
 
    val _ = summarize ()
 end
+
