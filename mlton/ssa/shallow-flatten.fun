@@ -1345,6 +1345,16 @@ in
 
 end
 
+fun updateAllToSavedTypes (vt: varTypes, p: Program.t) = let
+   val Program.T {datatypes, functions, globals, main} = p
+   fun updateFunc f = updateToSavedTypes (vt, f)
+in
+   Program.T {datatypes = datatypes,
+              functions = List.map (functions, updateFunc),
+              globals = globals,
+              main = main}
+end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
@@ -1377,6 +1387,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       (* doArgs = fn x => x, *)
       doTransfer = doPropagateThroughTransfer
    }
+   (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
    val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
    (* val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p') *)
    (* Cleanup *)
