@@ -340,6 +340,17 @@ sig
    val propagateReturnTypes: varTypes * Function.t -> Type.t vector option
 
 
+   (* Updates `varTypes` for the provided `Transfer.t`:
+
+      1. For `Call`/`Goto`: updates each formal parameter type to match the type
+         of the passed argument (for the target `func`/`label`)
+      2. For `Return`: updates the return type of the provided `Func.t`
+      3. For `Call` with a `Tail` return type: updates the return type of the
+         provided `Func.t` to match the return type of the target function.
+
+   *)
+   val propagateThroughTransfer: varTypes * funcsMap * Func.t * Transfer.t -> unit
+
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to
    the rules of `mustFlattenStatement`), then updates types via the rules of
