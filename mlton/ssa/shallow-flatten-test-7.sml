@@ -521,11 +521,21 @@ in
        val _ = assert (Type.equals (ty0, intArrTy), "Expected selected variable type to be int array")
        val v_select0 = valOf var0
 
-       (* Verify Statement 1: Array_uninit[intInf](v_select0, len) *)
+       (* Verify Statement 1: select 1 of v_alloc *)
        val Statement.T {exp = exp1, ty = ty1, var = var1} = s1
-       val _ = assert (Type.equals (ty1, Type.unit), "Expected Statement 1 type to be unit")
-       val _ = assert (Option.isNone var1, "Expected Statement 1 to have no bound variable")
        val _ = case exp1 of
+                   Exp.Select {offset, tuple} =>
+                      if offset = 1 andalso Var.equals (tuple, v_alloc) then ()
+                      else assert (false, "Expected Select offset 1 of v_alloc")
+                 | _ => assert (false, "Expected Exp.Select")
+       val _ = assert (Type.equals (ty1, intArrTy), "Expected selected variable type to be int array")
+       val v_select1 = valOf var1
+
+       (* Verify Statement 2: Array_uninit[intInf](v_select0, len) *)
+       val Statement.T {exp = exp2, ty = ty2, var = var2} = s2
+       val _ = assert (Type.equals (ty2, Type.unit), "Expected Statement 2 type to be unit")
+       val _ = assert (Option.isSome var2, "Expected Statement 2 to have a bound variable")
+       val _ = case exp2 of
                    Exp.PrimApp {args, prim, targs} =>
                       if Prim.equals (prim, Prim.Array_uninit)
                          andalso Vector.length args = 2
@@ -537,20 +547,10 @@ in
                       else assert (false, "Expected Array_uninit[intInf](v_select0, len)")
                  | _ => assert (false, "Expected Exp.PrimApp")
 
-       (* Verify Statement 2: select 1 of v_alloc *)
-       val Statement.T {exp = exp2, ty = ty2, var = var2} = s2
-       val _ = case exp2 of
-                   Exp.Select {offset, tuple} =>
-                      if offset = 1 andalso Var.equals (tuple, v_alloc) then ()
-                      else assert (false, "Expected Select offset 1 of v_alloc")
-                 | _ => assert (false, "Expected Exp.Select")
-       val _ = assert (Type.equals (ty2, intArrTy), "Expected selected variable type to be int array")
-       val v_select1 = valOf var2
-
        (* Verify Statement 3: Array_uninit[intInf](v_select1, len) *)
        val Statement.T {exp = exp3, ty = ty3, var = var3} = s3
        val _ = assert (Type.equals (ty3, Type.unit), "Expected Statement 3 type to be unit")
-       val _ = assert (Option.isNone var3, "Expected Statement 3 to have no bound variable")
+       val _ = assert (Option.isSome var3, "Expected Statement 3 to have a bound variable")
        val _ = case exp3 of
                    Exp.PrimApp {args, prim, targs} =>
                       if Prim.equals (prim, Prim.Array_uninit)

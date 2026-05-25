@@ -279,8 +279,8 @@ sig
       -->
       (* by 1., arr is now 'a array * b array * ... *)
       arr_a: 'a array = select (arr, n)
-      _: = Array_uninit['a](arr_a, n)
       arr_b: 'b array = select (arr, 1)
+      _: = Array_uninit['a](arr_a, n)
       _: = Array_uninit['b](arr_b, n)
       ...
 

@@ -479,8 +479,8 @@ in
       val s3 = Vector.sub (stmts, 3)
 
       val _ = assertType (s0, Type.array intTy, "Array_uninit stmt 0 type")
-      val _ = assertType (s1, Type.unit, "Array_uninit stmt 1 type")
-      val _ = assertType (s2, Type.array intTy, "Array_uninit stmt 2 type")
+      val _ = assertType (s1, Type.array intTy, "Array_uninit stmt 1 type")
+      val _ = assertType (s2, Type.unit, "Array_uninit stmt 2 type")
       val _ = assertType (s3, Type.unit, "Array_uninit stmt 3 type")
 
       val Statement.T {exp = exp0, var = var0, ...} = s0
@@ -491,8 +491,15 @@ in
       val v_select0 = valOf var0
 
       val Statement.T {exp = exp1, var = var1, ...} = s1
-      val _ = assert (Option.isNone var1, "stmt 1 expected no var")
       val _ = case exp1 of
+                  Exp.Select {offset, tuple} =>
+                     assert (offset = 1 andalso Var.equals (tuple, arr), "stmt 1 select mismatch")
+                | _ => raise TestFail "stmt 1 expected Select"
+      val v_select1 = valOf var1
+
+      val Statement.T {exp = exp2, var = var2, ...} = s2
+      val _ = assert (Option.isSome var2, "stmt 2 expected a var")
+      val _ = case exp2 of
                   Exp.PrimApp {args, prim, targs} =>
                      assert (Prim.equals (prim, Prim.Array_uninit)
                              andalso Vector.length args = 2
@@ -500,18 +507,11 @@ in
                              andalso Var.equals (Vector.sub (args, 1), len)
                              andalso Vector.length targs = 1
                              andalso Type.equals (Vector.sub (targs, 0), intTy),
-                             "stmt 1 prim app mismatch")
-                | _ => raise TestFail "stmt 1 expected PrimApp"
-
-      val Statement.T {exp = exp2, var = var2, ...} = s2
-      val _ = case exp2 of
-                  Exp.Select {offset, tuple} =>
-                     assert (offset = 1 andalso Var.equals (tuple, arr), "stmt 2 select mismatch")
-                | _ => raise TestFail "stmt 2 expected Select"
-      val v_select1 = valOf var2
+                             "stmt 2 prim app mismatch")
+                | _ => raise TestFail "stmt 2 expected PrimApp"
 
       val Statement.T {exp = exp3, var = var3, ...} = s3
-      val _ = assert (Option.isNone var3, "stmt 3 expected no var")
+      val _ = assert (Option.isSome var3, "stmt 3 expected a var")
       val _ = case exp3 of
                   Exp.PrimApp {args, prim, targs} =>
                      assert (Prim.equals (prim, Prim.Array_uninit)
