@@ -111,7 +111,7 @@ sig
    flattening *)
    val markedCount: flattenedVars -> int
 
-   (* Tracks types of `Var.t`s  *)
+   (* Tracks types of `Var.t`s  and argument/return types *)
    type varTypes
    val newVarTypes: unit -> varTypes
    val destroyVarTypes: varTypes -> unit
@@ -120,6 +120,11 @@ sig
    val setVarType: varTypes * Var.t * Type.t -> unit
    (* Returns the type set by a previous `setVarType` call. *)
    val getVarType: varTypes * Var.t -> Type.t
+   (* Sets the type for a future `getReturnType` call. Valid to call multiple
+   times (updating the stored type) *)
+   val setReturnType: varTypes * Func.t * Type.t vector option -> unit
+   (* Returns the type set by a pervious `setFuncArgType` call. *)
+   val getReturnType: varTypes * Func.t -> Type.t vector option
 
    (* Marks any vars in `Statement.t` that must be flattened according to the
    provided policy. The following statement types may induce flattening:

@@ -465,13 +465,24 @@ end
 type varTypes = {
    getType: Var.t -> Type.t,
    setType: Var.t * Type.t -> unit,
+   getReturnType: Func.t -> Type.t vector option,
+   setReturnType: Func.t * Type.t vector option -> unit,
    destroy: unit -> unit
 }
 fun newVarTypes () = let
-   val {get, set, destroy} =
+   val {get = getType, set = setType, destroy = destroyVar} =
        Property.destGetSet (Var.plist, Property.initRaise ("varType", Var.layout))
+   val {get = getReturnType, set = setReturnType, destroy = destroyFunc} =
+       Property.destGetSet (Func.plist, Property.initRaise ("returnType", Func.layout))
+   fun destroy () =
+      (destroyVar ()
+       ; destroyFunc ())
 in
-   {getType = get, setType = set, destroy = destroy}
+   {getType = getType,
+    setType = setType,
+    getReturnType = getReturnType,
+    setReturnType = setReturnType,
+    destroy = destroy}
 end
 fun destroyVarTypes (vt: varTypes) = let
    val {destroy, ...} = vt
@@ -489,6 +500,18 @@ fun getVarType (vt: varTypes, v) = let
    val {getType, ...} = vt
 in
    getType v
+end
+
+fun setReturnType (vt: varTypes, f, t) = let
+   val {setReturnType, ...} = vt
+in
+   setReturnType (f, t)
+end
+
+fun getReturnType (vt: varTypes, f) = let
+   val {getReturnType, ...} = vt
+in
+   getReturnType f
 end
 
 (* If possible, infer a new return type from `exp` under `vt`

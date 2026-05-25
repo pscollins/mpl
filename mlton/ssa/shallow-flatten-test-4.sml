@@ -180,6 +180,27 @@ in
       val _ = assert (Type.equals (resTy2, word32Ty), "getVarType should return the updated type")
 
       val _ = ShallowFlatten.destroyVarTypes vt
+   in () end)(* Test 30b: varTypes returnType *)
+   val _ = runTest ("Test 30b: varTypes returnType", fn () => let
+      val vt = ShallowFlatten.newVarTypes ()
+      val f1 = Func.fromString "f1"
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      
+      (* Test initial/set with NONE *)
+      val _ = ShallowFlatten.setReturnType (vt, f1, NONE)
+      val res1 = ShallowFlatten.getReturnType (vt, f1)
+      val _ = assert (Option.isNone res1, "getReturnType should return NONE")
+      
+      (* Test set with SOME *)
+      val tys = Vector.fromList [intTy, word32Ty]
+      val _ = ShallowFlatten.setReturnType (vt, f1, SOME tys)
+      val res2 = ShallowFlatten.getReturnType (vt, f1)
+      val _ = case res2 of
+                  SOME tys' => assert (Vector.forall2 (tys, tys', Type.equals), "getReturnType should return correct types")
+                | NONE => raise TestFail "getReturnType should return SOME"
+                
+      val _ = ShallowFlatten.destroyVarTypes vt
    in () end)(* Test 31: propagateTypesInStatement (Tuple) *)
    val _ = runTest ("Test 31: propagateTypesInStatement (Tuple)", fn () => let
       val vt = ShallowFlatten.newVarTypes ()
