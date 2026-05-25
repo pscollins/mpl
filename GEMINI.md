@@ -9,7 +9,8 @@ codebase is a fork of MLton.
   the project root
 
 * To rebuild the compiler alone, run `make compiler`, and to rebuild the basis
-  alone, run `make basis`.
+  alone, run `make basis`. Do not run `make compiler` without being explicitly
+  asked.
 
 * To test that a particular file compiles under the `mpl` compiler (i.e. a
   source file input to `mpl`, rather than a part of `mpl` itself), prefer a
