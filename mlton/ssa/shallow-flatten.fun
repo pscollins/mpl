@@ -1278,6 +1278,7 @@ in
        propagateThroughArgs (args, getBlockArgs dst)
      | Transfer.Return args =>
        propagateAsReturn (f, args)
+     | _ => ()
 end
 
 (* Applies `propgatateReturnTypes` to every function in `p` *)
@@ -1350,9 +1351,11 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    val propagator = {
       doStatements = doPropagateThroughStatements,
       doArgs = bindTypesInArgs vt,
+      (* doArgs = fn x => x, *)
       doTransfer = doPropagateThroughTransfer
    }
-   val p'' = (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
+   (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
+   val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p')
    (* Cleanup *)
    val {destroyFuncsMap, ...} = fm
    val _ = destroyFuncsMap ()
