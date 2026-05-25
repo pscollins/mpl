@@ -713,10 +713,15 @@ in
          start = L_start_f
       }
 
+      val s_arg_main = Statement.T {
+         exp = Exp.Const (Const.IntInf 0),
+         ty = intTy,
+         var = SOME v_arg_main
+      }
       val block_main = Block.T {
          args = Vector.new0 (),
          label = L_start_main,
-         statements = Vector.new0 (),
+         statements = Vector.fromList [s_arg_main],
          transfer = Transfer.Call {
             args = Vector.fromList [v_arg_main],
             func = f_test,
@@ -734,7 +739,7 @@ in
          transfer = Transfer.Return (Vector.fromList [v_ret_main])
       }
       val func_main = Function.new {
-         args = Vector.fromList [(v_arg_main, intTy)],
+         args = Vector.new0 (),
          blocks = Vector.fromList [block_main, block_main_cont],
          inline = InlineAttr.Auto,
          name = f_main,

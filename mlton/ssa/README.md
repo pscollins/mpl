@@ -2,6 +2,12 @@
 
 This directory contains unit tests for the `PreFlatten` pass in the SSA IR. Due to the large number of test cases, they have been split into multiple files for better maintainability and faster compilation.
 
+## General guidance
+
+When testing changes in this directory, *never* do a full `make compiler` -- you
+should *always* rely on the corresponding unit tests instead, unless explicitly
+instructed otherwise by the user.
+
 ## Test Structure
 
 - `pre-flatten-test-common.sml`: Common boilerplate, helper functions, and shared test utilities.

@@ -1181,6 +1181,10 @@ fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option = l
    fun getReturnTy (b: Block.t): Type.t vector =
        case Block.transfer b of
            Transfer.Return (vs) => Vector.map (vs, getType)
+         | Transfer.Call {func, return = Return.Tail, ...} =>
+           (case getReturnType (vt, func) of
+                SOME tys => tys
+              | NONE => Vector.new0())
          | _ => Vector.new0()
    fun mergeReturnTys (l: Type.t vector, r: Type.t vector) =
        case (Vector.length l, Vector.length r) of
@@ -1250,19 +1254,18 @@ fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
        setReturnType (vt, target, SOME (Vector.map (args, getType)))
    fun propagateReturnType (fromF: Func.t, toF: Func.t) =
        setReturnType (vt, toF, getReturnType (vt, fromF))
-   fun propagateThroughReturn (callee: Func.t, r: Return.t) =
-       case r of
-           (* Tail call means that the return type of `f` and `callee` are equal *)
-
-           Return.Tail =>
-           propagateReturnType (f, callee);
-
-   (* Non-tail means that the return type of `callee` is equal to the argument
-      type of `cont` *)
-   | Return.NonTail {cont, ..}  =>
-     Vector.foreach2 (Optional.valOf (getReturnType (f)),
-                      Vector.map (getBlockArgs cont,
-                                  getVar))
+    fun propagateThroughReturn (callee: Func.t, r: Return.t) =
+        case r of
+            Return.Dead => ()
+            (* Tail call means that the return type of `f` and `callee` are equal *)
+          | Return.Tail =>
+            propagateReturnType (callee, f)
+            (* Non-tail means that the return type of `callee` is equal to the argument
+               type of `cont` *)
+          | Return.NonTail {cont, ...} =>
+            Vector.foreach2 (Option.valOf (getReturnType (vt, callee)),
+                             Vector.map (getBlockArgs cont, getVar),
+                             fn (ty, var) => setType (var, ty))
 in
    case t of
        Transfer.Call {args, func, return, ...} =>
@@ -1299,6 +1302,25 @@ in
               main = main}
 end
 
+fun setInitialTypes (vt: varTypes, p: Program.t) = let
+   val Program.T {functions, globals, ...} = p
+   fun setInitialTypesForStatement s = bindTypeInStatement(vt, s)
+   fun setInitialTypesForStatements ss =
+       Vector.foreach (ss, setInitialTypesForStatement)
+   fun setInitialTypesForFunc f = let
+      val {name, blocks, returns, ...} = Function.dest f
+      val _ = setReturnType (vt, name, returns)
+   in
+      Vector.foreach (blocks,
+                      setInitialTypesForStatements o Block.statements)
+   end
+in
+   setInitialTypesForStatements globals;
+   List.foreach (functions,
+                 setInitialTypesForFunc)
+
+end
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    (* First pass: collect all of the variables in the program that need
    flattening *)
@@ -1308,30 +1330,32 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       doArgs = flattenArgs fv,
       doTransfer = fn (_, transfer) => transfer
    }
-   val p' = rewriteBfs rewriter p
+   val p' as Program.T {functions, ...} = rewriteBfs rewriter p
    val count = markedCount fv
 
    (* Second pass: propagate types + update datatype declarations *)
    val vt = newVarTypes ()
-   fun propagateThroughStatements ss = let
-      fun doStmt s = let
-         val Statement.T {var, ty, ...} = s
-         (* Set the initial type before tyring to propagate *)
-         val _ = bindTypeInStatement (vt, s)
-      in
-         propagateTypesInStatement (vt, s)
-      end
+   (* Seed with the initial types *)
+   val _ = setInitialTypes (vt, p')
+   val fm = newFuncsMap p'
+   fun doPropagateThroughStatements ss = let
+      fun doStmt s = propagateTypesInStatement (vt, s)
    in
       Vector.map (ss, doStmt)
    end
+   fun doPropagateThroughTransfer (f, transfer) =
+       (propagateThroughTransfer (vt, fm, f, transfer);
+        transfer)
+   (* Run propagation *)
    val propagator = {
-      doStatements = propagateThroughStatements,
+      doStatements = doPropagateThroughStatements,
       doArgs = bindTypesInArgs vt,
-      doTransfer = fn (_, transfer) => transfer
+      doTransfer = doPropagateThroughTransfer
    }
-   val p'' = propagateAllReturnTypes (vt,
-                                      flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
+   val p'' = (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
    (* Cleanup *)
+   val {destroyFuncsMap, ...} = fm
+   val _ = destroyFuncsMap ()
    val _ = destroyVarTypes vt
    val _ = destroyFlattenedVars fv
 in
