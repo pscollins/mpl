@@ -492,6 +492,12 @@ end
 
 fun setVarType (vt: varTypes, v, t) = let
    val {setType, ...} = vt
+   fun logThunk () =
+       Layout.seq [Layout.str "setVarType: ",
+                   Var.layout v,
+                   Layout.str " -> ",
+                   Type.layout t]
+   val _ = Control.diagnostic logThunk
 in
    setType (v, t)
 end
@@ -504,6 +510,12 @@ end
 
 fun setReturnType (vt: varTypes, f, t) = let
    val {setReturnType, ...} = vt
+   fun logThunk () =
+       Layout.seq [Layout.str "setReturnType: ",
+                   Func.layout f,
+                   Layout.str " -> ",
+                   Option.layout (Vector.layout Type.layout) t]
+   val _ = Control.diagnostic logThunk
 in
    setReturnType (f, t)
 end
