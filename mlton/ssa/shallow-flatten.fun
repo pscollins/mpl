@@ -1244,19 +1244,35 @@ fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
    fun getVar (var, _) = var
    fun propagateThroughArgs (fromVars: Var.t vector,
                              toArgs: (Var.t * Type.t) vector) =
-       Vector.map2 (fromVars, Vector.map (toArgs, getVar),
-                    propagateType)
+       Vector.foreach2 (fromVars, Vector.map (toArgs, getVar),
+                        propagateType)
    fun propagateAsReturn (target, args) =
        setReturnType (vt, target, SOME (Vector.map (args, getType)))
    fun propagateReturnType (fromF: Func.t, toF: Func.t) =
        setReturnType (vt, toF, getReturnType (vt, fromF))
+   fun propagateThroughReturn (callee: Func.t, r: Return.t) =
+       case r of
+           (* Tail call means that the return type of `f` and `callee` are equal *)
+
+           Return.Tail =>
+           propagateReturnType (f, callee);
+
+   (* Non-tail means that the return type of `callee` is equal to the argument
+      type of `cont` *)
+   | Return.NonTail {cont, ..}  =>
+     Vector.foreach2 (Optional.valOf (getReturnType (f)),
+                      Vector.map (getBlockArgs cont,
+                                  getVar))
 in
    case t of
        Transfer.Call {args, func, return, ...} =>
+       (* Function call requires that argument types equal formal parameter
+          types *)
        (propagateThroughArgs (args, getFuncArgs func);
-        propagateReturnType (f, func))
+        (* Return propagation depends on type *)
+        propagateThroughReturn (func, return))
      | Transfer.Goto {args, dst} =>
-       propagateThroughArgs (args, getBlockArgs func)
+       propagateThroughArgs (args, getBlockArgs dst)
      | Transfer.Return args =>
        propagateAsReturn (f, args)
 end
