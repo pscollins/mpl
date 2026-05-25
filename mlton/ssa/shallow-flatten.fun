@@ -21,7 +21,7 @@ end
 type rewriter = {
    doStatements: Statement.t vector -> Statement.t vector,
    doArgs: (Var.t * Type.t) vector -> (Var.t * Type.t) vector,
-   doTransfer: Transfer.t -> Transfer.t
+   doTransfer: (Func.t * Transfer.t) -> Transfer.t
 }
 
 type 'a visited = {
@@ -144,16 +144,16 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
    val Program.T {datatypes, functions, globals, main} = p
    val {getFunc, getBlock, destroyFuncsMap, getCallees} = newFuncsMap p
    fun getLabelCallees l = getBlockCallees (getBlock l)
-   fun rewriteBlock l = let
-      val Block.T {args, label, statements, transfer} = getBlock l
-   in
-      (* Order is important *)
-      Block.T {args = doArgs args,
-               label = label,
-               statements = doStatements statements,
-               transfer = doTransfer transfer}
-   end
-   fun rewriteBlocks (start, allVec) = let
+   fun rewriteBlocks (fName, start, allVec) = let
+      fun rewriteBlock l = let
+         val Block.T {args, label, statements, transfer} = getBlock l
+      in
+         (* Order is important *)
+         Block.T {args = doArgs args,
+                  label = label,
+                  statements = doStatements statements,
+                  transfer = doTransfer (fName, transfer)}
+      end
       val blockBfsArg: (Block.t, Label.t) bfsArg = {
          getLabel = Block.label,
          getPlist = Label.plist,
@@ -169,7 +169,7 @@ fun rewriteBfs (r: rewriter) (p: Program.t): Program.t = let
          val {args, blocks, inline, name, raises, returns, start} =
              Function.dest (getFunc fName)
          val newArgs = doArgs args
-         val newBlocks = rewriteBlocks (start, Vector.toList blocks)
+         val newBlocks = rewriteBlocks (fName, start, Vector.toList blocks)
       in
          (* Order is important *)
          Function.new {args = newArgs,
@@ -212,7 +212,7 @@ fun foreachBfs (v: visitor) (p: Program.t): unit = let
    val r: rewriter = {
       doStatements = ignore foreachStatements,
       doArgs = ignore foreachArgs,
-      doTransfer = ignore foreachTransfer
+      doTransfer = fn (_, transfer) => (foreachTransfer transfer; transfer)
    }
    val _ = rewriteBfs r p
 in
@@ -1234,7 +1234,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    val rewriter = {
       doStatements = flattenStatements fv,
       doArgs = flattenArgs fv,
-      doTransfer = fn x => x
+      doTransfer = fn (_, transfer) => transfer
    }
    val p' = rewriteBfs rewriter p
    val count = markedCount fv
@@ -1255,7 +1255,7 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    val propagator = {
       doStatements = propagateThroughStatements,
       doArgs = bindTypesInArgs vt,
-      doTransfer = fn x => x
+      doTransfer = fn (_, transfer) => transfer
    }
    val p'' = propagateAllReturnTypes (vt,
                                       flattenDatatypesInProgram (fv, rewriteBfs propagator p'))

@@ -216,7 +216,7 @@ in
             Vector.foreach (args, fn (v, t) => log ("Arg: " ^ Var.toString v));
             args
          ),
-         doTransfer = fn t => (
+         doTransfer = fn (_, t) => (
             log ("Transfer: " ^ (Layout.toString (Transfer.layout t)));
             t
          )

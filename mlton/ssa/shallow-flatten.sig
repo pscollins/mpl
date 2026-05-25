@@ -18,8 +18,9 @@ sig
       doStatements: Statement.t vector -> Statement.t vector,
       (* Transform the given typed variables (block or function arguments) *)
       doArgs: (Var.t * Type.t) vector -> (Var.t * Type.t) vector,
-      (* Transform the given transfer *)
-      doTransfer: Transfer.t -> Transfer.t
+      (* Transform the given transfer: the `Func.t` argument is the current
+      function *)
+      doTransfer: (Func.t * Transfer.t) -> Transfer.t
    }
 
    (* Applies `rewriter` to the `Program.t`
