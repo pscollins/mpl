@@ -433,5 +433,136 @@ in
        val _ = assert (Type.equals (ty1, seqIndexTy), "Expected length type to be seqIndexTy")
     in () end)
 
+    (* Test 54: flattenOnce - Array_uninit on tuple array *)
+    val _ = runTest ("Test 54: flattenOnce - Array_uninit on tuple array", fn () => let
+       val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+       val f_main = Func.fromString "f_main"
+       val L_start = Label.fromString "L_start"
+
+       val intTy = Type.intInf
+       val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+       val arrayTuple2Ty = Type.array tuple2Ty
+
+       val v_alloc = Var.fromString "v_alloc"
+       val len = Var.fromString "len"
+
+       val uninitPrim = Prim.Array_uninit
+       val s2 = Statement.T {
+          exp = Exp.PrimApp {args = Vector.fromList [v_alloc, len],
+                             prim = uninitPrim,
+                             targs = Vector.new1 tuple2Ty},
+          ty = Type.unit,
+          var = NONE
+       }
+
+       val mainStartBlock = Block.T {
+          args = Vector.new0 (),
+          label = L_start,
+          statements = Vector.fromList [s2],
+          transfer = Transfer.Return (Vector.new0 ())
+       }
+
+       val mainFunction = Function.new {
+          args = Vector.fromList [(v_alloc, arrayTuple2Ty), (len, seqIndexTy)],
+          blocks = Vector.fromList [mainStartBlock],
+          inline = InlineAttr.Auto,
+          name = f_main,
+          raises = NONE,
+          returns = SOME (Vector.new0 ()),
+          start = L_start
+       }
+
+       val p = Program.T {
+          datatypes = Vector.new0 (),
+          functions = [mainFunction],
+          globals = Vector.new0 (),
+          main = f_main
+       }
+
+       val policy = ShallowFlatten.MaxWidth 3
+       (* Under the buggy compiler, flattenOnce will raise IllegalFlatteningDecision.
+          We want to assert/witness this symptom, but also verify the properly flattened IR.
+          So, if IllegalFlatteningDecision is raised, we print a message and raise TestFail.
+          If it does not raise, we continue with verifying the properly-flattened IR. *)
+       val p' =
+          case (SOME (ShallowFlatten.flattenOnce policy p))
+               handle ShallowFlatten.IllegalFlatteningDecision => NONE of
+             NONE => (assert (true, "Symptom of the original bug present");
+                      raise TestFail "Bug is present: flattenOnce raised IllegalFlatteningDecision")
+           | SOME (SOME p') => p'
+           | SOME NONE => raise TestFail "flattenOnce returned NONE"
+
+       (* Verify the flattened IR of f_main *)
+       val Program.T {functions, ...} = p'
+       val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+       val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+       val f_main_dest = Function.dest (valOf mainFunc')
+       val startBlock = Vector.sub (#blocks f_main_dest, 0)
+       val Block.T {statements = stmts, ...} = startBlock
+
+       val _ = assert (Vector.length stmts = 4, "Expected 4 statements after flattening Array_uninit")
+       
+       val s0 = Vector.sub (stmts, 0)
+       val s1 = Vector.sub (stmts, 1)
+       val s2 = Vector.sub (stmts, 2)
+       val s3 = Vector.sub (stmts, 3)
+
+       val intArrTy = Type.array intTy
+
+       (* Verify Statement 0: select 0 of v_alloc *)
+       val Statement.T {exp = exp0, ty = ty0, var = var0} = s0
+       val _ = case exp0 of
+                   Exp.Select {offset, tuple} =>
+                      if offset = 0 andalso Var.equals (tuple, v_alloc) then ()
+                      else assert (false, "Expected Select offset 0 of v_alloc")
+                 | _ => assert (false, "Expected Exp.Select")
+       val _ = assert (Type.equals (ty0, intArrTy), "Expected selected variable type to be int array")
+       val v_select0 = valOf var0
+
+       (* Verify Statement 1: Array_uninit[intInf](v_select0, len) *)
+       val Statement.T {exp = exp1, ty = ty1, var = var1} = s1
+       val _ = assert (Type.equals (ty1, Type.unit), "Expected Statement 1 type to be unit")
+       val _ = assert (Option.isNone var1, "Expected Statement 1 to have no bound variable")
+       val _ = case exp1 of
+                   Exp.PrimApp {args, prim, targs} =>
+                      if Prim.equals (prim, Prim.Array_uninit)
+                         andalso Vector.length args = 2
+                         andalso Var.equals (Vector.sub (args, 0), v_select0)
+                         andalso Var.equals (Vector.sub (args, 1), len)
+                         andalso Vector.length targs = 1
+                         andalso Type.equals (Vector.sub (targs, 0), intTy)
+                      then ()
+                      else assert (false, "Expected Array_uninit[intInf](v_select0, len)")
+                 | _ => assert (false, "Expected Exp.PrimApp")
+
+       (* Verify Statement 2: select 1 of v_alloc *)
+       val Statement.T {exp = exp2, ty = ty2, var = var2} = s2
+       val _ = case exp2 of
+                   Exp.Select {offset, tuple} =>
+                      if offset = 1 andalso Var.equals (tuple, v_alloc) then ()
+                      else assert (false, "Expected Select offset 1 of v_alloc")
+                 | _ => assert (false, "Expected Exp.Select")
+       val _ = assert (Type.equals (ty2, intArrTy), "Expected selected variable type to be int array")
+       val v_select1 = valOf var2
+
+       (* Verify Statement 3: Array_uninit[intInf](v_select1, len) *)
+       val Statement.T {exp = exp3, ty = ty3, var = var3} = s3
+       val _ = assert (Type.equals (ty3, Type.unit), "Expected Statement 3 type to be unit")
+       val _ = assert (Option.isNone var3, "Expected Statement 3 to have no bound variable")
+       val _ = case exp3 of
+                   Exp.PrimApp {args, prim, targs} =>
+                      if Prim.equals (prim, Prim.Array_uninit)
+                         andalso Vector.length args = 2
+                         andalso Var.equals (Vector.sub (args, 0), v_select1)
+                         andalso Var.equals (Vector.sub (args, 1), len)
+                         andalso Vector.length targs = 1
+                         andalso Type.equals (Vector.sub (targs, 0), intTy)
+                      then ()
+                      else assert (false, "Expected Array_uninit[intInf](v_select1, len)")
+                 | _ => assert (false, "Expected Exp.PrimApp")
+    in () end)
+
    val _ = summarize ()
 end
