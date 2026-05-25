@@ -919,6 +919,18 @@ fun maybeFlattenStatement (s: Statement.t) = let
                       ty = Type.array elTy,
                       var = SOME (Var.newString "flatArr")}
       end
+      fun mkArrayUninit (arrStmt: Statement.t): Statement.t = let
+         val elTy = Type.deArray (extractType arrStmt)
+         (* Args are (arr, idx) *)
+         val idx = Vector.sub (args, 1)
+         val arrayUninitExp = Exp.PrimApp {args = Vector.new2 (extractBind arrStmt, idx),
+                                           prim = Prim.Array_uninit,
+                                           targs = Vector.new1 elTy}
+      in
+         Statement.T {exp = arrayUninitExp,
+                      ty = Type.unit,
+                      var = SOME (Var.newString "flatArr")}
+      end
       fun buildArrayAlloc (primArg, flatArg) = let
          val components = getFlattenedElementTypes flatArg
          (*
@@ -1068,6 +1080,25 @@ fun maybeFlattenStatement (s: Statement.t) = let
                      newArrStmts,
                      Vector.new1 tupleStmt]
       end
+      fun buildArrayUninit flatArg = let
+         val numTypes = getNumElementTypes flatArg
+         (* arr_a = select(arr, 0)
+            arr_b = select(arr, 1)
+            ...
+          *)
+         (* Args are (arr, idx) *)
+         val arrValue = Vector.first args
+         val selectArrs = Vector.tabulate (numTypes, mkSelect (flatArg,
+                                                               arrValue))
+         (* _ = Array_uninit['a](arr_a, idx)
+            _ = Array_uninit['b](arr_b, idx)
+            ...
+         *)
+         val newInitStmts = Vector.map (selectArrs, mkArrayUninit)
+      in
+         concatVecs [selectArrs,
+                     newInitStmts]
+      end
       val result =
           case (prim, getFlattenedPrimTArg (prim, targs))  of
               (Prim.Array_alloc primArg, SOME flatArg) =>
@@ -1089,6 +1120,8 @@ fun maybeFlattenStatement (s: Statement.t) = let
               SOME (buildArrayUninitIsNop ())
             | (Prim.Array_toArray, SOME flatArg) =>
               SOME (buildArrayToArray flatArg)
+            | (Prim.Array_uninit, SOME flatArg) =>
+              SOME (buildArrayUninit flatArg)
             | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
