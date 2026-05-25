@@ -1202,8 +1202,11 @@ fun propagateReturnTypes (vt: varTypes, f: Function.t): Type.t vector option = l
        ]
    val _ = Control.diagnostic logThunk
 in
-   newReturns
+    newReturns
 end
+
+fun propagateThroughTransfer (vt: varTypes, fm: funcsMap, f: Func.t, t: Transfer.t): unit =
+   raise Error.bug "TODO: propagateThroughTransfer"
 
 (* Applies `propgatateReturnTypes` to every function in `p` *)
 fun propagateAllReturnTypes (vt: varTypes, p: Program.t): Program.t = let

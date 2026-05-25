@@ -830,6 +830,163 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+(* Test 53: propagateThroughTransfer *)
+   val _ = runTest ("Test 53: propagateThroughTransfer", fn () => let
+      val mainFunc = Func.fromString "main"
+      val calleeFunc = Func.fromString "calleeFunc"
+      val callerFunc = Func.fromString "callerFunc"
+
+      val L_main_start = Label.fromString "L_main_start"
+      val L_callee_start = Label.fromString "L_callee_start"
+      val L_caller_start = Label.fromString "L_caller_start"
+      val L_cont = Label.fromString "L_cont"
+      val L_goto_dst = Label.fromString "L_goto_dst"
+
+      val v_arg = Var.fromString "v_arg"
+      val v_callee_arg = Var.fromString "v_callee_arg"
+      val v_cont_param = Var.fromString "v_cont_param"
+      val v_goto_param = Var.fromString "v_goto_param"
+
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val tupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_main_start,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L_main_start
+      }
+
+      val calleeBlock = Block.T {
+         args = Vector.fromList [(v_callee_arg, word32Ty)],
+         label = L_callee_start,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new1 v_callee_arg)
+      }
+      val calleeFunction = Function.new {
+         args = Vector.fromList [(v_callee_arg, word32Ty)],
+         blocks = Vector.fromList [calleeBlock],
+         inline = InlineAttr.Auto,
+         name = calleeFunc,
+         raises = NONE,
+         returns = SOME (Vector.new1 word32Ty),
+         start = L_callee_start
+      }
+
+      val callerStartBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_caller_start,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.new1 v_arg,
+            func = calleeFunc,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {cont = L_cont, handler = Handler.Dead}
+         }
+      }
+      val callerContBlock = Block.T {
+         args = Vector.fromList [(v_cont_param, intTy)],
+         label = L_cont,
+         statements = Vector.new0 (),
+         transfer = Transfer.Goto {
+            args = Vector.new1 v_cont_param,
+            dst = L_goto_dst
+         }
+      }
+      val callerGotoDstBlock = Block.T {
+         args = Vector.fromList [(v_goto_param, intTy)],
+         label = L_goto_dst,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.new1 v_goto_param,
+            func = calleeFunc,
+            inline = InlineAttr.Auto,
+            return = Return.Tail
+         }
+      }
+      val callerFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [callerStartBlock, callerContBlock, callerGotoDstBlock],
+         inline = InlineAttr.Auto,
+         name = callerFunc,
+         raises = NONE,
+         returns = SOME (Vector.new1 word32Ty),
+         start = L_caller_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [calleeFunction, callerFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val fm = FlattenUtil.newFuncsMap p
+      val vt = ShallowFlatten.newVarTypes ()
+
+      (* Set up initial mismatched types *)
+      val _ = ShallowFlatten.setVarType (vt, v_arg, tupleTy)
+      val _ = ShallowFlatten.setVarType (vt, v_callee_arg, intTy)
+      val _ = ShallowFlatten.setVarType (vt, v_cont_param, intTy)
+      val _ = ShallowFlatten.setVarType (vt, v_goto_param, intTy)
+      val _ = ShallowFlatten.setReturnType (vt, calleeFunc, SOME (Vector.new1 tupleTy))
+      val _ = ShallowFlatten.setReturnType (vt, callerFunc, SOME (Vector.new1 intTy))
+
+      (* Case 1: Call + NonTail *)
+      val transfer1 = Block.transfer callerStartBlock
+      val _ = ShallowFlatten.propagateThroughTransfer (vt, fm, callerFunc, transfer1)
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, v_callee_arg), tupleTy),
+                      "Case 1: Call + NonTail failed to propagate arg type")
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, v_cont_param), tupleTy),
+                      "Case 1: Call + NonTail failed to propagate return type to cont block arg")
+
+      (* Reset v_callee_arg for independent test in subsequent cases *)
+      val _ = ShallowFlatten.setVarType (vt, v_callee_arg, intTy)
+
+      (* Case 2: Goto *)
+      (* Since v_cont_param is now tupleTy, propagating Goto transfer should update v_goto_param to tupleTy *)
+      val transfer2 = Block.transfer callerContBlock
+      val _ = ShallowFlatten.propagateThroughTransfer (vt, fm, callerFunc, transfer2)
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, v_goto_param), tupleTy),
+                      "Case 2: Goto failed to propagate arg type")
+
+      (* Case 3: Call + Tail *)
+      val transfer3 = Block.transfer callerGotoDstBlock
+      val _ = ShallowFlatten.propagateThroughTransfer (vt, fm, callerFunc, transfer3)
+      (* formal arg in target function: v_callee_arg (originally intTy, should match v_goto_param: tupleTy) *)
+      val _ = assert (Type.equals (ShallowFlatten.getVarType (vt, v_callee_arg), tupleTy),
+                      "Case 3: Call + Tail failed to propagate arg type")
+      (* callerFunc return type should match calleeFunc return type (SOME (Vector.new1 tupleTy)) *)
+      val _ = case ShallowFlatten.getReturnType (vt, callerFunc) of
+                 SOME tys => assert (Vector.length tys = 1 andalso Type.equals (Vector.sub (tys, 0), tupleTy),
+                                     "Case 3: Call + Tail failed to propagate caller return type")
+               | NONE => raise TestFail "Case 3: Expected caller return type to be SOME"
+
+      (* Case 4: Return *)
+      (* Reset calleeFunc return type to mismatched type *)
+      val _ = ShallowFlatten.setReturnType (vt, calleeFunc, SOME (Vector.new1 intTy))
+      val _ = ShallowFlatten.setVarType (vt, v_callee_arg, tupleTy)
+      val transfer4 = Block.transfer calleeBlock
+      val _ = ShallowFlatten.propagateThroughTransfer (vt, fm, calleeFunc, transfer4)
+      val _ = case ShallowFlatten.getReturnType (vt, calleeFunc) of
+                 SOME tys => assert (Vector.length tys = 1 andalso Type.equals (Vector.sub (tys, 0), tupleTy),
+                                     "Case 4: Return failed to propagate return type")
+               | NONE => raise TestFail "Case 4: Expected callee return type to be SOME"
+
+      val _ = ShallowFlatten.destroyVarTypes vt
+      val _ = #destroyFuncsMap fm ()
+   in () end)
+
    val _ = summarize ()
 end
 

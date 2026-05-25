@@ -1,6 +1,7 @@
 structure Atoms = Atoms ()
 structure Ssa = Ssa (open Atoms)
 structure ShallowFlatten = ShallowFlatten (Ssa)
+structure FlattenUtil = FlattenUtil (Ssa)
 
 val _ = Control.diagnosticWriter := SOME (fn l => Layout.outputl (l, Out.standard))
 

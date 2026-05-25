@@ -11,6 +11,8 @@ sig
        -shallow-flatten-policy=maxWidth:$N sets the policy to `MaxWidth(n)`
     *)
    include SSA_TRANSFORM
+   structure FlattenUtil: FLATTEN_UTIL
+   type funcsMap = FlattenUtil.funcsMap
 
    (* Interface for applying a transformation to a specified program *)
    type rewriter = {
@@ -112,10 +114,11 @@ sig
    flattening *)
    val markedCount: flattenedVars -> int
 
-   (* Tracks types of `Var.t`s  and argument/return types *)
-   type varTypes
-   val newVarTypes: unit -> varTypes
-   val destroyVarTypes: varTypes -> unit
+    (* Tracks types of `Var.t`s  and argument/return types *)
+    type varTypes
+    val newVarTypes: unit -> varTypes
+    val destroyVarTypes: varTypes -> unit
+
    (* Sets the type for a future `getVarType` call. Valid to call multiple times
    (updating the stored type) *)
    val setVarType: varTypes * Var.t * Type.t -> unit
@@ -339,7 +342,6 @@ sig
    exception InconsistentTypes
    val propagateReturnTypes: varTypes * Function.t -> Type.t vector option
 
-
    (* Updates `varTypes` for the provided `Transfer.t`:
 
       1. For `Call`/`Goto`: updates each formal parameter type to match the type
@@ -347,7 +349,6 @@ sig
       2. For `Return`: updates the return type of the provided `Func.t`
       3. For `Call` with a `Tail` return type: updates the return type of the
          provided `Func.t` to match the return type of the target function.
-
    *)
    val propagateThroughTransfer: varTypes * funcsMap * Func.t * Transfer.t -> unit
 
