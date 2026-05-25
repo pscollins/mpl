@@ -146,5 +146,74 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
+   (* Test 52: flattenOnce - NonTail return call to function returning NONE *)
+   val _ = runTest ("Test 52: flattenOnce - NonTail return call to function returning NONE", fn () => let
+      val f_main = Func.fromString "f_main"
+      val f_noreturn = Func.fromString "f_noreturn"
+      val L_start = Label.fromString "L_start"
+      val L_cont = Label.fromString "L_cont"
+      val L_noreturn = Label.fromString "L_noreturn"
+
+      val noreturnBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_noreturn,
+         statements = Vector.new0 (),
+         transfer = Transfer.Bug
+      }
+
+      val noreturnFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [noreturnBlock],
+         inline = InlineAttr.Auto,
+         name = f_noreturn,
+         raises = NONE,
+         returns = NONE,
+         start = L_noreturn
+      }
+
+      val mainStartBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.new0 (),
+         transfer = Transfer.Call {
+            args = Vector.new0 (),
+            func = f_noreturn,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {
+               cont = L_cont,
+               handler = Handler.Caller
+            }
+         }
+      }
+
+      val mainContBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_cont,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainStartBlock, mainContBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [noreturnFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      (* Run flattenOnce, which should trigger the Option exception bug *)
+      val _ = ShallowFlatten.flattenOnce (ShallowFlatten.MaxWidth 3) p
+   in () end)
+
    val _ = summarize ()
 end
+
