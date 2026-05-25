@@ -1256,6 +1256,11 @@ fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
    val {getFunc, getBlock, ...} = fm
    fun getType v = getVarType (vt, v)
    fun setType (v, t) = setVarType (vt, v, t)
+   fun getReturnTypeOrEmpty func =
+       case getReturnType (vt, func) of
+           SOME ts => ts
+         (* `NONE` is valid to pass as an argument to a nullary continuation *)
+         | NONE => Vector.new0()
    fun propagateType (from, to) =
        setType (to, getType from)
    fun getFuncArgs (f: Func.t) = let
@@ -1286,7 +1291,7 @@ fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
             (* Non-tail means that the return type of `callee` is equal to the argument
                type of `cont` *)
           | Return.NonTail {cont, ...} =>
-            Vector.foreach2 (Option.valOf (getReturnType (vt, callee)),
+            Vector.foreach2 (getReturnTypeOrEmpty callee,
                              Vector.map (getBlockArgs cont, getVar),
                              fn (ty, var) => setType (var, ty))
 in
