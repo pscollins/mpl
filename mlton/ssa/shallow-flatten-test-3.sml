@@ -439,5 +439,90 @@ in
               else assert (false, "y_tuple type mismatch: " ^ (Layout.toString (Type.layout y_ty)) ^ 
                                  " expected " ^ (Layout.toString (Type.layout expectedYty)))
    in () end)
+
+   (* Test 26: maybeFlattenStatement (Array_uninit) *)
+   val _ = runTest ("Test 26: maybeFlattenStatement (Array_uninit)", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+      val arr = Var.fromString "arr"
+      val len = Var.fromString "len"
+      val intTy = Type.intInf
+      val seqIndexTy = Type.word (WordSize.seqIndex ())
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+
+      fun primApp (p, args, targs) = 
+         Exp.PrimApp {args = Vector.fromList args,
+                      prim = p,
+                      targs = Vector.fromList targs}
+
+      val uninitPrim = Prim.Array_uninit
+      val s = Statement.T {
+         exp = primApp (uninitPrim, [arr, len], [tuple2Ty]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatement s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_uninit should be flattenable"
+      
+      (* Expected:
+         1. arr_a = select(arr, 0)
+         2. _ = Array_uninit['a](arr_a, len)
+         3. arr_b = select(arr, 1)
+         4. _ = Array_uninit['b](arr_b, len)
+      *)
+      val _ = assert (Vector.length stmts = 4, "Array_uninit should flatten to 4 statements")
+      
+      val s0 = Vector.sub (stmts, 0)
+      val s1 = Vector.sub (stmts, 1)
+      val s2 = Vector.sub (stmts, 2)
+      val s3 = Vector.sub (stmts, 3)
+
+      val _ = assertType (s0, Type.array intTy, "Array_uninit stmt 0 type")
+      val _ = assertType (s1, Type.unit, "Array_uninit stmt 1 type")
+      val _ = assertType (s2, Type.array intTy, "Array_uninit stmt 2 type")
+      val _ = assertType (s3, Type.unit, "Array_uninit stmt 3 type")
+
+      val Statement.T {exp = exp0, var = var0, ...} = s0
+      val _ = case exp0 of
+                  Exp.Select {offset, tuple} =>
+                     assert (offset = 0 andalso Var.equals (tuple, arr), "stmt 0 select mismatch")
+                | _ => raise TestFail "stmt 0 expected Select"
+      val v_select0 = valOf var0
+
+      val Statement.T {exp = exp1, var = var1, ...} = s1
+      val _ = assert (Option.isNone var1, "stmt 1 expected no var")
+      val _ = case exp1 of
+                  Exp.PrimApp {args, prim, targs} =>
+                     assert (Prim.equals (prim, Prim.Array_uninit)
+                             andalso Vector.length args = 2
+                             andalso Var.equals (Vector.sub (args, 0), v_select0)
+                             andalso Var.equals (Vector.sub (args, 1), len)
+                             andalso Vector.length targs = 1
+                             andalso Type.equals (Vector.sub (targs, 0), intTy),
+                             "stmt 1 prim app mismatch")
+                | _ => raise TestFail "stmt 1 expected PrimApp"
+
+      val Statement.T {exp = exp2, var = var2, ...} = s2
+      val _ = case exp2 of
+                  Exp.Select {offset, tuple} =>
+                     assert (offset = 1 andalso Var.equals (tuple, arr), "stmt 2 select mismatch")
+                | _ => raise TestFail "stmt 2 expected Select"
+      val v_select1 = valOf var2
+
+      val Statement.T {exp = exp3, var = var3, ...} = s3
+      val _ = assert (Option.isNone var3, "stmt 3 expected no var")
+      val _ = case exp3 of
+                  Exp.PrimApp {args, prim, targs} =>
+                     assert (Prim.equals (prim, Prim.Array_uninit)
+                             andalso Vector.length args = 2
+                             andalso Var.equals (Vector.sub (args, 0), v_select1)
+                             andalso Var.equals (Vector.sub (args, 1), len)
+                             andalso Vector.length targs = 1
+                             andalso Type.equals (Vector.sub (targs, 0), intTy),
+                             "stmt 3 prim app mismatch")
+                | _ => raise TestFail "stmt 3 expected PrimApp"
+   in () end)
+
       val _ = summarize ()
 end

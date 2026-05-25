@@ -273,6 +273,19 @@ sig
       arr' = tuple (arr'_a, arr'_b, ...)
      ...
 
+   10. `Array_uninit` on tuple types:
+      arr: ('a * 'b * ...) array = ...
+      _ = Array_uninit[('a * 'b * ...)](arr, n)
+      -->
+      (* by 1., arr is now 'a array * b array * ... *)
+      arr_a: 'a array = select (arr, n)
+      _: = Array_uninit['a](arr_a, n)
+      arr_b: 'b array = select (arr, 1)
+      _: = Array_uninit['b](arr_b, n)
+      ...
+     ...
+
+
     Non-`PrimApp` expressions and also non-array/vector `PrimApp` expressions
     always return `SOME (originalStatement)`
 
