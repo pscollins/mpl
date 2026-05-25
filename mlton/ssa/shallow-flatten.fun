@@ -526,7 +526,27 @@ in
    getReturnType f
 end
 
-fun updateToSavedTypes (vt: varTypes, f: Function.t): Function.t = f
+fun updateToSavedTypes (vt: varTypes, f: Function.t): Function.t = let
+   val {args, blocks, inline, name, raises, returns, start} = Function.dest f
+   fun updateArg (var, _) = (var, getVarType (vt, var))
+   fun updateArgs args = Vector.map (args, updateArg)
+   fun updateBlock b = let
+      val Block.T {args, label, statements, transfer} = b
+   in
+      Block.T {args = updateArgs args,
+               label = label,
+               statements = statements,
+               transfer = transfer}
+   end
+in
+   Function.new {args = updateArgs args,
+                 blocks = Vector.map (blocks, updateBlock),
+                 inline = inline,
+                 name = name,
+                 raises = raises,
+                 returns = getReturnType (vt, name),
+                 start = start}
+end
 
 
 (* If possible, infer a new return type from `exp` under `vt`
