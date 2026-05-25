@@ -130,6 +130,14 @@ sig
    (* Returns the type set by a pervious `setFuncArgType` call. *)
    val getReturnType: varTypes * Func.t -> Type.t vector option
 
+   (* Applies all changes to argument/return types recorded in `varTypes` to the
+      provided function.
+
+      TODO(pscollins): Statement types are currently propagated separately --
+      this is a bit ugly; revisit.
+   *)
+   val updateToSavedTypes: varTypes * Function.t -> Function.t
+
    (* Marks any vars in `Statement.t` that must be flattened according to the
    provided policy. The following statement types may induce flattening:
 

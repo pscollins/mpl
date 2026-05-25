@@ -526,6 +526,9 @@ in
    getReturnType f
 end
 
+fun updateToSavedTypes (vt: varTypes, f: Function.t): Function.t = f
+
+
 (* If possible, infer a new return type from `exp` under `vt`
 
    Only the cases that can change due to flattening are supported.
@@ -1354,8 +1357,8 @@ fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
       (* doArgs = fn x => x, *)
       doTransfer = doPropagateThroughTransfer
    }
-   (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
-   val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p')
+   val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
+   (* val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p') *)
    (* Cleanup *)
    val {destroyFuncsMap, ...} = fm
    val _ = destroyFuncsMap ()
