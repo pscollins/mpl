@@ -146,74 +146,134 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
-   (* Test 52: flattenOnce - NonTail return call to function returning NONE *)
-   val _ = runTest ("Test 52: flattenOnce - NonTail return call to function returning NONE", fn () => let
-      val f_main = Func.fromString "f_main"
-      val f_noreturn = Func.fromString "f_noreturn"
-      val L_start = Label.fromString "L_start"
-      val L_cont = Label.fromString "L_cont"
-      val L_noreturn = Label.fromString "L_noreturn"
+    (* Test 52: flattenOnce - NonTail return call to function returning NONE *)
+    val _ = runTest ("Test 52: flattenOnce - NonTail return call to function returning NONE", fn () => let
+       val f_main = Func.fromString "f_main"
+       val f_noreturn = Func.fromString "f_noreturn"
+       val L_start = Label.fromString "L_start"
+       val L_cont = Label.fromString "L_cont"
+       val L_noreturn = Label.fromString "L_noreturn"
 
-      val noreturnBlock = Block.T {
-         args = Vector.new0 (),
-         label = L_noreturn,
-         statements = Vector.new0 (),
-         transfer = Transfer.Bug
-      }
+       val intTy = Type.intInf
+       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+       val arrayTuple2Ty = Type.array tuple2Ty
+       val v_alloc = Var.fromString "v_alloc"
+       val n = Var.fromString "n"
 
-      val noreturnFunction = Function.new {
-         args = Vector.new0 (),
-         blocks = Vector.fromList [noreturnBlock],
-         inline = InlineAttr.Auto,
-         name = f_noreturn,
-         raises = NONE,
-         returns = NONE,
-         start = L_noreturn
-      }
+       val allocPrim = Prim.Array_alloc {raw = false}
+       val s1 = Statement.T {
+          exp = Exp.PrimApp {args = Vector.new1 n,
+                             prim = allocPrim,
+                             targs = Vector.new1 tuple2Ty},
+          ty = arrayTuple2Ty,
+          var = SOME v_alloc
+       }
 
-      val mainStartBlock = Block.T {
-         args = Vector.new0 (),
-         label = L_start,
-         statements = Vector.new0 (),
-         transfer = Transfer.Call {
-            args = Vector.new0 (),
-            func = f_noreturn,
-            inline = InlineAttr.Auto,
-            return = Return.NonTail {
-               cont = L_cont,
-               handler = Handler.Caller
-            }
-         }
-      }
+       val noreturnBlock = Block.T {
+          args = Vector.new0 (),
+          label = L_noreturn,
+          statements = Vector.new0 (),
+          transfer = Transfer.Bug
+       }
 
-      val mainContBlock = Block.T {
-         args = Vector.new0 (),
-         label = L_cont,
-         statements = Vector.new0 (),
-         transfer = Transfer.Return (Vector.new0 ())
-      }
+       val noreturnFunction = Function.new {
+          args = Vector.new0 (),
+          blocks = Vector.fromList [noreturnBlock],
+          inline = InlineAttr.Auto,
+          name = f_noreturn,
+          raises = NONE,
+          returns = NONE,
+          start = L_noreturn
+       }
 
-      val mainFunction = Function.new {
-         args = Vector.new0 (),
-         blocks = Vector.fromList [mainStartBlock, mainContBlock],
-         inline = InlineAttr.Auto,
-         name = f_main,
-         raises = NONE,
-         returns = SOME (Vector.new0 ()),
-         start = L_start
-      }
+       val mainStartBlock = Block.T {
+          args = Vector.fromList [(n, intTy)],
+          label = L_start,
+          statements = Vector.fromList [s1],
+          transfer = Transfer.Call {
+             args = Vector.new0 (),
+             func = f_noreturn,
+             inline = InlineAttr.Auto,
+             return = Return.NonTail {
+                cont = L_cont,
+                handler = Handler.Caller
+             }
+          }
+       }
 
-      val p = Program.T {
-         datatypes = Vector.new0 (),
-         functions = [noreturnFunction, mainFunction],
-         globals = Vector.new0 (),
-         main = f_main
-      }
+       val mainContBlock = Block.T {
+          args = Vector.new0 (),
+          label = L_cont,
+          statements = Vector.new0 (),
+          transfer = Transfer.Return (Vector.new0 ())
+       }
 
-      (* Run flattenOnce, which should trigger the Option exception bug *)
-      val _ = ShallowFlatten.flattenOnce (ShallowFlatten.MaxWidth 3) p
-   in () end)
+       val mainFunction = Function.new {
+          args = Vector.new0 (),
+          blocks = Vector.fromList [mainStartBlock, mainContBlock],
+          inline = InlineAttr.Auto,
+          name = f_main,
+          raises = NONE,
+          returns = SOME (Vector.new0 ()),
+          start = L_start
+       }
 
-   val _ = summarize ()
-end
+       val p = Program.T {
+          datatypes = Vector.new0 (),
+          functions = [noreturnFunction, mainFunction],
+          globals = Vector.new0 (),
+          main = f_main
+       }
+
+       val policy = ShallowFlatten.MaxWidth 3
+       (* Run flattenOnce. This triggers the Option exception bug in propagation.
+          Once the bug is fixed, it will succeed and return SOME p' because flattening is applied. *)
+       val SOME p' = ShallowFlatten.flattenOnce policy p
+       val Program.T {functions, ...} = p'
+
+       (* Verify the flattened IR of f_main *)
+       val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+       val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+       val f_main_dest = Function.dest (valOf mainFunc')
+       val startBlock = Vector.sub (#blocks f_main_dest, 0)
+       val Block.T {statements = stmts, transfer = trans, ...} = startBlock
+
+       (* Array_alloc of a 2-tuple should flatten to 3 statements:
+          v_alloc_0 = Array_alloc[int](n)
+          v_alloc_1 = Array_alloc[int](n)
+          v_alloc = tuple(v_alloc_0, v_alloc_1) *)
+       val _ = assert (Vector.length stmts = 3, "Expected 3 statements after flattening")
+
+       val s0 = Vector.sub (stmts, 0)
+       val s1 = Vector.sub (stmts, 1)
+       val s2 = Vector.sub (stmts, 2)
+
+       val intArrTy = Type.array intTy
+       val tupleArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+
+       val Statement.T {ty = ty0, ...} = s0
+       val Statement.T {ty = ty1, ...} = s1
+       val Statement.T {ty = ty2, ...} = s2
+
+       val _ = assert (Type.equals (ty0, intArrTy), "First flattened statement type should be int array")
+       val _ = assert (Type.equals (ty1, intArrTy), "Second flattened statement type should be int array")
+       val _ = assert (Type.equals (ty2, tupleArrTy), "Third flattened statement type should be int array * int array")
+
+       (* Verify the transfer of f_main is unchanged *)
+       val _ = case trans of
+                   Transfer.Call {func, return = Return.NonTail {cont, ...}, ...} =>
+                      if Func.equals (func, f_noreturn) andalso Label.equals (cont, L_cont) then ()
+                      else assert (false, "Transfer call target or continuation changed")
+                 | _ => assert (false, "Expected Transfer.Call transfer")
+
+       (* Verify f_noreturn has returns = NONE *)
+       val noreturnFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_noreturn))
+       val _ = assert (Option.isSome noreturnFunc', "f_noreturn should be present in the result")
+       val f_noreturn_dest = Function.dest (valOf noreturnFunc')
+       val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
+    in () end)
+
+    val _ = summarize ()
+ end
+
 
