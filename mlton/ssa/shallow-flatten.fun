@@ -1217,8 +1217,49 @@ in
     newReturns
 end
 
-fun propagateThroughTransfer (vt: varTypes, fm: funcsMap, f: Func.t, t: Transfer.t): unit =
-   raise Error.bug "TODO: propagateThroughTransfer"
+fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
+                              f: Func.t, t: Transfer.t): unit = let
+   fun logThunk () = Layout.seq [
+          Layout.str "propagateThroughTransfer: ",
+          Func.layout f,
+          " for ",
+          Transfer.layout t
+       ]
+   val _ = Control.diagnostic logThunk
+   val {getFunc, getBlock, ...} = fm
+   fun getType v = getVarType (vt, v)
+   fun setType (v, t) = setVarType (vt, v, t)
+   fun propagateType (from, to) =
+       seType (to, getType from)
+   fun getFuncArgs (f: Funct.t) = let
+      val {args, ...} = Function.dest (getFunc f)
+   in
+      args
+   end
+   fun getBlockArgs (b: Label.t) = let
+      val Block.T {args, ...} = getBlock b
+   in
+      args
+   end
+   fun getVar (var, _) = var
+   fun propagateThroughArgs (fromVars: Var.t vector,
+                             toArgs: (Var.t * Type.t) vector) =
+       Vector.map2 (fromArgs, Vector.map (toArgs, getVar),
+                    propagateType)
+   fun propagateAsReturn (target, args) =
+       setReturnType (vt, target, SOME (Vector.map (args, getType)))
+   fun propagateReturnType (fromF, toF) =
+       setReturnType (vt, toF, getReturnType (vt, fromF))
+in
+   case t of
+       Transfer.Call {args, func, return, ...} =>
+       (propagateThroughArgs (args, getFuncArgs func);
+        propagateReturnType (t, func)
+     | Transfer.Goto {args, dst} =>
+       propagateThroughArgs (args, getBlockArgs func)
+     | Transfer.Return args =>
+       propagateAsReturn (f, args)
+end
 
 (* Applies `propgatateReturnTypes` to every function in `p` *)
 fun propagateAllReturnTypes (vt: varTypes, p: Program.t): Program.t = let
