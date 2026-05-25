@@ -667,8 +667,22 @@ fun markStatementForPolicy (fv: flattenedVars,
      | _ => ()
 
 fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
-                     ((var, ty): (Var.t * Type.t)): unit =
-    setArgFlatteningDecision (fv, var, getConDecisionForPolicy policy ty)
+                     ((var, ty): (Var.t * Type.t)): unit = let
+
+   (* HACK: We need `isMarkedForFlatten` to return true for block/function
+   arguments consumed by  `Array_` `PrimApp`s.
+
+     TODO(pscollins): Replace the existing "flattening decision" mechanism with
+     just propagation alone and get rid of `setArgFlatteningDecision`
+    *)
+
+   val _ =
+       if shouldMarkType (policy, ty) then
+          markForFlatten (fv, var)
+       else ()
+in
+   setArgFlatteningDecision (fv, var, getConDecisionForPolicy policy ty)
+end
 
 fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
                           (dt: Datatype.t): unit = let

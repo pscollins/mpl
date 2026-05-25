@@ -206,74 +206,232 @@ in
           label = L_cont,
           statements = Vector.new0 (),
           transfer = Transfer.Return (Vector.new0 ())
+        }
+
+        val mainFunction = Function.new {
+           args = Vector.new0 (),
+           blocks = Vector.fromList [mainStartBlock, mainContBlock],
+           inline = InlineAttr.Auto,
+           name = f_main,
+           raises = NONE,
+           returns = SOME (Vector.new0 ()),
+           start = L_start
+        }
+
+        val p = Program.T {
+           datatypes = Vector.new0 (),
+           functions = [noreturnFunction, mainFunction],
+           globals = Vector.new0 (),
+           main = f_main
+        }
+
+        val policy = ShallowFlatten.MaxWidth 3
+        (* Run flattenOnce. This triggers the Option exception bug in propagation.
+           Once the bug is fixed, it will succeed and return SOME p' because flattening is applied. *)
+        val SOME p' = ShallowFlatten.flattenOnce policy p
+        val Program.T {functions, ...} = p'
+
+        (* Verify the flattened IR of f_main *)
+        val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+        val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+        val f_main_dest = Function.dest (valOf mainFunc')
+        val startBlock = Vector.sub (#blocks f_main_dest, 0)
+        val Block.T {statements = stmts, transfer = trans, ...} = startBlock
+
+        (* Array_alloc of a 2-tuple should flatten to 3 statements:
+           v_alloc_0 = Array_alloc[int](n)
+           v_alloc_1 = Array_alloc[int](n)
+           v_alloc = tuple(v_alloc_0, v_alloc_1) *)
+        val _ = assert (Vector.length stmts = 3, "Expected 3 statements after flattening")
+
+        val s0 = Vector.sub (stmts, 0)
+        val s1 = Vector.sub (stmts, 1)
+        val s2 = Vector.sub (stmts, 2)
+
+        val intArrTy = Type.array intTy
+        val tupleArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+
+        val Statement.T {ty = ty0, ...} = s0
+        val Statement.T {ty = ty1, ...} = s1
+        val Statement.T {ty = ty2, ...} = s2
+
+        val _ = assert (Type.equals (ty0, intArrTy), "First flattened statement type should be int array")
+        val _ = assert (Type.equals (ty1, intArrTy), "Second flattened statement type should be int array")
+        val _ = assert (Type.equals (ty2, tupleArrTy), "Third flattened statement type should be int array * int array")
+
+        (* Verify the transfer of f_main is unchanged *)
+        val _ = case trans of
+                    Transfer.Call {func, return = Return.NonTail {cont, ...}, ...} =>
+                       if Func.equals (func, f_noreturn) andalso Label.equals (cont, L_cont) then ()
+                       else assert (false, "Transfer call target or continuation changed")
+                  | _ => assert (false, "Expected Transfer.Call transfer")
+
+        (* Verify f_noreturn has returns = NONE *)
+        val noreturnFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_noreturn))
+        val _ = assert (Option.isSome noreturnFunc', "f_noreturn should be present in the result")
+        val f_noreturn_dest = Function.dest (valOf noreturnFunc')
+        val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
+     in () end)
+
+    (* Test 53: flattenOnce - Array_length of tuple array block argument *)
+    val _ = runTest ("Test 53: flattenOnce - Array_length of tuple array block argument", fn () => let
+       val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+       
+       val f_caller = Func.fromString "f_caller"
+       val f_callee = Func.fromString "f_callee"
+       val L_caller_start = Label.fromString "L_caller_start"
+       val L_ret = Label.fromString "L_ret"
+       val L_callee_start = Label.fromString "L_callee_start"
+
+       val intTy = Type.intInf
+       val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+       val arrayTuple2Ty = Type.array tuple2Ty
+       
+       val n_callee = Var.fromString "n_callee"
+       val v_alloc = Var.fromString "v_alloc"
+       
+       val n_caller = Var.fromString "n_caller"
+       val ret_val = Var.fromString "ret_val"
+       val len = Var.fromString "len"
+
+       val calleeBlock = Block.T {
+          args = Vector.new0 (),
+          label = L_callee_start,
+          statements = Vector.fromList [
+             Statement.T {
+                exp = Exp.PrimApp {
+                   args = Vector.new1 n_callee,
+                   prim = Prim.Array_alloc {raw = false},
+                   targs = Vector.new1 tuple2Ty
+                },
+                ty = arrayTuple2Ty,
+                var = SOME v_alloc
+             }
+          ],
+          transfer = Transfer.Return (Vector.new1 v_alloc)
        }
 
-       val mainFunction = Function.new {
-          args = Vector.new0 (),
-          blocks = Vector.fromList [mainStartBlock, mainContBlock],
+       val calleeFunction = Function.new {
+          args = Vector.fromList [(n_callee, seqIndexTy)],
+          blocks = Vector.fromList [calleeBlock],
           inline = InlineAttr.Auto,
-          name = f_main,
+          name = f_callee,
+          raises = NONE,
+          returns = SOME (Vector.fromList [arrayTuple2Ty]),
+          start = L_callee_start
+       }
+
+       val callerStartBlock = Block.T {
+          args = Vector.new0 (),
+          label = L_caller_start,
+          statements = Vector.fromList [
+             Statement.T {
+                exp = Exp.Const (Const.word (Atoms.WordX.fromInt (10, Atoms.WordSize.seqIndex ()))),
+                ty = seqIndexTy,
+                var = SOME n_caller
+             }
+          ],
+          transfer = Transfer.Call {
+             args = Vector.new1 n_caller,
+             func = f_callee,
+             inline = InlineAttr.Auto,
+             return = Return.NonTail {
+                cont = L_ret,
+                handler = Handler.Caller
+             }
+          }
+       }
+
+       val callerRetBlock = Block.T {
+          args = Vector.fromList [(ret_val, arrayTuple2Ty)],
+          label = L_ret,
+          statements = Vector.fromList [
+             Statement.T {
+                exp = Exp.PrimApp {
+                   args = Vector.new1 ret_val,
+                   prim = Prim.Array_length,
+                   targs = Vector.new1 tuple2Ty
+                },
+                ty = seqIndexTy,
+                var = SOME len
+             }
+          ],
+          transfer = Transfer.Return (Vector.new0 ())
+       }
+
+       val callerFunction = Function.new {
+          args = Vector.new0 (),
+          blocks = Vector.fromList [callerStartBlock, callerRetBlock],
+          inline = InlineAttr.Auto,
+          name = f_caller,
           raises = NONE,
           returns = SOME (Vector.new0 ()),
-          start = L_start
+          start = L_caller_start
        }
 
        val p = Program.T {
           datatypes = Vector.new0 (),
-          functions = [noreturnFunction, mainFunction],
+          functions = [calleeFunction, callerFunction],
           globals = Vector.new0 (),
-          main = f_main
+          main = f_caller
        }
 
        val policy = ShallowFlatten.MaxWidth 3
-       (* Run flattenOnce. This triggers the Option exception bug in propagation.
-          Once the bug is fixed, it will succeed and return SOME p' because flattening is applied. *)
        val SOME p' = ShallowFlatten.flattenOnce policy p
+
+       (* Under the buggy compiler, this will raise a typecheck Fail exception *)
+       val _ = Ssa.typeCheck p'
+
+       (* Under a correct compiler, we assert that the IR is properly flattened *)
        val Program.T {functions, ...} = p'
-
-       (* Verify the flattened IR of f_main *)
-       val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
-       val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
-       val f_main_dest = Function.dest (valOf mainFunc')
-       val startBlock = Vector.sub (#blocks f_main_dest, 0)
-       val Block.T {statements = stmts, transfer = trans, ...} = startBlock
-
-       (* Array_alloc of a 2-tuple should flatten to 3 statements:
-          v_alloc_0 = Array_alloc[int](n)
-          v_alloc_1 = Array_alloc[int](n)
-          v_alloc = tuple(v_alloc_0, v_alloc_1) *)
-       val _ = assert (Vector.length stmts = 3, "Expected 3 statements after flattening")
-
+       val callerFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_caller))
+       val _ = assert (Option.isSome callerFunc', "f_caller should be present")
+       val caller_dest = Function.dest (valOf callerFunc')
+       val retBlockOpt = List.peek (Vector.toList (#blocks caller_dest), fn b => Label.equals (Block.label b, L_ret))
+       val _ = assert (Option.isSome retBlockOpt, "L_ret block should be present")
+       val Block.T {args = block_args, statements = stmts, ...} = valOf retBlockOpt
+       
+       (* Check block arg type is flattened *)
+       val _ = assert (Vector.length block_args = 1, "Expected 1 block argument")
+       val (v_ret, ty_ret) = Vector.sub (block_args, 0)
+       val intArrTy = Type.array intTy
+       val expectedTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+       val _ = assert (Type.equals (ty_ret, expectedTy), "Block arg should be flattened to (int array * int array)")
+       
+       (* Expectations for properly-flattened IR:
+          Array_length should be flattened into 2 statements:
+          ret_val_0 = select (ret_val, 0)
+          len = Array_length[int] (ret_val_0)
+        *)
+       val _ = assert (Vector.length stmts = 2, "Expected 2 statements in properly-flattened block")
        val s0 = Vector.sub (stmts, 0)
        val s1 = Vector.sub (stmts, 1)
-       val s2 = Vector.sub (stmts, 2)
+       
+       val Statement.T {exp = exp0, ty = ty0, var = var0} = s0
+       val _ = case exp0 of
+                   Exp.Select {offset, tuple} =>
+                      if offset = 0 andalso Var.equals (tuple, v_ret) then ()
+                      else assert (false, "Expected Select offset 0 of ret_val")
+                 | _ => assert (false, "Expected Exp.Select")
+       val _ = assert (Type.equals (ty0, intArrTy), "Expected selected variable to be int array")
+       val v_select = var0
+       val _ = assert (Option.isSome v_select, "Expected bound variable on s0")
+       val v_select = valOf v_select
 
-       val intArrTy = Type.array intTy
-       val tupleArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
-
-       val Statement.T {ty = ty0, ...} = s0
-       val Statement.T {ty = ty1, ...} = s1
-       val Statement.T {ty = ty2, ...} = s2
-
-       val _ = assert (Type.equals (ty0, intArrTy), "First flattened statement type should be int array")
-       val _ = assert (Type.equals (ty1, intArrTy), "Second flattened statement type should be int array")
-       val _ = assert (Type.equals (ty2, tupleArrTy), "Third flattened statement type should be int array * int array")
-
-       (* Verify the transfer of f_main is unchanged *)
-       val _ = case trans of
-                   Transfer.Call {func, return = Return.NonTail {cont, ...}, ...} =>
-                      if Func.equals (func, f_noreturn) andalso Label.equals (cont, L_cont) then ()
-                      else assert (false, "Transfer call target or continuation changed")
-                 | _ => assert (false, "Expected Transfer.Call transfer")
-
-       (* Verify f_noreturn has returns = NONE *)
-       val noreturnFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_noreturn))
-       val _ = assert (Option.isSome noreturnFunc', "f_noreturn should be present in the result")
-       val f_noreturn_dest = Function.dest (valOf noreturnFunc')
-       val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
+       val Statement.T {exp = exp1, ty = ty1, var = var1} = s1
+       val _ = case exp1 of
+                   Exp.PrimApp {args, prim, targs} =>
+                      if Prim.equals (prim, Prim.Array_length)
+                         andalso Vector.length args = 1
+                         andalso Var.equals (Vector.sub (args, 0), v_select)
+                         andalso Vector.length targs = 1
+                         andalso Type.equals (Vector.sub (targs, 0), intTy)
+                      then ()
+                      else assert (false, "Expected Array_length prim app on selected variable")
+                  | _ => assert (false, "Expected Exp.PrimApp")
+       val _ = assert (Type.equals (ty1, seqIndexTy), "Expected length type to be seqIndexTy")
     in () end)
 
-    val _ = summarize ()
- end
-
-
+   val _ = summarize ()
+end
