@@ -1338,9 +1338,15 @@ fun propagateThroughTransfer (vt: varTypes, fm: funcsMap,
             (* Non-tail means that the return type of `callee` is equal to the argument
                type of `cont` *)
           | Return.NonTail {cont, ...} =>
-            Vector.foreach2 (getReturnTypeOrEmpty callee,
-                             Vector.map (getBlockArgs cont, getVar),
-                             fn (ty, var) => setType (var, ty))
+            case getReturnType (vt, callee) of
+                SOME calleeReturnType =>
+                Vector.foreach2 (calleeReturnType,
+                                 Vector.map (getBlockArgs cont, getVar),
+                                 fn (ty, var) => setType (var, ty))
+
+              (* A `NONE` return value on the callee means that this path (per
+                 gemini) is  dead, so there is no need to propagate types *)
+                | NONE => ()
 in
    case t of
        Transfer.Call {args, func, return, ...} =>
