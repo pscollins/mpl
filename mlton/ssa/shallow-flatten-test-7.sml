@@ -704,5 +704,101 @@ in
         val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
      in () end)
 
+   (* Test 56: flattenOnce - nested array of tuple arrays sub bug *)
+   val _ = runTest ("Test 56: flattenOnce - nested array of tuple arrays sub bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+      val f_main = Func.fromString "f_main"
+      val L_start = Label.fromString "L_start"
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val arrayArrayTuple2Ty = Type.array arrayTuple2Ty
+
+      val v_arr_fun = Var.fromString "v_arr_fun"
+      val v_idx_fun = Var.fromString "v_idx_fun"
+      val v_idx2_fun = Var.fromString "v_idx2_fun"
+
+      val v_arr = Var.fromString "v_arr"
+      val v_elt = Var.fromString "v_elt"
+      val v_tuple = Var.fromString "v_tuple"
+      val v_idx = Var.fromString "v_idx"
+      val v_idx2 = Var.fromString "v_idx2"
+
+      val subPrim = Prim.Array_sub {readBarrier = false}
+
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v_arr, v_idx],
+                            prim = subPrim,
+                            targs = Vector.new1 arrayTuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME v_elt
+      }
+
+      val s2 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.fromList [v_elt, v_idx2],
+                            prim = subPrim,
+                            targs = Vector.new1 tuple2Ty},
+         ty = tuple2Ty,
+         var = SOME v_tuple
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.fromList [(v_arr, arrayArrayTuple2Ty), (v_idx, Type.intInf), (v_idx2, Type.intInf)],
+         label = L_start,
+         statements = Vector.fromList [s1, s2],
+         transfer = Transfer.Return (Vector.new1 v_tuple)
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.fromList [(v_arr_fun, arrayArrayTuple2Ty), (v_idx_fun, Type.intInf), (v_idx2_fun, Type.intInf)],
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new1 tuple2Ty),
+         start = L_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val policy = ShallowFlatten.MaxWidth 3
+      val p' =
+          case (SOME (ShallowFlatten.flattenOnce policy p))
+               handle ShallowFlatten.IllegalFlatteningDecision => NONE of
+            NONE => (assert (true, "Symptom of the original bug (IllegalFlatteningDecision) is present");
+                     raise TestFail "Bug is present: flattenOnce raised IllegalFlatteningDecision")
+          | SOME (SOME p') => p'
+          | SOME NONE => p
+
+      val Program.T {functions = functions', ...} = p'
+
+      val mainFunc' = List.peek (functions', fn f => Func.equals (Function.name f, f_main))
+      val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+      val f_main_dest = Function.dest (valOf mainFunc')
+      val startBlock = Vector.sub (#blocks f_main_dest, 0)
+      val Block.T {statements = stmts, ...} = startBlock
+
+      val _ = assert (Vector.length stmts = 2, "Expected 2 statements in properly flattened IR (no flattening of v_elt)")
+
+      val s1' = Vector.sub (stmts, 0)
+      val s2' = Vector.sub (stmts, 1)
+
+      val Statement.T {ty = ty1', var = var1', ...} = s1'
+      val Statement.T {ty = ty2', var = var2', ...} = s2'
+
+      val _ = assert (Type.equals (ty1', arrayTuple2Ty), "v_elt type should remain (int * int) array")
+      val _ = assert (Option.isSome var1' andalso Var.equals (valOf var1', v_elt), "v_elt variable name should be preserved")
+
+      val _ = assert (Type.equals (ty2', tuple2Ty), "v_tuple type should remain int * int")
+      val _ = assert (Option.isSome var2' andalso Var.equals (valOf var2', v_tuple), "v_tuple variable name should be preserved")
+   in () end)
+
    val _ = summarize ()
 end
