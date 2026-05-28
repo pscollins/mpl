@@ -229,7 +229,7 @@ in
         val policy = ShallowFlatten.MaxWidth 3
         (* Run flattenOnce. This triggers the Option exception bug in propagation.
            Once the bug is fixed, it will succeed and return SOME p' because flattening is applied. *)
-        val SOME p' = ShallowFlatten.flattenOnce policy p
+        val p' = valOf (ShallowFlatten.flattenOnce policy p)
         val Program.T {functions, ...} = p'
 
         (* Verify the flattened IR of f_main *)
@@ -379,7 +379,7 @@ in
        }
 
        val policy = ShallowFlatten.MaxWidth 3
-       val SOME p' = ShallowFlatten.flattenOnce policy p
+       val p' = valOf (ShallowFlatten.flattenOnce policy p)
 
        (* Under the buggy compiler, this will raise a typecheck Fail exception *)
        val _ = Ssa.typeCheck p'
