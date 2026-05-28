@@ -1,3 +1,4 @@
+structure SmlString = String
 local
    open Ssa
 
@@ -982,6 +983,101 @@ in
                  SOME tys => assert (Vector.length tys = 1 andalso Type.equals (Vector.sub (tys, 0), tupleTy),
                                      "Case 4: Return failed to propagate return type")
                | NONE => raise TestFail "Case 4: Expected callee return type to be SOME"
+
+      val _ = ShallowFlatten.destroyVarTypes vt
+      val _ = #destroyFuncsMap fm ()
+   in () end)
+
+   (* Test 54: propagateThroughTransfer - Call to function returning NONE with continuation block arguments *)
+   val _ = runTest ("Test 54: propagateThroughTransfer - Call to function returning NONE with continuation block arguments", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+      val f_main = Func.fromString "f_main"
+      val f_noreturn = Func.fromString "f_noreturn"
+      val L_start = Label.fromString "L_start"
+      val L_cont = Label.fromString "L_cont"
+      val L_noreturn = Label.fromString "L_noreturn"
+
+      val intTy = Type.intInf
+      val v_cont_arg = Var.fromString "v_cont_arg"
+
+      val noreturnBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_noreturn,
+         statements = Vector.new0 (),
+         transfer = Transfer.Bug
+      }
+
+      val noreturnFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [noreturnBlock],
+         inline = InlineAttr.Auto,
+         name = f_noreturn,
+         raises = NONE,
+         returns = NONE,
+         start = L_noreturn
+      }
+
+      val transfer = Transfer.Call {
+         args = Vector.new0 (),
+         func = f_noreturn,
+         inline = InlineAttr.Auto,
+         return = Return.NonTail {
+            cont = L_cont,
+            handler = Handler.Caller
+         }
+      }
+
+      val mainStartBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.new0 (),
+         transfer = transfer
+      }
+
+      val mainContBlock = Block.T {
+         args = Vector.fromList [(v_cont_arg, intTy)],
+         label = L_cont,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainStartBlock, mainContBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [noreturnFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val vt = ShallowFlatten.newVarTypes ()
+      val fm = ShallowFlatten.FlattenUtil.newFuncsMap p
+
+      (* Initialize types for functions and variables *)
+      val _ = ShallowFlatten.setReturnType (vt, f_noreturn, NONE)
+      val _ = ShallowFlatten.setReturnType (vt, f_main, SOME (Vector.new0 ()))
+      val _ = ShallowFlatten.setVarType (vt, v_cont_arg, intTy)
+
+      (* Under the buggy compiler, propagateThroughTransfer raises Fail "Vector.foldi2From" *)
+      val _ =
+         case (SOME (ShallowFlatten.propagateThroughTransfer (vt, fm, f_main, transfer)))
+              handle Fail msg =>
+                 if SmlString.hasPrefix (msg, {prefix = "Vector.foldi2From"}) then NONE
+                 else raise Fail msg of
+           NONE => (assert (true, "Symptom of the original bug present in propagateThroughTransfer");
+                    ShallowFlatten.destroyVarTypes vt;
+                    #destroyFuncsMap fm ();
+                    raise TestFail "Bug is present: propagateThroughTransfer raised Vector.foldi2From")
+         | SOME () => ()
 
       val _ = ShallowFlatten.destroyVarTypes vt
       val _ = #destroyFuncsMap fm ()
