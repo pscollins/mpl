@@ -194,5 +194,57 @@ in
       val _ = assert (Type.equals (bTy, Type.intInf), "block statement transformed to intInf")
    in () end)
 
+(* Test 4: deepFlattenTypeForPolicy normal cases *)
+   val _ = runTest ("Test 4: deepFlattenTypeForPolicy normal cases", fn () => let
+      val intTy = Type.intInf
+      val policy = ShallowFlatten.MaxWidth 2
+
+      (* 1. ('a * 'b) array -> 'a array * 'b array *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val e1 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val r1 = ShallowFlatten.deepFlattenTypeForPolicy policy t1
+
+      (* 2. (('a * 'b) array) ref -> ('a array * 'b array) ref *)
+      val t2 = Type.reff t1
+      val e2 = Type.reff e1
+      val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
+
+      (* 3. (('a * 'b) array) vector -> ('a array * 'b array) vector *)
+      val t3 = Type.vector t1
+      val e3 = Type.vector e1
+      val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
+   in
+      assert (Type.equals (r1, e1), "t1 deepFlatten");
+      assert (Type.equals (r2, e2), "t2 deepFlatten");
+      assert (Type.equals (r3, e3), "t3 deepFlatten")
+   end)
+
+(* Test 5: deepFlattenTypeForPolicy edge cases *)
+   val _ = runTest ("Test 5: deepFlattenTypeForPolicy edge cases", fn () => let
+      val intTy = Type.intInf
+      val policy = ShallowFlatten.MaxWidth 2
+
+      (* 1. Width > MaxWidth: (int * int * int) array -> (int * int * int) array *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
+      val e1 = t1
+      val r1 = ShallowFlatten.deepFlattenTypeForPolicy policy t1
+
+      (* 2. Double nesting: (('a * 'b) array) array -> ('a array * 'b array) array *)
+      val t2_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val t2 = Type.array t2_inner
+      val e2 = Type.array (Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy]))
+      val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
+
+      (* 3. Array of tuple of arrays (outer is flattenable): (('a array) * ('b array)) array -> ('a array) array * ('b array) array *)
+      val t3_inner = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val t3 = Type.array t3_inner
+      val e3 = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
+      val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
+   in
+      assert (Type.equals (r1, e1), "t1 deepFlatten edge case");
+      assert (Type.equals (r2, e2), "t2 deepFlatten edge case");
+      assert (Type.equals (r3, e3), "t3 deepFlatten edge case")
+   end)
+
    val _ = summarize ()
 end

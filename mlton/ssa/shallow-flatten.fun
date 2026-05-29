@@ -99,6 +99,9 @@ fun layoutConDecision cd =
       | FlattenNode cds =>
         Layout.seq [Layout.str "Flatten", Layout.paren (Vector.layout layoutConDecision cds)]
 
+fun deepFlattenTypeForPolicy (policy: flattenPolicy) (t: Type.t): Type.t =
+   Error.bug "deepFlattenTypeForPolicy: TODO"
+
 fun getConDecisionForPolicy (policy: flattenPolicy)
                             (t: Type.t): conDecision = let
    fun shouldMark t = shouldMarkType (policy, t)

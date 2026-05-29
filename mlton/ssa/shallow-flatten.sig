@@ -76,7 +76,7 @@ sig
 
         (('a array) * ('b array)) array -> ('a array array) * ('b array array)
    *)
-   val deepFlattenTypeForPoliy: flattenPolicy -> Type.t -> Type.t
+   val deepFlattenTypeForPolicy: flattenPolicy -> Type.t -> Type.t
 
    (* Describes a flattening decision for a nested type *)
    datatype conDecision =
