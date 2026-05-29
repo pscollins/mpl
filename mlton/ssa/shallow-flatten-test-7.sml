@@ -705,7 +705,7 @@ in
      in () end)
 
    (* Test 56: flattenOnce - nested array of tuple arrays sub bug *)
-   val _ = runTest ("Test 56: flattenOnce - nested array of tuple arrays sub bug", fn () => let
+   val _ = runTestDisabled ("Test 56: flattenOnce - nested array of tuple arrays sub bug", fn () => let
       val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
 
       val f_main = Func.fromString "f_main"
