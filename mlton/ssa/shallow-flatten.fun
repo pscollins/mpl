@@ -1272,6 +1272,15 @@ fun transform (p: Program.t): Program.t =
                 NONE => p
               | SOME p' => loop (p', n + 1)
     in
-       loop (p, 0)
-    end
+        loop (p, 0)
+     end
+
+type flattener = {
+   updateType: Type.t -> Type.t,
+   updateStatements: Statement.t vector -> Statement.t vector
+}
+
+fun flattenProgram (_: flattener) (_: Program.t) : Program.t =
+   Error.bug "TODO: flattenProgram"
+
 end

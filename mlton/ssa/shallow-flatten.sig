@@ -15,6 +15,28 @@ sig
    type funcsMap = FlattenUtil.funcsMap
 
 
+   (* Abstract interface for applying the flattening transformation *)
+   type flattener = {
+      (* Transformation applied to all `Type.t`s in the program that *do not*
+      appear in a `Statement.t`, specifically:
+
+         * Datatype type constructor type arguments
+         * Function `args`, `returns` and `raises`
+         * Block arguments
+
+       *)
+      updateType: Type.t -> Type.t,
+      (* Transformation applied to all `Statement.t`s, specifically:
+
+         * Global declarations
+         * Block bodies
+       *)
+      updateStatements: Statement.t vector -> Statement.t vector
+   }
+
+   (* Applies `flattener` to the specified program in source order. *)
+   val flattenProgram: flattener -> Program.t -> Program.t
+
 
    (* If the provided `Type.t` is an array or vector of tuples, returns the
    corresponding tuple of arrays or vectors, i.e.:
