@@ -54,6 +54,30 @@ sig
         (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
         MaxWidth of int
 
+   (* Update an entire nested subject to `flattenPolicy`
+
+      Unlike `maybeFlattenType`, this function traverses through non-flattenable
+      types and transforms any flattenable nodes in the provided `Type.t`, i.e.
+
+        ('a * 'b) array -> 'a array * 'b array
+        (('a * b) array) ref -> (('a array) * ('b array)) ref
+
+      However, this function only applies the flattening transformation once at
+      each "level", and does *not* iteratively flatten any newly-flattenable
+      types in the output, i.e. we have:
+
+        (('a * b) array) array -> (('a array) * ('b array)) array
+
+      and not:
+
+        (('a * b) array) array -> ('a array array) * ('b array array)
+
+      even though:
+
+        (('a array) * ('b array)) array -> ('a array array) * ('b array array)
+   *)
+   val deepFlattenTypeForPoliy: flattenPolicy -> Type.t -> Type.t
+
    (* Describes a flattening decision for a nested type *)
    datatype conDecision =
             (* Pass the existing type through unflattened and recurse *)
