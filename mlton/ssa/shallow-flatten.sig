@@ -78,6 +78,47 @@ sig
    *)
    val deepFlattenTypeForPolicy: flattenPolicy -> Type.t -> Type.t
 
+   (* Returns `true` if `Statement.t` requires the `maybeFlattenStatement`
+      transformation (below) under `policy`, `false` otherwise.
+
+      Specifically:
+
+        * Non-`PrimApp`: false
+        * Non-`Vector_*` or `Array_*` `PrimApp`: false
+
+        * Most `Vector_*` or `Array_*` `PrimApp`s: true if the type argument is
+          a tuple type that matches `policy`, `false` otheriwse.
+
+          - Exception: `Array_uninitIsNop` has an `a' array` type argument, and
+            so we check the policy against `a'`
+    *)
+   val doesPolicyFlattenStatement: flattenPolicy -> Statement.t -> bool
+                                                                
+   (* Joinly flattens statements and the types they contain.
+
+      For any `PrimApp` statements that require flattening under `policy`,
+      transforms them according to the rules of `maybeFlattenStatements`
+      (below). Then applies the `deepFlattenTypeForPolicy` on all resulting
+      `Statement.t`s (perhaps just the original one.
+
+       Examples:
+
+         * Flattenable statement, no type transformation required
+         arr: ('a * b) array = Array_alloc['a * b](n]
+         -->
+         arr_a: 'a array = Array_alloc['a](n)
+         arr_b: 'b array = Array_alloc['b](n)
+         arr: ('a array) * (b' array) = tuple (arr_a, arr_b)
+
+
+         * Non-flattenable statement, with type transformation required
+         arr: ('a * b) array array = Array_alloc[('a * b') array](n]
+         -->
+         arr: ('a array * b array) array = Array_alloc['a array * b' array](n]
+
+    *)
+   val deepFlattenStatementsForPolicy: flattenPolicy -> Statement.t -> Statement.t vector
+
    (* Describes a flattening decision for a nested type *)
    datatype conDecision =
             (* Pass the existing type through unflattened and recurse *)
