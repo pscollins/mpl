@@ -93,7 +93,7 @@ sig
             so we check the policy against `a'`
     *)
    val doesPolicyFlattenStatement: flattenPolicy -> Statement.t -> bool
-                                                                
+
    (* Joinly flattens statements and the types they contain.
 
       For any `PrimApp` statements that require flattening under `policy`,

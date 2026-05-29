@@ -1278,6 +1278,12 @@ fun transform (p: Program.t): Program.t =
         loop (p, 0)
      end
 
+fun doesPolicyFlattenStatement (policy: flattenPolicy) (s: Statement.t): bool =
+   Error.bug "doesPolicyFlattenStatement: TODO"
+
+fun deepFlattenStatementsForPolicy (policy: flattenPolicy) (s: Statement.t): Statement.t vector =
+   Error.bug "deepFlattenStatementsForPolicy: TODO"
+
 type flattener = {
    updateType: Type.t -> Type.t,
    updateStatements: Statement.t vector -> Statement.t vector
