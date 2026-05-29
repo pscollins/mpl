@@ -3,6 +3,7 @@
 local
    ../atoms/sources.mlb
    sources.mlb
+   test-util.sml
    flatten-util-test-common.sml
    flatten-util-test.sml
 in
