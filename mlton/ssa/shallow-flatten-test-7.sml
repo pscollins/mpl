@@ -878,7 +878,7 @@ in
          (Ssa.typeCheck p'; false)
          handle Fail msg =>
             if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
-               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
+               true
             else raise Fail msg
 
       val _ =
@@ -1047,7 +1047,7 @@ in
          (Ssa.typeCheck p'; false)
          handle Fail msg =>
             if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
-               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
+               true
             else raise Fail msg
 
       val _ =
@@ -1168,7 +1168,7 @@ in
          (Ssa.typeCheck p'; false)
          handle Fail msg =>
             if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
-               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
+               true
             else raise Fail msg
 
       val _ =
