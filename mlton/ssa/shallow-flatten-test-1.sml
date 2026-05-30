@@ -321,7 +321,7 @@ in
       val r_pos2 = ShallowFlatten.doesPolicyFlattenStatement policy s_pos2
 
       (* Positive Case 3 (Exception check): Array_uninitIsNop on 2-tuple array *)
-      val s_pos3 = makePrimAppStatement (Prim.Array_uninitIsNop, [Type.array tuple2Ty])
+      val s_pos3 = makePrimAppStatement (Prim.Array_uninitIsNop, [tuple2Ty])
       val r_pos3 = ShallowFlatten.doesPolicyFlattenStatement policy s_pos3
 
       (* Negative Case 1: Non-PrimApp (Const) *)
@@ -345,22 +345,22 @@ in
       val r_neg4 = ShallowFlatten.doesPolicyFlattenStatement policy s_neg4
 
       (* Negative Case 5: Array_uninitIsNop on non-tuple array *)
-      val s_neg5 = makePrimAppStatement (Prim.Array_uninitIsNop, [Type.array intTy])
+      val s_neg5 = makePrimAppStatement (Prim.Array_uninitIsNop, [intTy])
       val r_neg5 = ShallowFlatten.doesPolicyFlattenStatement policy s_neg5
 
       (* Negative Case 6: Array_uninitIsNop on 3-tuple array (width 3 > MaxWidth 2) *)
-      val s_neg6 = makePrimAppStatement (Prim.Array_uninitIsNop, [Type.array tuple3Ty])
+      val s_neg6 = makePrimAppStatement (Prim.Array_uninitIsNop, [tuple3Ty])
       val r_neg6 = ShallowFlatten.doesPolicyFlattenStatement policy s_neg6
    in
       assert (r_pos1 = true, "r_pos1: Array_alloc on 2-tuple should flatten");
       assert (r_pos2 = true, "r_pos2: Vector_length on 2-tuple should flatten");
-      assert (r_pos3 = true, "r_pos3: Array_uninitIsNop on 2-tuple array should flatten");
+      assert (r_pos3 = true, "r_pos3: Array_uninitIsNop on 2-tuple should flatten");
       assert (r_neg1 = false, "r_neg1: Const should not flatten");
       assert (r_neg2 = false, "r_neg2: Ref_ref should not flatten");
       assert (r_neg3 = false, "r_neg3: Array_alloc on int should not flatten");
       assert (r_neg4 = false, "r_neg4: Array_alloc on 3-tuple should not flatten");
-      assert (r_neg5 = false, "r_neg5: Array_uninitIsNop on int array should not flatten");
-      assert (r_neg6 = false, "r_neg6: Array_uninitIsNop on 3-tuple array should not flatten")
+      assert (r_neg5 = false, "r_neg5: Array_uninitIsNop on int should not flatten");
+      assert (r_neg6 = false, "r_neg6: Array_uninitIsNop on 3-tuple should not flatten")
    end)
 
 (* Test 7: deepFlattenStatementsForPolicy *)
