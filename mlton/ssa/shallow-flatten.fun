@@ -1346,12 +1346,10 @@ end
 fun doesPolicyFlattenStatement (policy: flattenPolicy)
                                (s: Statement.t): bool = let
    val Statement.T {exp, ty, var} = s
-   fun checkArrType targs = shouldMarkType (policy, getUniqueElement targs)
    (* TODO: add a new version that doesn't require wrapping *)
    fun checkElType targs = shouldMarkType (policy, Type.array (getUniqueElement targs))
    fun checkPrim {args, prim, targs} =
-       (* Default assumes the targ is the element type, some special cases
-       assume it's the array type.
+       (* All currently-supported cases take the the `targ` as the element type
 
        TODO(pscollins): Audit
        *)
@@ -1366,7 +1364,7 @@ fun doesPolicyFlattenStatement (policy: flattenPolicy)
          | Prim.Array_toArray => checkElType targs
          | Prim.Array_toVector => checkElType targs
          | Prim.Array_uninit => checkElType targs
-         | Prim.Array_uninitIsNop => checkArrType targs
+         | Prim.Array_uninitIsNop => checkElType targs
          | Prim.Array_update _ => checkElType targs
          | Prim.Vector_length => checkElType targs
          | Prim.Vector_sub => checkElType targs
