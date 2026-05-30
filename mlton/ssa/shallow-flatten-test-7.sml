@@ -829,6 +829,13 @@ in
       val v_alloc = Var.fromString "v_alloc"
       val n = Var.fromString "n"
 
+      val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+      val s_n = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (10, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME n
+      }
+
       val allocPrim = Prim.Array_alloc {raw = false}
       val s = Statement.T {
          exp = Exp.PrimApp {args = Vector.new1 n,
@@ -839,14 +846,14 @@ in
       }
 
       val mainBlock = Block.T {
-         args = Vector.fromList [(n, intTy)],
+         args = Vector.new0 (),
          label = L_start,
-         statements = Vector.fromList [s],
+         statements = Vector.fromList [s_n, s],
          transfer = Transfer.Return (Vector.new1 v_alloc)
       }
 
       val mainFunction = Function.new {
-         args = Vector.fromList [(n, intTy)],
+         args = Vector.new0 (),
          blocks = Vector.fromList [mainBlock],
          inline = InlineAttr.Auto,
          name = f_main,
@@ -870,7 +877,8 @@ in
       val typecheck_failed =
          (Ssa.typeCheck p'; false)
          handle Fail msg =>
-            if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then true
+            if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
+               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
             else raise Fail msg
 
       val _ =
@@ -887,14 +895,15 @@ in
       val startBlock = Vector.sub (#blocks f_main_dest, 0)
       val Block.T {statements = stmts, ...} = startBlock
 
-      val _ = assert (Vector.length stmts = 6, "Expected 6 statements after flattening nested array alloc")
+      val _ = assert (Vector.length stmts = 7, "Expected 7 statements after flattening nested array alloc")
 
-      val s0 = Vector.sub (stmts, 0)
-      val s1 = Vector.sub (stmts, 1)
-      val s2 = Vector.sub (stmts, 2)
-      val s3 = Vector.sub (stmts, 3)
-      val s4 = Vector.sub (stmts, 4)
-      val s5 = Vector.sub (stmts, 5)
+      val flatStmts = Vector.tabulate (6, fn i => Vector.sub (stmts, i + 1))
+      val s0 = Vector.sub (flatStmts, 0)
+      val s1 = Vector.sub (flatStmts, 1)
+      val s2 = Vector.sub (flatStmts, 2)
+      val s3 = Vector.sub (flatStmts, 3)
+      val s4 = Vector.sub (flatStmts, 4)
+      val s5 = Vector.sub (flatStmts, 5)
 
       val intArrTy = Type.array intTy
       val tuple2ArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
