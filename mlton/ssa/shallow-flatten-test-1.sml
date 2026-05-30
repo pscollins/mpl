@@ -229,10 +229,10 @@ in
       val e1 = t1
       val r1 = ShallowFlatten.deepFlattenTypeForPolicy policy t1
 
-      (* 2. Double nesting: (('a * 'b) array) array -> ('a array * 'b array) array *)
+      (* 2. Double nesting (requires convergence): (('a * 'b) array) array -> 'a array array * 'b array array *)
       val t2_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val t2 = Type.array t2_inner
-      val e2 = Type.array (Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy]))
+      val e2 = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
       val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
 
       (* 3. Array of tuple of arrays (outer is flattenable): (('a array) * ('b array)) array -> ('a array) array * ('b array) array *)
@@ -240,10 +240,48 @@ in
       val t3 = Type.array t3_inner
       val e3 = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
       val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
+
+      (* 4. Triple nesting: ((('a * 'b) array) array) array -> 'a array array array * 'b array array array *)
+      val t4_inner_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val t4_inner = Type.array t4_inner_inner
+      val t4 = Type.array t4_inner
+      val e4 = Type.tuple (Vector.fromList [Type.array (Type.array (Type.array intTy)),
+                                            Type.array (Type.array (Type.array intTy))])
+      val r4 = ShallowFlatten.deepFlattenTypeForPolicy policy t4
+
+      (* 5. Ref nesting: ((('a * 'b) array) array) ref -> ('a array array * 'b array array) ref *)
+      val t5_inner = Type.array (Type.array (Type.tuple (Vector.fromList [intTy, intTy])))
+      val t5 = Type.reff t5_inner
+      val e5_inner = Type.tuple (Vector.fromList [Type.array (Type.array intTy),
+                                                  Type.array (Type.array intTy)])
+      val e5 = Type.reff e5_inner
+      val r5 = ShallowFlatten.deepFlattenTypeForPolicy policy t5
+
+      (* 6. Alternating array/vector nesting: ((('a * 'b) array) vector) array -> 'a array vector array * 'b array vector array *)
+      val t6_inner_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val t6_inner = Type.vector t6_inner_inner
+      val t6 = Type.array t6_inner
+      val e6 = Type.tuple (Vector.fromList [Type.array (Type.vector (Type.array intTy)),
+                                            Type.array (Type.vector (Type.array intTy))])
+      val r6 = ShallowFlatten.deepFlattenTypeForPolicy policy t6
+
+      (* 7. Tuple of array nesting (MaxWidth 3): (('a * 'b) array * 'c) array -> 'a array array * 'b array array * 'c array *)
+      val policy3 = ShallowFlatten.MaxWidth 3
+      val t7_array = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val t7_inner = Type.tuple (Vector.fromList [t7_array, intTy])
+      val t7 = Type.array t7_inner
+      val e7 = Type.tuple (Vector.fromList [Type.array (Type.array intTy),
+                                            Type.array (Type.array intTy),
+                                            Type.array intTy])
+      val r7 = ShallowFlatten.deepFlattenTypeForPolicy policy3 t7
    in
       assert (Type.equals (r1, e1), "t1 deepFlatten edge case");
       assert (Type.equals (r2, e2), "t2 deepFlatten edge case");
-      assert (Type.equals (r3, e3), "t3 deepFlatten edge case")
+      assert (Type.equals (r3, e3), "t3 deepFlatten edge case");
+      assert (Type.equals (r4, e4), "t4 deepFlatten iterative convergence");
+      assert (Type.equals (r5, e5), "t5 deepFlatten iterative convergence");
+      assert (Type.equals (r6, e6), "t6 deepFlatten iterative convergence");
+      assert (Type.equals (r7, e7), "t7 deepFlatten iterative convergence")
    end)
 
 (* Test 6: doesPolicyFlattenStatement positive and negative cases *)
@@ -400,11 +438,11 @@ in
       val Statement.T {exp = e2_0, ty = t2_0, var = v2_0} = Vector.sub (res2, 0)
       
       (* Expected types after deep flattening:
-         - LHS type: ((int * int) array) array -> (int array * int array) array
+         - LHS type: ((int * int) array) array -> int array array * int array array
          - Targ: (int * int) array -> int array * int array
        *)
       val expectedTarg = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
-      val expectedLHSTy = Type.array expectedTarg
+      val expectedLHSTy = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
       
       val _ = assertType (Vector.sub (res2, 0), expectedLHSTy, "res2[0] type")
       val _ = case v2_0 of

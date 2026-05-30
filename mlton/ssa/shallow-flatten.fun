@@ -4,6 +4,13 @@ open S
 structure FlattenUtil = FlattenUtil (S)
 open FlattenUtil
 
+(* Toggle verbose logging *)
+val kVerbose = false
+
+fun verboseDiagnostic thunk =
+    if kVerbose then Control.diagnostic thunk
+    else ()
+
 (* Returns the unique variable bound by `s`, else crash *)
 fun extractBind (s: Statement.t): Var.t =
     case Statement.var s of
@@ -1305,11 +1312,35 @@ in
               main = main}
 end
 
+fun policyToString (policy: flattenPolicy) =
+    case policy of
+        MaxWidth w => concat ["MaxWidth:", Int.toString w]
+
 fun deepFlattenTypeForPolicy (policy: flattenPolicy)
-                             (t: Type.t): Type.t =
-    (* TODO: simplify? *)
-    applyConDecision (getConDecisionForPolicy policy t,
-                      t)
+                             (t: Type.t): Type.t = let
+    fun doFlatten t = let
+       (* TODO: simplify? *)
+       val t' =
+           applyConDecision (getConDecisionForPolicy policy t, t)
+    in
+       (* Iteratively apply to convergence *)
+       if Type.equals (t, t') then t'
+       else doFlatten t'
+    end
+    val t' = doFlatten t
+    fun logThunk () = Layout.align [
+           Layout.str
+               (String.concat ["deepFlattenTypeForPolicy(",
+                               policyToString policy, "):"]),
+           Layout.str "old: ",
+           Type.layout t,
+           Layout.str "new: ",
+           Type.layout t'
+        ]
+    val _ = verboseDIagnostic logThunk
+in
+   t'
+end
 
 
 fun doesPolicyFlattenStatement (policy: flattenPolicy)
