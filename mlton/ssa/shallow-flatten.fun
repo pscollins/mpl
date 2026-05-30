@@ -1275,9 +1275,6 @@ fun transform (p: Program.t): Program.t =
         loop (p, 0)
      end
 
-fun doesPolicyFlattenStatement (policy: flattenPolicy) (s: Statement.t): bool =
-   Error.bug "doesPolicyFlattenStatement: TODO"
-
 fun deepFlattenStatementsForPolicy (policy: flattenPolicy) (s: Statement.t): Statement.t vector =
    Error.bug "deepFlattenStatementsForPolicy: TODO"
 
@@ -1335,4 +1332,40 @@ fun deepFlattenTypeForPolicy (policy: flattenPolicy)
                       t)
 
 
+fun doesPolicyFlattenStatement (policy: flattenPolicy)
+                               (s: Statement.t): bool = let
+   val Statement.T {exp, ty, var} = s
+   fun checkArrType targs = shouldMarkType (policy, getUniqueElement targs)
+   (* TODO: add a new version that doesn't require wrapping *)
+   fun checkElType targs = shouldMarkType (policy, Type.array (getUniqueElement targs))
+   fun checkPrim {args, prim, targs} =
+       (* Default assumes the targ is the element type, some special cases
+       assume it's the array type.
+
+       TODO(pscollins): Audit
+       *)
+       case prim of
+           Prim.Array_alloc _ => checkElType targs
+         | Prim.Array_array => checkElType targs
+         | Prim.Array_cas _ => checkElType targs
+         | Prim.Array_copyArray => checkElType targs
+         | Prim.Array_copyVector => checkElType targs
+         | Prim.Array_length => checkElType targs
+         | Prim.Array_sub _ => checkElType targs
+         | Prim.Array_toArray => checkElType targs
+         | Prim.Array_toVector => checkElType targs
+         | Prim.Array_uninit => checkElType targs
+         | Prim.Array_uninitIsNop => checkArrType targs
+         | Prim.Array_update _ => checkElType targs
+         | Prim.Vector_length => checkElType targs
+         | Prim.Vector_sub => checkElType targs
+         | Prim.Vector_vector => checkElType targs
+         (* Non-container prims always return false *)
+         | _ => false
+in
+   case exp of
+       Exp.PrimApp prim => checkPrim prim
+    | _ => false
 end
+
+end (* end struct *)
