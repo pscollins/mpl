@@ -1275,9 +1275,6 @@ fun transform (p: Program.t): Program.t =
         loop (p, 0)
      end
 
-fun deepFlattenStatementsForPolicy (policy: flattenPolicy) (s: Statement.t): Statement.t vector =
-   Error.bug "deepFlattenStatementsForPolicy: TODO"
-
 type flattener = {
    updateType: Type.t -> Type.t,
    updateStatements: Statement.t vector -> Statement.t vector
@@ -1365,7 +1362,45 @@ fun doesPolicyFlattenStatement (policy: flattenPolicy)
 in
    case exp of
        Exp.PrimApp prim => checkPrim prim
-    | _ => false
+     | _ => false
 end
+
+fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
+                                   (s: Statement.t): Statement.t vector = let
+   (* val Statement.T {exp, ty, var} = s *)
+   val updateType = deepFlattenTypeForPolicy policy
+   fun updateTypesInExp exp =
+       case exp of
+           Exp.PrimApp {args, prim, targs} =>
+           Exp.PrimApp {args = args,
+                        prim = prim,
+                        targs = Vector.map (targs, updateType)}
+           | _ => exp
+
+   fun updateTypesInStatement (Statement.T {exp, ty, var}) =
+       Statement.T {exp = updateTypesInExp exp,
+                    ty = updateType ty,
+                    var = var}
+
+   val statements =
+       if (doesPolicyFlattenStatement policy s) then
+          (* NONE means a prim is missing, crash *)
+          Option.valOf (maybeFlattenStatement s)
+       else Vector.new1 s
+   val result = Vector.map (statements, updateTypesInStatement)
+   fun logThunk() = Layout.align [
+          Layout.str "deepFlattenStatementsForPolicy: ",
+          Layout.str "initial=",
+          Statement.layout s,
+          Layout.str "afterFlatten=",
+          Vector.layout Statement.layout statements,
+          Layout.str "afterTransform=",
+          Vector.layout Statement.layout result
+       ]
+   val _ = Control.diagnostic logThunk
+in
+   result
+end
+
 
 end (* end struct *)
