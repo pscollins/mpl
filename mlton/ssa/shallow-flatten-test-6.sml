@@ -152,6 +152,14 @@ in
          in () end
    in () end)
 
+   (* Test 9: Ref_deref flattening
+    *
+    * Expected input IR:
+    *   val x = prim Ref_deref [(intInf * intInf) array] (xy)
+    *
+    * Expected output IR (when flattened):
+    *   val x = prim Ref_deref [(intInf array * intInf array)] (xy)
+    *)
    val _ = runTest ("Test 9: Ref_deref flattening", fn () => let
       val f_test = Func.fromString "f_test"
       val L_start = Label.fromString "L_start"
@@ -239,6 +247,14 @@ in
          in () end
    in () end)
 
+   (* Test 10: Nested Ref_deref flattening
+    *
+    * Expected input IR:
+    *   val x = prim Ref_deref [((intInf * intInf) array * intInf)] (xy)
+    *
+    * Expected output IR (when flattened):
+    *   val x = prim Ref_deref [((intInf array * intInf array) * intInf)] (xy)
+    *)
    val _ = runTest ("Test 10: Nested Ref_deref flattening", fn () => let
       val mainFunc = Func.fromString "main"
       val L0 = Label.fromString "L0"

@@ -1441,20 +1441,51 @@ in
    result
 end
 
+fun bindEquals (l: Var.t option, r: Var.t option) =
+    case (l, r) of
+      (NONE, NONE) => true
+     | (SOME l', SOME r') => Var.equals (l', r')
+     | _ => false
+
+fun statementEquals (l, r) = let
+   val Statement.T {exp=lExp, ty=lTy, var=lVar} = l
+   val Statement.T {exp=rExp, ty=rTy, var=rVar} = r
+in
+   Exp.equals (lExp, rExp) andalso
+   Type.equals (lTy, rTy) andalso
+   bindEquals (lVar, rVar)
+end
+
+
 fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
    val progress = ref false
-   fun flattenStatements statements = let
-      val result =
-          Vector.concatV (Vector.map (statements,
-                                      deepFlattenStatementsForPolicy policy))
 
-      (* Hack: Flattening always increases the statement count, use it to see if
-         we made progress *)
-      val _ = if (Vector.size result) > (Vector.size statements) then
-                 progress := true
-              else ()
+   fun checkProgress (statements: Statement.t vector,
+                      flattened: Statement.t vector vector) = let
+      fun check (s: Statement.t, fs: Statement.t vector): bool =
+          (* New statements always means progress *)
+          if Vector.length fs > 1 then true
+          (* Otherwise, need to inspect the statement to see if any types
+             changed *)
+          else not (statementEquals (s, getUniqueElement fs))
+      fun doUpdate (s, fs) =
+          if !progress then
+             ()
+          else if check (s, fs) then
+             progress := true
+          else ()
    in
-      result
+      Vector.foreach2 (statements, flattened, doUpdate)
+   end
+
+   (* Applies `deepFlattenStatementsForPolicy` and updates `progress` to relect
+      any changes *)
+   fun flattenStatements statements = let
+      val flattened = Vector.map (statements,
+                                  deepFlattenStatementsForPolicy policy)
+      val _ = checkProgress (statements, flattened)
+   in
+      Vector.concatV flattened
    end
    val flattener = {
       updateType = deepFlattenTypeForPolicy policy,
