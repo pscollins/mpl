@@ -215,9 +215,9 @@ in
       val e2 = Type.reff e1
       val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
 
-      (* 3. (('a * 'b) array) vector -> ('a array * 'b array) vector *)
+      (* 3. (('a * 'b) array) vector -> 'a array vector * 'b array vector *)
       val t3 = Type.vector t1
-      val e3 = Type.vector e1
+      val e3 = Type.tuple (Vector.fromList [Type.vector (Type.array intTy), Type.vector (Type.array intTy)])
       val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
    in
       assertEqualTypes (r1, e1, t1, "t1 deepFlatten");
@@ -276,9 +276,11 @@ in
       val t7_array = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val t7_inner = Type.tuple (Vector.fromList [t7_array, intTy])
       val t7 = Type.array t7_inner
-      val e7 = Type.tuple (Vector.fromList [Type.array (Type.array intTy),
-                                            Type.array (Type.array intTy),
-                                            Type.array intTy])
+      val e7 = Type.tuple (Vector.fromList
+                             [Type.tuple (Vector.fromList
+                                            [Type.array (Type.array intTy),
+                                             Type.array (Type.array intTy)]),
+                              Type.array intTy])
       val r7 = ShallowFlatten.deepFlattenTypeForPolicy policy3 t7
    in
       assertEqualTypes (r1, e1, t1, "t1 deepFlatten edge case");
