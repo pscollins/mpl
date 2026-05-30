@@ -1213,67 +1213,50 @@ in
               main = main}
 end
 
-fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
-   (* First pass: collect all of the variables in the program that need
-   flattening *)
-   val fv = getFlattenedVarsInProgram (policy, p)
-   val rewriter = {
-      doStatements = flattenStatements fv,
-      doArgs = flattenArgs fv,
-      doTransfer = fn (_, transfer) => transfer
-   }
-   val p' as Program.T {functions, ...} = rewriteBfs rewriter p
-   val count = markedCount fv
+(* fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let *)
+(*    (* First pass: collect all of the variables in the program that need *)
+(*    flattening *) *)
+(*    val fv = getFlattenedVarsInProgram (policy, p) *)
+(*    val rewriter = { *)
+(*       doStatements = flattenStatements fv, *)
+(*       doArgs = flattenArgs fv, *)
+(*       doTransfer = fn (_, transfer) => transfer *)
+(*    } *)
+(*    val p' as Program.T {functions, ...} = rewriteBfs rewriter p *)
+(*    val count = markedCount fv *)
 
-   (* Second pass: propagate types + update datatype declarations *)
-   val vt = newVarTypes ()
-   (* Seed with the initial types *)
-   val _ = setInitialTypes (vt, p')
-   val fm = newFuncsMap p'
-   fun doPropagateThroughStatements ss = let
-      fun doStmt s = propagateTypesInStatement (vt, s)
-   in
-      Vector.map (ss, doStmt)
-   end
-   fun doPropagateThroughTransfer (f, transfer) =
-       (propagateThroughTransfer (vt, fm, f, transfer);
-        transfer)
-   (* Run propagation *)
-   val propagator = {
-      doStatements = doPropagateThroughStatements,
-      doArgs = bindTypesInArgs vt,
-      (* doArgs = fn x => x, *)
-      doTransfer = doPropagateThroughTransfer
-   }
-   (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
-   val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p'))
-   (* val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p') *)
-   (* Cleanup *)
-   val {destroyFuncsMap, ...} = fm
-   val _ = destroyFuncsMap ()
-   val _ = destroyVarTypes vt
-   val _ = destroyFlattenedVars fv
-in
-   if count > 0 then SOME p''
-   else NONE
-end
-
-
-fun transform (p: Program.t): Program.t =
-    let
-       val policy =
-           case !Control.shallowFlattenPolicy of
-               Control.ShallowFlattenPolicy.MaxWidth n => MaxWidth n
-       fun loop (p, n) =
-          if n >= !Control.shallowFlattenMaxIters
-             then p
-          else
-             case flattenOnce policy p of
-                NONE => p
-              | SOME p' => loop (p', n + 1)
-    in
-        loop (p, 0)
-     end
+(*    (* Second pass: propagate types + update datatype declarations *) *)
+(*    val vt = newVarTypes () *)
+(*    (* Seed with the initial types *) *)
+(*    val _ = setInitialTypes (vt, p') *)
+(*    val fm = newFuncsMap p' *)
+(*    fun doPropagateThroughStatements ss = let *)
+(*       fun doStmt s = propagateTypesInStatement (vt, s) *)
+(*    in *)
+(*       Vector.map (ss, doStmt) *)
+(*    end *)
+(*    fun doPropagateThroughTransfer (f, transfer) = *)
+(*        (propagateThroughTransfer (vt, fm, f, transfer); *)
+(*         transfer) *)
+(*    (* Run propagation *) *)
+(*    val propagator = { *)
+(*       doStatements = doPropagateThroughStatements, *)
+(*       doArgs = bindTypesInArgs vt, *)
+(*       (* doArgs = fn x => x, *) *)
+(*       doTransfer = doPropagateThroughTransfer *)
+(*    } *)
+(*    (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *) *)
+(*    val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
+(*    (* val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p') *) *)
+(*    (* Cleanup *) *)
+(*    val {destroyFuncsMap, ...} = fm *)
+(*    val _ = destroyFuncsMap () *)
+(*    val _ = destroyVarTypes vt *)
+(*    val _ = destroyFlattenedVars fv *)
+(* in *)
+(*    if count > 0 then SOME p'' *)
+(*    else NONE *)
+(* end *)
 
 type flattener = {
    updateType: Type.t -> Type.t,
@@ -1401,6 +1384,49 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
 in
    result
 end
+
+fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
+   val progress = ref false
+   fun flattenStatements statements = let
+      val result =
+          Vector.concatV (Vector.map (statements,
+                                      deepFlattenStatementsForPolicy policy))
+
+      (* Hack: Flattening always increases the statement count, use it to see if
+         we made progress *)
+      val _ = if (Vector.size result) > (Vector.size statements) then
+                 progress := true
+              else ()
+   in
+      result
+   end
+   val flattener = {
+      updateType = deepFlattenTypeForPolicy policy,
+      updateStatements = flattenStatements
+   }
+   val p' = flattenProgram flattener p
+in
+   if !progress then
+      SOME p'
+   else NONE
+end
+
+
+fun transform (p: Program.t): Program.t =
+    let
+       val policy =
+           case !Control.shallowFlattenPolicy of
+               Control.ShallowFlattenPolicy.MaxWidth n => MaxWidth n
+       fun loop (p, n) =
+          if n >= !Control.shallowFlattenMaxIters
+             then p
+          else
+             case flattenOnce policy p of
+                NONE => p
+              | SOME p' => loop (p', n + 1)
+    in
+        loop (p, 0)
+     end
 
 
 end (* end struct *)
