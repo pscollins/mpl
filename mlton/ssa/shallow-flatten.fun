@@ -1375,9 +1375,15 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
          (which we can detect by checking to see if we've emitted more
          statements)
 
-         This is necessary to handle 
+         This is necessary to handle nested flattenable types, i.e.:
 
-
+           arr: (a' * (b' * c')) array = Array_alloc[('a * (b' * c'))](n)
+           ->
+           arr_0 = Array_alloc[a']
+           arr_1_0 = Array_alloc[b']
+           arr_1_1 = Array_alloc[c']
+           arr_1 = tuple (arr_1_0, arr_1_1)
+           arr = tuple (arr_0, arr_1)
       *)
       val result = Vector.concatV (Vector.map (stmts,
                                                maybeFlattenStatement))
