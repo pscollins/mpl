@@ -13,14 +13,15 @@ local
         | (NONE, NONE) => true
         | _ => false)
 
-   fun assertEqualTypes (actual, expected, msg) =
+   fun assertEqualTypes (actual, expected, input, msg) =
       if Type.equals (actual, expected) then ()
       else assert (false, msg ^ ": type mismatch\n" ^
+                          "  Input:    " ^ Layout.toString (Type.layout input) ^ "\n" ^
                           "  Expected: " ^ Layout.toString (Type.layout expected) ^ "\n" ^
                           "  Actual:   " ^ Layout.toString (Type.layout actual))
 
-   fun assertType (Statement.T {ty, ...}, expected, msg) =
-      assertEqualTypes (ty, expected, msg)
+   fun assertType (Statement.T {ty, ...}, expected, input, msg) =
+      assertEqualTypes (ty, expected, input, msg)
 in
 (* Test 1: Simple program *)
    val _ = runTest ("Test 1: Simple program", fn () => let
@@ -219,9 +220,9 @@ in
       val e3 = Type.vector e1
       val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
    in
-      assertEqualTypes (r1, e1, "t1 deepFlatten");
-      assertEqualTypes (r2, e2, "t2 deepFlatten");
-      assertEqualTypes (r3, e3, "t3 deepFlatten")
+      assertEqualTypes (r1, e1, t1, "t1 deepFlatten");
+      assertEqualTypes (r2, e2, t2, "t2 deepFlatten");
+      assertEqualTypes (r3, e3, t3, "t3 deepFlatten")
    end)
 
 (* Test 5: deepFlattenTypeForPolicy edge cases *)
@@ -280,13 +281,13 @@ in
                                             Type.array intTy])
       val r7 = ShallowFlatten.deepFlattenTypeForPolicy policy3 t7
    in
-      assertEqualTypes (r1, e1, "t1 deepFlatten edge case");
-      assertEqualTypes (r2, e2, "t2 deepFlatten edge case");
-      assertEqualTypes (r3, e3, "t3 deepFlatten edge case");
-      assertEqualTypes (r4, e4, "t4 deepFlatten iterative convergence");
-      assertEqualTypes (r5, e5, "t5 deepFlatten iterative convergence");
-      assertEqualTypes (r6, e6, "t6 deepFlatten iterative convergence");
-      assertEqualTypes (r7, e7, "t7 deepFlatten iterative convergence")
+      assertEqualTypes (r1, e1, t1, "t1 deepFlatten edge case");
+      assertEqualTypes (r2, e2, t2, "t2 deepFlatten edge case");
+      assertEqualTypes (r3, e3, t3, "t3 deepFlatten edge case");
+      assertEqualTypes (r4, e4, t4, "t4 deepFlatten iterative convergence");
+      assertEqualTypes (r5, e5, t5, "t5 deepFlatten iterative convergence");
+      assertEqualTypes (r6, e6, t6, "t6 deepFlatten iterative convergence");
+      assertEqualTypes (r7, e7, t7, "t7 deepFlatten iterative convergence")
    end)
 
 (* Test 6: doesPolicyFlattenStatement positive and negative cases *)
@@ -389,7 +390,7 @@ in
       
       (* Statement 0: arr_a: int array = Array_alloc[int](n) *)
       val Statement.T {exp = e1_0, ty = t1_0, var = v1_0} = Vector.sub (res1, 0)
-      val _ = assertType (Vector.sub (res1, 0), Type.array intTy, "res1[0] type")
+      val _ = assertType (Vector.sub (res1, 0), Type.array intTy, arrayTuple2Ty, "res1[0] type")
       val _ = assert (Option.isSome v1_0, "res1[0] var should be SOME")
       val _ = case e1_0 of
                  Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
@@ -400,7 +401,7 @@ in
 
       (* Statement 1: arr_b: int array = Array_alloc[int](n) *)
       val Statement.T {exp = e1_1, ty = t1_1, var = v1_1} = Vector.sub (res1, 1)
-      val _ = assertType (Vector.sub (res1, 1), Type.array intTy, "res1[1] type")
+      val _ = assertType (Vector.sub (res1, 1), Type.array intTy, arrayTuple2Ty, "res1[1] type")
       val _ = assert (Option.isSome v1_1, "res1[1] var should be SOME")
       val _ = case e1_1 of
                  Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
@@ -412,7 +413,7 @@ in
       (* Statement 2: arr: int array * int array = tuple (arr_a, arr_b) *)
       val Statement.T {exp = e1_2, ty = t1_2, var = v1_2} = Vector.sub (res1, 2)
       val expectedTupleTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
-      val _ = assertType (Vector.sub (res1, 2), expectedTupleTy, "res1[2] type")
+      val _ = assertType (Vector.sub (res1, 2), expectedTupleTy, arrayTuple2Ty, "res1[2] type")
       val _ = case v1_2 of
                  SOME v => assert (Var.equals (v, arrVar), "res1[2] var should be original arrVar")
                | NONE => raise TestFail "res1[2] var should be SOME"
@@ -449,7 +450,7 @@ in
       val expectedTarg = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
       val expectedLHSTy = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
       
-      val _ = assertType (Vector.sub (res2, 0), expectedLHSTy, "res2[0] type")
+      val _ = assertType (Vector.sub (res2, 0), expectedLHSTy, Type.array arrayTuple2Ty, "res2[0] type")
       val _ = case v2_0 of
                  SOME v => assert (Var.equals (v, arrVar), "res2[0] var")
                | NONE => raise TestFail "res2[0] var should be SOME"
