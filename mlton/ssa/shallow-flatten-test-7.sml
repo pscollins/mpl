@@ -785,19 +785,22 @@ in
       val startBlock = Vector.sub (#blocks f_main_dest, 0)
       val Block.T {statements = stmts, ...} = startBlock
 
-      val _ = assert (Vector.length stmts = 2, "Expected 2 statements in properly flattened IR (no flattening of v_elt)")
+      val _ = assert (Vector.length stmts = 6, "Expected 6 statements in properly flattened IR")
 
       val s1' = Vector.sub (stmts, 0)
-      val s2' = Vector.sub (stmts, 1)
+      val s6' = Vector.sub (stmts, 5)
 
       val Statement.T {ty = ty1', var = var1', ...} = s1'
-      val Statement.T {ty = ty2', var = var2', ...} = s2'
+      val Statement.T {ty = ty6', var = var6', ...} = s6'
 
-      val _ = assert (Type.equals (ty1', arrayTuple2Ty), "v_elt type should remain (int * int) array")
+      val intArrTy = Type.array intTy
+      val expectedEltTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+
+      val _ = assert (Type.equals (ty1', expectedEltTy), "v_elt type should be flattened to int array * int array")
       val _ = assert (Option.isSome var1' andalso Var.equals (valOf var1', v_elt), "v_elt variable name should be preserved")
 
-      val _ = assert (Type.equals (ty2', tuple2Ty), "v_tuple type should remain int * int")
-      val _ = assert (Option.isSome var2' andalso Var.equals (valOf var2', v_tuple), "v_tuple variable name should be preserved")
+      val _ = assert (Type.equals (ty6', tuple2Ty), "v_tuple type should remain int * int")
+      val _ = assert (Option.isSome var6' andalso Var.equals (valOf var6', v_tuple), "v_tuple variable name should be preserved")
    in () end)
 
    val _ = summarize ()
