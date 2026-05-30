@@ -5,7 +5,15 @@ local
    fun assert (cond, msg) =
       if cond then () else raise TestFail msg
 in
-   (* Test 49: updateToSavedTypes - function argument types *)
+   (* Test 49: updateToSavedTypes - function argument types
+
+      Before/After Expected Types in Function:
+      f (v_arg: int)
+        L_start (v_block_arg: int)
+      --> (with type map v_arg -> word32, v_block_arg -> bool, returns -> word32)
+      f (v_arg: word32)
+        L_start (v_block_arg: bool)
+    *)
    val _ = runTest ("Test 49: updateToSavedTypes - function argument types", fn () => let
       val f_name = Func.fromString "f_test_args"
       val L_start = Label.fromString "L_start"
@@ -51,7 +59,15 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
-   (* Test 50: updateToSavedTypes - block argument types *)
+   (* Test 50: updateToSavedTypes - block argument types
+
+      Before/After Expected Types in Function:
+      f (v_arg: int)
+        L_start (v_block_arg: int)
+      --> (with type map v_arg -> bool, v_block_arg -> word32, returns -> bool)
+      f (v_arg: bool)
+        L_start (v_block_arg: word32)
+    *)
    val _ = runTest ("Test 50: updateToSavedTypes - block argument types", fn () => let
       val f_name = Func.fromString "f_test_blocks"
       val L_start = Label.fromString "L_start"
@@ -100,7 +116,15 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
-   (* Test 51: updateToSavedTypes - function return types *)
+   (* Test 51: updateToSavedTypes - function return types
+
+      Before/After Expected Types in Function:
+      f (v_arg: int): int
+        L_start (v_block_arg: int)
+      --> (with type map v_arg -> bool, v_block_arg -> bool, returns -> word32)
+      f (v_arg: bool): word32
+        L_start (v_block_arg: bool)
+    *)
    val _ = runTest ("Test 51: updateToSavedTypes - function return types", fn () => let
       val f_name = Func.fromString "f_test_returns"
       val L_start = Label.fromString "L_start"
@@ -147,7 +171,17 @@ in
       val _ = ShallowFlatten.destroyVarTypes vt
    in () end)
 
-    (* Test 52: flattenOnce - NonTail return call to function returning NONE *)
+    (* Test 52: flattenOnce - NonTail return call to function returning NONE
+
+       Before/After Expected IR under policy: MaxWidth 3:
+       v_alloc: (int * int) array = Array_alloc[int * int](n)
+       f_noreturn () (* returns NONE, i.e. no return block args *)
+       -->
+       flatBind_0: int array = Array_alloc[int](n)
+       flatBind_1: int array = Array_alloc[int](n)
+       v_alloc: int array * int array = tuple(flatBind_0, flatBind_1)
+       f_noreturn ()
+     *)
     val _ = runTest ("Test 52: flattenOnce - NonTail return call to function returning NONE", fn () => let
        val f_main = Func.fromString "f_main"
        val f_noreturn = Func.fromString "f_noreturn"
@@ -274,7 +308,16 @@ in
         val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
      in () end)
 
-    (* Test 53: flattenOnce - Array_length of tuple array block argument *)
+    (* Test 53: flattenOnce - Array_length of tuple array block argument
+
+       Before/After Expected IR under policy: MaxWidth 3:
+       L_ret (ret_val: (int * int) array)
+         len: int = Array_length[int * int](ret_val)
+       -->
+       L_ret (ret_val: int array * int array)
+         flatArr_0: int array = select(ret_val, 0)
+         len: int = Array_length[int](flatArr_0)
+     *)
     val _ = runTest ("Test 53: flattenOnce - Array_length of tuple array block argument", fn () => let
        val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
        
@@ -434,7 +477,16 @@ in
        val _ = assert (Type.equals (ty1, seqIndexTy), "Expected length type to be seqIndexTy")
     in () end)
 
-    (* Test 54: flattenOnce - Array_uninit on tuple array *)
+    (* Test 54: flattenOnce - Array_uninit on tuple array
+
+       Before/After Expected IR under policy: MaxWidth 3:
+       _ = prim Array_uninit[int * int](v_alloc, len)
+       -->
+       v_select0: int array = select(v_alloc, 0)
+       v_select1: int array = select(v_alloc, 1)
+       _ = prim Array_uninit[int](v_select0, len)
+       _ = prim Array_uninit[int](v_select1, len)
+     *)
     val _ = runTest ("Test 54: flattenOnce - Array_uninit on tuple array", fn () => let
        val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
 
@@ -565,7 +617,17 @@ in
                  | _ => assert (false, "Expected Exp.PrimApp")
     in () end)
 
-    (* Test 55: flattenOnce - NonTail return call to function returning NONE with continuation block arguments *)
+    (* Test 55: flattenOnce - NonTail return call to function returning NONE with continuation block arguments
+
+       Before/After Expected IR under policy: MaxWidth 3:
+       v_alloc: (int * int) array = Array_alloc[int * int](n)
+       f_noreturn () (* call returns NONE *)
+       -->
+       flatBind_2: int array = Array_alloc[int](n)
+       flatBind_3: int array = Array_alloc[int](n)
+       v_alloc: int array * int array = tuple(flatBind_2, flatBind_3)
+       f_noreturn ()
+     *)
     val _ = runTest ("Test 55: flattenOnce - NonTail return call to function returning NONE with continuation block arguments", fn () => let
        val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
 
@@ -704,7 +766,23 @@ in
         val _ = assert (Option.isNone (#returns f_noreturn_dest), "f_noreturn should still have returns = NONE")
      in () end)
 
-   (* Test 56: flattenOnce - nested array of tuple arrays sub bug *)
+   (* Test 56: flattenOnce - nested array of tuple arrays sub bug
+
+      Before/After Expected IR under policy: MaxWidth 3:
+      v_elt: (int * int) array = prim Array_sub[((int * int) array) array](v_arr, v_idx)
+      v_tuple: int * int = prim Array_sub[int * int](v_elt, v_idx2)
+      -->
+      v_arr_0: (int array) array = select(v_arr, 0)
+      v_arr_1: (int array) array = select(v_arr, 1)
+      flatArr_0: int array = prim Array_sub[int array](v_arr_0, v_idx)
+      flatArr_1: int array = prim Array_sub[v_arr_1, v_idx]
+      v_elt: int array * int array = tuple(flatArr_0, flatArr_1)
+      flatArr_0_2: int array = select(v_elt, 0)
+      flatArr_1_1: int array = select(v_elt, 1)
+      flatLoad_0: int = prim Array_sub[int](flatArr_0_2, v_idx2)
+      flatLoad_1: int = prim Array_sub[int](flatArr_1_1, v_idx2)
+      v_tuple: int * int = tuple(flatLoad_0, flatLoad_1)
+    *)
    val _ = runTest ("Test 56: flattenOnce - nested array of tuple arrays sub bug", fn () => let
       val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
 
