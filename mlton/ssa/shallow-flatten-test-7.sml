@@ -1096,6 +1096,153 @@ in
                 | _ => assert (false, "Expected Exp.ConApp for s4")
    in () end)
 
+   (* Test 59: flattenOnce - nested array of tuple array allocRaw typecheck bug
+
+      Before/After Expected IR under policy: MaxWidth 3:
+      v_alloc: ((intInf * intInf) array) array = prim Array_allocRaw[(intInf * intInf) array](n)
+      -->
+      flatBind_0: (intInf array) array = prim Array_allocRaw[intInf array](n)
+      flatBind_1: (intInf array) array = prim Array_allocRaw[intInf array](n)
+      v_alloc: (intInf array) array * (intInf array) array = tuple(flatBind_0, flatBind_1)
+    *)
+   val _ = runTest ("Test 59: flattenOnce - nested array of tuple array allocRaw typecheck bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+      val f_main = Func.fromString "f_main"
+      val L_start = Label.fromString "L_start"
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val arrayArrayTuple2Ty = Type.array arrayTuple2Ty
+
+      val v_alloc = Var.fromString "v_alloc"
+      val n = Var.fromString "n"
+
+      val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+      val s_n = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (10, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME n
+      }
+
+      val allocRawPrim = Prim.Array_alloc {raw = true}
+      val s = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocRawPrim,
+                            targs = Vector.new1 arrayTuple2Ty},
+         ty = arrayArrayTuple2Ty,
+         var = SOME v_alloc
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.fromList [s_n, s],
+         transfer = Transfer.Return (Vector.new1 v_alloc)
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new1 arrayArrayTuple2Ty),
+         start = L_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val policy = ShallowFlatten.MaxWidth 3
+
+      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+
+      (* Under the buggy compiler, this will raise a typecheck Fail exception *)
+      val typecheck_failed =
+         (Ssa.typeCheck p'; false)
+         handle Fail msg =>
+            if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
+               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
+            else raise Fail msg
+
+      val _ =
+         if typecheck_failed then
+            (assert (true, "Symptom of the original bug present");
+             raise TestFail "Bug is present: Ssa.typeCheck raised TypeError (SSA)")
+         else ()
+
+      (* Verify the flattened IR of f_main *)
+      val Program.T {functions, ...} = p'
+      val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+      val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+      val f_main_dest = Function.dest (valOf mainFunc')
+      val startBlock = Vector.sub (#blocks f_main_dest, 0)
+      val Block.T {statements = stmts, ...} = startBlock
+
+      val _ = assert (Vector.length stmts = 4, "Expected 4 statements after flattening nested array allocRaw")
+
+      val flatStmts = Vector.tabulate (3, fn i => Vector.sub (stmts, i + 1))
+      val s0 = Vector.sub (flatStmts, 0)
+      val s1 = Vector.sub (flatStmts, 1)
+      val s2 = Vector.sub (flatStmts, 2)
+
+      val intArrTy = Type.array intTy
+      val intArrArrTy = Type.array intArrTy
+      val tupleArrArrTy = Type.tuple (Vector.fromList [intArrArrTy, intArrArrTy])
+
+      val Statement.T {ty = ty0, var = var0, exp = exp0} = s0
+      val Statement.T {ty = ty1, var = var1, exp = exp1} = s1
+      val Statement.T {ty = ty2, var = var2, exp = exp2} = s2
+
+      val _ = assert (Type.equals (ty0, intArrArrTy), "s0 type should be (int array) array")
+      val _ = assert (Type.equals (ty1, intArrArrTy), "s1 type should be (int array) array")
+      val _ = assert (Type.equals (ty2, tupleArrArrTy), "s2 type should be (int array) array * (int array) array")
+
+      val _ = assert (Option.isSome var0, "s0 should bind a variable")
+      val _ = assert (Option.isSome var1, "s1 should bind a variable")
+      val _ = assert (Option.isSome var2 andalso Var.equals (valOf var2, v_alloc), "s2 should bind v_alloc")
+
+      val v0 = valOf var0
+      val v1 = valOf var1
+
+      (* Verify s0 is Array_allocRaw[int array](n) *)
+      val _ = case exp0 of
+                  Exp.PrimApp {args, prim, targs} =>
+                     if Prim.equals (prim, Prim.Array_alloc {raw = true})
+                        andalso Vector.length args = 1
+                        andalso Var.equals (Vector.sub (args, 0), n)
+                        andalso Vector.length targs = 1
+                        andalso Type.equals (Vector.sub (targs, 0), intArrTy) then ()
+                     else assert (false, "s0 should be Array_allocRaw[int array](n)")
+                | _ => assert (false, "Expected Exp.PrimApp for s0")
+
+      (* Verify s1 is Array_allocRaw[int array](n) *)
+      val _ = case exp1 of
+                  Exp.PrimApp {args, prim, targs} =>
+                     if Prim.equals (prim, Prim.Array_alloc {raw = true})
+                        andalso Vector.length args = 1
+                        andalso Var.equals (Vector.sub (args, 0), n)
+                        andalso Vector.length targs = 1
+                        andalso Type.equals (Vector.sub (targs, 0), intArrTy) then ()
+                     else assert (false, "s1 should be Array_allocRaw[int array](n)")
+                | _ => assert (false, "Expected Exp.PrimApp for s1")
+
+      (* Verify s2 is tuple(v0, v1) *)
+      val _ = case exp2 of
+                  Exp.Tuple vars =>
+                     if Vector.length vars = 2
+                        andalso Var.equals (Vector.sub (vars, 0), v0)
+                        andalso Var.equals (Vector.sub (vars, 1), v1) then ()
+                     else assert (false, "s2 should be tuple(v0, v1)")
+                | _ => assert (false, "Expected Exp.Tuple for s2")
+   in () end)
+
    val _ = summarize ()
 end
 
