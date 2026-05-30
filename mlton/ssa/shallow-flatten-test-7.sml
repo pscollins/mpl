@@ -956,5 +956,146 @@ in
                 | _ => assert (false, "Expected Exp.Tuple for s5")
    in () end)
 
+   (* Test 58: flattenOnce - Array_uninitIsNop on tuple array typecheck bug
+
+      Before/After Expected IR under policy: MaxWidth 3:
+      v_alloc: (int * int) array = Array_alloc[int * int](n)
+      v_isNop: bool = prim Array_uninitIsNop[int * int](v_alloc)
+      -->
+      flatBind_0: int array = Array_alloc[int](n)
+      flatBind_1: int array = Array_alloc[int](n)
+      v_alloc: int array * int array = tuple(flatBind_0, flatBind_1)
+      v_isNop: bool = false
+    *)
+   val _ = runTest ("Test 58: flattenOnce - Array_uninitIsNop on tuple array typecheck bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+      val f_main = Func.fromString "f_main"
+      val L_start = Label.fromString "L_start"
+
+      val intTy = Type.intInf
+      val seqIndexTy = Type.word (Atoms.WordSize.seqIndex ())
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val boolTy = Type.bool
+
+      val v_alloc = Var.fromString "v_alloc"
+      val n = Var.fromString "n"
+      val v_isNop = Var.fromString "v_isNop"
+
+      val s_n = Statement.T {
+         exp = Exp.Const (Const.word (Atoms.WordX.fromInt (10, Atoms.WordSize.seqIndex ()))),
+         ty = seqIndexTy,
+         var = SOME n
+      }
+
+      val allocPrim = Prim.Array_alloc {raw = false}
+      val s_alloc = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocPrim,
+                            targs = Vector.new1 tuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME v_alloc
+      }
+
+      val s_uninitIsNop = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 v_alloc,
+                            prim = Prim.Array_uninitIsNop,
+                            targs = Vector.new1 tuple2Ty},
+         ty = boolTy,
+         var = SOME v_isNop
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = L_start,
+         statements = Vector.fromList [s_n, s_alloc, s_uninitIsNop],
+         transfer = Transfer.Return (Vector.new1 v_isNop)
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new1 boolTy),
+         start = L_start
+      }
+
+      val boolTycon = Type.deDatatype boolTy
+      val boolDatatype = Datatype.T {
+         cons = Vector.fromList [
+            {con = Con.truee, args = Vector.new0 ()},
+            {con = Con.falsee, args = Vector.new0 ()}
+         ],
+         tycon = boolTycon
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new1 boolDatatype,
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val policy = ShallowFlatten.MaxWidth 3
+      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+
+      (* Under the buggy compiler, this will raise a typecheck Fail exception *)
+      val typecheck_failed =
+         (Ssa.typeCheck p'; false)
+         handle Fail msg =>
+            if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then
+               (print ("\nTYPECHECK ERROR DETECTED: " ^ msg ^ "\n"); true)
+            else raise Fail msg
+
+      val _ =
+         if typecheck_failed then
+            (assert (true, "Symptom of the original bug present");
+             raise TestFail "Bug is present: Ssa.typeCheck raised TypeError (SSA)")
+         else ()
+
+      (* Verify the flattened IR of f_main *)
+      val Program.T {functions, ...} = p'
+      val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+      val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+      val f_main_dest = Function.dest (valOf mainFunc')
+      val startBlock = Vector.sub (#blocks f_main_dest, 0)
+      val Block.T {statements = stmts, ...} = startBlock
+
+      val _ = assert (Vector.length stmts = 5, "Expected 5 statements in properly flattened IR")
+      
+      val s0 = Vector.sub (stmts, 0)
+      val s1 = Vector.sub (stmts, 1)
+      val s2 = Vector.sub (stmts, 2)
+      val s3 = Vector.sub (stmts, 3)
+      val s4 = Vector.sub (stmts, 4)
+
+      val intArrTy = Type.array intTy
+      val tuple2ArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+
+      val Statement.T {ty = ty0, ...} = s0
+      val Statement.T {ty = ty1, ...} = s1
+      val Statement.T {ty = ty2, ...} = s2
+      val Statement.T {ty = ty3, ...} = s3
+      val Statement.T {ty = ty4, ...} = s4
+
+      val _ = assert (Type.equals (ty0, seqIndexTy), "s0 type should be seqIndexTy")
+      val _ = assert (Type.equals (ty1, intArrTy), "s1 type should be int array")
+      val _ = assert (Type.equals (ty2, intArrTy), "s2 type should be int array")
+      val _ = assert (Type.equals (ty3, tuple2ArrTy), "s3 type should be int array * int array")
+      val _ = assert (Type.equals (ty4, boolTy), "s4 type should be bool")
+
+      val Statement.T {exp = exp4, var = var4, ...} = s4
+      val _ = assert (Option.isSome var4 andalso Var.equals (valOf var4, v_isNop), "s4 should bind v_isNop")
+      val _ = case exp4 of
+                  Exp.ConApp {con, args} =>
+                     if Con.equals (con, Con.falsee) andalso Vector.length args = 0 then ()
+                     else assert (false, "Expected Exp.ConApp false for s4")
+                | _ => assert (false, "Expected Exp.ConApp for s4")
+   in () end)
+
    val _ = summarize ()
 end
+
