@@ -1423,8 +1423,16 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
          result
    end
 
+   (* First, flatten all the `PrimApp`s that we can... *)
    val statements = recursiveFlatten (Vector.new1 s)
-   val result = Vector.map (statements, updateTypesInStatement)
+   (* ...then update types... *)
+   val resultInit = Vector.map (statements, updateTypesInStatement)
+
+   (* ...updating types may have created more flattening opportunities, so run
+      again.
+
+      TODO: should we instead run this to convergence? *)
+   val result = recursiveFlatten resultInit
    fun logThunk() = Layout.align [
           Layout.str "deepFlattenStatementsForPolicy: ",
           Layout.str "initial=",
