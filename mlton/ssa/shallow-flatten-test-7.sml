@@ -803,5 +803,149 @@ in
       val _ = assert (Option.isSome var6' andalso Var.equals (valOf var6', v_tuple), "v_tuple variable name should be preserved")
    in () end)
 
+    (* Test 57: flattenOnce - nested array of tuple array alloc typecheck bug
+
+       Before/After Expected IR under policy: MaxWidth 3:
+       v_alloc: (int, (int * int), int) tuple array = Array_alloc[(int, (int * int), int) tuple](n)
+       -->
+       flatBind_0: int array = Array_alloc[int](n)
+       flatBind_1_0: int array = Array_alloc[int](n)
+       flatBind_1_1: int array = Array_alloc[int](n)
+       flatBind_1: int array * int array = tuple(flatBind_1_0, flatBind_1_1)
+       flatBind_2: int array = Array_alloc[int](n)
+       v_alloc: int array * (int array * int array) * int array = tuple(flatBind_0, flatBind_1, flatBind_2)
+     *)
+    val _ = runTest ("Test 57: flattenOnce - nested array of tuple array alloc typecheck bug", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+
+      val f_main = Func.fromString "f_main"
+      val L_start = Label.fromString "L_start"
+
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, tuple2Ty, intTy])
+      val arrayTuple3Ty = Type.array tuple3Ty
+
+      val v_alloc = Var.fromString "v_alloc"
+      val n = Var.fromString "n"
+
+      val allocPrim = Prim.Array_alloc {raw = false}
+      val s = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocPrim,
+                            targs = Vector.new1 tuple3Ty},
+         ty = arrayTuple3Ty,
+         var = SOME v_alloc
+      }
+
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy)],
+         label = L_start,
+         statements = Vector.fromList [s],
+         transfer = Transfer.Return (Vector.new1 v_alloc)
+      }
+
+      val mainFunction = Function.new {
+         args = Vector.fromList [(n, intTy)],
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = f_main,
+         raises = NONE,
+         returns = SOME (Vector.new1 arrayTuple3Ty),
+         start = L_start
+      }
+
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = f_main
+      }
+
+      val policy = ShallowFlatten.MaxWidth 3
+
+      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+
+      (* Under the buggy compiler, this will raise a typecheck Fail exception *)
+      val typecheck_failed =
+         (Ssa.typeCheck p'; false)
+         handle Fail msg =>
+            if SmlString.hasPrefix (msg, {prefix = "TypeError (SSA)"}) then true
+            else raise Fail msg
+
+      val _ =
+         if typecheck_failed then
+            (assert (true, "Symptom of the original bug present");
+             raise TestFail "Bug is present: Ssa.typeCheck raised TypeError (SSA)")
+         else ()
+
+      (* Verify the flattened IR of f_main *)
+      val Program.T {functions, ...} = p'
+      val mainFunc' = List.peek (functions, fn f => Func.equals (Function.name f, f_main))
+      val _ = assert (Option.isSome mainFunc', "f_main should be present in the result")
+      val f_main_dest = Function.dest (valOf mainFunc')
+      val startBlock = Vector.sub (#blocks f_main_dest, 0)
+      val Block.T {statements = stmts, ...} = startBlock
+
+      val _ = assert (Vector.length stmts = 6, "Expected 6 statements after flattening nested array alloc")
+
+      val s0 = Vector.sub (stmts, 0)
+      val s1 = Vector.sub (stmts, 1)
+      val s2 = Vector.sub (stmts, 2)
+      val s3 = Vector.sub (stmts, 3)
+      val s4 = Vector.sub (stmts, 4)
+      val s5 = Vector.sub (stmts, 5)
+
+      val intArrTy = Type.array intTy
+      val tuple2ArrTy = Type.tuple (Vector.fromList [intArrTy, intArrTy])
+      val tuple3ArrTy = Type.tuple (Vector.fromList [intArrTy, tuple2ArrTy, intArrTy])
+
+      val Statement.T {ty = ty0, var = var0, exp = exp0} = s0
+      val Statement.T {ty = ty1, var = var1, exp = exp1} = s1
+      val Statement.T {ty = ty2, var = var2, exp = exp2} = s2
+      val Statement.T {ty = ty3, var = var3, exp = exp3} = s3
+      val Statement.T {ty = ty4, var = var4, exp = exp4} = s4
+      val Statement.T {ty = ty5, var = var5, exp = exp5} = s5
+
+      val _ = assert (Type.equals (ty0, intArrTy), "s0 type should be int array")
+      val _ = assert (Type.equals (ty1, intArrTy), "s1 type should be int array")
+      val _ = assert (Type.equals (ty2, intArrTy), "s2 type should be int array")
+      val _ = assert (Type.equals (ty3, tuple2ArrTy), "s3 type should be int array * int array")
+      val _ = assert (Type.equals (ty4, intArrTy), "s4 type should be int array")
+      val _ = assert (Type.equals (ty5, tuple3ArrTy), "s5 type should be int array * (int array * int array) * int array")
+
+      val _ = assert (Option.isSome var0, "s0 should bind a variable")
+      val _ = assert (Option.isSome var1, "s1 should bind a variable")
+      val _ = assert (Option.isSome var2, "s2 should bind a variable")
+      val _ = assert (Option.isSome var3, "s3 should bind a variable")
+      val _ = assert (Option.isSome var4, "s4 should bind a variable")
+      val _ = assert (Option.isSome var5 andalso Var.equals (valOf var5, v_alloc), "s5 should bind v_alloc")
+
+      val v0 = valOf var0
+      val v1 = valOf var1
+      val v2 = valOf var2
+      val v3 = valOf var3
+      val v4 = valOf var4
+
+      (* Verify s3 is tuple(v1, v2) *)
+      val _ = case exp3 of
+                  Exp.Tuple vars =>
+                     if Vector.length vars = 2
+                        andalso Var.equals (Vector.sub (vars, 0), v1)
+                        andalso Var.equals (Vector.sub (vars, 1), v2) then ()
+                     else assert (false, "s3 should be tuple(v1, v2)")
+                | _ => assert (false, "Expected Exp.Tuple for s3")
+
+      (* Verify s5 is tuple(v0, v3, v4) *)
+      val _ = case exp5 of
+                  Exp.Tuple vars =>
+                     if Vector.length vars = 3
+                        andalso Var.equals (Vector.sub (vars, 0), v0)
+                        andalso Var.equals (Vector.sub (vars, 1), v3)
+                        andalso Var.equals (Vector.sub (vars, 2), v4) then ()
+                     else assert (false, "s5 should be tuple(v0, v3, v4)")
+                | _ => assert (false, "Expected Exp.Tuple for s5")
+   in () end)
+
    val _ = summarize ()
 end
