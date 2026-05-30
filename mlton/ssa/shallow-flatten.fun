@@ -1337,7 +1337,7 @@ fun deepFlattenTypeForPolicy (policy: flattenPolicy)
            Layout.str "new: ",
            Type.layout t'
         ]
-    val _ = verboseDIagnostic logThunk
+    val _ = verboseDiagnostic logThunk
 in
    t'
 end
