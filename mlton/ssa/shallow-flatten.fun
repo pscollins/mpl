@@ -1350,7 +1350,6 @@ end
 
 fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
                                    (s: Statement.t): Statement.t vector = let
-   (* val Statement.T {exp, ty, var} = s *)
    val updateType = deepFlattenTypeForPolicy policy
    fun updateTypesInExp exp =
        case exp of
@@ -1365,11 +1364,31 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
                     ty = updateType ty,
                     var = var}
 
-   val statements =
-       if (doesPolicyFlattenStatement policy s) then
+   fun maybeFlattenStatement (stmt: Statement.t): Statement.t vector =
+       if (doesPolicyFlattenStatement policy stmt) then
           (* NONE means a prim is missing, crash *)
-          Option.valOf (maybeFlattenStatement s)
-       else Vector.new1 s
+          Option.valOf (maybeFlattenStatement stmt)
+       else Vector.new1 stmt
+
+   fun recursiveFlatten (stmts: Statement.t vector) = let
+      (* Recursively apply the flattening transformation until it converges
+         (which we can detect by checking to see if we've emitted more
+         statements)
+
+         This is necessary to handle 
+
+
+      *)
+      val result = Vector.concatV (Vector.map (stmts,
+                                               maybeFlattenStatement))
+   in
+      if Vector.length result > Vector.length stmts then
+         recursiveFlatten result
+      else
+         result
+   end
+
+   val statements = recursiveFlatten (Vector.new1 s)
    val result = Vector.map (statements, updateTypesInStatement)
    fun logThunk() = Layout.align [
           Layout.str "deepFlattenStatementsForPolicy: ",
