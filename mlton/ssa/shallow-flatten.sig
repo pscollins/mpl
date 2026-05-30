@@ -18,18 +18,15 @@ sig
    (* Abstract interface for applying the flattening transformation *)
    type flattener = {
       (* Transformation applied to all `Type.t`s in the program that *do not*
-      appear in a `Statement.t`, specifically:
-
-         * Datatype type constructor type arguments
-         * Function `args`, `returns` and `raises`
-         * Block arguments
-
+         appear in a `Statement.t`, specifically:
+           * Datatype type constructor type arguments
+           * Function `args`, `returns` and `raises`
+           * Block arguments
        *)
       updateType: Type.t -> Type.t,
       (* Transformation applied to all `Statement.t`s, specifically:
-
-         * Global declarations
-         * Block bodies
+           * Global declarations
+           * Block bodies
        *)
       updateStatements: Statement.t vector -> Statement.t vector
    }

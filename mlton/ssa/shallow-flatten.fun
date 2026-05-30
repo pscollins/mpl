@@ -1289,7 +1289,46 @@ type flattener = {
    updateStatements: Statement.t vector -> Statement.t vector
 }
 
-fun flattenProgram (_: flattener) (_: Program.t) : Program.t =
-   Error.bug "TODO: flattenProgram"
+fun flattenProgram (f: flattener) (p: Program.t) : Program.t = let
+   val {updateType, updateStatements} = f
+   val Program.T {datatypes, functions, globals, main} = p
+   fun doCon {args, con} = {args = Vector.map (args, updateType),
+                            con = con}
+   fun doDatatype (Datatype.T {cons, tycon}) =
+       Datatype.T {cons = Vector.map (cons, doCon),
+                   tycon = tycon}
+   fun doArgs args = let
+      fun doArg (var, ty) = (var, updateType ty)
+   in
+      Vector.map (args, doArg)
+   end
+   fun doBlock (Block.T {args, label, statements, transfer}) =
+       Block.T {args = doArgs args,
+                label = label,
+                statements = updateStatements statements,
+                transfer = transfer}
+   fun doFunction f = let
+      val {args, blocks, inline, name, raises, returns, start} =
+          Function.dest f
+      fun doMaybeVec maybeVec =
+          case maybeVec of
+              SOME tys => SOME (Vector.map (tys, updateType))
+            | NONE => NONE
+   in
+      Function.new {args = doArgs args,
+                    blocks = Vector.map (blocks, doBlock),
+                    inline = inline,
+                    name = name,
+                    raises = doMaybeVec raises,
+                    returns = doMaybeVec returns,
+                    start = start}
+
+   end
+in
+   Program.T {datatypes = Vector.map (datatypes, doDatatype),
+              functions = List.map (functions, doFunction),
+              globals = updateStatements globals,
+              main = main}
+end
 
 end
