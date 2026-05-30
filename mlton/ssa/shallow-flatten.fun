@@ -1364,7 +1364,7 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
                     ty = updateType ty,
                     var = var}
 
-   fun maybeFlattenStatement (stmt: Statement.t): Statement.t vector =
+   fun flattenIfNeeded (stmt: Statement.t): Statement.t vector =
        if (doesPolicyFlattenStatement policy stmt) then
           (* NONE means a prim is missing, crash *)
           Option.valOf (maybeFlattenStatement stmt)
@@ -1386,7 +1386,7 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
            arr = tuple (arr_0, arr_1)
       *)
       val result = Vector.concatV (Vector.map (stmts,
-                                               maybeFlattenStatement))
+                                               flattenIfNeeded))
    in
       if Vector.length result > Vector.length stmts then
          recursiveFlatten result
