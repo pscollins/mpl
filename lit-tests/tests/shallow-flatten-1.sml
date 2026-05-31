@@ -1,5 +1,5 @@
 (* RUN: mpl-compile \
-   RUN:    -keep-pass 'shallowFlatten.*' -stop-pass 'shallowFlatten.*' \
+   RUN:    -keep-pass 'shallowFlatten.*' \
    RUN:    -shallow-flatten-policy maxWidth:2 \
    RUN:    %s %t
 
