@@ -6,23 +6,25 @@
    Test that when we have a nested type, the inner array of 2-tuples is flattened
    (since maxWidth:2) but the outer array of 4-tuples is NOT flattened.
 
-   RUN: ! grep -F 'Array_alloc[((real64, real64) tuple, real64, real64, real64) tuple]' %t/*shallowFlatten*.post.ssa
-   RUN: grep -E 'Array_alloc\[\((\(real64\) array, \(real64\) array|\(real64\) array \* \(real64\) array), real64, real64, real64\) tuple\]' %t/*shallowFlatten*.post.ssa
+   RUN: ! grep -F 'Array_alloc[((real64, real64) tuple) array]' %t/*shallowFlatten*.post.ssa
+   RUN: ! grep -F 'Array_alloc[(real64, real64) tuple]'        %t/*shallowFlatten*.post.ssa
+   RUN: grep -F  'Array_alloc[real64]'                         %t/*shallowFlatten*.post.ssa
+   RUN: grep -F  'Array_alloc[(((real64) array, (real64) array) tuple,' %t/*shallowFlatten*.post.ssa
  *)
 
-fun getLen () = 10
-val n = getLen ()
+val n = List.length (CommandLine.arguments ()) + 10
+val r = Real.fromInt n
 
 (* Allocate inner arrays *)
-val inner1: (real * real) array = Array.array (n, (1.0, 2.0))
-val inner2: (real * real) array = Array.array (n, (3.0, 4.0))
+val inner1: (real * real) array = Array.array (n, (r, r + 1.0))
+val inner2: (real * real) array = Array.array (n, (r + 2.0, r + 3.0))
 
 (* Create the outer array of 4-tuples *)
 val outer: ((real * real) array * real * real * real) array =
-    Array.array (n, (inner1, 5.0, 6.0, 7.0))
+    Array.array (n, (inner1, r + 4.0, r + 5.0, r + 6.0))
 
 (* Update an element in the outer array *)
-val _ = Array.update (outer, 1, (inner2, 8.0, 9.0, 10.0))
+val _ = Array.update (outer, 1, (inner2, r + 7.0, r + 8.0, r + 9.0))
 
 (* Retrieve and access *)
 val (inner, a, b, c) = Array.sub (outer, 0)

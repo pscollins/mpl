@@ -26,45 +26,38 @@
    RUN: grep -F 'Vector_sub[real64]'    %t/*shallowFlatten*.post.ssa
  *)
 
-val alloc = _prim "Array_alloc": Word64.word -> (real * real) array;
 val allocRaw = _prim "Array_allocRaw": Word64.word -> (real * real) array;
-val sub = _prim "Array_sub": (real * real) array * Word64.word -> (real * real);
-val update = _prim "Array_update": (real * real) array * Word64.word * (real * real) -> unit;
-val length = _prim "Array_length": (real * real) array -> Word64.word;
 val toVector = _prim "Array_toVector": (real * real) array -> (real * real) vector;
 val toArray = _prim "Array_toArray": (real * real) array -> (real * real) array;
 val uninit = _prim "Array_uninit": (real * real) array * Word64.word -> unit;
 val uninitIsNop = _prim "Array_uninitIsNop": (real * real) array -> bool;
 
-val v_sub = _prim "Vector_sub": (real * real) vector * Word64.word -> (real * real);
-val v_length = _prim "Vector_length": (real * real) vector -> Word64.word;
+val n = List.length (CommandLine.arguments ()) + 10
 
-val size = 0w10: Word64.word
+(* 1. Array_alloc (via Array.array), Array_update *)
+val a1 = Array.array (n, (1.0, 2.0))
+val _ = Array.update (a1, 0, (3.0, 4.0))
 
-(* 1. alloc & update *)
-val a1 = alloc size
-val _ = update (a1, 0w0, (1.0, 2.0))
+(* 2. Array_length & Array_sub *)
+val len1 = Array.length a1
+val (x1, y1) = Array.sub (a1, 0)
 
-(* 2. length & sub *)
-val len1 = length a1
-val (x1, y1) = sub (a1, 0w0)
-
-(* 3. toVector, v_length, v_sub *)
+(* 3. Array_toVector, Vector_length, Vector_sub *)
 val vec = toVector a1
-val len2 = v_length vec
-val (x2, y2) = v_sub (vec, 0w0)
+val len2 = Vector.length vec
+val (x2, y2) = Vector.sub (vec, 0)
 
-(* 4. allocRaw, uninit, uninitIsNop, toArray *)
-val a2 = allocRaw size
+(* 4. Array_alloc {raw = true} via allocRaw, Array_uninit, Array_uninitIsNop, Array_toArray *)
+val a2 = allocRaw (Word64.fromInt n)
 val _ = uninit (a2, 0w0)
 val nop = uninitIsNop a2
 val a3 = toArray a2
 
-val (x3, y3) = sub (a3, 0w0)
+val (x3, y3) = Array.sub (a3, 0)
 
 (* print to keep alive *)
 val _ = print (Real.toString x1 ^ " " ^ Real.toString y1 ^ " " ^
                Real.toString x2 ^ " " ^ Real.toString y2 ^ " " ^
                Real.toString x3 ^ " " ^ Real.toString y3 ^ " " ^
-               Word64.toString len1 ^ " " ^ Word64.toString len2 ^ " " ^
+               Int.toString len1 ^ " " ^ Int.toString len2 ^ " " ^
                Bool.toString nop ^ "\n")
