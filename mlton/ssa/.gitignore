@@ -1,3 +1,4 @@
 /*.bin
+/rewrite-ir-ssa
 /rewrite-ir-ssa2
 /rewrite-ssa2
