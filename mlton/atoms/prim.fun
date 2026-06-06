@@ -1240,6 +1240,7 @@ fun parseFull parseX =
    case pname of
       "CFunction" => CFunction <$> CFunction.parse parseX
     | "spork_getData" => char #"<" *> Spid.parse <* char #">" >>= (fn spid => pure (Spork_getData spid))
+    | "Trace_staticSourceMarkValue" => char #":" *> name >>= (fn s => pure (Trace_staticSourceMarkValue s))
     | _ => (case fromString pname of
                NONE => fail "prim"
              | SOME p => pure p))end

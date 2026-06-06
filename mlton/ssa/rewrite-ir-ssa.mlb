@@ -1,6 +1,7 @@
 local
    ../../lib/mlton/sources.mlb
    ../atoms/sources.mlb
+   ../control/sources.mlb
    sources.mlb
 in
    rewrite-ir-ssa.sml

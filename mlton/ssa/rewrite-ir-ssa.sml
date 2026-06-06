@@ -18,7 +18,7 @@ local
       end
 
    fun usage () =
-      (print "Usage: rewrite-ir-ssa --infile=$INFILE --outfile=$OUTFILE [--extract_subgraph=$SSA_VALUE]\n";
+      (print "Usage: rewrite-ir-ssa --infile=$INFILE --outfile=$OUTFILE [--extract_subgraph=$SSA_VALUE] [-max-type-print-depth <n>]\n";
        OS.Process.exit OS.Process.failure)
 
    val args = CommandLine.arguments ()
@@ -33,6 +33,25 @@ local
             parseArgs (args, infile, SOME (String.substring (arg, 10, size arg - 10)), extractVar)
          else if String.hasPrefix (arg, {prefix = "--extract_subgraph="}) then
             parseArgs (args, infile, outfile, SOME (String.substring (arg, 19, size arg - 19)))
+         else if arg = "-max-type-print-depth" then
+            case args of
+               [] => (print "Error: -max-type-print-depth requires an argument\n"; usage ())
+             | depthStr :: args =>
+               (case Int.fromString depthStr of
+                   NONE => (print ("Error: invalid depth: " ^ depthStr ^ "\n"); usage ())
+                 | SOME depth =>
+                   (Control.maxTypePrintDepth := depth;
+                    parseArgs (args, infile, outfile, extractVar)))
+         else if String.hasPrefix (arg, {prefix = "-max-type-print-depth="}) then
+            let
+               val depthStr = String.substring (arg, 22, size arg - 22)
+            in
+               case Int.fromString depthStr of
+                  NONE => (print ("Error: invalid depth: " ^ depthStr ^ "\n"); usage ())
+                | SOME depth =>
+                  (Control.maxTypePrintDepth := depth;
+                   parseArgs (args, infile, outfile, extractVar))
+            end
          else
             parseArgs (args, infile, outfile, extractVar)
 
