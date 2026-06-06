@@ -18,7 +18,7 @@ local
       end
 
    fun usage () =
-      (print "Usage: rewrite-ir --infile=$INFILE --outfile=$OUTFILE [--isolate_subgraph=$SSA_VALUE]\n";
+      (print "Usage: rewrite-ir-ssa2 --infile=$INFILE --outfile=$OUTFILE [--isolate_subgraph=$SSA_VALUE]\n";
        OS.Process.exit OS.Process.failure)
 
    val args = CommandLine.arguments ()

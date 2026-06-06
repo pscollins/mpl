@@ -3,5 +3,5 @@ local
    ../atoms/sources.mlb
    sources.mlb
 in
-   rewrite-ir.sml
+   rewrite-ir-ssa2.sml
 end
