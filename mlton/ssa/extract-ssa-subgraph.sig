@@ -11,22 +11,25 @@ sig
 
       Executes the following steps:
 
-        1. Locate the `Statement.t` (call it `s`) that defines the provided
-           `Var.t`: if no such statement exists, raises Fail, else mark `s`.
+        1. Locate the definition of the provided `Var.t` (which may be a
+           `Statement.t` or a block/function argument). Mark it.
 
-        2. Traverse the data dependency graph upwards to mark, transitively,
-           every `Statement.t` that is connected to `s`
+        2. Traverse the directed data dependency graph upwards to mark,
+           transitively, every statement and argument that is an upward
+           dependency.
 
-        3. Likewise, traverse the data dependency graph downwards to mark,
-           transitively, every `Statement.t` that is connected to `s`.
+        3. Likewise, traverse the directed data dependency graph downwards
+           to mark, transitively, every statement and argument that is a
+           downward dependency.
 
-        4. Filter the input `Program.t` to contain only marked `Statement.t`s
-           plus `Datatype.t`s that appear in a marked `Statement.t`. Any
-           `Function.t`s that become empty as a result are dropped, except for a
-           dummy function pointed to by the `main` attribute of the specified
-           `Program.t`. Empty `BasicBlock.t`s are also deleted (except when a
-           dummy block is required to make the program well-formed). Any
-           `Transfer.t`s to a filtered-out target are replaced by `Transfer.Bug`
+        4. Filter the input `Program.t` to keep only blocks and functions
+           containing at least one marked statement or argument. The `main`
+           function and start blocks of kept functions are always preserved.
+           Unused statements and block/function arguments are filtered out,
+           and arguments in call/goto transfers are updated accordingly.
+           Any `Transfer.t` targeting a deleted block or function is
+           replaced by `Transfer.Bug`. Datatypes are filtered to keep only
+           those whose `Tycon.t` appears in a preserved statement/argument.
 
       Data dependencies are traversed within functions and across functions, i.e. for:
 
@@ -43,15 +46,16 @@ sig
          w = g(2) + 1
          return w
 
-      The "upwards dependencies" of `z` are the statements:
+      The "upwards dependencies" of `z` are the statements/arguments:
         x = a + b
         y = x + 1
-        return g(y)
+        return g(y) (call site)
+        c (parameter of g)
+        a and b (parameters of f)
 
-
-      and the "downwards dependencies" are the statements:
+      and the "downwards dependencies" are the statements/arguments:
         return z
-        w = g(2) + 1
+        w = g(2) + 1 (representing call return)
         return w
    *)
    val isolateSubgraph: (Program.t * Var.t) -> Program.t
