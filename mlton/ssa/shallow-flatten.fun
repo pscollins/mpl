@@ -167,10 +167,6 @@ in
    walk (t, cd)
 end
 
-
-
-
-
 fun isArrayPrim prim =
     case prim of
         Prim.Array_alloc _=> true
@@ -604,16 +600,6 @@ in
        else SOME (Vector.new1 s)
      | _ => SOME (Vector.new1 s)
 end
-
-
-
-exception IllegalFlatteningDecision
-
-
-
-
-
-
 
 type flattener = {
    updateType: Type.t -> Type.t,

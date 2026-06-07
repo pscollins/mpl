@@ -370,17 +370,7 @@ in
        }
 
        val policy = ShallowFlatten.MaxWidth 3
-       (* Under the buggy compiler, flattenOnce will raise IllegalFlatteningDecision.
-          We want to assert/witness this symptom, but also verify the properly flattened IR.
-          So, if IllegalFlatteningDecision is raised, we print a message and raise TestFail.
-          If it does not raise, we continue with verifying the properly-flattened IR. *)
-       val p' =
-          case (SOME (ShallowFlatten.flattenOnce policy p))
-               handle ShallowFlatten.IllegalFlatteningDecision => NONE of
-             NONE => (assert (true, "Symptom of the original bug present");
-                      raise TestFail "Bug is present: flattenOnce raised IllegalFlatteningDecision")
-           | SOME (SOME p') => p'
-           | SOME NONE => raise TestFail "flattenOnce returned NONE"
+       val p' = valOf (ShallowFlatten.flattenOnce policy p)
 
        (* Verify the flattened IR of f_main *)
        val Program.T {functions, ...} = p'
@@ -683,12 +673,9 @@ in
 
       val policy = ShallowFlatten.MaxWidth 3
       val p' =
-          case (SOME (ShallowFlatten.flattenOnce policy p))
-               handle ShallowFlatten.IllegalFlatteningDecision => NONE of
-            NONE => (assert (true, "Symptom of the original bug (IllegalFlatteningDecision) is present");
-                     raise TestFail "Bug is present: flattenOnce raised IllegalFlatteningDecision")
-          | SOME (SOME p') => p'
-          | SOME NONE => p
+          case ShallowFlatten.flattenOnce policy p of
+             SOME p' => p'
+           | NONE => p
 
       val Program.T {functions = functions', ...} = p'
 

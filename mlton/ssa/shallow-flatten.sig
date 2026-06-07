@@ -130,8 +130,6 @@ sig
                          Type.t
 
 
-
-
    (* Marks any vars in `Statement.t` that must be flattened according to the
    provided policy. The following statement types may induce flattening:
 
@@ -270,18 +268,6 @@ sig
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
-
-
-   (* Flattens (according to the rules of `maybeFlattenStatement`) all
-   statements in the provided `Statement.t vector` that require it (according to
-   the rules of `mustFlattenStatement`).
-
-   If some statement must be flattened, but cannot, raises
-   `IllegalFlatteningDecision`.
-    *)
-   (* TODO: needs tests *)
-   exception IllegalFlatteningDecision
-
 
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was
