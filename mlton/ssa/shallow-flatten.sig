@@ -50,6 +50,9 @@ sig
         (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
         MaxWidth of int
 
+   (* Should this `Type.t` flattened according to `policy`? *)
+   val shouldFlattenType: policy -> Type.t -> bool
+
    (* Update an entire nested subject to `flattenPolicy`
 
       Unlike `maybeFlattenType`, this function traverses through non-flattenable
@@ -268,6 +271,7 @@ sig
     *)
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
+
 
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was
