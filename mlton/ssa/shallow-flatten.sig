@@ -14,7 +14,6 @@ sig
    structure FlattenUtil: FLATTEN_UTIL
    type funcsMap = FlattenUtil.funcsMap
 
-
    (* Abstract interface for applying the flattening transformation *)
    type flattener = {
       (* Transformation applied to all `Type.t`s in the program that *do not*
@@ -130,30 +129,7 @@ sig
    val applyConDecision: conDecision * Type.t ->
                          Type.t
 
-   (* Tracks flattening decisions for variables, arguments, and constructors. *)
-   type flattenedVars
-   val newFlattenedVars: unit -> flattenedVars
-   val destroyFlattenedVars: flattenedVars -> unit
-   (* Marks the provided `Var.t` for flattening. It is only valid to call this
-   function once  on a particular `(fv, v)` pair *)
-   val markForFlatten: flattenedVars * Var.t -> unit
-   (* If the provided `Var.t` was previously marked for flattening (above),
-   returns true. Otherwise, returns false. *)
-   val isMarkedForFlatten: flattenedVars * Var.t -> bool
-   (* Like `markFlatten`, but for `Con.t` *)
-   val setConFlatteningDecision: flattenedVars * Con.t * conDecision vector -> unit
-   (* Like `isMarkedForFlatten`, but for `Con.t` *)
-   val getConFlatteningDecision: flattenedVars * Con.t -> conDecision vector
-   (* Like `markFlatten`, but for function/block arguments. The user should
-   always have the pair (Var.t * Type.t) available, but there's no need to pass
-   the type here. *)
-   val setArgFlatteningDecision: flattenedVars * Var.t * conDecision -> unit
-   (* Like `isMarkedForFlatten`, but for function/block arguments. *)
-   val getArgFlatteningDecision: flattenedVars * Var.t -> conDecision
 
-   (* Returns the total number of variables and constructors marked for
-   flattening *)
-   val markedCount: flattenedVars -> int
 
     (* Tracks types of `Var.t`s  and argument/return types *)
     type varTypes
@@ -194,21 +170,6 @@ sig
      * TODO(pscollins): More types? Should handle vector too
     *)
 
-   val markStatementForPolicy: (flattenedVars * flattenPolicy) ->
-                               Statement.t -> unit
-   val markArgForPolicy: (flattenedVars * flattenPolicy) ->
-                         (Var.t * Type.t) -> unit
-   val markDatatypeForPolicy: (flattenedVars * flattenPolicy) ->
-                              Datatype.t -> unit
-
-
-   (* If the provided `Var.t` is not marked for flattening, returns the original
-   (var, type). Otherwise, returns (var, flattenedType), where `flattenedType`
-   is flattened according to the rules of `maybeFlattenType`: if `type` is not
-   flattenable, raises BadFlattenError. *)
-   exception BadFlattenError
-   val maybeFlattenArg: flattenedVars * (Var.t * Type.t) ->
-                        Var.t * Type.t
 
    (* Flattens the provided `Statement.t` into a sequence of statements, if
    possible. Otherwise, returns NONE.
@@ -333,12 +294,7 @@ sig
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
 
-   (* Returns `true` if `Statement.` must be flattened.
 
-      A statement must be flattened if it uses or defines a `Var.t` that must be
-      flattened.
-    *)
-   val mustFlattenStatement: flattenedVars * Statement.t -> bool
 
    (* Propages `varTypes` through the provided `Exp.t` (if necessary)
 
@@ -423,15 +379,7 @@ sig
     *)
    (* TODO: needs tests *)
    exception IllegalFlatteningDecision
-   val flattenStatements: flattenedVars -> Statement.t vector ->
-                          Statement.t vector
-   (* Like above, but for arguments *)
-   val flattenArgs: flattenedVars -> (Var.t * Type.t) vector ->
-                    (Var.t * Type.t) vector
 
-   (* Like above, but for marked `Con.t`s *)
-   val flattenDatatype: flattenedVars -> Datatype.t ->
-                        Datatype.t
 
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was

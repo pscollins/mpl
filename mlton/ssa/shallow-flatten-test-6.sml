@@ -14,26 +14,6 @@ local
          Vector.forall2 (v1, v2, decisionEquals)
        | _ => false
 in
-   val _ = runTest ("Test 7: set/getArgFlatteningDecision", fn () => let
-      val fv = ShallowFlatten.newFlattenedVars ()
-      val v = Var.newString "v"
-      
-      (* Create a conDecision *)
-      val decision = ShallowFlatten.FlattenNode (Vector.new0 ())
-      
-      (* Set the decision *)
-      val _ = ShallowFlatten.setArgFlatteningDecision (fv, v, decision)
-      
-      (* Get the decision *)
-      val decision' = ShallowFlatten.getArgFlatteningDecision (fv, v)
-      
-      (* Check equality *)
-      val _ = if decisionEquals (decision, decision') then ()
-              else assert (false, "Decision mismatch")
-
-      val _ = ShallowFlatten.destroyFlattenedVars fv
-   in () end)
-
    val _ = runTest ("Test 8: Nested array flattening", fn () => let
       val f_test = Func.fromString "f_test"
       val L_start = Label.fromString "L_start"

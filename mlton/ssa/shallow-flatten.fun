@@ -167,107 +167,7 @@ in
    walk (t, cd)
 end
 
-type flattenedVars = {
-   getFlattenedProp: Var.t -> bool,
-   setFlattenedProp: Var.t * bool -> unit,
-   getFlattenedConProp: Con.t -> conDecision vector,
-   setFlattenedConProp: Con.t * conDecision vector -> unit,
-   getArgFlatteningProp: Var.t -> conDecision,
-   setArgFlatteningProp: Var.t * conDecision -> unit,
-   destroyFlattenedProps: unit -> unit,
-   count: int ref
-}
-fun newFlattenedVars () = let
-   val {get, set, destroy} =
-       Property.destGetSetOnce (Var.plist, Property.initConst false)
 
-   val {get=get', set=set', destroy=destroy'} =
-       Property.destGetSetOnce (Con.plist, Property.initRaise
-                                               ("flattenCon", Con.layout))
-
-   val {get=get'', set=set'', destroy=destroy''} =
-       Property.destGetSetOnce (Var.plist, Property.initRaise
-                                               ("flattenArg", Var.layout))
-   fun doDestroy() =
-       (destroy(); destroy'(); destroy''())
-in
-   {getFlattenedProp=get,
-    setFlattenedProp=set,
-    getFlattenedConProp=get',
-    setFlattenedConProp=set',
-    getArgFlatteningProp=get'',
-    setArgFlatteningProp=set'',
-    destroyFlattenedProps=doDestroy,
-    count=ref 0}
-end
-
-fun destroyFlattenedVars (fv: flattenedVars): unit = let
-   val {destroyFlattenedProps, ...} = fv
-in
-   destroyFlattenedProps()
-end
-
-fun markForFlatten (fv: flattenedVars, v: Var.t): unit = let
-   val {setFlattenedProp, count, ...} = fv
-   val _ = count := (!count + 1)
-   fun logThunk () =
-       Layout.seq [Layout.str "markForFlatten: ",
-                   Var.layout v]
-   val _ = Control.diagnostic logThunk
-in
-   setFlattenedProp (v, true)
-end
-
-fun setConFlatteningDecision (fv: flattenedVars, c: Con.t,
-                       decisions: conDecision vector): unit = let
-   val {setFlattenedConProp, count, ...} = fv
-   fun logThunk () =
-       Layout.seq [Layout.str "setConFlatteningDecision: ",
-                   Con.layout c,
-                   Layout.str ": ",
-                   Vector.layout layoutConDecision decisions]
-   val _ = Control.diagnostic logThunk
-in
-   setFlattenedConProp (c, decisions)
-end
-
-fun isMarkedForFlatten (fv: flattenedVars, v: Var.t): bool = let
-   val {getFlattenedProp, ...} = fv
-in
-   getFlattenedProp v
-end
-
-fun getConFlatteningDecision (fv: flattenedVars, c: Con.t): conDecision vector = let
-   val {getFlattenedConProp, ...} = fv
-in
-   getFlattenedConProp c
-end
-
-fun setArgFlatteningDecision (fv: flattenedVars, v: Var.t,
-                              decision: conDecision): unit = let
-   val {setArgFlatteningProp, count, ...} = fv
-   val _ = count := (!count + 1)
-   fun logThunk () =
-       Layout.seq [Layout.str "setArgFlatteningDecision: ",
-                   Var.layout v,
-                   Layout.str ": ",
-                   layoutConDecision decision]
-   val _ = Control.diagnostic logThunk
-in
-   setArgFlatteningProp (v, decision)
-end
-
-fun getArgFlatteningDecision (fv: flattenedVars, v: Var.t): conDecision = let
-   val {getArgFlatteningProp, ...} = fv
-in
-   getArgFlatteningProp v
-end
-
-fun markedCount (fv: flattenedVars): int = let
-   val {count, ...} = fv
-in
-   !count
-end
 
 type varTypes = {
    getType: Var.t -> Type.t,
@@ -464,49 +364,6 @@ fun propagateTypesInStatement (vt: varTypes, s: Statement.t):
          | _ => ()
 in
    Statement.T {exp = newExp, ty = newTy, var = var}
-end
-
-fun markStatementForPolicy (fv: flattenedVars,
-                            policy: flattenPolicy)
-                           (s: Statement.t): unit =
-   case (shouldMarkType (policy, extractType s), Statement.var s) of
-       (true, SOME v') => markForFlatten (fv, v')
-     | _ => ()
-
-fun markArgForPolicy (fv: flattenedVars, policy: flattenPolicy)
-                     ((var, ty): (Var.t * Type.t)): unit = let
-
-   (* HACK: We need `isMarkedForFlatten` to return true for block/function
-   arguments consumed by  `Array_` `PrimApp`s.
-
-     TODO(pscollins): Replace the existing "flattening decision" mechanism with
-     just propagation alone and get rid of `setArgFlatteningDecision`
-    *)
-
-   val _ =
-       if shouldMarkType (policy, ty) then
-          markForFlatten (fv, var)
-       else ()
-in
-   setArgFlatteningDecision (fv, var, getConDecisionForPolicy policy ty)
-end
-
-fun markDatatypeForPolicy (fv: flattenedVars, policy: flattenPolicy)
-                          (dt: Datatype.t): unit = let
-   val Datatype.T {cons, ...} = dt
-   fun getDecision ty = getConDecisionForPolicy policy ty
-   fun doCon {args, con} =
-       setConFlatteningDecision (fv, con, Vector.map (args, getDecision))in
-   Vector.foreach (cons, doCon)
-end
-
-exception BadFlattenError
-fun maybeFlattenArg (fv, (v, t)) = let
-   val decision = getArgFlatteningDecision (fv, v)
-   val t' = applyConDecision (decision, t)
-            handle InvalidConFlattening => raise BadFlattenError
-in
-   (v, t')
 end
 
 fun isArrayPrim prim =
@@ -943,84 +800,12 @@ in
      | _ => SOME (Vector.new1 s)
 end
 
-fun mustFlattenStatement (fv: flattenedVars, s: Statement.t): bool = let
-   val vars = ref []
-   fun push x = List.push (vars, x)
-   val _ =
-       case Statement.var s of
-           SOME x => push x
-         | _ => ()
-   val _ = Exp.foreachVar (Statement.exp s, push)
-   fun isFlattened x = isMarkedForFlatten (fv, x)
-in
-   List.exists (!vars, isFlattened)
-end
+
 
 exception IllegalFlatteningDecision
-fun flattenStatements fv ss = let
-   fun mkLogThunk s = let
-      fun thunk() =
-          Layout.seq [Layout.str "Maybe flatten? ",
-                      Statement.layout s]
-   in
-      thunk
-   end
-   fun doStmt s = let
-      val _ = Control.diagnostic (mkLogThunk s)
-      in
-         case (mustFlattenStatement (fv, s),
-               maybeFlattenStatement s) of
-             (false, _) => Vector.new1 s
-           | (true, SOME ss) => ss
-           (* For now, we only report missing flattening for PrimApp *)
-           | (true, NONE) => raise IllegalFlatteningDecision
-      end
-in
-   Vector.concatV (Vector.map (ss, doStmt))
-end
 
-fun flattenArgs fv args = let
-   fun doArg (t as (v, _)) =
-       maybeFlattenArg (fv, t)
-in
-   Vector.map (args, doArg)
-end
 
-fun flattenDatatype (fv: flattenedVars)
-                    (dt: Datatype.t): Datatype.t = let
-   val Datatype.T {cons, tycon} = dt
-   fun applyDecision (cd, t) =
-       applyConDecision (cd, t)
-       handle InvalidConFlattening => raise IllegalFlatteningDecision
-   fun maybeFlattenCon {args, con} = let
-      val decisions = getConFlatteningDecision (fv, con)
-      val args = Vector.map2 (decisions, args, applyDecision)   in
-      {args = args, con = con}
-   end
-in
-   Datatype.T {cons = Vector.map (cons, maybeFlattenCon),
-               tycon = tycon}
-end
 
-fun getFlattenedVarsInProgram (policy: flattenPolicy, p: Program.t) = let
-   val Program.T {datatypes, ...} = p
-   val fv = newFlattenedVars()
-   fun foreachStatements ss =
-       Vector.foreach(ss, markStatementForPolicy (fv, policy))
-   fun foreachArgs args =
-       Vector.foreach (args, markArgForPolicy (fv, policy))
-   fun foreachTransfer _ = ()
-
-   val visitor = {
-      foreachStatements = foreachStatements,
-      foreachArgs = foreachArgs,
-      foreachTransfer = foreachTransfer
-   }
-   val _ = foreachBfs visitor p
-   val _ = Vector.foreach (datatypes, markDatatypeForPolicy (fv, policy))
-in
-   fv
-end
 
 fun bindTypeInStatement (vt, s) = let
    val Statement.T {var, ty, ...} = s
@@ -1039,14 +824,7 @@ in
    (Vector.foreach (args, bindType); args)
 end
 
-fun flattenDatatypesInProgram (fv: flattenedVars, p: Program.t): Program.t = let
-   val Program.T {datatypes, functions, globals, main} = p
-in
-   Program.T {datatypes = Vector.map (datatypes, flattenDatatype fv),
-              functions = functions,
-              globals = globals,
-              main = main}
-end
+
 
 fun layoutReturns (returns: Type.t vector option): Layout.t =
     Option.layout (Vector.layout Type.layout) returns
@@ -1220,50 +998,6 @@ in
               main = main}
 end
 
-(* fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let *)
-(*    (* First pass: collect all of the variables in the program that need *)
-(*    flattening *) *)
-(*    val fv = getFlattenedVarsInProgram (policy, p) *)
-(*    val rewriter = { *)
-(*       doStatements = flattenStatements fv, *)
-(*       doArgs = flattenArgs fv, *)
-(*       doTransfer = fn (_, transfer) => transfer *)
-(*    } *)
-(*    val p' as Program.T {functions, ...} = rewriteBfs rewriter p *)
-(*    val count = markedCount fv *)
-
-(*    (* Second pass: propagate types + update datatype declarations *) *)
-(*    val vt = newVarTypes () *)
-(*    (* Seed with the initial types *) *)
-(*    val _ = setInitialTypes (vt, p') *)
-(*    val fm = newFuncsMap p' *)
-(*    fun doPropagateThroughStatements ss = let *)
-(*       fun doStmt s = propagateTypesInStatement (vt, s) *)
-(*    in *)
-(*       Vector.map (ss, doStmt) *)
-(*    end *)
-(*    fun doPropagateThroughTransfer (f, transfer) = *)
-(*        (propagateThroughTransfer (vt, fm, f, transfer); *)
-(*         transfer) *)
-(*    (* Run propagation *) *)
-(*    val propagator = { *)
-(*       doStatements = doPropagateThroughStatements, *)
-(*       doArgs = bindTypesInArgs vt, *)
-(*       (* doArgs = fn x => x, *) *)
-(*       doTransfer = doPropagateThroughTransfer *)
-(*    } *)
-(*    (* val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *) *)
-(*    val p'' = propagateAllReturnTypes (vt, flattenDatatypesInProgram (fv, rewriteBfs propagator p')) *)
-(*    (* val p'' = flattenDatatypesInProgram (fv, rewriteBfs propagator p') *) *)
-(*    (* Cleanup *) *)
-(*    val {destroyFuncsMap, ...} = fm *)
-(*    val _ = destroyFuncsMap () *)
-(*    val _ = destroyVarTypes vt *)
-(*    val _ = destroyFlattenedVars fv *)
-(* in *)
-(*    if count > 0 then SOME p'' *)
-(*    else NONE *)
-(* end *)
 
 type flattener = {
    updateType: Type.t -> Type.t,
