@@ -442,26 +442,45 @@ in
       
       val res2 = ShallowFlatten.deepFlattenStatementsForPolicy policy s2
       
-      val _ = assert (Vector.length res2 = 1, "res2 length should be 1")
+      (* Assertions on res2 *)
+      val _ = assert (Vector.length res2 = 3, "res2 length should be 3")
+      
+      (* Statement 0: flatBind_2: (int array) array = Array_alloc[int array](n) *)
       val Statement.T {exp = e2_0, ty = t2_0, var = v2_0} = Vector.sub (res2, 0)
-      
-      (* Expected types after deep flattening:
-         - LHS type: ((int * int) array) array -> int array array * int array array
-         - Targ: (int * int) array -> int array * int array
-       *)
-      val expectedTarg = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
-      val expectedLHSTy = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
-      
-      val _ = assertType (Vector.sub (res2, 0), expectedLHSTy, Type.array arrayTuple2Ty, "res2[0] type")
-      val _ = case v2_0 of
-                 SOME v => assert (Var.equals (v, arrVar), "res2[0] var")
-               | NONE => raise TestFail "res2[0] var should be SOME"
+      val _ = assertType (Vector.sub (res2, 0), Type.array (Type.array intTy), Type.array arrayTuple2Ty, "res2[0] type")
+      val _ = assert (Option.isSome v2_0, "res2[0] var should be SOME")
       val _ = case e2_0 of
                  Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
                     assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), nVar), "res2[0] args");
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), expectedTarg), "res2[0] targs")
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), Type.array intTy), "res2[0] targs")
                  )
                | _ => raise TestFail "res2[0] should be Array_alloc PrimApp"
+
+      (* Statement 1: flatBind_3: (int array) array = Array_alloc[int array](n) *)
+      val Statement.T {exp = e2_1, ty = t2_1, var = v2_1} = Vector.sub (res2, 1)
+      val _ = assertType (Vector.sub (res2, 1), Type.array (Type.array intTy), Type.array arrayTuple2Ty, "res2[1] type")
+      val _ = assert (Option.isSome v2_1, "res2[1] var should be SOME")
+      val _ = case e2_1 of
+                 Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), nVar), "res2[1] args");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), Type.array intTy), "res2[1] targs")
+                 )
+               | _ => raise TestFail "res2[1] should be Array_alloc PrimApp"
+
+      (* Statement 2: arr: (int array) array * (int array) array = tuple (flatBind_2, flatBind_3) *)
+      val Statement.T {exp = e2_2, ty = t2_2, var = v2_2} = Vector.sub (res2, 2)
+      val expectedTupleTy = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
+      val _ = assertType (Vector.sub (res2, 2), expectedTupleTy, Type.array arrayTuple2Ty, "res2[2] type")
+      val _ = case v2_2 of
+                 SOME v => assert (Var.equals (v, arrVar), "res2[2] var should be original arrVar")
+               | NONE => raise TestFail "res2[2] var should be SOME"
+      val _ = case e2_2 of
+                 Exp.Tuple vs => (
+                    assert (Vector.length vs = 2, "res2[2] tuple length");
+                    assert (Var.equals (Vector.sub (vs, 0), valOf v2_0), "res2[2] tuple element 0");
+                    assert (Var.equals (Vector.sub (vs, 1), valOf v2_1), "res2[2] tuple element 1")
+                 )
+               | _ => raise TestFail "res2[2] should be Tuple expression"
    in () end)
 
    val _ = summarize ()

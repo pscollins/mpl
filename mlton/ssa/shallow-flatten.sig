@@ -131,29 +131,6 @@ sig
 
 
 
-    (* Tracks types of `Var.t`s  and argument/return types *)
-    type varTypes
-    val newVarTypes: unit -> varTypes
-    val destroyVarTypes: varTypes -> unit
-
-   (* Sets the type for a future `getVarType` call. Valid to call multiple times
-   (updating the stored type) *)
-   val setVarType: varTypes * Var.t * Type.t -> unit
-   (* Returns the type set by a previous `setVarType` call. *)
-   val getVarType: varTypes * Var.t -> Type.t
-   (* Sets the type for a future `getReturnType` call. Valid to call multiple
-   times (updating the stored type) *)
-   val setReturnType: varTypes * Func.t * Type.t vector option -> unit
-   (* Returns the type set by a pervious `setFuncArgType` call. *)
-   val getReturnType: varTypes * Func.t -> Type.t vector option
-
-   (* Applies all changes to argument/return types recorded in `varTypes` to the
-      provided function.
-
-      TODO(pscollins): Statement types are currently propagated separately --
-      this is a bit ugly; revisit.
-   *)
-   val updateToSavedTypes: varTypes * Function.t -> Function.t
 
    (* Marks any vars in `Statement.t` that must be flattened according to the
    provided policy. The following statement types may induce flattening:
@@ -295,84 +272,9 @@ sig
                               Statement.t vector option
 
 
-
-   (* Propages `varTypes` through the provided `Exp.t` (if necessary)
-
-      For `Exp.t`s that must be updated for flattening, returns
-        SOME (exp, ty)
-      where `exp` is the updated expression, and `ty` is the updated return
-      type.
-
-      For `Exp.t`s that do not change under flattening, `NONE`.
-
-      Non-`PrimApp`s pass through the `exp` unchanged and return, i.e.
-
-        * `select (t, n)`
-        * `tuple (x1, x2, x3)`
-        * `Var (x)`
-
-      propagate `varTpes` in the obvious way. Other non-`PrimApp`s return NONE.
-
-      For `PrimApp`s:
-
-        * Ref_deref[_](arg) -> SOME (Ref_deref[type(arg)], type(arg))
-        * Ref_ref[_](arg) -> SOME (Ref_ref[type(arg)], type(arg) ref)
-
-      Note that this function does NOT support `Array_` prims -- these require
-      more complicated rewrites (emitting multiple statements) and so aren't
-      supported here.
-
-      TODO: ConApp should "unify"
-      TODO: PrimApp
-   *)
-   val maybePropagateTypesInExp: varTypes * Exp.t ->
-                                 (Exp.t * Type.t) option
-
-
-   (* For all statements `lhs: ty = rhs`
-
-        1. Recomputes `(ty', rhs')` via propagation (defined above)
-
-        2. If needed, updates `lhs` to `ty'` in `varTypes`
-        3. Returns a new `Statement.t` with the updated types
-
-     e.g. for
-       * varTypes = {x -> int, y -> bool * bool}
-       * statement = {y: bool * bool = tuple (x, x)}
-
-     this call:
-       1. Updates `varTypes` so that `y -> int * int`
-       2. Returns the modified statement
-          y: int * int = tuple (int, int)
-   *)
-   val propagateTypesInStatement: varTypes * Statement.t -> Statement.t
-
-   (* Updates `returns` to match the type of all `Return`s.
-
-   If the function's current `returns` is `NONE`, returns `NONE`.
-
-   If the type of every `Return.t` matches, returns `SOME returnTy`
-
-   Otherwise, if the types of the `Return.t`s are inconsistent, raises
-   `InconsistentTypes`.
-   *)
-   exception InconsistentTypes
-   val propagateReturnTypes: varTypes * Function.t -> Type.t vector option
-
-   (* Updates `varTypes` for the provided `Transfer.t`:
-
-      1. For `Call`/`Goto`: updates each formal parameter type to match the type
-         of the passed argument (for the target `func`/`label`)
-      2. For `Return`: updates the return type of the provided `Func.t`
-      3. For `Call` with a `Tail` return type: updates the return type of the
-         provided `Func.t` to match the return type of the target function.
-   *)
-   val propagateThroughTransfer: varTypes * funcsMap * Func.t * Transfer.t -> unit
-
    (* Flattens (according to the rules of `maybeFlattenStatement`) all
    statements in the provided `Statement.t vector` that require it (according to
-   the rules of `mustFlattenStatement`), then updates types via the rules of
-   `propagateTypesInStatement`.
+   the rules of `mustFlattenStatement`).
 
    If some statement must be flattened, but cannot, raises
    `IllegalFlatteningDecision`.
