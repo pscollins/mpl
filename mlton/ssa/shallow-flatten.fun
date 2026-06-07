@@ -75,9 +75,10 @@ fun getContainerOfTupleTypeWidth (t: Type.t): int =
       | _ => 0
 
 datatype flattenPolicy = MaxWidth of int
+                       | MaxWidthSameType of int
 
-(* Should the value corresponding to `t` be marked, according to `policy`? *)
-fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
+(* Should the value corresponding to `t` be flattened, according to `policy`? *)
+fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = let
    val MaxWidth (maxWidth) = policy
    (* No reason to flatten tuples with <2 elements *)
    val kMinWidth = 2
@@ -85,8 +86,6 @@ fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
 in
    (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
 end
-
-fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = false
 
 fun getChildren (t: Type.t): Type.t vector =
     case Type.dest t of
@@ -110,8 +109,7 @@ fun layoutConDecision cd =
 
 fun getConDecisionForPolicy (policy: flattenPolicy)
                             (t: Type.t): conDecision = let
-   fun shouldMark t = shouldMarkType (policy, t)
-   val MaxWidth (width) = policy
+   val shouldMark = shouldFlattenType policy
    fun walk (t: Type.t) = let
       fun next t' = Vector.map (getChildren t', walk)
    in
@@ -142,17 +140,18 @@ fun applyConDecision (cd: conDecision,
            (Type.Array t', PreserveNode cd') =>
            Type.array (walk (t', getUniqueElement cd'))
          | (Type.Array t', FlattenNode cds') =>
-            Type.tuple (Vector.map2 (Type.deTuple t',
-                                     cds',
-                                     Type.array o walk))
-          | (Type.Vector t', PreserveNode cd') =>
+           Type.tuple (Vector.map2 (Type.deTuple t',
+                                    cds',
+                                    Type.array o walk))
+         | (Type.Vector t', PreserveNode cd') =>
            Type.vector (walk (t', getUniqueElement cd'))
          | (Type.Vector t', FlattenNode cds') =>
            Type.tuple (Vector.map2 (Type.deTuple t',
                                     cds',
-                                    Type.vector o walk))         (* Multi-child, un-flattenable internal nodes *)
-           | (Type.Tuple ts', PreserveNode cds') =>
-             Type.tuple (Vector.map2 (ts', cds', walk))
+                                    Type.vector o walk))
+         (* Multi-child, un-flattenable internal nodes *)
+         | (Type.Tuple ts', PreserveNode cds') =>
+           Type.tuple (Vector.map2 (ts', cds', walk))
          (* Single-child, un-flattenable internal nodes *)
          | (Type.Ref t', PreserveNode cd') =>
            Type.reff (walk (t', getUniqueElement cd'))
@@ -653,6 +652,7 @@ end
 fun policyToString (policy: flattenPolicy) =
     case policy of
         MaxWidth w => concat ["MaxWidth:", Int.toString w]
+     |  MaxWidthSameType w => concat ["MaxWidthSameType:", Int.toString w]
 
 fun deepFlattenTypeForPolicy (policy: flattenPolicy)
                              (t: Type.t): Type.t = let
@@ -685,7 +685,7 @@ fun doesPolicyFlattenStatement (policy: flattenPolicy)
                                (s: Statement.t): bool = let
    val Statement.T {exp, ty, var} = s
    (* TODO: add a new version that doesn't require wrapping *)
-   fun checkElType targs = shouldMarkType (policy, Type.array (getUniqueElement targs))
+   fun checkElType targs = shouldFlattenType policy (Type.array (getUniqueElement targs))
    fun checkPrim {args, prim, targs} =
        (* All currently-supported cases take the the `targ` as the element type
 
