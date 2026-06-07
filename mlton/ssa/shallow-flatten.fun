@@ -74,17 +74,55 @@ fun getContainerOfTupleTypeWidth (t: Type.t): int =
       | Type.Vector t' => getTupleTypeWidth t'
       | _ => 0
 
+fun isAllSame (cmp: 'a * 'a -> bool) (xs: 'a vector): bool = let
+   fun reduce (curr: 'a, prev: 'a option): 'a option =
+       case prev of
+           SOME prev' =>
+           if cmp (curr, prev') then SOME prev'
+           else NONE
+         | NONE => NONE
+   val init = if Vector.length xs = 0 then NONE
+              else SOME (Vector.first xs)
+in
+   Option.isSome (Vector.fold (xs, init, reduce))
+end
+
+(* Returns:
+
+   * t == (t1, t2, ...) tuple ? t1 == t2 == ...
+   * otherwise, false
+*)
+fun isTupleOfSameTupleType (t: Type.t): bool =
+    case Type.deTupleOpt t of
+        SOME ts => isAllSame Type.equals ts
+      | _ => false
+
+(* Like above, but requires that `t` is `(...) array` or `(...) vector` *)
+fun isContainerOfSameTupleType (t: Type.t): bool =
+    case Type.dest t of
+        Type.Array t' => isTupleOfSameTupleType t'
+      | Type.Vector t' => isTupleOfSameTupleType t'
+      | _ => false
+
 datatype flattenPolicy = MaxWidth of int
                        | MaxWidthSameType of int
 
 (* Should the value corresponding to `t` be flattened, according to `policy`? *)
 fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = let
-   val MaxWidth (maxWidth) = policy
+   val (maxWidth, differentOk) =
+       case policy of
+           MaxWidth w => (w, true)
+         | MaxWidthSameType w => (w, false)
    (* No reason to flatten tuples with <2 elements *)
    val kMinWidth = 2
    val currWidth = getContainerOfTupleTypeWidth t
+   val matchesWidth =
+       (currWidth >= kMinWidth) andalso
+       (currWidth <= maxWidth)
+   val matchesSame = differentOk orelse
+                     (isContainerOfSameTupleType t)
 in
-   (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
+   matchesWidth andalso matchesSame
 end
 
 fun getChildren (t: Type.t): Type.t vector =

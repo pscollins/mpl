@@ -259,6 +259,39 @@ in
       check (policy2, arrayTuple1Ty, false, "array of 1-tuple under MaxWidth 2")
    end)
 
+   (* Test 43: shouldFlattenType coverage for MaxWidthSameType *)
+   val _ = runTest ("Test 43: shouldFlattenType coverage for MaxWidthSameType", fn () => let
+      val intTy = Type.intInf
+      val word32Ty = Type.word WordSize.word32
+      val tuple2SameTy = Type.tuple (Vector.fromList [intTy, intTy])
+      val tuple2DiffTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val tuple3SameTy = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val tuple3DiffTy = Type.tuple (Vector.fromList [intTy, intTy, word32Ty])
+
+      val arrayTuple2SameTy = Type.array tuple2SameTy
+      val arrayTuple2DiffTy = Type.array tuple2DiffTy
+      val vectorTuple3SameTy = Type.vector tuple3SameTy
+      val vectorTuple3DiffTy = Type.vector tuple3DiffTy
+      val arrayIntTy = Type.array intTy
+      val arrayTuple0Ty = Type.array (Type.tuple (Vector.new0 ()))
+      val arrayTuple1Ty = Type.array (Type.tuple (Vector.new1 intTy))
+
+      val policy2 = ShallowFlatten.MaxWidthSameType 2
+      val policy3 = ShallowFlatten.MaxWidthSameType 3
+
+      fun check (policy, ty, expected, msg) =
+         assert (ShallowFlatten.shouldFlattenType policy ty = expected, msg)
+   in
+      check (policy2, arrayTuple2SameTy, true, "array of same-type 2-tuple under MaxWidthSameType 2");
+      check (policy2, arrayTuple2DiffTy, false, "array of diff-type 2-tuple under MaxWidthSameType 2");
+      check (policy3, vectorTuple3SameTy, true, "vector of same-type 3-tuple under MaxWidthSameType 3");
+      check (policy3, vectorTuple3DiffTy, false, "vector of diff-type 3-tuple under MaxWidthSameType 3");
+      check (policy2, vectorTuple3SameTy, false, "vector of same-type 3-tuple under MaxWidthSameType 2");
+      check (policy2, arrayIntTy, false, "array of int under MaxWidthSameType 2");
+      check (policy2, arrayTuple0Ty, false, "array of 0-tuple under MaxWidthSameType 2");
+      check (policy2, arrayTuple1Ty, false, "array of 1-tuple under MaxWidthSameType 2")
+   end)
+
    val _ = summarize ()
 end
 
