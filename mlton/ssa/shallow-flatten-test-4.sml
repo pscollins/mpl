@@ -230,7 +230,34 @@ in
                       "Datatype should be flattened in flattenOnce")
    in () end)
 
+   (* Test 42: shouldFlattenType coverage *)
+   val _ = runTest ("Test 42: shouldFlattenType coverage", fn () => let
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val tuple3Ty = Type.tuple (Vector.fromList [intTy, intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val vectorTuple3Ty = Type.vector tuple3Ty
+      val arrayIntTy = Type.array intTy
+      val arrayTuple0Ty = Type.array (Type.tuple (Vector.new0 ()))
+      val arrayTuple1Ty = Type.array (Type.tuple (Vector.new1 intTy))
 
+      val policy1 = ShallowFlatten.MaxWidth 1
+      val policy2 = ShallowFlatten.MaxWidth 2
+      val policy3 = ShallowFlatten.MaxWidth 3
+
+      fun check (policy, ty, expected, msg) =
+         assert (ShallowFlatten.shouldFlattenType policy ty = expected, msg)
+   in
+      check (policy2, arrayTuple2Ty, true, "array of 2-tuple under MaxWidth 2");
+      check (policy3, arrayTuple2Ty, true, "array of 2-tuple under MaxWidth 3");
+      check (policy1, arrayTuple2Ty, false, "array of 2-tuple under MaxWidth 1");
+      check (policy2, vectorTuple3Ty, false, "vector of 3-tuple under MaxWidth 2");
+      check (policy3, vectorTuple3Ty, true, "vector of 3-tuple under MaxWidth 3");
+      check (policy2, arrayIntTy, false, "array of int under MaxWidth 2");
+      check (policy2, intTy, false, "int under MaxWidth 2");
+      check (policy2, arrayTuple0Ty, false, "array of 0-tuple under MaxWidth 2");
+      check (policy2, arrayTuple1Ty, false, "array of 1-tuple under MaxWidth 2")
+   end)
 
    val _ = summarize ()
 end

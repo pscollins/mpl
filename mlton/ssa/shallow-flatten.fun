@@ -86,6 +86,8 @@ in
    (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
 end
 
+fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = false
+
 fun getChildren (t: Type.t): Type.t vector =
     case Type.dest t of
         Type.Array t' => Vector.new1 t'

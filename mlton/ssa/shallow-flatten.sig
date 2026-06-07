@@ -51,7 +51,7 @@ sig
         MaxWidth of int
 
    (* Should this `Type.t` flattened according to `policy`? *)
-   val shouldFlattenType: policy -> Type.t -> bool
+   val shouldFlattenType: flattenPolicy -> Type.t -> bool
 
    (* Update an entire nested subject to `flattenPolicy`
 
