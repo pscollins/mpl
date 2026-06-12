@@ -269,6 +269,26 @@ sig
    val maybeFlattenStatement: Statement.t ->
                               Statement.t vector option
 
+   (* AoS variant of the transformation above.
+
+      For AoS-flattenable `PrimApp` expressions, converts a load from an
+      array/vector-of-tuple into a load from a flat array. Unlike the SoA
+      flattening transformation, the SoA flattening transformation only supports
+      tuples whose members are the same type.
+
+      The following `PrimApp` expressions are flattenable:
+
+     1. `Array_alloc` on tuple types
+       x: ('a * 'a * ...) array = Array_alloc['a * 'a * ...](n)
+       -->
+       x: 'a array = Array_alloc['a](n * tupleWidth('a * 'a * ...))
+
+      TODO: port the remaining test cases over
+   
+   *)
+   val maybeFlattenStatementAoS: Statement.t ->
+                                 Statement.t vector option
+
    (* Runs one iteration of flattening, collecting all flattenable array values
       and transforming them appropriately. Returns (SOME ...) if any value was
       successfully flattened, NONE otherwise.
