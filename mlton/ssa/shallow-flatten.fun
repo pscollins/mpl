@@ -601,6 +601,8 @@ in
      | _ => SOME (Vector.new1 s)
 end
 
+fun maybeFlattenStatementAoS (s: Statement.t) = NONE
+
 type flattener = {
    updateType: Type.t -> Type.t,
    updateStatements: Statement.t vector -> Statement.t vector
