@@ -671,9 +671,10 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
    end
    fun doPrimApp (args, prim, targs) = let
       fun buildArrayAlloc (primArg, tArg) = let
+         val newArg = TODO: MULTIPLY
          val newAlloc = mkArrayAlloc (primArg, tArg, args, var)
       in
-         (* arr = Array_alloc[t](n * sizeof( ??? *)
+         (* arr = Array_alloc[t](n * tupleSize) *)
          Vector.new1 newAlloc
       end
       val result =
