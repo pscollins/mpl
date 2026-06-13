@@ -601,7 +601,20 @@ in
      | _ => SOME (Vector.new1 s)
 end
 
-fun maybeFlattenStatementAoS (s: Statement.t) = NONE
+fun maybeFlattenStatementAoS (s: Statement.t) = let
+   val Statement.T {exp, ty, var} = s
+   fun doPrimApp (args, prim, targs) =
+       case prim of
+           Prim.Array_alloc _ => NONE
+           | _ => NONE
+in
+   case exp of
+       Exp.PrimApp {args, prim, targs} =>
+       if isContainerPrim prim then
+          doPrimApp (args, prim, targs)
+       else SOME (Vector.new1 s)
+     | _ => SOME (Vector.new1 s)
+end
 
 type flattener = {
    updateType: Type.t -> Type.t,
