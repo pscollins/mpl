@@ -660,11 +660,26 @@ end
 
 fun maybeFlattenStatementAoS (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
+   fun mkArrayAlloc (primArg, tArg, args, dest) = let
+      val allocExp = Exp.PrimApp {args = args,
+                                  prim = Prim.Array_alloc primArg,
+                                  targs = Vector.new1 tArg}
+   in
+      Statement.t {exp = allocExp,
+                   ty = Type.array targ,
+                   var = SOME dest}
+   end
    fun doPrimApp (args, prim, targs) = let
+      fun buildArrayAlloc (primArg, tArg) = let
+         val newAlloc = mkArrayAlloc (primArg, tArg, args, var)
+      in
+         (* arr = Array_alloc[t](n * sizeof( ??? *)
+         Vector.new1 newAlloc
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
-              (Prim.Array_alloc primArg,
-               SOME tArg) => NONE
+              (Prim.Array_alloc primArg, SOME tArg)
+              => SOME (buildArrayAlloc (primArg, taArg))
             | _ => NONE
    in
       result
