@@ -647,14 +647,14 @@ end
    is a tuple type satisying `isTupleOfSameTupleType`, returns `SOME 'a`.
  *)
 fun deTupleOfSameTupleType (t: Type.t): Type.t option =
-    if isTupleOfSameTupleType then
-       SOME (Type.deTuple t)
+    if isTupleOfSameTupleType t then
+       SOME (Vector.first (Type.deTuple t))
     else NONE
 
-fun getUniqueAoSTArg (targs: Type.t vector) = let
+fun getUniqueAosTArg (targs: Type.t vector) = let
 in
    if Vector.size targs = 1 then
-      deTupleOfSameTupleType targs
+      deTupleOfSameTupleType (Vector.first targs)
    else NONE
 end
 
@@ -663,10 +663,9 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
    fun doPrimApp (args, prim, targs) = let
       val result =
           case (prim, getUniqueAosTArg (targs)) of
-              (Prim.ArrayAlloc primArg,
+              (Prim.Array_alloc primArg,
                SOME tArg) => NONE
             | _ => NONE
-
    in
       result
    end
