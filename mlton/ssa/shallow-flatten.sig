@@ -33,9 +33,8 @@ sig
    (* Applies `flattener` to the specified program in source order. *)
    val flattenProgram: flattener -> Program.t -> Program.t
 
-
    (* If the provided `Type.t` is an array or vector of tuples, returns the
-   corresponding tuple of arrays or vectors, i.e.:
+      corresponding tuple of arrays or vectors, i.e.:
 
      ('a * 'b) array -> SOME ('a array * 'b array)
      ('a * 'b) vector -> SOME ('a vector * 'b vector)
@@ -44,11 +43,16 @@ sig
     *)
    val maybeFlattenType: Type.t -> Type.t option
 
-
    (* What array/vector types should be flattened? *)
    datatype flattenPolicy =
-        (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
-        MaxWidth of int
+     (* Flatten all tuple array types over <= `MaxWidth` tuple members *)
+     MaxWidth of int
+     (* Like `MaxWidth`, but only applies to tuples where all elements are the
+     same type. *)
+     | MaxWidthSameType of int
+
+   (* Should this `Type.t` flattened according to `policy`? *)
+   val shouldFlattenType: flattenPolicy -> Type.t -> bool
 
    (* Update an entire nested subject to `flattenPolicy`
 

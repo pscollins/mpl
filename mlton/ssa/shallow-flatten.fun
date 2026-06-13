@@ -74,16 +74,55 @@ fun getContainerOfTupleTypeWidth (t: Type.t): int =
       | Type.Vector t' => getTupleTypeWidth t'
       | _ => 0
 
-datatype flattenPolicy = MaxWidth of int
+fun isAllSame (cmp: 'a * 'a -> bool) (xs: 'a vector): bool = let
+   fun reduce (curr: 'a, prev: 'a option): 'a option =
+       case prev of
+           SOME prev' =>
+           if cmp (curr, prev') then SOME prev'
+           else NONE
+         | NONE => NONE
+   val init = if Vector.length xs = 0 then NONE
+              else SOME (Vector.first xs)
+in
+   Option.isSome (Vector.fold (xs, init, reduce))
+end
 
-(* Should the value corresponding to `t` be marked, according to `policy`? *)
-fun shouldMarkType (policy: flattenPolicy, t: Type.t) = let
-   val MaxWidth (maxWidth) = policy
+(* Returns:
+
+   * t == (t1, t2, ...) tuple ? t1 == t2 == ...
+   * otherwise, false
+*)
+fun isTupleOfSameTupleType (t: Type.t): bool =
+    case Type.deTupleOpt t of
+        SOME ts => isAllSame Type.equals ts
+      | _ => false
+
+(* Like above, but requires that `t` is `(...) array` or `(...) vector` *)
+fun isContainerOfSameTupleType (t: Type.t): bool =
+    case Type.dest t of
+        Type.Array t' => isTupleOfSameTupleType t'
+      | Type.Vector t' => isTupleOfSameTupleType t'
+      | _ => false
+
+datatype flattenPolicy = MaxWidth of int
+                       | MaxWidthSameType of int
+
+(* Should the value corresponding to `t` be flattened, according to `policy`? *)
+fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = let
+   val (maxWidth, differentOk) =
+       case policy of
+           MaxWidth w => (w, true)
+         | MaxWidthSameType w => (w, false)
    (* No reason to flatten tuples with <2 elements *)
    val kMinWidth = 2
    val currWidth = getContainerOfTupleTypeWidth t
+   val matchesWidth =
+       (currWidth >= kMinWidth) andalso
+       (currWidth <= maxWidth)
+   val matchesSame = differentOk orelse
+                     (isContainerOfSameTupleType t)
 in
-   (currWidth >= kMinWidth) andalso (currWidth <= maxWidth)
+   matchesWidth andalso matchesSame
 end
 
 fun getChildren (t: Type.t): Type.t vector =
@@ -108,8 +147,7 @@ fun layoutConDecision cd =
 
 fun getConDecisionForPolicy (policy: flattenPolicy)
                             (t: Type.t): conDecision = let
-   fun shouldMark t = shouldMarkType (policy, t)
-   val MaxWidth (width) = policy
+   val shouldMark = shouldFlattenType policy
    fun walk (t: Type.t) = let
       fun next t' = Vector.map (getChildren t', walk)
    in
@@ -140,17 +178,18 @@ fun applyConDecision (cd: conDecision,
            (Type.Array t', PreserveNode cd') =>
            Type.array (walk (t', getUniqueElement cd'))
          | (Type.Array t', FlattenNode cds') =>
-            Type.tuple (Vector.map2 (Type.deTuple t',
-                                     cds',
-                                     Type.array o walk))
-          | (Type.Vector t', PreserveNode cd') =>
+           Type.tuple (Vector.map2 (Type.deTuple t',
+                                    cds',
+                                    Type.array o walk))
+         | (Type.Vector t', PreserveNode cd') =>
            Type.vector (walk (t', getUniqueElement cd'))
          | (Type.Vector t', FlattenNode cds') =>
            Type.tuple (Vector.map2 (Type.deTuple t',
                                     cds',
-                                    Type.vector o walk))         (* Multi-child, un-flattenable internal nodes *)
-           | (Type.Tuple ts', PreserveNode cds') =>
-             Type.tuple (Vector.map2 (ts', cds', walk))
+                                    Type.vector o walk))
+         (* Multi-child, un-flattenable internal nodes *)
+         | (Type.Tuple ts', PreserveNode cds') =>
+           Type.tuple (Vector.map2 (ts', cds', walk))
          (* Single-child, un-flattenable internal nodes *)
          | (Type.Ref t', PreserveNode cd') =>
            Type.reff (walk (t', getUniqueElement cd'))
@@ -601,12 +640,36 @@ in
      | _ => SOME (Vector.new1 s)
 end
 
+(* If
+
+    t = ('a * 'b * 'c ...) tuple
+
+   is a tuple type satisying `isTupleOfSameTupleType`, returns `SOME 'a`.
+ *)
+fun deTupleOfSameTupleType (t: Type.t): Type.t option =
+    if isTupleOfSameTupleType then
+       SOME (Type.deTuple t)
+    else NONE
+
+fun getUniqueAoSTArg (targs: Type.t vector) = let
+in
+   if Vector.size targs = 1 then
+      deTupleOfSameTupleType targs
+   else NONE
+end
+
 fun maybeFlattenStatementAoS (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
-   fun doPrimApp (args, prim, targs) =
-       case prim of
-           Prim.Array_alloc _ => NONE
-           | _ => NONE
+   fun doPrimApp (args, prim, targs) = let
+      val result =
+          case (prim, getUniqueAosTArg (targs)) of
+              (Prim.ArrayAlloc primArg,
+               SOME tArg) => NONE
+            | _ => NONE
+
+   in
+      result
+   end
 in
    case exp of
        Exp.PrimApp {args, prim, targs} =>
@@ -666,6 +729,7 @@ end
 fun policyToString (policy: flattenPolicy) =
     case policy of
         MaxWidth w => concat ["MaxWidth:", Int.toString w]
+     |  MaxWidthSameType w => concat ["MaxWidthSameType:", Int.toString w]
 
 fun deepFlattenTypeForPolicy (policy: flattenPolicy)
                              (t: Type.t): Type.t = let
@@ -698,7 +762,7 @@ fun doesPolicyFlattenStatement (policy: flattenPolicy)
                                (s: Statement.t): bool = let
    val Statement.T {exp, ty, var} = s
    (* TODO: add a new version that doesn't require wrapping *)
-   fun checkElType targs = shouldMarkType (policy, Type.array (getUniqueElement targs))
+   fun checkElType targs = shouldFlattenType policy (Type.array (getUniqueElement targs))
    fun checkPrim {args, prim, targs} =
        (* All currently-supported cases take the the `targ` as the element type
 
