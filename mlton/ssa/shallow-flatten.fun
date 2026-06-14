@@ -844,6 +844,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          concatVecs [Vector.new2 (constStmt, mulStmt),
                      idxStmts,
+                     offsetStmts,
                      loadStmts,
                      Vector.new1 tupleStmt]
       end
