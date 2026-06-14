@@ -191,7 +191,7 @@ in
 
       (* AoS Level 2 Diff Types Outer Preserved *)
       let
-         val cd2_aos_diff_pres = preserve [cd1, base]
+         val cd2_aos_diff_pres = preserve [preserve [cd1, base]]
          val eaos2_diff_pres = Type.array (Type.tuple (Vector.fromList [Type.array intTy, intTy]))
       in
          check (ShallowFlatten.FlattenAoS, cd2_aos_diff_pres, t2, eaos2_diff_pres, "AoS Level 2 Diff Types Outer Preserved")
@@ -272,7 +272,7 @@ in
       let
          val eaos2 = Type.array (Type.tuple (Vector.fromList [Type.array intTy, intTy]))
       in
-         check (ShallowFlatten.FlattenAoS, policySame, t2, eaos2, "AoS Level 2 round-trip (outer preserved)")
+         check (ShallowFlatten.FlattenAoS, policySame, t3, eaos2, "AoS Level 2 round-trip (outer preserved)")
       end;
 
       (* AoS Round-trip Level 2 (both flattened) *)
@@ -286,9 +286,9 @@ in
       (* Expect InvalidConFlattening for AoS round-trip with MaxWidth policy on different types *)
       print ("\n--- Test 48 Subcase: AoS Different Types Error round-trip ---\n");
       (let
-          val cd = ShallowFlatten.getConDecisionForPolicy policy2 t2
+          val cd = ShallowFlatten.getConDecisionForPolicy policy2 t3
        in
-          ShallowFlatten.applyConDecision ShallowFlatten.FlattenAoS (cd, t2);
+          ShallowFlatten.applyConDecision ShallowFlatten.FlattenAoS (cd, t3);
           assert (false, "Should have raised InvalidConFlattening for AoS round-trip on different types")
        end)
        handle ShallowFlatten.InvalidConFlattening => ()
