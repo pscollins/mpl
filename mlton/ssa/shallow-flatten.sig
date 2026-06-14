@@ -144,11 +144,19 @@ sig
 
    (* Recursively applies `conDecision` to the supplied type.
 
-    If the decision is invalid (i.e. `maybeFlattenType` returns NONE for a
-   `flattenNode` layer, raises InvalidConFlattening.
+      If the decision is invalid (i.e. `maybeFlattenType` returns NONE for a
+      `flattenNode` layer, raises InvalidConFlattening.
+  
+      Flattened types are constructed according to the rules of the provided
+      `flattenMechanism`, i.e.
+
+         {FlattenAoS + FlattenNode + ('a * 'b) array} -> 'a array * 'b array}
+         {FlattenSoA + FlattenNode + ('a * 'a) array} -> 'a array}
+         {FlattenSoA + FlattenNode + ('a * 'b) array} -> InvalidConFlattening}
    *)
    exception InvalidConFlattening
-   val applyConDecision: conDecision * Type.t ->
+   val applyConDecision: flattenMechanism ->
+                         conDecision * Type.t ->
                          Type.t
 
 
