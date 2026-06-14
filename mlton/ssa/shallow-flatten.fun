@@ -1192,10 +1192,15 @@ fun deepFlattenStatementsForConfig (policy: flattenPolicy, mechanism: flattenMec
                     ty = updateType ty,
                     var = var}
 
+   fun doMaybeFlatten stmt =
+       case mechanism of
+           FlattenSoA => maybeFlattenStatement stmt
+         | FlattenAoS => maybeFlattenStatementAoS stmt
+
    fun flattenIfNeeded (stmt: Statement.t): Statement.t vector =
        if (doesPolicyFlattenStatement policy stmt) then
           (* NONE means a prim is missing, crash *)
-          Option.valOf (maybeFlattenStatement stmt)
+          Option.valOf (doMaybeFlatten stmt)
        else Vector.new1 stmt
 
    fun recursiveFlatten (stmts: Statement.t vector) = let
