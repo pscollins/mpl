@@ -660,8 +660,9 @@ end
 
 fun maybeFlattenStatementAoS (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
-   fun mkArrayAlloc (primArg, tArg, args, dest) = let
-      val allocExp = Exp.PrimApp {args = args,
+   (* dest := Array_alloc[tArg](len) *)
+   fun mkArrayAlloc (primArg, tArg: Type.t, len: Var.t, dest: Var.t) = let
+      val allocExp = Exp.PrimApp {args = Vector.new1 len,
                                   prim = Prim.Array_alloc primArg,
                                   targs = Vector.new1 tArg}
    in
@@ -669,13 +670,38 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.array targ,
                    var = SOME dest}
    end
-   fun doPrimApp (args, prim, targs) = let
+   (* indexConst: indexTy := intVal *)
+   fun mkIndexConst (intVal: int): Statement.t = let
+      val intWordX = WordX.fromInt (intVal, WordSize.seqIndex ())
+      val intExp = Exp.const (Const.word intWordX)
+   in
+      Statement.T {exp = rhsExp,
+                   ty = WordSize.seqIndex (),
+                   var = SOME (Var.newString "indexConst")}
+   end
+   (* mulRes := lhs * rhs *)
+   fun mkMul (lhs: Var.t, rhs: Var.t): Statement.t = let
+      val mulExp = Exp.PrimApp {args = Vector.new2 (lhs, rhs),
+                                prim = Prim.Word_modl,
+                                targs = Vector.new1 (WordSize.seqIndex ())}
+   in
+      Statement.T {exp = mulExp,
+                   ty = WordSize.seqIndex (),
+                   var = SOME (Var.newSTring "mulRes")}
+   end
+   fun doPrimApp (args, prim, targ) = let
+      val tupleWidth = getContainerOfTupleTypeWidth targ
       fun buildArrayAlloc (primArg, tArg) = let
-         val newArg = TODO: MULTIPLY
-         val newAlloc = mkArrayAlloc (primArg, tArg, args, var)
+         (* tupleSize: indexTy = tupleWidth *)
+         val constStmt = mkConst tupleWidth
+         (* newLen = n * tupleWidth *)
+         val mulStmt = mkMul (Vector.first args,
+                              extractBind constStmt)
+         (* arr = Array_alloc[elTy](newLen) *)
+         val allocStmt = mkArrayAlloc (primArg, tArg,
+                                      extractBind mulStmt, var)
       in
-         (* arr = Array_alloc[t](n * tupleSize) *)
-         Vector.new1 newAlloc
+         Vector.new3 (constSTmt, mulStmt, allocStmt)
       end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
