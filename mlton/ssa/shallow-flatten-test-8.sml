@@ -434,65 +434,65 @@ in
                  )
                | _ => raise TestFail "s2 should be Word Const"
 
-      (* s3: add = offset + 0 *)
+      (* s3: const 1 *)
       val s3 = Vector.sub (stmts, 3)
       val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
       val Statement.T {exp = e3, var = v3', ...} = s3
       val _ = assert (Option.isSome v3', "s3 should bind a variable")
-      val offsetPlus0Var = Option.valOf v3'
+      val const1Var = Option.valOf v3'
       val _ = case e3 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s3 Word_add size");
-                    assert (Vector.length targs = 0, "s3 targs empty");
-                    assert (Vector.length args = 2, "s3 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s3 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s3 second arg should be const0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
                  )
-               | _ => raise TestFail "s3 should be Word_add PrimApp"
+               | _ => raise TestFail "s3 should be Word Const"
 
-      (* s4: x_0 = Array_sub[int](arr, offset + 0) *)
+      (* s4: add = offset + 0 *)
       val s4 = Vector.sub (stmts, 4)
-      val _ = assertType (s4, intTy, "s4 type should be intTy")
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
       val Statement.T {exp = e4, var = v4', ...} = s4
       val _ = assert (Option.isSome v4', "s4 should bind a variable")
-      val x0Var = Option.valOf v4'
+      val offsetPlus0Var = Option.valOf v4'
       val _ = case e4 of
-                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = false}, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s4 targ should be intTy");
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s4 Word_add size");
+                    assert (Vector.length targs = 0, "s4 targs empty");
                     assert (Vector.length args = 2, "s4 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s4 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s4 second arg should be offsetPlus0Var")
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s4 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s4 second arg should be const0Var")
                  )
-               | _ => raise TestFail "s4 should be Array_sub PrimApp"
+               | _ => raise TestFail "s4 should be Word_add PrimApp"
 
-      (* s5: const 1 *)
+      (* s5: add = offset + 1 *)
       val s5 = Vector.sub (stmts, 5)
       val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
       val Statement.T {exp = e5, var = v5', ...} = s5
       val _ = assert (Option.isSome v5', "s5 should bind a variable")
-      val const1Var = Option.valOf v5'
+      val offsetPlus1Var = Option.valOf v5'
       val _ = case e5 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s5 Const size");
-                    assert (WordX.toIntInf wx = 1, "s5 constant should be 1")
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s5 second arg should be const1Var")
                  )
-               | _ => raise TestFail "s5 should be Word Const"
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
 
-      (* s6: add = offset + 1 *)
+      (* s6: x_0 = Array_sub[int](arr, offset + 0) *)
       val s6 = Vector.sub (stmts, 6)
-      val _ = assertType (s6, seqIndexTy, "s6 type should be seqIndexTy")
+      val _ = assertType (s6, intTy, "s6 type should be intTy")
       val Statement.T {exp = e6, var = v6', ...} = s6
       val _ = assert (Option.isSome v6', "s6 should bind a variable")
-      val offsetPlus1Var = Option.valOf v6'
+      val x0Var = Option.valOf v6'
       val _ = case e6 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s6 Word_add size");
-                    assert (Vector.length targs = 0, "s6 targs empty");
+                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = false}, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s6 targ should be intTy");
                     assert (Vector.length args = 2, "s6 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s6 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s6 second arg should be const1Var")
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s6 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s6 second arg should be offsetPlus0Var")
                  )
-               | _ => raise TestFail "s6 should be Word_add PrimApp"
+               | _ => raise TestFail "s6 should be Array_sub PrimApp"
 
       (* s7: x_1 = Array_sub[int](arr, offset + 1) *)
       val s7 = Vector.sub (stmts, 7)
@@ -583,49 +583,47 @@ in
                  )
                | _ => raise TestFail "s2 should be Word Const"
 
-      (* s3: add = offset + 0 *)
+      (* s3: const 1 *)
       val s3 = Vector.sub (stmts, 3)
       val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
       val Statement.T {exp = e3, var = v3', ...} = s3
       val _ = assert (Option.isSome v3', "s3 should bind a variable")
-      val offsetPlus0Var = Option.valOf v3'
+      val const1Var = Option.valOf v3'
       val _ = case e3 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s3 Word_add size");
-                    assert (Vector.length targs = 0, "s3 targs empty");
-                    assert (Vector.length args = 2, "s3 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s3 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s3 second arg should be const0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
                  )
-               | _ => raise TestFail "s3 should be Word_add PrimApp"
+               | _ => raise TestFail "s3 should be Word Const"
 
-      (* s4: x_0 = Array_sub[word32](arr, offset + 0) *)
+      (* s4: const 2 *)
       val s4 = Vector.sub (stmts, 4)
-      val _ = assertType (s4, word32Ty, "s4 type should be word32Ty")
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
       val Statement.T {exp = e4, var = v4', ...} = s4
       val _ = assert (Option.isSome v4', "s4 should bind a variable")
-      val x0Var = Option.valOf v4'
+      val const2Var = Option.valOf v4'
       val _ = case e4 of
-                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = true}, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s4 targ should be word32Ty");
-                    assert (Vector.length args = 2, "s4 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s4 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s4 second arg should be offsetPlus0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s4 Const size");
+                    assert (WordX.toIntInf wx = 2, "s4 constant should be 2")
                  )
-               | _ => raise TestFail "s4 should be Array_sub PrimApp"
+               | _ => raise TestFail "s4 should be Word Const"
 
-      (* s5: const 1 *)
+      (* s5: add = offset + 0 *)
       val s5 = Vector.sub (stmts, 5)
       val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
       val Statement.T {exp = e5, var = v5', ...} = s5
       val _ = assert (Option.isSome v5', "s5 should bind a variable")
-      val const1Var = Option.valOf v5'
+      val offsetPlus0Var = Option.valOf v5'
       val _ = case e5 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s5 Const size");
-                    assert (WordX.toIntInf wx = 1, "s5 constant should be 1")
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s5 second arg should be const0Var")
                  )
-               | _ => raise TestFail "s5 should be Word Const"
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
 
       (* s6: add = offset + 1 *)
       val s6 = Vector.sub (stmts, 6)
@@ -643,49 +641,51 @@ in
                  )
                | _ => raise TestFail "s6 should be Word_add PrimApp"
 
-      (* s7: x_1 = Array_sub[word32](arr, offset + 1) *)
+      (* s7: add = offset + 2 *)
       val s7 = Vector.sub (stmts, 7)
-      val _ = assertType (s7, word32Ty, "s7 type should be word32Ty")
+      val _ = assertType (s7, seqIndexTy, "s7 type should be seqIndexTy")
       val Statement.T {exp = e7, var = v7', ...} = s7
       val _ = assert (Option.isSome v7', "s7 should bind a variable")
-      val x1Var = Option.valOf v7'
+      val offsetPlus2Var = Option.valOf v7'
       val _ = case e7 of
-                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = true}, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s7 targ should be word32Ty");
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s7 Word_add size");
+                    assert (Vector.length targs = 0, "s7 targs empty");
                     assert (Vector.length args = 2, "s7 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s7 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s7 second arg should be offsetPlus1Var")
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s7 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const2Var), "s7 second arg should be const2Var")
                  )
-               | _ => raise TestFail "s7 should be Array_sub PrimApp"
+               | _ => raise TestFail "s7 should be Word_add PrimApp"
 
-      (* s8: const 2 *)
+      (* s8: x_0 = Array_sub[word32](arr, offset + 0) *)
       val s8 = Vector.sub (stmts, 8)
-      val _ = assertType (s8, seqIndexTy, "s8 type should be seqIndexTy")
+      val _ = assertType (s8, word32Ty, "s8 type should be word32Ty")
       val Statement.T {exp = e8, var = v8', ...} = s8
       val _ = assert (Option.isSome v8', "s8 should bind a variable")
-      val const2Var = Option.valOf v8'
+      val x0Var = Option.valOf v8'
       val _ = case e8 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s8 Const size");
-                    assert (WordX.toIntInf wx = 2, "s8 constant should be 2")
+                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = true}, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s8 targ should be word32Ty");
+                    assert (Vector.length args = 2, "s8 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s8 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s8 second arg should be offsetPlus0Var")
                  )
-               | _ => raise TestFail "s8 should be Word Const"
+               | _ => raise TestFail "s8 should be Array_sub PrimApp"
 
-      (* s9: add = offset + 2 *)
+      (* s9: x_1 = Array_sub[word32](arr, offset + 1) *)
       val s9 = Vector.sub (stmts, 9)
-      val _ = assertType (s9, seqIndexTy, "s9 type should be seqIndexTy")
+      val _ = assertType (s9, word32Ty, "s9 type should be word32Ty")
       val Statement.T {exp = e9, var = v9', ...} = s9
       val _ = assert (Option.isSome v9', "s9 should bind a variable")
-      val offsetPlus2Var = Option.valOf v9'
+      val x1Var = Option.valOf v9'
       val _ = case e9 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s9 Word_add size");
-                    assert (Vector.length targs = 0, "s9 targs empty");
+                 Exp.PrimApp {prim = Prim.Array_sub {readBarrier = true}, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s9 targ should be word32Ty");
                     assert (Vector.length args = 2, "s9 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s9 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const2Var), "s9 second arg should be const2Var")
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s9 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s9 second arg should be offsetPlus1Var")
                  )
-               | _ => raise TestFail "s9 should be Word_add PrimApp"
+               | _ => raise TestFail "s9 should be Array_sub PrimApp"
 
       (* s10: x_2 = Array_sub[word32](arr, offset + 2) *)
       val s10 = Vector.sub (stmts, 10)
@@ -808,65 +808,65 @@ in
                  )
                | _ => raise TestFail "s2 should be Word Const"
 
-      (* s3: add = offset + 0 *)
+      (* s3: const 1 *)
       val s3 = Vector.sub (stmts, 3)
       val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
       val Statement.T {exp = e3, var = v3', ...} = s3
       val _ = assert (Option.isSome v3', "s3 should bind a variable")
-      val offsetPlus0Var = Option.valOf v3'
+      val const1Var = Option.valOf v3'
       val _ = case e3 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s3 Word_add size");
-                    assert (Vector.length targs = 0, "s3 targs empty");
-                    assert (Vector.length args = 2, "s3 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s3 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s3 second arg should be const0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
                  )
-               | _ => raise TestFail "s3 should be Word_add PrimApp"
+               | _ => raise TestFail "s3 should be Word Const"
 
-      (* s4: x_0 = Vector_sub[int](arr, offset + 0) *)
+      (* s4: add = offset + 0 *)
       val s4 = Vector.sub (stmts, 4)
-      val _ = assertType (s4, intTy, "s4 type should be intTy")
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
       val Statement.T {exp = e4, var = v4', ...} = s4
       val _ = assert (Option.isSome v4', "s4 should bind a variable")
-      val x0Var = Option.valOf v4'
+      val offsetPlus0Var = Option.valOf v4'
       val _ = case e4 of
-                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s4 targ should be intTy");
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s4 Word_add size");
+                    assert (Vector.length targs = 0, "s4 targs empty");
                     assert (Vector.length args = 2, "s4 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s4 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s4 second arg should be offsetPlus0Var")
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s4 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s4 second arg should be const0Var")
                  )
-               | _ => raise TestFail "s4 should be Vector_sub PrimApp"
+               | _ => raise TestFail "s4 should be Word_add PrimApp"
 
-      (* s5: const 1 *)
+      (* s5: add = offset + 1 *)
       val s5 = Vector.sub (stmts, 5)
       val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
       val Statement.T {exp = e5, var = v5', ...} = s5
       val _ = assert (Option.isSome v5', "s5 should bind a variable")
-      val const1Var = Option.valOf v5'
+      val offsetPlus1Var = Option.valOf v5'
       val _ = case e5 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s5 Const size");
-                    assert (WordX.toIntInf wx = 1, "s5 constant should be 1")
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s5 second arg should be const1Var")
                  )
-               | _ => raise TestFail "s5 should be Word Const"
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
 
-      (* s6: add = offset + 1 *)
+      (* s6: x_0 = Vector_sub[int](arr, offset + 0) *)
       val s6 = Vector.sub (stmts, 6)
-      val _ = assertType (s6, seqIndexTy, "s6 type should be seqIndexTy")
+      val _ = assertType (s6, intTy, "s6 type should be intTy")
       val Statement.T {exp = e6, var = v6', ...} = s6
       val _ = assert (Option.isSome v6', "s6 should bind a variable")
-      val offsetPlus1Var = Option.valOf v6'
+      val x0Var = Option.valOf v6'
       val _ = case e6 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s6 Word_add size");
-                    assert (Vector.length targs = 0, "s6 targs empty");
+                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s6 targ should be intTy");
                     assert (Vector.length args = 2, "s6 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s6 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s6 second arg should be const1Var")
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s6 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s6 second arg should be offsetPlus0Var")
                  )
-               | _ => raise TestFail "s6 should be Word_add PrimApp"
+               | _ => raise TestFail "s6 should be Vector_sub PrimApp"
 
       (* s7: x_1 = Vector_sub[int](arr, offset + 1) *)
       val s7 = Vector.sub (stmts, 7)
@@ -957,49 +957,47 @@ in
                  )
                | _ => raise TestFail "s2 should be Word Const"
 
-      (* s3: add = offset + 0 *)
+      (* s3: const 1 *)
       val s3 = Vector.sub (stmts, 3)
       val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
       val Statement.T {exp = e3, var = v3', ...} = s3
       val _ = assert (Option.isSome v3', "s3 should bind a variable")
-      val offsetPlus0Var = Option.valOf v3'
+      val const1Var = Option.valOf v3'
       val _ = case e3 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s3 Word_add size");
-                    assert (Vector.length targs = 0, "s3 targs empty");
-                    assert (Vector.length args = 2, "s3 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s3 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s3 second arg should be const0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
                  )
-               | _ => raise TestFail "s3 should be Word_add PrimApp"
+               | _ => raise TestFail "s3 should be Word Const"
 
-      (* s4: x_0 = Vector_sub[word32](arr, offset + 0) *)
+      (* s4: const 2 *)
       val s4 = Vector.sub (stmts, 4)
-      val _ = assertType (s4, word32Ty, "s4 type should be word32Ty")
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
       val Statement.T {exp = e4, var = v4', ...} = s4
       val _ = assert (Option.isSome v4', "s4 should bind a variable")
-      val x0Var = Option.valOf v4'
+      val const2Var = Option.valOf v4'
       val _ = case e4 of
-                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s4 targ should be word32Ty");
-                    assert (Vector.length args = 2, "s4 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s4 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s4 second arg should be offsetPlus0Var")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s4 Const size");
+                    assert (WordX.toIntInf wx = 2, "s4 constant should be 2")
                  )
-               | _ => raise TestFail "s4 should be Vector_sub PrimApp"
+               | _ => raise TestFail "s4 should be Word Const"
 
-      (* s5: const 1 *)
+      (* s5: add = offset + 0 *)
       val s5 = Vector.sub (stmts, 5)
       val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
       val Statement.T {exp = e5, var = v5', ...} = s5
       val _ = assert (Option.isSome v5', "s5 should bind a variable")
-      val const1Var = Option.valOf v5'
+      val offsetPlus0Var = Option.valOf v5'
       val _ = case e5 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s5 Const size");
-                    assert (WordX.toIntInf wx = 1, "s5 constant should be 1")
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s5 second arg should be const0Var")
                  )
-               | _ => raise TestFail "s5 should be Word Const"
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
 
       (* s6: add = offset + 1 *)
       val s6 = Vector.sub (stmts, 6)
@@ -1017,49 +1015,51 @@ in
                  )
                | _ => raise TestFail "s6 should be Word_add PrimApp"
 
-      (* s7: x_1 = Vector_sub[word32](arr, offset + 1) *)
+      (* s7: add = offset + 2 *)
       val s7 = Vector.sub (stmts, 7)
-      val _ = assertType (s7, word32Ty, "s7 type should be word32Ty")
+      val _ = assertType (s7, seqIndexTy, "s7 type should be seqIndexTy")
       val Statement.T {exp = e7, var = v7', ...} = s7
       val _ = assert (Option.isSome v7', "s7 should bind a variable")
-      val x1Var = Option.valOf v7'
+      val offsetPlus2Var = Option.valOf v7'
       val _ = case e7 of
-                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
-                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s7 targ should be word32Ty");
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s7 Word_add size");
+                    assert (Vector.length targs = 0, "s7 targs empty");
                     assert (Vector.length args = 2, "s7 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s7 first arg should be arrVar");
-                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s7 second arg should be offsetPlus1Var")
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s7 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const2Var), "s7 second arg should be const2Var")
                  )
-               | _ => raise TestFail "s7 should be Vector_sub PrimApp"
+               | _ => raise TestFail "s7 should be Word_add PrimApp"
 
-      (* s8: const 2 *)
+      (* s8: x_0 = Vector_sub[word32](arr, offset + 0) *)
       val s8 = Vector.sub (stmts, 8)
-      val _ = assertType (s8, seqIndexTy, "s8 type should be seqIndexTy")
+      val _ = assertType (s8, word32Ty, "s8 type should be word32Ty")
       val Statement.T {exp = e8, var = v8', ...} = s8
       val _ = assert (Option.isSome v8', "s8 should bind a variable")
-      val const2Var = Option.valOf v8'
+      val x0Var = Option.valOf v8'
       val _ = case e8 of
-                 Exp.Const (Const.Word wx) => (
-                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s8 Const size");
-                    assert (WordX.toIntInf wx = 2, "s8 constant should be 2")
+                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s8 targ should be word32Ty");
+                    assert (Vector.length args = 2, "s8 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s8 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s8 second arg should be offsetPlus0Var")
                  )
-               | _ => raise TestFail "s8 should be Word Const"
+               | _ => raise TestFail "s8 should be Vector_sub PrimApp"
 
-      (* s9: add = offset + 2 *)
+      (* s9: x_1 = Vector_sub[word32](arr, offset + 1) *)
       val s9 = Vector.sub (stmts, 9)
-      val _ = assertType (s9, seqIndexTy, "s9 type should be seqIndexTy")
+      val _ = assertType (s9, word32Ty, "s9 type should be word32Ty")
       val Statement.T {exp = e9, var = v9', ...} = s9
       val _ = assert (Option.isSome v9', "s9 should bind a variable")
-      val offsetPlus2Var = Option.valOf v9'
+      val x1Var = Option.valOf v9'
       val _ = case e9 of
-                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s9 Word_add size");
-                    assert (Vector.length targs = 0, "s9 targs empty");
+                 Exp.PrimApp {prim = Prim.Vector_sub, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s9 targ should be word32Ty");
                     assert (Vector.length args = 2, "s9 args length 2");
-                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s9 first arg should be offsetVar");
-                    assert (Var.equals (Vector.sub (args, 1), const2Var), "s9 second arg should be const2Var")
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s9 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s9 second arg should be offsetPlus1Var")
                  )
-               | _ => raise TestFail "s9 should be Word_add PrimApp"
+               | _ => raise TestFail "s9 should be Vector_sub PrimApp"
 
       (* s10: x_2 = Vector_sub[word32](arr, offset + 2) *)
       val s10 = Vector.sub (stmts, 10)
