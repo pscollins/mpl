@@ -791,6 +791,16 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
        Statement.T {exp = Exp.Select {offset = idx, tuple = tuple},
                     ty = ty,
                     var = SOME (Var.newString "selectRes")}
+   (* dest := Array_toVector[tArg](arrVar) *)
+   fun mkToVector (arrVar: Var.t, tArg: Type.t, dest: Var.t option) = let
+      val toVecExp = Exp.PrimApp {args = Vector.new1 arrVar,
+                                  prim = Prim.Array_toVector,
+                                  targs = Vector.new1 tArg}
+   in
+      Statement.T {exp = toVecExp,
+                   ty = Type.vector tArg,
+                   var = dest}
+   end
 
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
@@ -893,6 +903,11 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                      selectStmts,
                      storeStmts]
       end
+      fun buildArrayToVector tArg = let
+         val toVectorStmt = mkToVector (Vector.first args, tArg, var)
+      in
+         Vector.new1 toVectorStmt
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
@@ -906,7 +921,9 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
            | (Prim.Vector_sub, SOME tArg)
              => SOME (buildContainerLoad tArg)
            | (Prim.Array_update primArg, SOME tArg)
-              => SOME (buildArrayStore (primArg, tArg))
+             => SOME (buildArrayStore (primArg, tArg))
+           | (Prim.Array_toVector, SOME tArg)
+             => SOME (buildArrayToVector tArg)
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
