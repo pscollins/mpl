@@ -116,7 +116,7 @@ in
       check (policy2, t_nif, e_nif, "Non-flattened inside flattened");
       check (policy2, tv1, ev1, "Vector Level 1");
       check (policy2, tv2, ev2, "Vector Level 2")
-   end)(* Test 47: applyConDecision *)
+   end)   (* Test 47: applyConDecision *)
    val _ = runTest ("Test 47: applyConDecision", fn () => let
       fun conDecisionToString cd =
          case cd of
@@ -125,10 +125,10 @@ in
           | ShallowFlatten.FlattenNode v =>
                "FlattenNode[" ^ String.concatWith (Vector.toListMap (v, conDecisionToString), ", ") ^ "]"
 
-      fun check (cd, ty, expected, msg) =
+      fun check (mech, cd, ty, expected, msg) =
          let
             val _ = print ("\n--- Test 47 Subcase: " ^ msg ^ " ---\n")
-            val res = ShallowFlatten.applyConDecision (cd, ty)
+            val res = ShallowFlatten.applyConDecision mech (cd, ty)
             fun typeLayout t = Layout.toString (Type.layout t)
             val _ = print (concat ["Compare: ", msg,
                                    "\ntype       = ", typeLayout ty,
@@ -169,25 +169,63 @@ in
       val cd_err = flatten [base]
 
    in
-      check (cd1, t1, e1, "Level 1");
-      check (cd2, t2, e2, "Level 2");
-      check (cdv1, tv1, ev1, "Vector Level 1");
-      check (cdv2, tv2, ev2, "Vector Level 2");
+      check (ShallowFlatten.FlattenSoA, cd1, t1, e1, "Level 1");
+      check (ShallowFlatten.FlattenSoA, cd2, t2, e2, "Level 2");
+      check (ShallowFlatten.FlattenSoA, cdv1, tv1, ev1, "Vector Level 1");
+      check (ShallowFlatten.FlattenSoA, cdv2, tv2, ev2, "Vector Level 2");
 
-      (* Error case: FlattenNode on non-flattenable type *)
+      (* AoS Level 1 *)
+      check (ShallowFlatten.FlattenAoS, cd1, t1, Type.array intTy, "AoS Level 1");
+
+      (* AoS Vector Level 1 *)
+      check (ShallowFlatten.FlattenAoS, cdv1, tv1, Type.vector intTy, "AoS Vector Level 1");
+
+      (* AoS Level 2 Same Types *)
+      let
+         val t2_aos_same = Type.array (Type.tuple (Vector.fromList [t1, t1]))
+         val cd2_aos_same = flatten [cd1, cd1]
+         val eaos2_same = Type.array (Type.array intTy)
+      in
+         check (ShallowFlatten.FlattenAoS, cd2_aos_same, t2_aos_same, eaos2_same, "AoS Level 2 Same Types")
+      end;
+
+      (* AoS Level 2 Diff Types Outer Preserved *)
+      let
+         val cd2_aos_diff_pres = preserve [cd1, base]
+         val eaos2_diff_pres = Type.array (Type.tuple (Vector.fromList [Type.array intTy, intTy]))
+      in
+         check (ShallowFlatten.FlattenAoS, cd2_aos_diff_pres, t2, eaos2_diff_pres, "AoS Level 2 Diff Types Outer Preserved")
+      end;
+
+      (* Error case: FlattenNode on non-flattenable type (SoA) *)
       print ("\n--- Test 47 Subcase: Error case ---\n");
       print ("type       = " ^ Layout.toString (Type.layout intTy) ^ "\n");
       print ("conDecision= " ^ conDecisionToString cd_err ^ "\n");
-      (ShallowFlatten.applyConDecision (cd_err, intTy);
+      (ShallowFlatten.applyConDecision ShallowFlatten.FlattenSoA (cd_err, intTy);
        assert (false, "Should have raised InvalidConFlattening"))
       handle ShallowFlatten.InvalidConFlattening => ()
+           | e => assert (false, "Raised wrong exception: " ^ exnMessage e);
+
+      (* Error case: FlattenNode on non-flattenable type (AoS) *)
+      (ShallowFlatten.applyConDecision ShallowFlatten.FlattenAoS (cd_err, intTy);
+       assert (false, "Should have raised InvalidConFlattening"))
+      handle ShallowFlatten.InvalidConFlattening => ()
+           | e => assert (false, "Raised wrong exception: " ^ exnMessage e);
+
+      (* Error case: FlattenNode on tuple with different types (AoS) *)
+      print ("\n--- Test 47 Subcase: AoS Different Types Error case ---\n");
+      (ShallowFlatten.applyConDecision ShallowFlatten.FlattenAoS (cd2, t2);
+       assert (false, "Should have raised InvalidConFlattening for AoS on different types"))
+      handle ShallowFlatten.InvalidConFlattening => ()
            | e => assert (false, "Raised wrong exception: " ^ exnMessage e)
-   end)(* Test 48: round-trip getConDecisionForPolicy -> applyConDecision *)
+   end)
+
+   (* Test 48: round-trip getConDecisionForPolicy -> applyConDecision *)
    val _ = runTest ("Test 48: round-trip getConDecisionForPolicy -> applyConDecision", fn () => let
-      fun check (policy, ty, expected, msg) =
+      fun check (mech, policy, ty, expected, msg) =
          let
             val cd = ShallowFlatten.getConDecisionForPolicy policy ty
-            val res = ShallowFlatten.applyConDecision (cd, ty)
+            val res = ShallowFlatten.applyConDecision mech (cd, ty)
          in
             if Type.equals (res, expected) then ()
             else assert (false, msg ^ ": type mismatch.\nGot:      " ^ (Layout.toString (Type.layout res)) ^ 
@@ -196,6 +234,7 @@ in
 
       val intTy = Type.intInf
       val policy2 = ShallowFlatten.MaxWidth 2
+      val policySame = ShallowFlatten.MaxWidthSameType 2
       
       (* 1. Simple 2-tuple array *)
       val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
@@ -221,10 +260,39 @@ in
       
       val e4 = Type.tuple (Vector.fromList [Type.array t4_inner, Type.array intTy])
    in
-      check (policy2, t1, e1, "Level 1 flattening");
-      check (policy2, t2, e2, "Width > MaxWidth preservation");
-      check (policy2, t3, e3, "Level 2 nested flattening");
-      check (policy2, t4, e4, "Mixed flattening/preservation")
+      check (ShallowFlatten.FlattenSoA, policy2, t1, e1, "Level 1 flattening");
+      check (ShallowFlatten.FlattenSoA, policy2, t2, e2, "Width > MaxWidth preservation");
+      check (ShallowFlatten.FlattenSoA, policy2, t3, e3, "Level 2 nested flattening");
+      check (ShallowFlatten.FlattenSoA, policy2, t4, e4, "Mixed flattening/preservation");
+
+      (* AoS Round-trip Level 1 *)
+      check (ShallowFlatten.FlattenAoS, policySame, t1, Type.array intTy, "AoS Level 1 round-trip");
+
+      (* AoS Round-trip Level 2 (outer preserved) *)
+      let
+         val eaos2 = Type.array (Type.tuple (Vector.fromList [Type.array intTy, intTy]))
+      in
+         check (ShallowFlatten.FlattenAoS, policySame, t2, eaos2, "AoS Level 2 round-trip (outer preserved)")
+      end;
+
+      (* AoS Round-trip Level 2 (both flattened) *)
+      let
+         val t2_aos_same = Type.array (Type.tuple (Vector.fromList [t1, t1]))
+         val eaos2_same = Type.array (Type.array intTy)
+      in
+         check (ShallowFlatten.FlattenAoS, policySame, t2_aos_same, eaos2_same, "AoS Level 2 round-trip (both flattened)")
+      end;
+
+      (* Expect InvalidConFlattening for AoS round-trip with MaxWidth policy on different types *)
+      print ("\n--- Test 48 Subcase: AoS Different Types Error round-trip ---\n");
+      (let
+          val cd = ShallowFlatten.getConDecisionForPolicy policy2 t2
+       in
+          ShallowFlatten.applyConDecision ShallowFlatten.FlattenAoS (cd, t2);
+          assert (false, "Should have raised InvalidConFlattening for AoS round-trip on different types")
+       end)
+       handle ShallowFlatten.InvalidConFlattening => ()
+            | e => assert (false, "Raised wrong exception: " ^ exnMessage e)
    end)
 
       

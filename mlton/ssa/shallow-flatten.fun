@@ -170,26 +170,23 @@ fun getUniqueElement (xs: 'a vector): 'a =
     else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
 
 exception InvalidConFlattening
-fun applyConDecision (cd: conDecision,
+fun applyConDecision (mech: flattenMechanism)
+                     (cd: conDecision,
                       t: Type.t): Type.t = let
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
-   fun walk (t, cd): Type.t =
+   fun walk (t: Type.t, cd: conDecision): Type.t =
        case (Type.dest t, cd) of
            (* Single-child, flattenable nodes *)
            (Type.Array t', PreserveNode cd') =>
            Type.array (walk (t', getUniqueElement cd'))
          | (Type.Array t', FlattenNode cds') =>
-           Type.tuple (Vector.map2 (Type.deTuple t',
-                                    cds',
-                                    Type.array o walk))
+           applyMechanism (Type.deTuple t', cds', Type.array)
          | (Type.Vector t', PreserveNode cd') =>
            Type.vector (walk (t', getUniqueElement cd'))
          | (Type.Vector t', FlattenNode cds') =>
-           Type.tuple (Vector.map2 (Type.deTuple t',
-                                    cds',
-                                    Type.vector o walk))
+           applyMechanism (Type.deTuple t', cds', Type.vector)
          (* Multi-child, un-flattenable internal nodes *)
          | (Type.Tuple ts', PreserveNode cds') =>
            Type.tuple (Vector.map2 (ts', cds', walk))
@@ -203,6 +200,21 @@ fun applyConDecision (cd: conDecision,
            (assertEmpty cd'; t)
          (* Invalid flattening decisions *)
          | _ => raise InvalidConFlattening
+   and applyMechanism (elTypes: Type.t vector,
+                       elDecisions: conDecision vector,
+                       mkContainer: Type.t -> Type.t): Type.t =
+       case mech of
+           FlattenSoA =>
+           (* ['a, 'b, 'c] + [cd1, cd2, cd3] + Type.array
+              ->
+              (walk ('a, cd1)) array *
+              (walk ('b, cd2)) array *
+              (walk ('c, cd3)) array
+            *)
+           Type.tuple (Vector.map2 (elTypes,
+                                    elDecisions,
+                                    mkContainer o walk))
+           | _ => Error.unimplemented "TODO"
 
    val _ = ()
 in
@@ -1073,7 +1085,7 @@ fun deepFlattenTypeForPolicy (policy: flattenPolicy)
     fun doFlatten t = let
        (* TODO: simplify? *)
        val t' =
-           applyConDecision (getConDecisionForPolicy policy t, t)
+           applyConDecision FlattenSoA (getConDecisionForPolicy policy t, t)
     in
        (* Iteratively apply to convergence *)
        if Type.equals (t, t') then t'
