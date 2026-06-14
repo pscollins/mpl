@@ -524,5 +524,74 @@ in
                 | _ => raise TestFail "stmt 3 expected PrimApp"
    in () end)
 
+   (* Test 27: Control.shallowFlattenMechanism *)
+   val _ = runTest ("Test 27: Control.shallowFlattenMechanism", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val v1 = Var.fromString "v1"
+      val n = Var.fromString "n"
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      
+      val allocPrim = Prim.Array_alloc {raw = false}
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {args = Vector.new1 n,
+                            prim = allocPrim,
+                            targs = Vector.new1 tuple2Ty},
+         ty = arrayTuple2Ty,
+         var = SOME v1
+      }
+      
+      val mainBlock = Block.T {
+         args = Vector.fromList [(n, intTy)],
+         label = L0,
+         statements = Vector.new1 s1,
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      (* Test Soa *)
+      val _ = Control.shallowFlattenPolicy := Control.ShallowFlattenPolicy.MaxWidth 4
+      val _ = Control.shallowFlattenMechanism := Control.ShallowFlattenMechanism.Soa
+      val p_soa = ShallowFlatten.transform p
+      val Program.T {functions = funcs_soa, ...} = p_soa
+      val main_soa = List.first funcs_soa
+      val {blocks = blocks_soa, ...} = Function.dest main_soa
+      val block_soa = Vector.sub (blocks_soa, 0)
+      val stmts_soa = Block.statements block_soa
+      val _ = assert (Vector.length stmts_soa > 1, "Expected SoA flattening to happen")
+      val Statement.T {ty = ty_soa, ...} = Vector.sub (stmts_soa, Vector.length stmts_soa - 1)
+      val expectedSoaTy = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
+      val _ = assert (Type.equals (ty_soa, expectedSoaTy), "Expected SoA output type to be tuple of arrays")
+
+      (* Test Aos *)
+      val _ = Control.shallowFlattenMechanism := Control.ShallowFlattenMechanism.Aos
+      val p_aos = ShallowFlatten.transform p
+      val Program.T {functions = funcs_aos, ...} = p_aos
+      val main_aos = List.first funcs_aos
+      val {blocks = blocks_aos, ...} = Function.dest main_aos
+      val block_aos = Vector.sub (blocks_aos, 0)
+      val stmts_aos = Block.statements block_aos
+      val _ = assert (Vector.length stmts_aos > 1, "Expected AoS flattening to happen")
+      val Statement.T {ty = ty_aos, ...} = Vector.sub (stmts_aos, Vector.length stmts_aos - 1)
+      val expectedAosTy = Type.array intTy
+      val _ = assert (Type.equals (ty_aos, expectedAosTy), "Expected AoS output type to be array of intInf")
+   in () end)
+
       val _ = summarize ()
 end

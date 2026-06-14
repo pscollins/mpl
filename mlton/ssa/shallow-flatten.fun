@@ -1314,11 +1314,15 @@ fun transform (p: Program.t): Program.t =
        val policy =
            case !Control.shallowFlattenPolicy of
                Control.ShallowFlattenPolicy.MaxWidth n => MaxWidth n
+       val mechanism =
+           case !Control.shallowFlattenMechanism of
+               Control.ShallowFlattenMechanism.Aos => FlattenAoS
+             | Control.ShallowFlattenMechanism.Soa => FlattenSoA
        fun loop (p, n) =
           if n >= !Control.shallowFlattenMaxIters
              then p
           else
-             case flattenOnce (policy, FlattenSoA) p of
+             case flattenOnce (policy, mechanism) p of
                 NONE => p
               | SOME p' => loop (p', n + 1)
     in

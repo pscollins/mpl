@@ -1447,6 +1447,27 @@ val shallowFlattenPolicy =
             default = ShallowFlattenPolicy.MaxWidth 3,
             toString = ShallowFlattenPolicy.toString}
 
+structure ShallowFlattenMechanism =
+   struct
+      datatype t = Aos | Soa
+
+      val toString =
+         fn Aos => "aos"
+          | Soa => "soa"
+
+      val fromString =
+         fn "aos" => SOME Aos
+          | "soa" => SOME Soa
+          | _ => NONE
+   end
+
+datatype shallowFlattenMechanism = datatype ShallowFlattenMechanism.t
+
+val shallowFlattenMechanism =
+   control {name = "shallow-flatten-mechanism",
+            default = ShallowFlattenMechanism.Soa,
+            toString = ShallowFlattenMechanism.toString}
+
 structure PreFlattenConsumerPolicy =
    struct
       datatype t = Always | AnyUnpack | AllUnpack

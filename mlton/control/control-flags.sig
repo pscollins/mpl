@@ -424,6 +424,14 @@ signature CONTROL_FLAGS =
          end
       val shallowFlattenPolicy: ShallowFlattenPolicy.t ref
 
+      structure ShallowFlattenMechanism:
+         sig
+            datatype t = Aos | Soa
+            val toString: t -> string
+            val fromString: string -> t option
+         end
+      val shallowFlattenMechanism: ShallowFlattenMechanism.t ref
+
       structure PreFlattenConsumerPolicy:
 
          sig
