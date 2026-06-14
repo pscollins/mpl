@@ -4,6 +4,7 @@
    RUN:    -pre-flatten-resolve-policy global \
    RUN:    -pre-flatten-types-policy any \
    RUN:    -pre-flatten-post-steps shrink,flatten,shrink \
+   RUN:    -shallow-flatten-max-iters 0\
    RUN:    %s.mlb %t
 
    Test that `preFlatten` solves a `noTuple` annotation

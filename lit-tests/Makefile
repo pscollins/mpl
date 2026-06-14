@@ -2,8 +2,7 @@
 DEPS_FILE := requirements.txt
 VENV_DIR  := tests/.venv
 VENV_BIN  := $(VENV_DIR)/bin
-# TEMPORARY HACK: limit cores
-LIT       := $(VENV_BIN)/lit -j1
+LIT       := $(VENV_BIN)/lit 
 PIP       := $(VENV_BIN)/pip
 
 # Phony targets (targets that are not actual files)
