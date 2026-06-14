@@ -811,6 +811,17 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.array tArg,
                    var = dest}
    end
+   (* _ := Array_uninit[tArg](arrVar, idxVar) *)
+   fun mkArrayUninit (arrVar: Var.t, tArg: Type.t)
+                     (idxVar: Var.t) = let
+      val uninitExp = Exp.PrimApp {args = Vector.new2 (arrVar, idxVar),
+                                   prim = Prim.Array_uninit,
+                                   targs = Vector.new1 tArg}
+   in
+      Statement.T {exp = uninitExp,
+                   ty = Type.unit,
+                   var = NONE}
+   end
 
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
@@ -939,6 +950,28 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          Vector.new1 toArrayStmt
       end
+      (* Array_uninit[tArg](arr[i*tupleWidth:(i+1)*tupleWidth-1]) *)
+      fun buildArrayUninit tArg = let
+         (* tupleSize: indexTy = tupleWidth *)
+         val constStmt = mkIndexConst tupleWidth
+         (* baseIdx: indexTy = tupleWidth * i *)
+         val mulStmt = mkMul (Vector.sub (args, 1),
+                              extractBind constStmt)
+         (* [val_{j} = j for j in range(tupleWidth)]  *)
+         val offsetStmts = Vector.tabulate (tupleWidth, mkIndexConst)
+         (* [idx_{j} = baseIdx + val_{j} for j in range(tupleWidth)]  *)
+         val idxStmts = Vector.map (Vector.map (offsetStmts, extractBind),
+                                    mkAdd (extractBind mulStmt))
+
+         val arrayUninitStmts = Vector.map (Vector.map (idxStmts, extractBind),
+                                            mkArrayUninit (Vector.first args,
+                                                           tArg))
+      in
+         concatVecs [Vector.new2 (constStmt, mulStmt),
+                     offsetStmts,
+                     idxStmts,
+                     arrayUninitStmts]
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
@@ -964,6 +997,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
              => SOME (buildArrayUninitIsNop ())
            | (Prim.Array_toArray, SOME tArg)
              => SOME (buildArrayToArray tArg)
+           | (Prim.Array_uninit, SOME tArg)
+             => SOME (buildArrayUninit tArg)
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
