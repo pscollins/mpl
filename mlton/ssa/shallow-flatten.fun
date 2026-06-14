@@ -903,10 +903,25 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                      selectStmts,
                      storeStmts]
       end
+      (* var := Array_toVector[tArg](arr) *)
       fun buildArrayToVector tArg = let
          val toVectorStmt = mkToVector (Vector.first args, tArg, var)
       in
          Vector.new1 toVectorStmt
+      end
+      (* isNop: bool := false *)
+      fun buildArrayUninitIsNop () = let
+         (* For now, just hardcode false: since the original elements were
+          tuples, this should be no-worse performance than we had before
+          (although it might waste some performance in case we could have
+          avoided doing this initialization on the flattened elements) *)
+         val falseExp = Exp.ConApp {con = Con.falsee,
+                                    args = Vector.new0()}
+         val assignStmt = Statement.T {exp = falseExp,
+                                       ty = Type.bool,
+                                       var = var}
+      in
+         Vector.new1 assignStmt
       end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
@@ -924,6 +939,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
              => SOME (buildArrayStore (primArg, tArg))
            | (Prim.Array_toVector, SOME tArg)
              => SOME (buildArrayToVector tArg)
+           | (Prim.Array_uninitIsNop, SOME tArg)
+             => SOME (buildArrayUninitIsNop ())
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
