@@ -200,5 +200,148 @@ in
                | _ => raise TestFail "s2 should be Array_alloc PrimApp"
    in () end)
 
+   (* Test 6: maybeFlattenStatementAoS - Array_length on identical tuple (width 2) *)
+   val _ = runTest ("Test 6: maybeFlattenStatementAoS - Array_length on identical tuple (width 2)", fn () => let
+      val lenVar = Var.fromString "len"
+      val arrVar = Var.fromString "arr"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_length, [arrVar], [tuple2Ty]),
+         ty = seqIndexTy,
+         var = SOME lenVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_length on identical tuple should return SOME"
+      val _ = assert (Vector.length stmts = 3, "should return 3 statements")
+
+      (* First statement: physLen: seqIndexTy = Array_length[intTy](arr) *)
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0, "s0 should bind a variable")
+      val physLenVar = Option.valOf v0
+      val _ = case e0 of
+                 Exp.PrimApp {prim = Prim.Array_length, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), arrVar), "s0 arg should be arrVar");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s0 targ should be intTy")
+                 )
+               | _ => raise TestFail "s0 should be Array_length PrimApp"
+
+      (* Second statement: const size = 2 *)
+      val s1 = Vector.sub (stmts, 1)
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
+      val Statement.T {exp = e1, var = v1, ...} = s1
+      val _ = assert (Option.isSome v1, "s1 should bind a variable")
+      val flatSizeConstVar = Option.valOf v1
+      val _ = case e1 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s1 Const size");
+                    assert (WordX.toIntInf wx = 2, "s1 constant should be 2")
+                 )
+               | _ => raise TestFail "s1 should be Word Const"
+
+      (* Third statement: len = physLen div constSize *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, seqIndexTy, "s2 type should be seqIndexTy")
+      val Statement.T {exp = e2, var = v2, ...} = s2
+      val _ = assert (Option.isSome v2 andalso Var.equals (Option.valOf v2, lenVar), "s2 should bind lenVar")
+      val _ = case e2 of
+                 Exp.PrimApp {prim = Prim.Word_quot (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s2 Word_quot size");
+                    assert (Vector.length targs = 0, "s2 targs should be empty");
+                    assert (Vector.length args = 2, "s2 args length should be 2");
+                    assert (Var.equals (Vector.sub (args, 0), physLenVar), "s2 first arg should be physLenVar");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s2 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s2 should be Word_quot PrimApp"
+   in () end)
+
+   (* Test 7: maybeFlattenStatementAoS - Vector_length on identical tuple (width 3) *)
+   val _ = runTest ("Test 7: maybeFlattenStatementAoS - Vector_length on identical tuple (width 3)", fn () => let
+      val lenVar = Var.fromString "len"
+      val vecVar = Var.fromString "vec"
+      val tuple3Ty = Type.tuple (Vector.fromList [word32Ty, word32Ty, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Vector_length, [vecVar], [tuple3Ty]),
+         ty = seqIndexTy,
+         var = SOME lenVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Vector_length on identical tuple should return SOME"
+      val _ = assert (Vector.length stmts = 3, "should return 3 statements")
+
+      (* First statement: physLen: seqIndexTy = Vector_length[word32Ty](vec) *)
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0, "s0 should bind a variable")
+      val physLenVar = Option.valOf v0
+      val _ = case e0 of
+                 Exp.PrimApp {prim = Prim.Vector_length, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), vecVar), "s0 arg should be vecVar");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s0 targ should be word32Ty")
+                 )
+               | _ => raise TestFail "s0 should be Vector_length PrimApp"
+
+      (* Second statement: const size = 3 *)
+      val s1 = Vector.sub (stmts, 1)
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
+      val Statement.T {exp = e1, var = v1, ...} = s1
+      val _ = assert (Option.isSome v1, "s1 should bind a variable")
+      val flatSizeConstVar = Option.valOf v1
+      val _ = case e1 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s1 Const size");
+                    assert (WordX.toIntInf wx = 3, "s1 constant should be 3")
+                 )
+               | _ => raise TestFail "s1 should be Word Const"
+
+      (* Third statement: len = physLen div constSize *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, seqIndexTy, "s2 type should be seqIndexTy")
+      val Statement.T {exp = e2, var = v2, ...} = s2
+      val _ = assert (Option.isSome v2 andalso Var.equals (Option.valOf v2, lenVar), "s2 should bind lenVar")
+      val _ = case e2 of
+                 Exp.PrimApp {prim = Prim.Word_quot (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s2 Word_quot size");
+                    assert (Vector.length targs = 0, "s2 targs should be empty");
+                    assert (Vector.length args = 2, "s2 args length should be 2");
+                    assert (Var.equals (Vector.sub (args, 0), physLenVar), "s2 first arg should be physLenVar");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s2 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s2 should be Word_quot PrimApp"
+   in () end)
+
+   (* Test 8: maybeFlattenStatementAoS - Array_length on non-tuple type *)
+   val _ = runTest ("Test 8: maybeFlattenStatementAoS - Array_length on non-tuple type", fn () => let
+      val lenVar = Var.fromString "len"
+      val arrVar = Var.fromString "arr"
+      val s = Statement.T {
+         exp = primApp (Prim.Array_length, [arrVar], [intTy]),
+         ty = seqIndexTy,
+         var = SOME lenVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_length on non-tuple should return NONE")
+   in () end)
+
+   (* Test 9: maybeFlattenStatementAoS - Array_length on mixed tuple type *)
+   val _ = runTest ("Test 9: maybeFlattenStatementAoS - Array_length on mixed tuple type", fn () => let
+      val lenVar = Var.fromString "len"
+      val arrVar = Var.fromString "arr"
+      val mixedTupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_length, [arrVar], [mixedTupleTy]),
+         ty = seqIndexTy,
+         var = SOME lenVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_length on mixed tuple should return NONE")
+   in () end)
+
    val _ = summarize ()
 end

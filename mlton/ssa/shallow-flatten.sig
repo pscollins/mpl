@@ -289,6 +289,14 @@ sig
        n': indexTy = n * tupleWidth
        x: 'a array = Array_alloc['a](n')
 
+    2. `Array_length` on tuple types:
+      arr: ('a * 'a * ...) array = ...
+      n: int = Array_length['a * 'a * ...](arr)
+      -->
+      (* by 1., arr is now 'a array *)
+      n: int = Array_length['a](arr)
+      ...
+
       TODO: port the remaining test cases over
    
    *)
