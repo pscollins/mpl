@@ -285,7 +285,9 @@ sig
      1. `Array_alloc` on tuple types
        x: ('a * 'a * ...) array = Array_alloc['a * 'a * ...](n)
        -->
-       x: 'a array = Array_alloc['a](n * tupleWidth('a * 'a * ...))
+       tupleSize: indexTy = tupleWidth('a * 'a * ...)
+       n': indexTy = n * tupleWidth
+       x: 'a array = Array_alloc['a](n')
 
       TODO: port the remaining test cases over
    
