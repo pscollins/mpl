@@ -325,6 +325,13 @@ sig
       _ = Array_update['a](arr, i * tupleSize + 1, x_1)
       ...
 
+    5. `Array_toVector` on tuple types:
+      arr: ('a * 'a * ...) array = ...
+      vec: ('a * 'a * ...) vector = Array_toVector['a * 'a * ...](arr)
+      -->
+      (* by 1., arr is now 'a array *)
+      vec: 'a vector = Array_toVector['a)(arr)
+
     6. `Vector_length` on tuple types:
       n: int = Vector_length['a * 'a * ...](vec)
       -->
