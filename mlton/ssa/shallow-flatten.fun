@@ -712,6 +712,12 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.word (WordSize.seqIndex ()),
                    var = SOME (Var.newString "mulRes")}
    end
+   (* addRes := lhs + rhs *)
+   fun mkAdd (lhs: Var.t) (rhs: Var.t): Statement.t = let
+      val _ = ()
+   in
+      Error.unimplemented "TODO"
+   end
 
    (* dest := lhs / rhs *)
    fun mkDiv (lhs: Var.t, rhs: Var.t, dest: Var.t option): Statement.t = let
@@ -750,9 +756,31 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          Vector.new3 (constStmt, mulStmt, allocStmt)
       end
-      fun buildContainerLength tArg = let
+      fun buildContainerLength (containerType, args, tArg) = let
          (* tupleSize: indexTy = tupleWidth *)
          val constStmt = mkIndexConst tupleWidth
+         (* newLen = Array_length[elTy](arr) *)
+         val lenStmt = mkContainerLen (getContainerType prim,
+                                       args, tArg)
+         (* n = newLen / tupleSize *)
+         val divStmt = mkDiv (extractBind lenStmt,
+                              extractBind constStmt,
+                              var)
+      in
+         Vector.new3 (lenStmt, constStmt, divStmt)
+      end
+      (* x := (Array_sub(i * tupleWidth), Array_sub(i * tupleWidth + 1), ...)  *)
+      fun buildContainerSub (containerType, args, tArg) = let
+         (* tupleSize: indexTy = tupleWidth *)
+         val constStmt = mkIndexConst tupleWidth
+         (* baseIdx: indexTy = tupleWidth * i *)
+         val mulStmt = mkMul (Vector.second args,
+                              extractBind constStmt)
+         (* [idx_{j} = baseIdx + j for j in range(tupleWidth)]  *)
+         val idxStmts = Vector.tabulate (tupleWidth, mkAdd mulStmt)
+         (* [x_{j} = Array_sub[elTy](x, j) for j in range(tupleWidth) *)
+         val loadStmts = Vector.map (idxStmts,
+                                     mkContainerLoad (Vector.first args,)
          (* newLen = Array_length[elTy](arr) *)
          val lenStmt = mkContainerLen (getContainerType prim,
                                        args, tArg)
@@ -768,9 +796,11 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
               (Prim.Array_alloc primArg, SOME tArg)
               => SOME (buildArrayAlloc (primArg, tArg))
            | (Prim.Array_length, SOME tArg)
-              => SOME (buildContainerLength tArg)
+             => SOME (buildContainerLength tArg)
            | (Prim.Vector_length, SOME tArg)
              => SOME (buildContainerLength tArg)
+           | (Prim.Array_sub, SOME tArg)
+              => SOME (buildContainerSub tArg)
            | _ => NONE
    in
       result
