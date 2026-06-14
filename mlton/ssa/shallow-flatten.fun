@@ -1314,6 +1314,7 @@ fun transform (p: Program.t): Program.t =
        val policy =
            case !Control.shallowFlattenPolicy of
                Control.ShallowFlattenPolicy.MaxWidth n => MaxWidth n
+             | Control.ShallowFlattenPolicy.MaxWidthSameType n => MaxWidthSameType n
        val mechanism =
            case !Control.shallowFlattenMechanism of
                Control.ShallowFlattenMechanism.Aos => FlattenAoS

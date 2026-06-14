@@ -719,7 +719,7 @@ fun makeOptions {usage} =
         Int (fn n => preFlattenMaxIters := n)),
        (Expert, "pre-flatten-recursive-steps", " <n>", "limit the number of recursive pre-flattening steps (0)",
         Int (fn n => preFlattenRecursiveSteps := n)),
-       (Expert, "shallow-flatten-policy", " maxWidth:<n>", "set shallow flattening policy (maxWidth:3)",
+       (Expert, "shallow-flatten-policy", " {maxWidth|maxWidthSameType}:<n>", "set shallow flattening policy (maxWidth:3)",
         SpaceString (fn s =>
                      case ShallowFlattenPolicy.fromString s of
                         SOME p => shallowFlattenPolicy := p

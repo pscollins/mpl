@@ -1426,9 +1426,11 @@ val flattenIters =
 structure ShallowFlattenPolicy =
    struct
       datatype t = MaxWidth of int
+                 | MaxWidthSameType of int
 
       val toString =
          fn MaxWidth n => concat ["maxWidth:", Int.toString n]
+          | MaxWidthSameType n => concat ["maxWidthSameType:", Int.toString n]
 
       val fromString =
          fn s =>
@@ -1438,6 +1440,13 @@ structure ShallowFlattenPolicy =
                   val nStr = String.extract (s, 9, NONE)
                in
                   Option.map (Int.fromString nStr, MaxWidth)
+               end
+            else if String.hasPrefix (s, {prefix = "maxWidthSameType:"})
+            then
+               let
+                  val nStr = String.extract (s, 17, NONE)
+               in
+                  Option.map (Int.fromString nStr, MaxWidthSameType)
                end
             else NONE
    end
