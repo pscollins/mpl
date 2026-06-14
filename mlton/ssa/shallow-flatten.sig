@@ -319,6 +319,18 @@ sig
        n': indexTy = Vector_length['a](arr)
        n: indexTy = n' / tupleSize
 
+    7. `Vector_sub` on tuple types:
+      arr: ('a * 'a * ...) vector = ...
+      x: ('a * 'a * ...) = Vector_sub['a * 'a * ...](x, i)
+      -->
+      (* by 1., arr is now 'a vector  *)
+       tupleSize: indexTy = tupleWidth('a * 'a * ...)
+       x_0: 'a =  Vector_sub['a](arr, i * tupleSize)
+       x_1: 'a =  Vector_sub['a](arr, i * tupleSize + 1)
+       ...
+       x_n: 'b =  Vector_sub['b](arr_b, i * tupleSize + tupleSize - 1)
+       x: ('a * 'a * ...) = tuple(x_1, x_1, ...)
+
       TODO: port the remaining test cases over
    
    *)
