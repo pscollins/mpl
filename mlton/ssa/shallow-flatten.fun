@@ -808,7 +808,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                                   targs = Vector.new1 tArg}
    in
       Statement.T {exp = toArrExp,
-                   ty = Type.vector tArg,
+                   ty = Type.array tArg,
                    var = dest}
    end
 
