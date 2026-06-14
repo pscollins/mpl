@@ -91,37 +91,51 @@ in
       val stmts = case res of
                      SOME s => s
                    | NONE => raise TestFail "Array_alloc on identical tuple should return SOME"
-      val _ = assert (Vector.length stmts = 2, "should return 2 statements")
+      val _ = assert (Vector.length stmts = 3, "should return 3 statements")
 
-      (* First statement: flatSize = n * 2 *)
+      (* First statement: const size = 2 *)
       val s0 = Vector.sub (stmts, 0)
       val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
       val Statement.T {exp = e0, var = v0, ...} = s0
       val _ = assert (Option.isSome v0, "s0 should bind a variable")
-      val flatSizeVar = Option.valOf v0
+      val flatSizeConstVar = Option.valOf v0
       val _ = case e0 of
-                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s0 Word_mul size");
-                    assert (Vector.length targs = 0, "s0 targs should be empty");
-                    assert (Vector.length args = 2, "s0 args length should be 2");
-                    assert (Var.equals (Vector.sub (args, 0), n), "s0 first arg should be n")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s0 Const size");
+                    assert (WordX.toIntInf wx = 2, "s0 constant should be 2")
                  )
-               | _ => raise TestFail "s0 should be Word_mul PrimApp"
+               | _ => raise TestFail "s0 should be Word Const"
 
-      (* Second statement: x: 'a array = Array_alloc['a](flatSize) *)
+      (* Second statement: flatSize = n * 2 *)
       val s1 = Vector.sub (stmts, 1)
-      val _ = assertType (s1, Type.array intTy, "s1 type should be array of element type")
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
       val Statement.T {exp = e1, var = v1', ...} = s1
-      val _ = assert (Option.isSome v1' andalso Var.equals (Option.valOf v1', v1),
-                      "s1 should bind original variable")
+      val _ = assert (Option.isSome v1', "s1 should bind a variable")
+      val flatSizeVar = Option.valOf v1'
       val _ = case e1 of
+                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s1 Word_mul size");
+                    assert (Vector.length targs = 0, "s1 targs should be empty");
+                    assert (Vector.length args = 2, "s1 args length should be 2");
+                    assert (Var.equals (Vector.sub (args, 0), n), "s1 first arg should be n");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s1 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s1 should be Word_mul PrimApp"
+
+      (* Third statement: x: 'a array = Array_alloc['a](flatSize) *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, Type.array intTy, "s2 type should be array of element type")
+      val Statement.T {exp = e2, var = v2', ...} = s2
+      val _ = assert (Option.isSome v2' andalso Var.equals (Option.valOf v2', v1),
+                      "s2 should bind original variable")
+      val _ = case e2 of
                  Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
                     assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), flatSizeVar),
-                            "s1 arg should be flatSizeVar");
+                            "s2 arg should be flatSizeVar");
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy),
-                            "s1 targ should be element type")
+                            "s2 targ should be element type")
                  )
-               | _ => raise TestFail "s1 should be Array_alloc PrimApp"
+               | _ => raise TestFail "s2 should be Array_alloc PrimApp"
    in () end)
 
    (* Test 5: maybeFlattenStatementAoS - Array_alloc on tuple of identical types (width 3) *)
@@ -139,37 +153,51 @@ in
       val stmts = case res of
                      SOME s => s
                    | NONE => raise TestFail "Array_alloc on identical tuple (width 3) should return SOME"
-      val _ = assert (Vector.length stmts = 2, "should return 2 statements")
+      val _ = assert (Vector.length stmts = 3, "should return 3 statements")
 
-      (* First statement: flatSize = n * 3 *)
+      (* First statement: const size = 3 *)
       val s0 = Vector.sub (stmts, 0)
       val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
       val Statement.T {exp = e0, var = v0, ...} = s0
       val _ = assert (Option.isSome v0, "s0 should bind a variable")
-      val flatSizeVar = Option.valOf v0
+      val flatSizeConstVar = Option.valOf v0
       val _ = case e0 of
-                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
-                    assert (WordSize.equals (ws, seqIndexSize), "s0 Word_mul size");
-                    assert (Vector.length targs = 0, "s0 targs should be empty");
-                    assert (Vector.length args = 2, "s0 args length should be 2");
-                    assert (Var.equals (Vector.sub (args, 0), n), "s0 first arg should be n")
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s0 Const size");
+                    assert (WordX.toIntInf wx = 3, "s0 constant should be 3")
                  )
-               | _ => raise TestFail "s0 should be Word_mul PrimApp"
+               | _ => raise TestFail "s0 should be Word Const"
 
-      (* Second statement: x: 'a array = Array_alloc['a](flatSize) *)
+      (* Second statement: flatSize = n * 3 *)
       val s1 = Vector.sub (stmts, 1)
-      val _ = assertType (s1, Type.array word32Ty, "s1 type should be array of element type")
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
       val Statement.T {exp = e1, var = v1', ...} = s1
-      val _ = assert (Option.isSome v1' andalso Var.equals (Option.valOf v1', v1),
-                      "s1 should bind original variable")
+      val _ = assert (Option.isSome v1', "s1 should bind a variable")
+      val flatSizeVar = Option.valOf v1'
       val _ = case e1 of
+                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s1 Word_mul size");
+                    assert (Vector.length targs = 0, "s1 targs should be empty");
+                    assert (Vector.length args = 2, "s1 args length should be 2");
+                    assert (Var.equals (Vector.sub (args, 0), n), "s1 first arg should be n");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s1 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s1 should be Word_mul PrimApp"
+
+      (* Third statement: x: 'a array = Array_alloc['a](flatSize) *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, Type.array word32Ty, "s2 type should be array of element type")
+      val Statement.T {exp = e2, var = v2', ...} = s2
+      val _ = assert (Option.isSome v2' andalso Var.equals (Option.valOf v2', v1),
+                      "s2 should bind original variable")
+      val _ = case e2 of
                  Exp.PrimApp {prim = Prim.Array_alloc {raw = true}, args, targs} => (
                     assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), flatSizeVar),
-                            "s1 arg should be flatSizeVar");
+                            "s2 arg should be flatSizeVar");
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty),
-                            "s1 targ should be element type")
+                            "s2 targ should be element type")
                  )
-               | _ => raise TestFail "s1 should be Array_alloc PrimApp"
+               | _ => raise TestFail "s2 should be Array_alloc PrimApp"
    in () end)
 
    val _ = summarize ()
