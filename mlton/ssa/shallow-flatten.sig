@@ -86,8 +86,15 @@ sig
         (('a * b) array) array
           -> (('a array) * ('b array)) array
           -> ('a array array) * ('b array array)
+
+      The type that results from flattening is controlled by `flattenMechanism`,
+      i.e.
+
+        ('a * 'b) array + FlattenSoA -> 'a array * 'b array
+        ('a * 'a) array + FlattenAoS -> 'a array
    *)
-   val deepFlattenTypeForPolicy: flattenPolicy -> Type.t -> Type.t
+   val deepFlattenTypeForPolicy: (flattenPolicy, flattenMechanism)
+                                 -> Type.t -> Type.t
 
    (* Returns `true` if `Statement.t` requires the `maybeFlattenStatement`
       transformation (below) under `policy`, `false` otherwise.
