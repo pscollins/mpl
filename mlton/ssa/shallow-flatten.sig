@@ -9,6 +9,8 @@ sig
        -shallow-flatten-max-iters=N: limit the number of iterations to N
 
        -shallow-flatten-policy=maxWidth:$N sets the policy to `MaxWidth(n)`
+
+       -shallow-flatten-mechanism=[aos|soa]: sets the flattenMechanism
     *)
    include SSA_TRANSFORM
    structure FlattenUtil: FLATTEN_UTIL
