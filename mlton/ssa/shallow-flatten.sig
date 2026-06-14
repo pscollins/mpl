@@ -352,9 +352,14 @@ sig
        x_n: 'b =  Vector_sub['b](arr_b, i * tupleSize + tupleSize - 1)
        x: ('a * 'a * ...) = tuple(x_1, x_1, ...)
 
+    8. `Array_uninitIsNop` on tuple types:
+      arr: ('a * 'a * ...) array = ...
+      isNop: bool = Array_uninitIsNop[('a * 'a * ...) array](arr)
+      -->
+      isNop: bool = false
+
       TODO: port the remaining test cases over
-   
-   *)
+    *)
    val maybeFlattenStatementAoS: Statement.t ->
                                  Statement.t vector option
 

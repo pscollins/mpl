@@ -1592,5 +1592,61 @@ in
                | _ => raise TestFail "s0 should be Array_toVector PrimApp"
    in () end)
 
+   (* Test 26: maybeFlattenStatementAoS - Array_uninitIsNop on non-tuple type *)
+   val _ = runTest ("Test 26: maybeFlattenStatementAoS - Array_uninitIsNop on non-tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val isNopVar = Var.fromString "isNop"
+      val boolTy = Type.bool
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninitIsNop, [arrVar], [intTy]),
+         ty = boolTy,
+         var = SOME isNopVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_uninitIsNop on non-tuple should return NONE")
+   in () end)
+
+   (* Test 27: maybeFlattenStatementAoS - Array_uninitIsNop on mixed tuple type *)
+   val _ = runTest ("Test 27: maybeFlattenStatementAoS - Array_uninitIsNop on mixed tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val isNopVar = Var.fromString "isNop"
+      val mixedTupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val boolTy = Type.bool
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninitIsNop, [arrVar], [mixedTupleTy]),
+         ty = boolTy,
+         var = SOME isNopVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_uninitIsNop on mixed tuple should return NONE")
+   in () end)
+
+   (* Test 28: maybeFlattenStatementAoS - Array_uninitIsNop on identical tuple (width 2) *)
+   val _ = runTest ("Test 28: maybeFlattenStatementAoS - Array_uninitIsNop on identical tuple (width 2)", fn () => let
+      val arrVar = Var.fromString "arr"
+      val isNopVar = Var.fromString "isNop"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val boolTy = Type.bool
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninitIsNop, [arrVar], [tuple2Ty]),
+         ty = boolTy,
+         var = SOME isNopVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_uninitIsNop on identical tuple should return SOME"
+      val _ = assert (Vector.length stmts = 1, "should return 1 statement")
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, boolTy, "s0 type should be bool")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0 andalso Var.equals (Option.valOf v0, isNopVar),
+                      "s0 should bind original variable")
+      val _ = case e0 of
+                 Exp.ConApp {con, args} =>
+                 assert (Con.equals (con, Con.falsee) andalso Vector.length args = 0, "expected Con.falsee")
+               | _ => raise TestFail "s0 should be false ConApp"
+   in () end)
+
    val _ = summarize ()
 end
