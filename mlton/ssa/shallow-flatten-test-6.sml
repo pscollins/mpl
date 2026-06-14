@@ -67,7 +67,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val p_opt = ShallowFlatten.flattenOnce policy p
+      val p_opt = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")
@@ -187,7 +187,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val p_opt = ShallowFlatten.flattenOnce policy p
+      val p_opt = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")
@@ -280,7 +280,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val p' = case ShallowFlatten.flattenOnce policy p of
+      val p' = case ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p of
                   SOME p' => p'
                 | NONE => raise TestFail "Should have flattened"
       
@@ -374,7 +374,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val p_opt = ShallowFlatten.flattenOnce policy p
+      val p_opt = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")
@@ -533,7 +533,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val p_opt = ShallowFlatten.flattenOnce policy p
+      val p_opt = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")
@@ -752,7 +752,7 @@ in
       }
 
       val policy = ShallowFlatten.MaxWidth 2
-      val p_opt = ShallowFlatten.flattenOnce policy p
+      val p_opt = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       
       val _ = case p_opt of
          NONE => assert (false, "Should have flattened something")

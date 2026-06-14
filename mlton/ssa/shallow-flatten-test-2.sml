@@ -444,7 +444,7 @@ in
          main = mainFunc
       }
       val policy = ShallowFlatten.MaxWidth 3
-      val res = ShallowFlatten.flattenOnce policy p
+      val res = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
    in
       assert (Option.isNone res, "Should return NONE when no flattening is possible")
    end)

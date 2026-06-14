@@ -98,7 +98,7 @@ in
         val policy = ShallowFlatten.MaxWidth 3
         (* Run flattenOnce. This triggers the Option exception bug in propagation.
            Once the bug is fixed, it will succeed and return SOME p' because flattening is applied. *)
-        val p' = valOf (ShallowFlatten.flattenOnce policy p)
+        val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
         val Program.T {functions, ...} = p'
 
         (* Verify the flattened IR of f_main *)
@@ -257,7 +257,7 @@ in
        }
 
        val policy = ShallowFlatten.MaxWidth 3
-       val p' = valOf (ShallowFlatten.flattenOnce policy p)
+       val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
 
        (* Under the buggy compiler, this will raise a typecheck Fail exception *)
        val _ = Ssa.typeCheck p'
@@ -370,7 +370,7 @@ in
        }
 
        val policy = ShallowFlatten.MaxWidth 3
-       val p' = valOf (ShallowFlatten.flattenOnce policy p)
+       val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
 
        (* Verify the flattened IR of f_main *)
        val Program.T {functions, ...} = p'
@@ -538,7 +538,7 @@ in
         (* Under the buggy compiler, this will raise Fail msg containing "Vector.foldi2From".
            We want to assert/witness this symptom, but also verify the properly flattened IR. *)
         val p' =
-            case (SOME (ShallowFlatten.flattenOnce policy p))
+            case (SOME (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p))
                  handle Fail msg =>
                     if SmlString.hasPrefix (msg, {prefix = "Vector.foldi2From"}) then NONE
                     else raise Fail msg of
@@ -673,7 +673,7 @@ in
 
       val policy = ShallowFlatten.MaxWidth 3
       val p' =
-          case ShallowFlatten.flattenOnce policy p of
+          case ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p of
              SOME p' => p'
            | NONE => p
 
@@ -771,7 +771,7 @@ in
 
       val policy = ShallowFlatten.MaxWidth 3
 
-      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+      val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
 
       (* Under the buggy compiler, this will raise a typecheck Fail exception *)
       val typecheck_failed =
@@ -940,7 +940,7 @@ in
       }
 
       val policy = ShallowFlatten.MaxWidth 3
-      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+      val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
 
       (* Under the buggy compiler, this will raise a typecheck Fail exception *)
       val typecheck_failed =
@@ -1061,7 +1061,7 @@ in
 
       val policy = ShallowFlatten.MaxWidth 3
 
-      val p' = valOf (ShallowFlatten.flattenOnce policy p)
+      val p' = valOf (ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p)
 
       (* Under the buggy compiler, this will raise a typecheck Fail exception *)
       val typecheck_failed =

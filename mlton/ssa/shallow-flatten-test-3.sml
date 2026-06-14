@@ -58,7 +58,7 @@ in
          main = mainFunc
       }
       val policy = ShallowFlatten.MaxWidth 3
-      val res = ShallowFlatten.flattenOnce policy p
+      val res = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
    in
       assert (Option.isSome res, "Should return SOME p' when flattening is applied")
    end)(* Test 17: shallowFlattenMaxIters *)
@@ -412,7 +412,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val res = ShallowFlatten.flattenOnce policy p
+      val res = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       val p' = case res of
                   SOME p' => p'
                 | NONE => raise TestFail "Should have flattened"

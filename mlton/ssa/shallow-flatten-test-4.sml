@@ -81,7 +81,7 @@ in
       }
       
       val policy = ShallowFlatten.MaxWidth 2
-      val res = ShallowFlatten.flattenOnce policy p
+      val res = ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p
       val p' = case res of
                   SOME p' => p'
                 | NONE => raise TestFail "Should have flattened"
@@ -217,7 +217,7 @@ in
          main = mainFunc
       }
 
-      val p' = case ShallowFlatten.flattenOnce policy p of
+      val p' = case ShallowFlatten.flattenOnce (policy, ShallowFlatten.FlattenSoA) p of
                   SOME p' => p'
                 | NONE => raise TestFail "flattenOnce failed to flatten"
 

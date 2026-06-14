@@ -51,6 +51,24 @@ sig
      same type. *)
      | MaxWidthSameType of int
 
+   (* How should we flatten the flattenable array/vector types? *)
+   datatype flattenMechanism =
+            (* Flatten in struct-of-array format, i.e.
+               ('a * 'b * 'c) array ->
+               ('a array * 'b array * 'c array)
+             *)
+            FlattenSoA
+            (* Flatten in array-of-struct format, i.e.
+               ('a * 'a * 'a) array ->
+               'a array
+
+               where len(flat_array) == 3 * len(array), and all indexing
+               operations, etc, are adjusted appropriately.
+
+               (For now, only compatible with MaxWidthSameType policy)
+             *)
+            | FlattenAoS
+
    (* Should this `Type.t` flattened according to `policy`? *)
    val shouldFlattenType: flattenPolicy -> Type.t -> bool
 
@@ -386,5 +404,6 @@ sig
       and transforming them appropriately. Returns (SOME ...) if any value was
       successfully flattened, NONE otherwise.
     *)
-   val flattenOnce: flattenPolicy -> Program.t -> Program.t option
+   val flattenOnce: (flattenPolicy * flattenMechanism)
+                    -> Program.t -> Program.t option
 end

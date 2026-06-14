@@ -107,6 +107,9 @@ fun isContainerOfSameTupleType (t: Type.t): bool =
 datatype flattenPolicy = MaxWidth of int
                        | MaxWidthSameType of int
 
+datatype flattenMechanism = FlattenSoA
+                          | FlattenAoS
+
 (* Should the value corresponding to `t` be flattened, according to `policy`? *)
 fun shouldFlattenType (policy: flattenPolicy) (t: Type.t) : bool = let
    val (maxWidth, differentOk) =
@@ -1212,7 +1215,7 @@ in
 end
 
 
-fun flattenOnce (policy: flattenPolicy) (p: Program.t): Program.t option = let
+fun flattenOnce (policy: flattenPolicy, mechanism: flattenMechanism) (p: Program.t): Program.t option = let
    val progress = ref false
 
    fun checkProgress (statements: Statement.t vector,
@@ -1263,7 +1266,7 @@ fun transform (p: Program.t): Program.t =
           if n >= !Control.shallowFlattenMaxIters
              then p
           else
-             case flattenOnce policy p of
+             case flattenOnce (policy, FlattenSoA) p of
                 NONE => p
               | SOME p' => loop (p', n + 1)
     in
