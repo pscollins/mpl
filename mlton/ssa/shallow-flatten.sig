@@ -317,13 +317,13 @@ sig
       _ = Array_update['a * 'a * ...](arr, i, x)
       -->
       (* by 1., arr is now 'a array *)
-      arr_a: 'a array = select(arr, 0)
-      x_a: 'a = select(x, 1)
-      _ = Array_update['a])(arr_a, i, x_a)
-      arr_b: 'b array = select(arr, 1)
-      x_b: 'b = select(x, 2)
-      _ = Array_update['b])(arr_b, i, x_b)
-     ...
+      tupleSize: indexTy = tupleWidth('a * 'a * ...)
+      x_0: 'a = select(x, 0)
+      x_1: 'a = select(x, 1)
+      ...
+      _ = Array_update['a](arr, i * tupleSize + 0, x_0)
+      _ = Array_update['a](arr, i * tupleSize + 1, x_1)
+      ...
 
     6. `Vector_length` on tuple types:
       n: int = Vector_length['a * 'a * ...](vec)
