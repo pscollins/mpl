@@ -759,7 +759,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                                 targs = Vector.new1 tArg}
    in
       Statement.T {exp = subExp,
-                   ty = mkContainerTypeOf (getContainerType loadPrim, tArg),
+                   (* Return type of a load is just the element type *)
+                   ty = tArg,
                    var = SOME (Var.newString "loadRes")}
    end
    (* dest: (ty1 * ty2* ...) := (x1, x2, ...)  *)
