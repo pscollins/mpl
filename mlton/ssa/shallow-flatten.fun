@@ -307,7 +307,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
    fun doPrimApp (args, prim, targs) = let
       fun logThunk () =
           Layout.align [
-             Layout.seq [Layout.str "doPrimApp: ",
+             Layout.seq [Layout.str "doPrimApp(maybeFlattenStatement): ",
                          Prim.layout prim,
                          Layout.str " with targs ",
                          Vector.layout Type.layout targs],
@@ -318,7 +318,7 @@ fun maybeFlattenStatement (s: Statement.t) = let
       val _ = Control.diagnostic logThunk
       fun mkLogResultThunk (res) = let
          fun logThunk() = Layout.seq [
-                Layout.str "Result: ",
+                Layout.str "Result(maybeFlattenStatement): ",
                 maybeStmtsToLayout res
              ]
       in
@@ -776,6 +776,25 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
                                                                      Type.unit))
+      fun logThunk () =
+          Layout.align [
+             Layout.seq [Layout.str "doPrimApp(maybeFlattenStatementAos): ",
+                         Prim.layout prim,
+                         Layout.str " with targs ",
+                         Vector.layout Type.layout targs],
+             Layout.seq [
+                Layout.str "whole_statement: ",
+                Statement.layout s]
+          ]
+      val _ = Control.diagnostic logThunk
+      fun mkLogResultThunk (res) = let
+         fun logThunk() = Layout.seq [
+                Layout.str "Result(maybeFlattenStatementAoS): ",
+                maybeStmtsToLayout res
+             ]
+      in
+         logThunk
+      end
       fun buildArrayAlloc (primArg, tArg) = let
          (* tupleSize: indexTy = tupleWidth *)
          val constStmt = mkIndexConst tupleWidth
@@ -838,6 +857,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
            | (Prim.Array_sub _, SOME tArg)
               => SOME (buildContainerLoad tArg)
            | _ => NONE
+      val _ = Control.diagnostic (mkLogResultThunk result)
    in
       result
    end
