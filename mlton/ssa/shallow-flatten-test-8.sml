@@ -1501,6 +1501,95 @@ in
                     assert (Var.equals (Vector.sub (args, 2), selectVal2Var), "s13 third arg should be selectVal2Var")
                  )
                | _ => raise TestFail "s13 should be Array_update PrimApp"
+    in () end)
+
+   (* Test 22: maybeFlattenStatementAoS - Array_toVector on non-tuple type *)
+   val _ = runTest ("Test 22: maybeFlattenStatementAoS - Array_toVector on non-tuple type", fn () => let
+      val vecVar = Var.fromString "vec"
+      val arrVar = Var.fromString "arr"
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toVector, [arrVar], [intTy]),
+         ty = Type.vector intTy,
+         var = SOME vecVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_toVector on non-tuple should return NONE")
+   in () end)
+
+   (* Test 23: maybeFlattenStatementAoS - Array_toVector on mixed tuple type *)
+   val _ = runTest ("Test 23: maybeFlattenStatementAoS - Array_toVector on mixed tuple type", fn () => let
+      val vecVar = Var.fromString "vec"
+      val arrVar = Var.fromString "arr"
+      val mixedTupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toVector, [arrVar], [mixedTupleTy]),
+         ty = Type.vector mixedTupleTy,
+         var = SOME vecVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_toVector on mixed tuple should return NONE")
+   in () end)
+
+   (* Test 24: maybeFlattenStatementAoS - Array_toVector on identical tuple (width 2) *)
+   val _ = runTest ("Test 24: maybeFlattenStatementAoS - Array_toVector on identical tuple (width 2)", fn () => let
+      val vecVar = Var.fromString "vec"
+      val arrVar = Var.fromString "arr"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toVector, [arrVar], [tuple2Ty]),
+         ty = Type.vector tuple2Ty,
+         var = SOME vecVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_toVector on identical tuple (width 2) should return SOME"
+      val _ = assert (Vector.length stmts = 1, "should return 1 statement")
+
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, Type.vector intTy, "s0 type should be vector of element type")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0 andalso Var.equals (Option.valOf v0, vecVar),
+                      "s0 should bind original variable")
+      val _ = case e0 of
+                 Exp.PrimApp {prim = Prim.Array_toVector, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), arrVar),
+                            "s0 arg should be arrVar");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy),
+                            "s0 targ should be element type")
+                 )
+               | _ => raise TestFail "s0 should be Array_toVector PrimApp"
+   in () end)
+
+   (* Test 25: maybeFlattenStatementAoS - Array_toVector on identical tuple (width 3) *)
+   val _ = runTest ("Test 25: maybeFlattenStatementAoS - Array_toVector on identical tuple (width 3)", fn () => let
+      val vecVar = Var.fromString "vec"
+      val arrVar = Var.fromString "arr"
+      val tuple3Ty = Type.tuple (Vector.fromList [word32Ty, word32Ty, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toVector, [arrVar], [tuple3Ty]),
+         ty = Type.vector tuple3Ty,
+         var = SOME vecVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_toVector on identical tuple (width 3) should return SOME"
+      val _ = assert (Vector.length stmts = 1, "should return 1 statement")
+
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, Type.vector word32Ty, "s0 type should be vector of element type")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0 andalso Var.equals (Option.valOf v0, vecVar),
+                      "s0 should bind original variable")
+      val _ = case e0 of
+                 Exp.PrimApp {prim = Prim.Array_toVector, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), arrVar),
+                            "s0 arg should be arrVar");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty),
+                            "s0 targ should be element type")
+                 )
+               | _ => raise TestFail "s0 should be Array_toVector PrimApp"
    in () end)
 
    val _ = summarize ()
