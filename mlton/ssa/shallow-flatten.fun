@@ -843,8 +843,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
          val tupleStmt = mkTuple (loadStmts, var)
       in
          concatVecs [Vector.new2 (constStmt, mulStmt),
-                     idxStmts,
                      offsetStmts,
+                     idxStmts,
                      loadStmts,
                      Vector.new1 tupleStmt]
       end
