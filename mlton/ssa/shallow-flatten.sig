@@ -294,14 +294,18 @@ sig
       n: int = Array_length['a * 'a * ...](arr)
       -->
       (* by 1., arr is now 'a array *)
-      n: int = Array_length['a](arr)
+       tupleSize: indexTy = tupleWidth('a * 'a * ...)
+       n': indexTy = Array_length['a](arr)
+       n: indexTy = n' / tupleSize
       ...
 
     6. `Vector_length` on tuple types:
       n: int = Vector_length['a * 'a * ...](vec)
       -->
       (* vec is now 'a vector  ... *)
-      n: int = Vector_length['a](vec)
+       tupleSize: indexTy = tupleWidth('a * 'a * ...)
+       n': indexTy = Vector_length['a](arr)
+       n: indexTy = n' / tupleSize
 
       TODO: port the remaining test cases over
    

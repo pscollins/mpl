@@ -712,7 +712,20 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.word (WordSize.seqIndex ()),
                    var = SOME (Var.newString "mulRes")}
    end
-   (* dest := {Array,Vector}_length[tArg](arg) *)
+
+   (* dest := lhs / rhs *)
+   fun mkDiv (lhs: Var.t, rhs: Var.t, dest: Var.t option): Statement.t = let
+      val divExp = Exp.PrimApp {args = Vector.new2 (lhs, rhs),
+                                (* TODO(pscollins): Is `signed = false` correct? *)
+                                prim = Prim.Word_quot (WordSize.seqIndex (),
+                                                      {signed = false}),
+                                targs = Vector.new0 ()}
+   in
+      Statement.T {exp = divExp,
+                   ty = Type.word (WordSize.seqIndex ()),
+                   var = dest}
+   end
+   (* newLen := {Array,Vector}_length[tArg](arg) *)
    fun mkContainerLen (containerType, args, tArg) = let
       val lenExp = Exp.PrimApp {args = args,
                                 prim = getLenPrim containerType,
@@ -720,7 +733,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
    in
       Statement.T {exp = lenExp,
                    ty = ty,
-                   var = var}
+                   var = SOME (Var.newString "newLen")}
    end
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
@@ -738,18 +751,26 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
          Vector.new3 (constStmt, mulStmt, allocStmt)
       end
       fun buildContainerLength tArg = let
-         (* n = Array_length[elTy](arr) *)
+         (* tupleSize: indexTy = tupleWidth *)
+         val constStmt = mkIndexConst tupleWidth
+         (* newLen = Array_length[elTy](arr) *)
          val lenStmt = mkContainerLen (getContainerType prim,
                                        args, tArg)
+         (* n = newLen / tupleSize *)
+         val divStmt = mkDiv (extractBind lenStmt,
+                              extractBind constStmt,
+                              var)
       in
-         Vector.new1 lenStmt
+         Vector.new3 (lenStmt, constStmt, divStmt)
       end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
               => SOME (buildArrayAlloc (primArg, tArg))
-           | (Prim.Array_length , SOME tArg)
+           | (Prim.Array_length, SOME tArg)
               => SOME (buildContainerLength tArg)
+           | (Prim.Vector_length, SOME tArg)
+             => SOME (buildContainerLength tArg)
            | _ => NONE
    in
       result
