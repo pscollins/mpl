@@ -365,7 +365,19 @@ sig
       arr': 'a array = Array_toArray['a](arr)
       ...
 
-      TODO: port the remaining test cases over
+   10. `Array_uninit` on tuple types:
+      arr: ('a * 'a * ...) array = ...
+      _ = Array_uninit['a * 'a * ...](arr, n)
+      -->
+      (* by 1., arr is now 'a array *)
+      tupleSize: indexTy = tupleWidth('a * 'a * ...)
+      _: = Array_uninit['a](arr, n * tupleSize)
+      _: = Array_uninit['a](arr, n * tupleSize + 1)
+      ...
+      _: = Array_uninit['a](arr, n * tupleSize + tupleSize - 1)
+
+    Non-`PrimApp` expressions and also non-array/vector `PrimApp` expressions
+    always return `SOME (originalStatement)`
     *)
    val maybeFlattenStatementAoS: Statement.t ->
                                  Statement.t vector option
