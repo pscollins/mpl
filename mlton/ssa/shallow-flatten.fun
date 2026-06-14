@@ -879,8 +879,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
          val idxStmts = Vector.map (Vector.map (offsetStmts, extractBind),
                                     mkAdd (extractBind mulStmt))
          (* [x_{j} = x[j] for j in range(tupleWidth)] *)
-         val selectStmts = Vector.tabulate (tupleWidth,
-                                            mkSelect (Vector.first args, tArg))
+          val selectStmts = Vector.tabulate (tupleWidth,
+                                             mkSelect (Vector.sub (args, 2), tArg))
          (* _ := Array_update[elTy](arr, idx_{j}, x_{j}) for j in range(tupleWidth) *)
          val storeStmts = Vector.map2 (Vector.map (idxStmts, extractBind),
                                        Vector.map (selectStmts, extractBind),
