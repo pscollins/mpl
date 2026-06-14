@@ -855,6 +855,8 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
            | (Prim.Vector_length, SOME tArg)
              => SOME (buildContainerLength tArg)
            | (Prim.Array_sub _, SOME tArg)
+             => SOME (buildContainerLoad tArg)
+           | (Prim.Vector_sub, SOME tArg)
               => SOME (buildContainerLoad tArg)
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
