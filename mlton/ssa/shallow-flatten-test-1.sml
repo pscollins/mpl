@@ -200,52 +200,82 @@ in
       val _ = assert (Type.equals (bTy, Type.intInf), "block statement transformed to intInf")
    in () end)
 
-(* Test 4: deepFlattenTypeForPolicy normal cases *)
-   val _ = runTest ("Test 4: deepFlattenTypeForPolicy normal cases", fn () => let
+(* Test 4: deepFlattenTypeForConfig normal cases *)
+   val _ = runTest ("Test 4: deepFlattenTypeForConfig normal cases", fn () => let
       val intTy = Type.intInf
       val policy = ShallowFlatten.MaxWidth 2
+      val configSoA = (policy, ShallowFlatten.FlattenSoA)
+      val configAoS = (policy, ShallowFlatten.FlattenAoS)
 
-      (* 1. ('a * 'b) array -> 'a array * 'b array *)
+      (* 1. SoA: ('a * 'b) array -> 'a array * 'b array *)
       val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val e1 = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
-      val r1 = ShallowFlatten.deepFlattenTypeForPolicy policy t1
+      val r1 = ShallowFlatten.deepFlattenTypeForConfig configSoA t1
 
-      (* 2. (('a * 'b) array) ref -> ('a array * 'b array) ref *)
+      (* 2. SoA: (('a * 'b) array) ref -> ('a array * 'b array) ref *)
       val t2 = Type.reff t1
       val e2 = Type.reff e1
-      val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
+      val r2 = ShallowFlatten.deepFlattenTypeForConfig configSoA t2
 
-      (* 3. (('a * 'b) array) vector -> 'a array vector * 'b array vector *)
+      (* 3. SoA: (('a * 'b) array) vector -> 'a array vector * 'b array vector *)
       val t3 = Type.vector t1
       val e3 = Type.tuple (Vector.fromList [Type.vector (Type.array intTy), Type.vector (Type.array intTy)])
-      val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
+      val r3 = ShallowFlatten.deepFlattenTypeForConfig configSoA t3
+
+      (* 4. AoS: ('a * 'a) array -> 'a array *)
+      val t4 = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
+      val e4 = Type.array intTy
+      val r4 = ShallowFlatten.deepFlattenTypeForConfig configAoS t4
+
+      (* 5. AoS: (('a * 'a) array) ref -> ('a array) ref *)
+      val t5 = Type.reff t4
+      val e5 = Type.reff e4
+      val r5 = ShallowFlatten.deepFlattenTypeForConfig configAoS t5
    in
-      assertEqualTypes (r1, e1, t1, "t1 deepFlatten");
-      assertEqualTypes (r2, e2, t2, "t2 deepFlatten");
-      assertEqualTypes (r3, e3, t3, "t3 deepFlatten")
+      assertEqualTypes (r1, e1, t1, "t1 deepFlatten SoA");
+      assertEqualTypes (r2, e2, t2, "t2 deepFlatten SoA");
+      assertEqualTypes (r3, e3, t3, "t3 deepFlatten SoA");
+      assertEqualTypes (r4, e4, t4, "t4 deepFlatten AoS");
+      assertEqualTypes (r5, e5, t5, "t5 deepFlatten AoS")
    end)
 
-(* Test 5: deepFlattenTypeForPolicy edge cases *)
-   val _ = runTest ("Test 5: deepFlattenTypeForPolicy edge cases", fn () => let
+(* Test 4b: deepFlattenTypeForConfig error conditions *)
+   val _ = runTest ("Test 4b: deepFlattenTypeForConfig error conditions", fn () => let
+      val intTy = Type.intInf
+      val boolTy = Type.bool
+      val policy = ShallowFlatten.MaxWidth 2
+      val configAoS = (policy, ShallowFlatten.FlattenAoS)
+
+      (* AoS with different types: ('a * 'b) array -> raises InvalidConFlattening *)
+      val t1 = Type.array (Type.tuple (Vector.fromList [intTy, boolTy]))
+      val raised = (ShallowFlatten.deepFlattenTypeForConfig configAoS t1; false)
+                   handle ShallowFlatten.InvalidConFlattening => true
+   in
+      assert (raised, "Expected InvalidConFlattening for AoS with different element types")
+   end)
+
+(* Test 5: deepFlattenTypeForConfig edge cases *)
+   val _ = runTest ("Test 5: deepFlattenTypeForConfig edge cases", fn () => let
       val intTy = Type.intInf
       val policy = ShallowFlatten.MaxWidth 2
+      val config = (policy, ShallowFlatten.FlattenSoA)
 
       (* 1. Width > MaxWidth: (int * int * int) array -> (int * int * int) array *)
       val t1 = Type.array (Type.tuple (Vector.fromList [intTy, intTy, intTy]))
       val e1 = t1
-      val r1 = ShallowFlatten.deepFlattenTypeForPolicy policy t1
+      val r1 = ShallowFlatten.deepFlattenTypeForConfig config t1
 
       (* 2. Double nesting (requires convergence): (('a * 'b) array) array -> 'a array array * 'b array array *)
       val t2_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val t2 = Type.array t2_inner
       val e2 = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
-      val r2 = ShallowFlatten.deepFlattenTypeForPolicy policy t2
+      val r2 = ShallowFlatten.deepFlattenTypeForConfig config t2
 
       (* 3. Array of tuple of arrays (outer is flattenable): (('a array) * ('b array)) array -> ('a array) array * ('b array) array *)
       val t3_inner = Type.tuple (Vector.fromList [Type.array intTy, Type.array intTy])
       val t3 = Type.array t3_inner
       val e3 = Type.tuple (Vector.fromList [Type.array (Type.array intTy), Type.array (Type.array intTy)])
-      val r3 = ShallowFlatten.deepFlattenTypeForPolicy policy t3
+      val r3 = ShallowFlatten.deepFlattenTypeForConfig config t3
 
       (* 4. Triple nesting: ((('a * 'b) array) array) array -> 'a array array array * 'b array array array *)
       val t4_inner_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
@@ -253,7 +283,7 @@ in
       val t4 = Type.array t4_inner
       val e4 = Type.tuple (Vector.fromList [Type.array (Type.array (Type.array intTy)),
                                             Type.array (Type.array (Type.array intTy))])
-      val r4 = ShallowFlatten.deepFlattenTypeForPolicy policy t4
+      val r4 = ShallowFlatten.deepFlattenTypeForConfig config t4
 
       (* 5. Ref nesting: ((('a * 'b) array) array) ref -> ('a array array * 'b array array) ref *)
       val t5_inner = Type.array (Type.array (Type.tuple (Vector.fromList [intTy, intTy])))
@@ -261,7 +291,7 @@ in
       val e5_inner = Type.tuple (Vector.fromList [Type.array (Type.array intTy),
                                                   Type.array (Type.array intTy)])
       val e5 = Type.reff e5_inner
-      val r5 = ShallowFlatten.deepFlattenTypeForPolicy policy t5
+      val r5 = ShallowFlatten.deepFlattenTypeForConfig config t5
 
       (* 6. Alternating array/vector nesting: ((('a * 'b) array) vector) array -> 'a array vector array * 'b array vector array *)
       val t6_inner_inner = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
@@ -269,19 +299,20 @@ in
       val t6 = Type.array t6_inner
       val e6 = Type.tuple (Vector.fromList [Type.array (Type.vector (Type.array intTy)),
                                             Type.array (Type.vector (Type.array intTy))])
-      val r6 = ShallowFlatten.deepFlattenTypeForPolicy policy t6
+      val r6 = ShallowFlatten.deepFlattenTypeForConfig config t6
 
       (* 7. Tuple of array nesting (MaxWidth 3): (('a * 'b) array * 'c) array -> 'a array array * 'b array array * 'c array *)
       val policy3 = ShallowFlatten.MaxWidth 3
+      val config3 = (policy3, ShallowFlatten.FlattenSoA)
       val t7_array = Type.array (Type.tuple (Vector.fromList [intTy, intTy]))
       val t7_inner = Type.tuple (Vector.fromList [t7_array, intTy])
       val t7 = Type.array t7_inner
       val e7 = Type.tuple (Vector.fromList
                              [Type.tuple (Vector.fromList
-                                            [Type.array (Type.array intTy),
-                                             Type.array (Type.array intTy)]),
+                                             [Type.array (Type.array intTy),
+                                              Type.array (Type.array intTy)]),
                               Type.array intTy])
-      val r7 = ShallowFlatten.deepFlattenTypeForPolicy policy3 t7
+      val r7 = ShallowFlatten.deepFlattenTypeForConfig config3 t7
    in
       assertEqualTypes (r1, e1, t1, "t1 deepFlatten edge case");
       assertEqualTypes (r2, e2, t2, "t2 deepFlatten edge case");

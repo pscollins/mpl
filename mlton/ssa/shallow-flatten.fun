@@ -1108,12 +1108,12 @@ fun policyToString (policy: flattenPolicy) =
         MaxWidth w => concat ["MaxWidth:", Int.toString w]
      |  MaxWidthSameType w => concat ["MaxWidthSameType:", Int.toString w]
 
-fun deepFlattenTypeForPolicy (policy: flattenPolicy)
+fun deepFlattenTypeForConfig (policy: flattenPolicy, mechanism: flattenMechanism)
                              (t: Type.t): Type.t = let
     fun doFlatten t = let
        (* TODO: simplify? *)
        val t' =
-           applyConDecision FlattenSoA (getConDecisionForPolicy policy t, t)
+           applyConDecision mechanism (getConDecisionForPolicy policy t, t)
     in
        (* Iteratively apply to convergence *)
        if Type.equals (t, t') then t'
@@ -1122,7 +1122,7 @@ fun deepFlattenTypeForPolicy (policy: flattenPolicy)
     val t' = doFlatten t
     fun logThunk () = Layout.align [
            Layout.str
-               (String.concat ["deepFlattenTypeForPolicy(",
+               (String.concat ["deepFlattenTypeForConfig(",
                                policyToString policy, "):"]),
            Layout.str "old: ",
            Type.layout t,
@@ -1171,7 +1171,7 @@ end
 
 fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
                                    (s: Statement.t): Statement.t vector = let
-   val updateType = deepFlattenTypeForPolicy policy
+   val updateType = deepFlattenTypeForConfig (policy, FlattenSoA)
    fun updateTypesInExp exp =
        case exp of
            Exp.PrimApp {args, prim, targs} =>
@@ -1286,7 +1286,7 @@ fun flattenOnce (policy: flattenPolicy, mechanism: flattenMechanism) (p: Program
       Vector.concatV flattened
    end
    val flattener = {
-      updateType = deepFlattenTypeForPolicy policy,
+      updateType = deepFlattenTypeForConfig (policy, mechanism),
       updateStatements = flattenStatements
    }
    val p' = flattenProgram flattener p

@@ -67,7 +67,7 @@ sig
 
                (For now, only compatible with MaxWidthSameType policy)
              *)
-            | FlattenAoS
+             | FlattenAoS
 
    (* Should this `Type.t` flattened according to `policy`? *)
    val shouldFlattenType: flattenPolicy -> Type.t -> bool
@@ -93,8 +93,7 @@ sig
         ('a * 'b) array + FlattenSoA -> 'a array * 'b array
         ('a * 'a) array + FlattenAoS -> 'a array
    *)
-   val deepFlattenTypeForPolicy: (flattenPolicy, flattenMechanism)
-                                 -> Type.t -> Type.t
+   val deepFlattenTypeForConfig: (flattenPolicy * flattenMechanism) -> Type.t -> Type.t
 
    (* Returns `true` if `Statement.t` requires the `maybeFlattenStatement`
       transformation (below) under `policy`, `false` otherwise.
