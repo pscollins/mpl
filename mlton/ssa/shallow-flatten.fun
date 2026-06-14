@@ -763,6 +763,18 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = tArg,
                    var = SOME (Var.newString "loadRes")}
    end
+   (* _ := Array_update[tArg](arrVar, idxVar, valVar) *)
+   fun mkArrayStore (arrVar, primArg, tArg)
+                    (idxVar: Var.t, valVar: Var.t) = let
+      val storeExp = Exp.PrimApp {args = Vector.new3 (arrVar, idxVar, valVar),
+                                  prim = Prim.Array_update primArg,
+                                  targs = Vector.new1 tArg}
+   in
+      Statement.T {exp = storeExp,
+                   ty = Type.unit,
+                   var = NONE}
+   end
+
    (* dest: (ty1 * ty2* ...) := (x1, x2, ...)  *)
    fun mkTuple (stmts: Statement.t vector, dest: Var.t option) = let
       (* x1, x2, ... *)
@@ -774,6 +786,12 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.tuple tys,
                    var = dest}
    end
+   (* selectRes: ty := tuple[idx] *)
+   fun mkSelect (tuple: Var.t, ty: Type.t) (idx: int) =
+       Statement.T {exp = Exp.Select {offset = idx, tuple = tuple},
+                    ty = ty,
+                    var = SOME (Var.newString "selectRes")}
+
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
                                                                      Type.unit))
@@ -848,6 +866,33 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                      loadStmts,
                      Vector.new1 tupleStmt]
       end
+      (* arr[i*tupleWidth:i*(tupleWidth+1)-1] = x[0:tupleWidth-1] *)
+      fun buildArrayStore (primArg, tArg) = let
+         (* tupleSize: indexTy = tupleWidth *)
+         val constStmt = mkIndexConst tupleWidth
+         (* baseIdx: indexTy = tupleWidth * i *)
+         val mulStmt = mkMul (Vector.sub (args, 1),
+                              extractBind constStmt)
+         (* [val_{j} = j for j in range(tupleWidth)]  *)
+         val offsetStmts = Vector.tabulate (tupleWidth, mkIndexConst)
+         (* [idx_{j} = baseIdx + val_{j} for j in range(tupleWidth)]  *)
+         val idxStmts = Vector.map (Vector.map (offsetStmts, extractBind),
+                                    mkAdd (extractBind mulStmt))
+         (* [x_{j} = x[j] for j in range(tupleWidth)] *)
+         val selectStmts = Vector.tabulate (tupleWidth,
+                                            mkSelect (Vector.first args, tArg))
+         (* _ := Array_update[elTy](arr, idx_{j}, x_{j}) for j in range(tupleWidth) *)
+         val storeStmts = Vector.map2 (Vector.map (idxStmts, extractBind),
+                                       Vector.map (selectStmts, extractBind),
+                                       mkArrayStore (Vector.first args,
+                                                     primArg, tArg))
+      in
+         concatVecs [Vector.new2 (constStmt, mulStmt),
+                     offsetStmts,
+                     idxStmts,
+                     selectStmts,
+                     storeStmts]
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
@@ -859,7 +904,9 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
            | (Prim.Array_sub _, SOME tArg)
              => SOME (buildContainerLoad tArg)
            | (Prim.Vector_sub, SOME tArg)
-              => SOME (buildContainerLoad tArg)
+             => SOME (buildContainerLoad tArg)
+           | (Prim.Array_update primArg, SOME tArg)
+              => SOME (buildArrayStore (primArg, tArg))
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
