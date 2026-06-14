@@ -658,55 +658,64 @@ in
    else NONE
 end
 
+fun getUniqueElementOrDefault (xs: 'a vector, default: 'a): 'a =
+    if Vector.size xs = 1 then
+       Vector.first xs
+    else default
+
 fun maybeFlattenStatementAoS (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
    (* dest := Array_alloc[tArg](len) *)
-   fun mkArrayAlloc (primArg, tArg: Type.t, len: Var.t, dest: Var.t) = let
+   fun mkArrayAlloc (primArg, tArg: Type.t, len: Var.t,
+                     dest: Var.t option) = let
       val allocExp = Exp.PrimApp {args = Vector.new1 len,
                                   prim = Prim.Array_alloc primArg,
                                   targs = Vector.new1 tArg}
    in
-      Statement.t {exp = allocExp,
-                   ty = Type.array targ,
-                   var = SOME dest}
+      Statement.T {exp = allocExp,
+                   ty = Type.array tArg,
+                   var = dest}
    end
    (* indexConst: indexTy := intVal *)
    fun mkIndexConst (intVal: int): Statement.t = let
       val intWordX = WordX.fromInt (intVal, WordSize.seqIndex ())
-      val intExp = Exp.const (Const.word intWordX)
+      val intExp = Exp.Const (Const.word intWordX)
    in
-      Statement.T {exp = rhsExp,
-                   ty = WordSize.seqIndex (),
+      Statement.T {exp = intExp,
+                   ty = Type.word (WordSize.seqIndex ()),
                    var = SOME (Var.newString "indexConst")}
    end
    (* mulRes := lhs * rhs *)
    fun mkMul (lhs: Var.t, rhs: Var.t): Statement.t = let
       val mulExp = Exp.PrimApp {args = Vector.new2 (lhs, rhs),
-                                prim = Prim.Word_modl,
-                                targs = Vector.new1 (WordSize.seqIndex ())}
+                                (* TODO(pscollins): Is `signed = false` correct? *)
+                                prim = Prim.Word_mul (WordSize.seqIndex (),
+                                                      {signed = false}),
+                                targs = Vector.new0 ()}
    in
       Statement.T {exp = mulExp,
-                   ty = WordSize.seqIndex (),
-                   var = SOME (Var.newSTring "mulRes")}
+                   ty = Type.word (WordSize.seqIndex ()),
+                   var = SOME (Var.newString "mulRes")}
    end
-   fun doPrimApp (args, prim, targ) = let
-      val tupleWidth = getContainerOfTupleTypeWidth targ
+   fun doPrimApp (args, prim, targs) = let
+      val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
+                                                                     Type.unit))
       fun buildArrayAlloc (primArg, tArg) = let
          (* tupleSize: indexTy = tupleWidth *)
-         val constStmt = mkConst tupleWidth
+         val constStmt = mkIndexConst tupleWidth
          (* newLen = n * tupleWidth *)
          val mulStmt = mkMul (Vector.first args,
                               extractBind constStmt)
          (* arr = Array_alloc[elTy](newLen) *)
          val allocStmt = mkArrayAlloc (primArg, tArg,
-                                      extractBind mulStmt, var)
+                                       extractBind mulStmt, var)
       in
-         Vector.new3 (constSTmt, mulStmt, allocStmt)
+         Vector.new3 (constStmt, mulStmt, allocStmt)
       end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
-              => SOME (buildArrayAlloc (primArg, taArg))
+              => SOME (buildArrayAlloc (primArg, tArg))
             | _ => NONE
    in
       result
