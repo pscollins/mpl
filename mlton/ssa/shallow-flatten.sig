@@ -6,11 +6,14 @@ sig
      which iteratively runs `flattenOnce` until convergence. The behavior of
      this call is controlled by the following flags:
 
-       -shallow-flatten-max-iters=N: limit the number of iterations to N
+       -shallow-flatten-max-iters=N
+           limits the number of iterations to N
 
-       -shallow-flatten-policy=maxWidth:$N sets the policy to `MaxWidth(n)`
+       -shallow-flatten-policy=[maxWidth|maxWidthSameType]:$N
+           sets the policy to `MaxWidth(N)`/`MaxWidthSameType(N)`
 
-       -shallow-flatten-mechanism=[aos|soa]: sets the flattenMechanism
+       -shallow-flatten-mechanism=[aos|soa]:
+           sets the flattenMechanism
     *)
    include SSA_TRANSFORM
    structure FlattenUtil: FLATTEN_UTIL
