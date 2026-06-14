@@ -1706,5 +1706,339 @@ in
                | _ => raise TestFail "s0 should be Array_toArray PrimApp"
    in () end)
 
+   (* Test 32: maybeFlattenStatementAoS - Array_uninit on non-tuple type *)
+   val _ = runTest ("Test 32: maybeFlattenStatementAoS - Array_uninit on non-tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val idxVar = Var.fromString "idx"
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninit, [arrVar, idxVar], [intTy]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_uninit on non-tuple should return NONE")
+   in () end)
+
+   (* Test 33: maybeFlattenStatementAoS - Array_uninit on mixed tuple type *)
+   val _ = runTest ("Test 33: maybeFlattenStatementAoS - Array_uninit on mixed tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val idxVar = Var.fromString "idx"
+      val mixedTupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninit, [arrVar, idxVar], [mixedTupleTy]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_uninit on mixed tuple should return NONE")
+   in () end)
+
+   (* Test 34: maybeFlattenStatementAoS - Array_uninit on identical tuple (width 2) *)
+   val _ = runTest ("Test 34: maybeFlattenStatementAoS - Array_uninit on identical tuple (width 2)", fn () => let
+      val arrVar = Var.fromString "arr"
+      val idxVar = Var.fromString "idx"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninit, [arrVar, idxVar], [tuple2Ty]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_uninit on identical tuple (width 2) should return SOME"
+      val _ = assert (Vector.length stmts = 8, "should return 8 statements")
+
+      (* s0: const size = 2 *)
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0, "s0 should bind a variable")
+      val flatSizeConstVar = Option.valOf v0
+      val _ = case e0 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s0 Const size");
+                    assert (WordX.toIntInf wx = 2, "s0 constant should be 2")
+                 )
+               | _ => raise TestFail "s0 should be Word Const"
+
+      (* s1: offset = idxVar * 2 *)
+      val s1 = Vector.sub (stmts, 1)
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
+      val Statement.T {exp = e1, var = v1', ...} = s1
+      val _ = assert (Option.isSome v1', "s1 should bind a variable")
+      val offsetVar = Option.valOf v1'
+      val _ = case e1 of
+                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s1 Word_mul size");
+                    assert (Vector.length targs = 0, "s1 targs empty");
+                    assert (Vector.length args = 2, "s1 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), idxVar), "s1 first arg should be idxVar");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s1 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s1 should be Word_mul PrimApp"
+
+      (* s2: const 0 *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, seqIndexTy, "s2 type should be seqIndexTy")
+      val Statement.T {exp = e2, var = v2, ...} = s2
+      val _ = assert (Option.isSome v2, "s2 should bind a variable")
+      val const0Var = Option.valOf v2
+      val _ = case e2 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s2 Const size");
+                    assert (WordX.toIntInf wx = 0, "s2 constant should be 0")
+                 )
+               | _ => raise TestFail "s2 should be Word Const"
+
+      (* s3: const 1 *)
+      val s3 = Vector.sub (stmts, 3)
+      val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
+      val Statement.T {exp = e3, var = v3', ...} = s3
+      val _ = assert (Option.isSome v3', "s3 should bind a variable")
+      val const1Var = Option.valOf v3'
+      val _ = case e3 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
+                 )
+               | _ => raise TestFail "s3 should be Word Const"
+
+      (* s4: add = offset + 0 *)
+      val s4 = Vector.sub (stmts, 4)
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
+      val Statement.T {exp = e4, var = v4', ...} = s4
+      val _ = assert (Option.isSome v4', "s4 should bind a variable")
+      val offsetPlus0Var = Option.valOf v4'
+      val _ = case e4 of
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s4 Word_add size");
+                    assert (Vector.length targs = 0, "s4 targs empty");
+                    assert (Vector.length args = 2, "s4 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s4 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s4 second arg should be const0Var")
+                 )
+               | _ => raise TestFail "s4 should be Word_add PrimApp"
+
+      (* s5: add = offset + 1 *)
+      val s5 = Vector.sub (stmts, 5)
+      val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
+      val Statement.T {exp = e5, var = v5', ...} = s5
+      val _ = assert (Option.isSome v5', "s5 should bind a variable")
+      val offsetPlus1Var = Option.valOf v5'
+      val _ = case e5 of
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s5 second arg should be const1Var")
+                 )
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
+
+      (* s6: Array_uninit['a](arr, offset + 0) *)
+      val s6 = Vector.sub (stmts, 6)
+      val _ = assertType (s6, Type.unit, "s6 type should be unit")
+      val Statement.T {exp = e6, var = v6', ...} = s6
+      val _ = assert (Option.isSome v6', "s6 should bind a variable")
+      val _ = case e6 of
+                 Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s6 targ should be intTy");
+                    assert (Vector.length args = 2, "s6 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s6 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s6 second arg should be offsetPlus0Var")
+                 )
+               | _ => raise TestFail "s6 should be Array_uninit PrimApp"
+
+      (* s7: Array_uninit['a](arr, offset + 1) *)
+      val s7 = Vector.sub (stmts, 7)
+      val _ = assertType (s7, Type.unit, "s7 type should be unit")
+      val Statement.T {exp = e7, var = v7', ...} = s7
+      val _ = assert (Option.isSome v7', "s7 should bind a variable")
+      val _ = case e7 of
+                 Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s7 targ should be intTy");
+                    assert (Vector.length args = 2, "s7 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s7 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s7 second arg should be offsetPlus1Var")
+                 )
+               | _ => raise TestFail "s7 should be Array_uninit PrimApp"
+   in () end)
+
+   (* Test 35: maybeFlattenStatementAoS - Array_uninit on identical tuple (width 3) *)
+   val _ = runTest ("Test 35: maybeFlattenStatementAoS - Array_uninit on identical tuple (width 3)", fn () => let
+      val arrVar = Var.fromString "arr"
+      val idxVar = Var.fromString "idx"
+      val tuple3Ty = Type.tuple (Vector.fromList [word32Ty, word32Ty, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_uninit, [arrVar, idxVar], [tuple3Ty]),
+         ty = Type.unit,
+         var = NONE
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_uninit on identical tuple (width 3) should return SOME"
+      val _ = assert (Vector.length stmts = 11, "should return 11 statements")
+
+      (* s0: const size = 3 *)
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, seqIndexTy, "s0 type should be seqIndexTy")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0, "s0 should bind a variable")
+      val flatSizeConstVar = Option.valOf v0
+      val _ = case e0 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s0 Const size");
+                    assert (WordX.toIntInf wx = 3, "s0 constant should be 3")
+                 )
+               | _ => raise TestFail "s0 should be Word Const"
+
+      (* s1: offset = idxVar * 3 *)
+      val s1 = Vector.sub (stmts, 1)
+      val _ = assertType (s1, seqIndexTy, "s1 type should be seqIndexTy")
+      val Statement.T {exp = e1, var = v1', ...} = s1
+      val _ = assert (Option.isSome v1', "s1 should bind a variable")
+      val offsetVar = Option.valOf v1'
+      val _ = case e1 of
+                 Exp.PrimApp {prim = Prim.Word_mul (ws, {signed = false}), args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s1 Word_mul size");
+                    assert (Vector.length targs = 0, "s1 targs empty");
+                    assert (Vector.length args = 2, "s1 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), idxVar), "s1 first arg should be idxVar");
+                    assert (Var.equals (Vector.sub (args, 1), flatSizeConstVar), "s1 second arg should be flatSizeConstVar")
+                 )
+               | _ => raise TestFail "s1 should be Word_mul PrimApp"
+
+      (* s2: const 0 *)
+      val s2 = Vector.sub (stmts, 2)
+      val _ = assertType (s2, seqIndexTy, "s2 type should be seqIndexTy")
+      val Statement.T {exp = e2, var = v2, ...} = s2
+      val _ = assert (Option.isSome v2, "s2 should bind a variable")
+      val const0Var = Option.valOf v2
+      val _ = case e2 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s2 Const size");
+                    assert (WordX.toIntInf wx = 0, "s2 constant should be 0")
+                 )
+               | _ => raise TestFail "s2 should be Word Const"
+
+      (* s3: const 1 *)
+      val s3 = Vector.sub (stmts, 3)
+      val _ = assertType (s3, seqIndexTy, "s3 type should be seqIndexTy")
+      val Statement.T {exp = e3, var = v3', ...} = s3
+      val _ = assert (Option.isSome v3', "s3 should bind a variable")
+      val const1Var = Option.valOf v3'
+      val _ = case e3 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s3 Const size");
+                    assert (WordX.toIntInf wx = 1, "s3 constant should be 1")
+                 )
+               | _ => raise TestFail "s3 should be Word Const"
+
+      (* s4: const 2 *)
+      val s4 = Vector.sub (stmts, 4)
+      val _ = assertType (s4, seqIndexTy, "s4 type should be seqIndexTy")
+      val Statement.T {exp = e4, var = v4', ...} = s4
+      val _ = assert (Option.isSome v4', "s4 should bind a variable")
+      val const2Var = Option.valOf v4'
+      val _ = case e4 of
+                 Exp.Const (Const.Word wx) => (
+                    assert (WordSize.equals (WordX.size wx, seqIndexSize), "s4 Const size");
+                    assert (WordX.toIntInf wx = 2, "s4 constant should be 2")
+                 )
+               | _ => raise TestFail "s4 should be Word Const"
+
+      (* s5: add = offset + 0 *)
+      val s5 = Vector.sub (stmts, 5)
+      val _ = assertType (s5, seqIndexTy, "s5 type should be seqIndexTy")
+      val Statement.T {exp = e5, var = v5', ...} = s5
+      val _ = assert (Option.isSome v5', "s5 should bind a variable")
+      val offsetPlus0Var = Option.valOf v5'
+      val _ = case e5 of
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s5 Word_add size");
+                    assert (Vector.length targs = 0, "s5 targs empty");
+                    assert (Vector.length args = 2, "s5 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s5 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const0Var), "s5 second arg should be const0Var")
+                 )
+               | _ => raise TestFail "s5 should be Word_add PrimApp"
+
+      (* s6: add = offset + 1 *)
+      val s6 = Vector.sub (stmts, 6)
+      val _ = assertType (s6, seqIndexTy, "s6 type should be seqIndexTy")
+      val Statement.T {exp = e6, var = v6', ...} = s6
+      val _ = assert (Option.isSome v6', "s6 should bind a variable")
+      val offsetPlus1Var = Option.valOf v6'
+      val _ = case e6 of
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s6 Word_add size");
+                    assert (Vector.length targs = 0, "s6 targs empty");
+                    assert (Vector.length args = 2, "s6 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s6 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const1Var), "s6 second arg should be const1Var")
+                 )
+               | _ => raise TestFail "s6 should be Word_add PrimApp"
+
+      (* s7: add = offset + 2 *)
+      val s7 = Vector.sub (stmts, 7)
+      val _ = assertType (s7, seqIndexTy, "s7 type should be seqIndexTy")
+      val Statement.T {exp = e7, var = v7', ...} = s7
+      val _ = assert (Option.isSome v7', "s7 should bind a variable")
+      val offsetPlus2Var = Option.valOf v7'
+      val _ = case e7 of
+                 Exp.PrimApp {prim = Prim.Word_add ws, args, targs} => (
+                    assert (WordSize.equals (ws, seqIndexSize), "s7 Word_add size");
+                    assert (Vector.length targs = 0, "s7 targs empty");
+                    assert (Vector.length args = 2, "s7 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), offsetVar), "s7 first arg should be offsetVar");
+                    assert (Var.equals (Vector.sub (args, 1), const2Var), "s7 second arg should be const2Var")
+                 )
+               | _ => raise TestFail "s7 should be Word_add PrimApp"
+
+      (* s8: Array_uninit[word32](arr, offset + 0) *)
+      val s8 = Vector.sub (stmts, 8)
+      val _ = assertType (s8, Type.unit, "s8 type should be unit")
+      val Statement.T {exp = e8, var = v8', ...} = s8
+      val _ = assert (Option.isSome v8', "s8 should bind a variable")
+      val _ = case e8 of
+                 Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s8 targ should be word32Ty");
+                    assert (Vector.length args = 2, "s8 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s8 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus0Var), "s8 second arg should be offsetPlus0Var")
+                 )
+               | _ => raise TestFail "s8 should be Array_uninit PrimApp"
+
+      (* s9: Array_uninit[word32](arr, offset + 1) *)
+      val s9 = Vector.sub (stmts, 9)
+      val _ = assertType (s9, Type.unit, "s9 type should be unit")
+      val Statement.T {exp = e9, var = v9', ...} = s9
+      val _ = assert (Option.isSome v9', "s9 should bind a variable")
+      val _ = case e9 of
+                 Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s9 targ should be word32Ty");
+                    assert (Vector.length args = 2, "s9 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s9 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus1Var), "s9 second arg should be offsetPlus1Var")
+                 )
+               | _ => raise TestFail "s9 should be Array_uninit PrimApp"
+
+      (* s10: Array_uninit[word32](arr, offset + 2) *)
+      val s10 = Vector.sub (stmts, 10)
+      val _ = assertType (s10, Type.unit, "s10 type should be unit")
+      val Statement.T {exp = e10, var = v10', ...} = s10
+      val _ = assert (Option.isSome v10', "s10 should bind a variable")
+      val _ = case e10 of
+                 Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s10 targ should be word32Ty");
+                    assert (Vector.length args = 2, "s10 args length 2");
+                    assert (Var.equals (Vector.sub (args, 0), arrVar), "s10 first arg should be arrVar");
+                    assert (Var.equals (Vector.sub (args, 1), offsetPlus2Var), "s10 second arg should be offsetPlus2Var")
+                 )
+               | _ => raise TestFail "s10 should be Array_uninit PrimApp"
+   in () end)
+
    val _ = summarize ()
 end
