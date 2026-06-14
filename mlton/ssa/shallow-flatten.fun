@@ -74,6 +74,7 @@ fun getContainerOfTupleTypeWidth (t: Type.t): int =
       | Type.Vector t' => getTupleTypeWidth t'
       | _ => 0
 
+(* Callers rely on the fact that an empty container returns *false* *)
 fun isAllSame (cmp: 'a * 'a -> bool) (xs: 'a vector): bool = let
    fun reduce (curr: 'a, prev: 'a option): 'a option =
        case prev of
@@ -176,6 +177,9 @@ fun applyConDecision (mech: flattenMechanism)
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
+   fun getUniqueElType ts =
+       if isAllSame Type.equals ts then
+          
    fun walk (t: Type.t, cd: conDecision): Type.t =
        case (Type.dest t, cd) of
            (* Single-child, flattenable nodes *)
@@ -214,7 +218,13 @@ fun applyConDecision (mech: flattenMechanism)
            Type.tuple (Vector.map2 (elTypes,
                                     elDecisions,
                                     mkContainer o walk))
-           | _ => Error.unimplemented "TODO"
+         | FlattenAoS =>
+           (* ['a, 'a, 'a] + [cd1, cd1, cd1] + Type.array
+              ->
+              (walk ('a, cd1)) array
+           *)
+           mkContainer (walk (getUniqueElType elTypes,
+                              getUniqueConDecision conDecisions))
 
    val _ = ()
 in
