@@ -1648,5 +1648,63 @@ in
                | _ => raise TestFail "s0 should be false ConApp"
    in () end)
 
+   (* Test 29: maybeFlattenStatementAoS - Array_toArray on non-tuple type *)
+   val _ = runTest ("Test 29: maybeFlattenStatementAoS - Array_toArray on non-tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val resVar = Var.fromString "res"
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toArray, [arrVar], [intTy]),
+         ty = Type.array intTy,
+         var = SOME resVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_toArray on non-tuple should return NONE")
+   in () end)
+
+   (* Test 30: maybeFlattenStatementAoS - Array_toArray on mixed tuple type *)
+   val _ = runTest ("Test 30: maybeFlattenStatementAoS - Array_toArray on mixed tuple type", fn () => let
+      val arrVar = Var.fromString "arr"
+      val resVar = Var.fromString "res"
+      val mixedTupleTy = Type.tuple (Vector.fromList [intTy, word32Ty])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toArray, [arrVar], [mixedTupleTy]),
+         ty = Type.array mixedTupleTy,
+         var = SOME resVar
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val _ = assert (Option.isNone res, "Array_toArray on mixed tuple should return NONE")
+   in () end)
+
+   (* Test 31: maybeFlattenStatementAoS - Array_toArray on identical tuple (width 2) *)
+   val _ = runTest ("Test 31: maybeFlattenStatementAoS - Array_toArray on identical tuple (width 2)", fn () => let
+      val arr'Var = Var.fromString "arr'"
+      val arrVar = Var.fromString "arr"
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val s = Statement.T {
+         exp = primApp (Prim.Array_toArray, [arrVar], [tuple2Ty]),
+         ty = Type.array tuple2Ty,
+         var = SOME arr'Var
+      }
+      val res = ShallowFlatten.maybeFlattenStatementAoS s
+      val stmts = case res of
+                     SOME s => s
+                   | NONE => raise TestFail "Array_toArray on identical tuple (width 2) should return SOME"
+      val _ = assert (Vector.length stmts = 1, "should return 1 statement")
+
+      val s0 = Vector.sub (stmts, 0)
+      val _ = assertType (s0, Type.array intTy, "s0 type should be array of element type")
+      val Statement.T {exp = e0, var = v0, ...} = s0
+      val _ = assert (Option.isSome v0 andalso Var.equals (Option.valOf v0, arr'Var),
+                      "s0 should bind original variable")
+      val _ = case e0 of
+                 Exp.PrimApp {prim = Prim.Array_toArray, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), arrVar),
+                            "s0 arg should be arrVar");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy),
+                            "s0 targ should be element type")
+                 )
+               | _ => raise TestFail "s0 should be Array_toArray PrimApp"
+   in () end)
+
    val _ = summarize ()
 end

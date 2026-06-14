@@ -257,8 +257,7 @@ sig
    10. `Array_uninit` on tuple types:
       arr: ('a * 'b * ...) array = ...
       _ = Array_uninit[('a * 'b * ...)](arr, n)
-      -->
-      (* by 1., arr is now 'a array * b array * ... *)
+      -->      (* by 1., arr is now 'a array * b array * ... *)
       arr_a: 'a array = select (arr, n)
       arr_b: 'b array = select (arr, 1)
       _: = Array_uninit['a](arr_a, n)
@@ -354,9 +353,17 @@ sig
 
     8. `Array_uninitIsNop` on tuple types:
       arr: ('a * 'a * ...) array = ...
-      isNop: bool = Array_uninitIsNop[('a * 'a * ...) array](arr)
+      isNop: bool = Array_uninitIsNop['a * 'a * ...](arr)
       -->
       isNop: bool = false
+
+    9. `Array_toArray` on tuple types:
+      arr: ('a * 'a * ...) array = ...
+      arr': ('a * 'a * ...) array = Array_toArray['a * 'a * ...](arr)
+      -->
+      (* by 1., arr is now 'a array *)
+      arr': 'a array = Array_toArray['a](arr)
+      ...
 
       TODO: port the remaining test cases over
     *)

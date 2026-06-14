@@ -801,6 +801,16 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.vector tArg,
                    var = dest}
    end
+   (* dest := Array_toArray[tArg](arrVar) *)
+   fun mkToArray (arrVar: Var.t, tArg: Type.t, dest: Var.t option) = let
+      val toArrExp = Exp.PrimApp {args = Vector.new1 arrVar,
+                                  prim = Prim.Array_toArray,
+                                  targs = Vector.new1 tArg}
+   in
+      Statement.T {exp = toArrExp,
+                   ty = Type.vector tArg,
+                   var = dest}
+   end
 
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
@@ -923,6 +933,12 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          Vector.new1 assignStmt
       end
+      (* var := Array_toArray[tArg](arr) *)
+      fun buildArrayToArray tArg = let
+         val toArrayStmt = mkToArray (Vector.first args, tArg, var)
+      in
+         Vector.new1 toArrayStmt
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
@@ -940,7 +956,14 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
            | (Prim.Array_toVector, SOME tArg)
              => SOME (buildArrayToVector tArg)
            | (Prim.Array_uninitIsNop, SOME tArg)
+             (* TODO(pscollins): The pattern match is a bit different here than
+                in the SoA case -- the SoA version incorrectly thinks that the
+                type argument is the array type when it should be the element
+                type, so the SoA version effectively hardcodes this to `false`
+                for all arrays in the program. Revisit. *)
              => SOME (buildArrayUninitIsNop ())
+           | (Prim.Array_toArray, SOME tArg)
+             => SOME (buildArrayToArray tArg)
            | _ => NONE
       val _ = Control.diagnostic (mkLogResultThunk result)
    in
