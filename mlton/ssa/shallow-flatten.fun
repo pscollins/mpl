@@ -170,6 +170,17 @@ fun getUniqueElement (xs: 'a vector): 'a =
        Vector.first xs
     else Error.bug ("Bad length: " ^ Int.toString (Vector.length xs))
 
+fun conDecisionEquals (l: conDecision, r: conDecision): bool = let
+   fun checkSame (ls: conDecision vector, rs: conDecision vector) =
+       Vector.length ls = Vector.length rs andalso
+       Vector.forall2 (ls, rs, conDecisionEquals)
+in
+   case (l, r) of
+       (PreserveNode ls, PreserveNode rs) => checkSame (ls, rs)
+     | (FlattenNode ls, FlattenNode rs) => checkSame (ls, rs)
+     | _ => false
+end
+
 exception InvalidConFlattening
 fun applyConDecision (mech: flattenMechanism)
                      (cd: conDecision,
@@ -177,9 +188,16 @@ fun applyConDecision (mech: flattenMechanism)
    fun assertEmpty xs =
        if Vector.length xs = 0 then ()
        else raise InvalidConFlattening
-   fun getUniqueElType ts =
+   fun getAllSamElType ts =
        if isAllSame Type.equals ts then
-          
+          Vector.first ts
+       else raise InvalidConFlattening
+   fun getAllSameConDecision cds =
+       (* Note this can be slow in theory, but in practice the number of nested
+          flattenings is unlikely to be large *)
+       if isAllSame conDecisionEquals cds then
+          Vector.first cds
+       else raise InvalidConFlattening
    fun walk (t: Type.t, cd: conDecision): Type.t =
        case (Type.dest t, cd) of
            (* Single-child, flattenable nodes *)
@@ -223,8 +241,8 @@ fun applyConDecision (mech: flattenMechanism)
               ->
               (walk ('a, cd1)) array
            *)
-           mkContainer (walk (getUniqueElType elTypes,
-                              getUniqueConDecision conDecisions))
+           mkContainer (walk (getAllSamElType elTypes,
+                              getAllSameConDecision elDecisions))
 
    val _ = ()
 in
