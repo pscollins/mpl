@@ -234,6 +234,17 @@ fun isContainerPrim prim =
     isArrayPrim prim orelse
     isVectorPrim prim
 
+datatype containerType = ArrayType
+                      | VectorType
+
+
+fun getContainerType prim =
+    case (isArrayPrim prim, isVectorPrim prim) of
+        (true, false) => ArrayType
+      | (false, true) => VectorType
+      | _ =>  Error.bug (concat ["Not container prim: ",
+                                 Prim.toString prim])
+
 (* Given the `targs` of a vector/array, returns the corresponding flattened type
 
     {('a * 'b), Prim.Array_...} -> 'a array * 'b array
@@ -665,6 +676,10 @@ fun getUniqueElementOrDefault (xs: 'a vector, default: 'a): 'a =
 
 fun maybeFlattenStatementAoS (s: Statement.t) = let
    val Statement.T {exp, ty, var} = s
+   fun getLenPrim containerType =
+       case containerType of
+           ArrayType => Prim.Array_length
+         | VectorType => Prim.Vector_length
    (* dest := Array_alloc[tArg](len) *)
    fun mkArrayAlloc (primArg, tArg: Type.t, len: Var.t,
                      dest: Var.t option) = let
@@ -697,6 +712,16 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                    ty = Type.word (WordSize.seqIndex ()),
                    var = SOME (Var.newString "mulRes")}
    end
+   (* dest := {Array,Vector}_length[tArg](arg) *)
+   fun mkContainerLen (containerType, args, tArg) = let
+      val lenExp = Exp.PrimApp {args = args,
+                                prim = getLenPrim containerType,
+                                targs = Vector.new1 tArg}
+   in
+      Statement.T {exp = lenExp,
+                   ty = ty,
+                   var = var}
+   end
    fun doPrimApp (args, prim, targs) = let
       val tupleWidth = getTupleTypeWidth (getUniqueElementOrDefault (targs,
                                                                      Type.unit))
@@ -712,11 +737,20 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          Vector.new3 (constStmt, mulStmt, allocStmt)
       end
+      fun buildContainerLength tArg = let
+         (* n = Array_length[elTy](arr) *)
+         val lenStmt = mkContainerLen (getContainerType prim,
+                                       args, tArg)
+      in
+         Vector.new1 lenStmt
+      end
       val result =
           case (prim, getUniqueAosTArg (targs)) of
               (Prim.Array_alloc primArg, SOME tArg)
               => SOME (buildArrayAlloc (primArg, tArg))
-            | _ => NONE
+           | (Prim.Array_length , SOME tArg)
+              => SOME (buildContainerLength tArg)
+           | _ => NONE
    in
       result
    end
