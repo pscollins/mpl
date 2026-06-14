@@ -679,9 +679,9 @@ fun getLenPrim (ct: containerType) =
            ArrayType => Prim.Array_length
          | VectorType => Prim.Vector_length
 
-fun mkContainerTypeOf (ct: ContainerType, elTy: Type.t) =
+fun mkContainerTypeOf (ct: containerType, elTy: Type.t): Type.t =
     case ct of
-        ArrayType => Type.Array elTy
+        ArrayType => Type.array elTy
       | VectorType => Type.vector elTy
 
 fun maybeFlattenStatementAoS (s: Statement.t) = let
@@ -732,9 +732,13 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
    end
    (* addRes := lhs + rhs *)
    fun mkAdd (lhs: Var.t) (rhs: Var.t): Statement.t = let
-      val _ = ()
+      val addExp = Exp.PrimApp {args = Vector.new2 (lhs, rhs),
+                                prim = Prim.Word_add (WordSize.seqIndex ()),
+                                targs = Vector.new0 ()}
    in
-      Error.unimplemented "TODO"
+      Statement.T {exp = addExp,
+                   ty = Type.word (WordSize.seqIndex ()),
+                   var = SOME (Var.newString "addRes")}
    end
    (* newLen := {Array,Vector}_length[tArg](arg) *)
    fun mkContainerLen (containerType, args, tArg) = let
@@ -755,7 +759,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
                                 targs = Vector.new1 tArg}
    in
       Statement.T {exp = subExp,
-                   ty = mkContainerTypeOf (containerType, tArg),
+                   ty = mkContainerTypeOf (getContainerType loadPrim, tArg),
                    var = SOME (Var.newString "loadRes")}
    end
    (* dest: (ty1 * ty2* ...) := (x1, x2, ...)  *)
@@ -765,7 +769,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       (* t1, t2, ... *)
       val tys = Vector.map (stmts, extractType)
    in
-      Statement.T {exp = Exp.tuple vars,
+      Statement.T {exp = Exp.Tuple vars,
                    ty = Type.tuple tys,
                    var = dest}
    end
@@ -784,7 +788,7 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
       in
          Vector.new3 (constStmt, mulStmt, allocStmt)
       end
-      fun buildContainerLength (containerType, tArg) = let
+      fun buildContainerLength tArg = let
          (* tupleSize: indexTy = tupleWidth *)
          val constStmt = mkIndexConst tupleWidth
          (* newLen = Array_length[elTy](arr) *)
@@ -802,16 +806,18 @@ fun maybeFlattenStatementAoS (s: Statement.t) = let
          (* tupleSize: indexTy = tupleWidth *)
          val constStmt = mkIndexConst tupleWidth
          (* baseIdx: indexTy = tupleWidth * i *)
-         val mulStmt = mkMul (Vector.second args,
+         val mulStmt = mkMul (Vector.sub (args, 1),
                               extractBind constStmt)
-         (* [idx_{j} = baseIdx + j for j in range(tupleWidth)]  *)
-         val idxStmts = Vector.tabulate (tupleWidth, mkAdd mulStmt)
+         (* [val_{j} = j for j in range(tupleWidth)]  *)
+         val offsetStmts = Vector.tabulate (tupleWidth, mkIndexConst)
+         (* [idx_{j} = baseIdx + val_{j} for j in range(tupleWidth)]  *)
+         val idxStmts = Vector.map (Vector.map (offsetStmts, extractBind),
+                                    mkAdd (extractBind mulStmt))
          (* [x_{j} = Array_sub[elTy](x, j) for j in range(tupleWidth) *)
          val loadStmts = Vector.map (Vector.map (idxStmts, extractBind),
                                      (* `prim` is `{Array,Vector}_sub` (maybe
                                      with a `primArg`) *)
                                      mkContainerLoad (prim,
-                                                      primArg,
                                                       Vector.first args, tArg))
          (* x = (x_0, x_1, ...) *)
          val tupleStmt = mkTuple (loadStmts, var)
