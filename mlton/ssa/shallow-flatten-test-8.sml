@@ -1840,7 +1840,7 @@ in
       val s6 = Vector.sub (stmts, 6)
       val _ = assertType (s6, Type.unit, "s6 type should be unit")
       val Statement.T {exp = e6, var = v6', ...} = s6
-      val _ = assert (Option.isSome v6', "s6 should bind a variable")
+      val _ = assert (Option.isNone v6', "s6 should not bind a variable")
       val _ = case e6 of
                  Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s6 targ should be intTy");
@@ -1854,7 +1854,7 @@ in
       val s7 = Vector.sub (stmts, 7)
       val _ = assertType (s7, Type.unit, "s7 type should be unit")
       val Statement.T {exp = e7, var = v7', ...} = s7
-      val _ = assert (Option.isSome v7', "s7 should bind a variable")
+      val _ = assert (Option.isNone v7', "s7 should not bind a variable")
       val _ = case e7 of
                  Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "s7 targ should be intTy");
@@ -2001,7 +2001,7 @@ in
       val s8 = Vector.sub (stmts, 8)
       val _ = assertType (s8, Type.unit, "s8 type should be unit")
       val Statement.T {exp = e8, var = v8', ...} = s8
-      val _ = assert (Option.isSome v8', "s8 should bind a variable")
+      val _ = assert (Option.isNone v8', "s8 should not bind a variable")
       val _ = case e8 of
                  Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s8 targ should be word32Ty");
@@ -2015,7 +2015,7 @@ in
       val s9 = Vector.sub (stmts, 9)
       val _ = assertType (s9, Type.unit, "s9 type should be unit")
       val Statement.T {exp = e9, var = v9', ...} = s9
-      val _ = assert (Option.isSome v9', "s9 should bind a variable")
+      val _ = assert (Option.isNone v9', "s9 should not bind a variable")
       val _ = case e9 of
                  Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s9 targ should be word32Ty");
@@ -2029,7 +2029,7 @@ in
       val s10 = Vector.sub (stmts, 10)
       val _ = assertType (s10, Type.unit, "s10 type should be unit")
       val Statement.T {exp = e10, var = v10', ...} = s10
-      val _ = assert (Option.isSome v10', "s10 should bind a variable")
+      val _ = assert (Option.isNone v10', "s10 should not bind a variable")
       val _ = case e10 of
                  Exp.PrimApp {prim = Prim.Array_uninit, args, targs} => (
                     assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), word32Ty), "s10 targ should be word32Ty");
