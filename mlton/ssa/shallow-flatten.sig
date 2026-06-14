@@ -297,6 +297,12 @@ sig
       n: int = Array_length['a](arr)
       ...
 
+    6. `Vector_length` on tuple types:
+      n: int = Vector_length['a * 'a * ...](vec)
+      -->
+      (* vec is now 'a vector  ... *)
+      n: int = Vector_length['a](vec)
+
       TODO: port the remaining test cases over
    
    *)
