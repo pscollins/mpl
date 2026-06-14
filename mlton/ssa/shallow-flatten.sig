@@ -120,7 +120,7 @@ sig
 
        Examples:
 
-         * Flattenable statement, no type transformation required
+         * Flattenable statement, no type transformation required (for FlattenSoA)
          arr: ('a * b) array = Array_alloc['a * b](n]
          -->
          arr_a: 'a array = Array_alloc['a](n)
@@ -128,13 +128,22 @@ sig
          arr: ('a array) * (b' array) = tuple (arr_a, arr_b)
 
 
-         * Non-flattenable statement, with type transformation required
+         * Non-flattenable statement, with type transformation required (for FlattenSoA)
          arr: ('a * b) array array = Array_alloc[('a * b') array](n]
          -->
          arr: ('a array * b array) array = Array_alloc['a array * b' array](n]
 
+       The applied flattening transformation + resulting types depend on the
+       supplied `flattenMechanism` in the obvious way, i.e.
+
+         * Above example under FlattenAoS:
+         arr: ('a * 'a) array = Array_alloc['a * 'a](n)
+         -->
+         arr: 'a array = Array_alloc['a](n * 2)
+
     *)
-   val deepFlattenStatementsForPolicy: flattenPolicy -> Statement.t -> Statement.t vector
+   val deepFlattenStatementsForPolicy: (flattenPolicy, flattenMechanism) ->
+                                       Statement.t -> Statement.t vector
 
    (* Describes a flattening decision for a nested type *)
    datatype conDecision =
@@ -164,23 +173,6 @@ sig
    val applyConDecision: flattenMechanism ->
                          conDecision * Type.t ->
                          Type.t
-
-
-   (* Marks any vars in `Statement.t` that must be flattened according to the
-   provided policy. The following statement types may induce flattening:
-
-     * Any binding introducing a new array-typed variable:
-       x: ('a * 'b ...) array = ...
-
-     * Any argument (block or function) introducing a new array-typed variable:
-       f(x: 'a * b * ... array, ...)
-
-     * Any `Con.t` over an array type
-       datatype t = ConT of ('a * 'b * ...) array
-
-     * TODO(pscollins): More types? Should handle vector too
-    *)
-
 
    (* Flattens the provided `Statement.t` into a sequence of statements, if
    possible. Otherwise, returns NONE.
