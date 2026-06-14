@@ -1176,9 +1176,9 @@ in
      | _ => false
 end
 
-fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
+fun deepFlattenStatementsForConfig (policy: flattenPolicy, mechanism: flattenMechanism)
                                    (s: Statement.t): Statement.t vector = let
-   val updateType = deepFlattenTypeForConfig (policy, FlattenSoA)
+   val updateType = deepFlattenTypeForConfig (policy, mechanism)
    fun updateTypesInExp exp =
        case exp of
            Exp.PrimApp {args, prim, targs} =>
@@ -1227,13 +1227,13 @@ fun deepFlattenStatementsForPolicy (policy: flattenPolicy)
    (* ...then update types... *)
    val resultInit = Vector.map (statements, updateTypesInStatement)
 
-   (* ...updating types may have created more flattening opportunities, so run
+             (* ...updating types may have created more flattening opportunities, so run
       again.
 
       TODO: should we instead run this to convergence? *)
    val result = recursiveFlatten resultInit
-   fun logThunk() = Layout.align [
-          Layout.str "deepFlattenStatementsForPolicy: ",
+    fun logThunk() = Layout.align [
+           Layout.str "deepFlattenStatementsForConfig: ",
           Layout.str "initial=",
           Statement.layout s,
           Layout.str "afterFlatten=",
@@ -1283,11 +1283,11 @@ fun flattenOnce (policy: flattenPolicy, mechanism: flattenMechanism) (p: Program
       Vector.foreach2 (statements, flattened, doUpdate)
    end
 
-   (* Applies `deepFlattenStatementsForPolicy` and updates `progress` to relect
+   (* Applies `deepFlattenStatementsForConfig` and updates `progress` to relect
       any changes *)
    fun flattenStatements statements = let
       val flattened = Vector.map (statements,
-                                  deepFlattenStatementsForPolicy policy)
+                                  deepFlattenStatementsForConfig (policy, mechanism))
       val _ = checkProgress (statements, flattened)
    in
       Vector.concatV flattened

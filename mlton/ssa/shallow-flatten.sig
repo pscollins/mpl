@@ -142,7 +142,7 @@ sig
          arr: 'a array = Array_alloc['a](n * 2)
 
     *)
-   val deepFlattenStatementsForPolicy: (flattenPolicy, flattenMechanism) ->
+   val deepFlattenStatementsForConfig: (flattenPolicy * flattenMechanism) ->
                                        Statement.t -> Statement.t vector
 
    (* Describes a flattening decision for a nested type *)

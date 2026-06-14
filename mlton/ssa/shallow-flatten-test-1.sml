@@ -394,8 +394,8 @@ in
       assert (r_neg6 = false, "r_neg6: Array_uninitIsNop on 3-tuple should not flatten")
    end)
 
-(* Test 7: deepFlattenStatementsForPolicy *)
-   val _ = runTest ("Test 7: deepFlattenStatementsForPolicy", fn () => let
+(* Test 7: deepFlattenStatementsForConfig *)
+   val _ = runTest ("Test 7: deepFlattenStatementsForConfig", fn () => let
       val policy = ShallowFlatten.MaxWidth 2
       val intTy = Type.intInf
       val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
@@ -416,7 +416,7 @@ in
          var = SOME arrVar
       }
       
-      val res1 = ShallowFlatten.deepFlattenStatementsForPolicy policy s1
+      val res1 = ShallowFlatten.deepFlattenStatementsForConfig (policy, ShallowFlatten.FlattenSoA) s1
       
       (* Assertions on res1 *)
       val _ = assert (Vector.length res1 = 3, "res1 length should be 3")
@@ -471,7 +471,7 @@ in
          var = SOME arrVar
       }
       
-      val res2 = ShallowFlatten.deepFlattenStatementsForPolicy policy s2
+      val res2 = ShallowFlatten.deepFlattenStatementsForConfig (policy, ShallowFlatten.FlattenSoA) s2
       
       (* Assertions on res2 *)
       val _ = assert (Vector.length res2 = 3, "res2 length should be 3")
@@ -512,6 +512,72 @@ in
                     assert (Var.equals (Vector.sub (vs, 1), valOf v2_1), "res2[2] tuple element 1")
                  )
                | _ => raise TestFail "res2[2] should be Tuple expression"
+   in () end)
+
+(* Test 8: deepFlattenStatementsForConfig AoS *)
+   val _ = runTest ("Test 8: deepFlattenStatementsForConfig AoS", fn () => let
+      val _ = Control.libTargetDir := "../../build/lib/mlton/targets/self"
+      val policy = ShallowFlatten.MaxWidthSameType 2
+      val config = (policy, ShallowFlatten.FlattenAoS)
+      val intTy = Type.intInf
+      val tuple2Ty = Type.tuple (Vector.fromList [intTy, intTy])
+      val arrayTuple2Ty = Type.array tuple2Ty
+      val arrVar = Var.fromString "arr"
+      val nVar = Var.fromString "n"
+
+      (* arr: (int * int) array = Array_alloc[int * int](n) *)
+      val s1 = Statement.T {
+         exp = Exp.PrimApp {
+            args = Vector.new1 nVar,
+            prim = Prim.Array_alloc {raw = false},
+            targs = Vector.new1 tuple2Ty
+         },
+         ty = arrayTuple2Ty,
+         var = SOME arrVar
+      }
+
+      val res1 = ShallowFlatten.deepFlattenStatementsForConfig config s1
+
+      (* Assertions on res1 for AoS *)
+      val _ = assert (Vector.length res1 = 3, "res1 length should be 3 for AoS")
+
+      (* Statement 0: indexConst: seqIndex = 2 *)
+      val Statement.T {exp = e1_0, ty = t1_0, var = v1_0} = Vector.sub (res1, 0)
+      val _ = assertType (Vector.sub (res1, 0), Type.word (WordSize.seqIndex ()), arrayTuple2Ty, "res1[0] type")
+      val _ = assert (Option.isSome v1_0, "res1[0] var should be SOME")
+      val _ = case e1_0 of
+                 Exp.Const constVal => (
+                    case constVal of
+                       Const.Word w => assert (WordX.toInt w = 2, "res1[0] value should be 2")
+                     | _ => raise TestFail "res1[0] should be Word constant"
+                 )
+               | _ => raise TestFail "res1[0] should be Const expression"
+
+      (* Statement 1: mulRes: seqIndex = n * indexConst *)
+      val Statement.T {exp = e1_1, ty = t1_1, var = v1_1} = Vector.sub (res1, 1)
+      val _ = assertType (Vector.sub (res1, 1), Type.word (WordSize.seqIndex ()), arrayTuple2Ty, "res1[1] type")
+      val _ = assert (Option.isSome v1_1, "res1[1] var should be SOME")
+      val _ = case e1_1 of
+                 Exp.PrimApp {prim = Prim.Word_mul (_, {signed = false}), args, targs} => (
+                    assert (Vector.length args = 2, "res1[1] args length");
+                    assert (Var.equals (Vector.sub (args, 0), nVar), "res1[1] arg 0");
+                    assert (Var.equals (Vector.sub (args, 1), valOf v1_0), "res1[1] arg 1");
+                    assert (Vector.length targs = 0, "res1[1] targs")
+                 )
+               | _ => raise TestFail "res1[1] should be Word_mul PrimApp"
+
+      (* Statement 2: arr: int array = Array_alloc[int](mulRes) *)
+      val Statement.T {exp = e1_2, ty = t1_2, var = v1_2} = Vector.sub (res1, 2)
+      val _ = assertType (Vector.sub (res1, 2), Type.array intTy, arrayTuple2Ty, "res1[2] type")
+      val _ = case v1_2 of
+                 SOME v => assert (Var.equals (v, arrVar), "res1[2] var should be original arrVar")
+               | NONE => raise TestFail "res1[2] var should be SOME"
+      val _ = case e1_2 of
+                 Exp.PrimApp {prim = Prim.Array_alloc {raw = false}, args, targs} => (
+                    assert (Vector.length args = 1 andalso Var.equals (Vector.sub (args, 0), valOf v1_1), "res1[2] args");
+                    assert (Vector.length targs = 1 andalso Type.equals (Vector.sub (targs, 0), intTy), "res1[2] targs")
+                 )
+               | _ => raise TestFail "res1[2] should be Array_alloc PrimApp"
    in () end)
 
    val _ = summarize ()
