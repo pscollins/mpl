@@ -1108,6 +1108,11 @@ fun policyToString (policy: flattenPolicy) =
         MaxWidth w => concat ["MaxWidth:", Int.toString w]
      |  MaxWidthSameType w => concat ["MaxWidthSameType:", Int.toString w]
 
+fun mechanismToString (mechanism: flattenMechanism) =
+    case mechanism of
+        FlattenAoS => "FlattenAoS"
+      | FlattenSoA => "FlattenSoA"
+
 fun deepFlattenTypeForConfig (policy: flattenPolicy, mechanism: flattenMechanism)
                              (t: Type.t): Type.t = let
     fun doFlatten t = let
@@ -1123,7 +1128,9 @@ fun deepFlattenTypeForConfig (policy: flattenPolicy, mechanism: flattenMechanism
     fun logThunk () = Layout.align [
            Layout.str
                (String.concat ["deepFlattenTypeForConfig(",
-                               policyToString policy, "):"]),
+                               policyToString policy, ", ",
+                               mechanismToString mechanism,
+                               "):"]),
            Layout.str "old: ",
            Type.layout t,
            Layout.str "new: ",
