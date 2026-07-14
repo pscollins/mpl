@@ -365,6 +365,19 @@ sig
                               (varChoice * (varConsumer list)) ->
                               varChoice
 
+   (* Heuristic to describe which functions can be flattened *)
+   datatype flattenableFunctionPolicy =
+            (* Do not filter based on function attributes *)
+            FlattenAnyFunction
+            (* Flatten only non-tail-recursive functions *)
+            | FlattenOnlyNonTai
+
+   (* Returns an updated `varChoice` for the provided `Function.t` under the
+   specified policy *)
+   val updateFunctionChoiceForPolicy: flattenableFunctionPolicy ->
+                                      (Function.t * varChoice) ->
+                                      varChoice
+
    (* Chooses which datatypes can be flattened through *)
    datatype flattenableTypesPolicy =
             (* Allows flattening any type (tuple or ConApp) *)
