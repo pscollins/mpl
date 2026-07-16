@@ -1511,9 +1511,15 @@ fun transform (p: Program.t): Program.t =
           if !Control.preFlattenRecursiveSteps = 0
              then noRecursiveFlatten
           else recursiveFlattenSteps (!Control.preFlattenRecursiveSteps)
+       val transferFlatten =
+           case !Control.preFlattenTransferPolicy of
+               Control.PreFlattenTransferPolicy.Always =>
+               FlattenAnyTransfer
+            |  Control.PreFlattenTransferPolicy.TailOnly =>
+               FlattenOnlyTailCalls
        fun applyLevels (p) = let          fun apply (step, p') =
             flattenOnce (policy, resolvePolicy, typesPolicy, step,
-                         recursiveFlatten, FlattenAnyTransfer) p'
+                         recursiveFlatten, transferFlatten) p'
        in
           foldTransformation (levelSteps, apply, p)
        end
