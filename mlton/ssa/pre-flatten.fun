@@ -1274,15 +1274,17 @@ fun flattenOnce (flattenPolicy, resolvePolicy,
    end
 
    fun rewriteTransfer (t: Transfer.t) = let
+      val updateChoice' = updateChoiceForTransferPolicy (transferPolicy, t)
       fun buildTransferArgs args = let
          (* Make a flattening decision for each argument by collecting all of
          the tags for each concrete argument... *)
          val varChoices = Vector.map (args, getChoice)
          (* ...and the (resolved) usage info for each formal parameter... *)
          val varConsumers = Vector.map (args, getConsumers)
-         (* ...and applying the policy *)
-         val varChoices' = Vector.map2 (varChoices, varConsumers,
-                                        updateChoice)
+         (* ...and applying the policies *)
+         val varChoices' = Vector.map (Vector.map2 (varChoices, varConsumers,
+                                                    updateChoice),
+                                       updateChoice')
          val _ = Control.diagnostic
                      (buildLogThunk (t, varChoices, varConsumers,
                                      varChoices'))
