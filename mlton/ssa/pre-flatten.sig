@@ -370,6 +370,19 @@ sig
                               (varChoice * (varConsumer list)) ->
                               varChoice
 
+   (* Controls which types of calls can be flattened  *)
+   datatype transferFlatteningPolicy =
+            (* Allow any `Transfer.t` *)
+            FlattenAnyTransfer
+            (* Allow only `Call` with a `Tail` return  *)
+            | FlattenOnlyTailCalls
+
+   (* Updates the provided `varChoice` by evaluating the provided `Transfer.t`
+   under the provided policy *)
+   val updateChoiceForTransferPolicy = (transferFlatteningPolicy *
+                                       Transfer.t)
+                                       varChoice -> varChoice
+
    (* Chooses which datatypes can be flattened through *)
    datatype flattenableTypesPolicy =
             (* Allows flattening any type (tuple or ConApp) *)
