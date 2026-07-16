@@ -36,6 +36,8 @@ sig
           picks if this pass should run right before `flatten` (`early`) or
           right after `flatten` (`late`)
 
+       -pre-flatten-transfer-policy={always|tail_only}
+          picks the `transferFlatteningPolicy` for this pass
     *)
    include SSA_TRANSFORM
 

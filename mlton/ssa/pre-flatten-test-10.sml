@@ -261,5 +261,18 @@ in
         | SOME _ => raise TestFail "FlattenOnlyTailCalls + Goto (blockOnly) should NOT flatten and return NONE"
    end)
 
+   val _ = runTest ("transform - preFlattenTransferPolicy = TailOnly", fn () => let
+      val p = makeTestProgram ()
+      val _ = Control.preFlattenMaxIters := 1
+      val oldPolicy = !Control.preFlattenTransferPolicy
+      val _ = Control.preFlattenTransferPolicy := Control.PreFlattenTransferPolicy.TailOnly
+      val p' = PreFlatten.transform p
+      val _ = Control.preFlattenTransferPolicy := oldPolicy
+      val Program.T {functions, ...} = p'
+   in
+      if List.length functions = 2 then ()
+      else raise TestFail "transform with preFlattenTransferPolicy = TailOnly should not flatten non-tail call"
+   end)
+
    val _ = summarize ()
 end

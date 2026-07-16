@@ -772,6 +772,11 @@ fun makeOptions {usage} =
                      case PreFlattenPhase.fromString s of
                         SOME p => preFlattenPhase := p
                       | NONE => usage (concat ["invalid -pre-flatten-phase flag: ", s]))),
+       (Expert, "pre-flatten-transfer-policy", " {always|tail_only}", "set pre-flattening transfer policy (always)",
+        SpaceString (fn s =>
+                     case PreFlattenTransferPolicy.fromString s of
+                        SOME p => preFlattenTransferPolicy := p
+                      | NONE => usage (concat ["invalid -pre-flatten-transfer-policy flag: ", s]))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>

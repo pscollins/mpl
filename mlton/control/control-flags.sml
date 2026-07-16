@@ -1607,6 +1607,27 @@ val preFlattenPhase =
             default = PreFlattenPhase.Early,
             toString = PreFlattenPhase.toString}
 
+structure PreFlattenTransferPolicy =
+   struct
+      datatype t = Always | TailOnly
+
+      val toString =
+         fn Always => "always"
+          | TailOnly => "tail_only"
+
+      val fromString =
+         fn "always" => SOME Always
+          | "tail_only" => SOME TailOnly
+          | _ => NONE
+   end
+
+datatype preFlattenTransferPolicy = datatype PreFlattenTransferPolicy.t
+
+val preFlattenTransferPolicy =
+   control {name = "pre-flatten-transfer-policy",
+            default = PreFlattenTransferPolicy.Always,
+            toString = PreFlattenTransferPolicy.toString}
+
 structure PositionIndependentStyle =
    struct
       datatype t =
