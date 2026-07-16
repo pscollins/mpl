@@ -492,11 +492,14 @@ sig
 
      Flattening decisions are subject to the described `flatteningPolicy`,
      outlined above, with consumer information resolved according to
-     `varAliasPolicy` (above).
+     `varAliasPolicy` (above). 
+
+     Flattening decisions are also subject to `transferFlatteningPolicy`.
     *)
    val flattenOnce: (flatteningPolicy * varAliasPolicy *
                      flattenableTypesPolicy * flattenLevel *
-                     recursiveFlattenPolicy)
+                     recursiveFlattenPolicy *
+                     transferFlatteningPolicy)
                     -> Program.t -> Program.t option
 
 end

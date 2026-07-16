@@ -1234,7 +1234,8 @@ fun recursiveFlattenPolicyToLayout p =
 
 fun flattenOnce (flattenPolicy, resolvePolicy,
                  allowedTypesPolicy, flattenLevel,
-                 recursiveFlattenPolicy) (p: Program.t) = let
+                 recursiveFlattenPolicy,
+                 transferPolicy) (p: Program.t) = let
    (* TODO: support recursiveFlattenPolicy *)
    val vm = newVarChoicesForProgram p
    val vc = newVarConsumersForProgram p
@@ -1509,8 +1510,8 @@ fun transform (p: Program.t): Program.t =
              then noRecursiveFlatten
           else recursiveFlattenSteps (!Control.preFlattenRecursiveSteps)
        fun applyLevels (p) = let          fun apply (step, p') =
-           flattenOnce (policy, resolvePolicy, typesPolicy, step,
-                        recursiveFlatten) p'
+            flattenOnce (policy, resolvePolicy, typesPolicy, step,
+                         recursiveFlatten, FlattenAnyTransfer) p'
        in
           foldTransformation (levelSteps, apply, p)
        end

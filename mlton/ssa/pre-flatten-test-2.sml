@@ -481,7 +481,7 @@ in
          main = mainName
       }
 
-      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p of
+      val p' = (case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p of
                    SOME p' => p'
                  | NONE => printFail "Test 16 (always): flattenOnce returned NONE")
       val Program.T {functions, ...} = p'

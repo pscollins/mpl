@@ -181,7 +181,7 @@ in
       val _ = let
          val _ = print "Running Test 60 (noRecursiveFlatten)...\n"
          val _ = printProgram ("60 (before)", p)
-         val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p
+         val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p
          val p' = (case res of
                       SOME p' => p'
                     | NONE => (printFail "Test 60 failed: flattenOnce returned NONE"))
@@ -226,7 +226,7 @@ in
       val _ = let
          val _ = print "Running Test 61 (recursiveFlattenSteps 1)...\n"
          val _ = printProgram ("61 (before)", p)
-         val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.recursiveFlattenSteps 1) p
+         val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.recursiveFlattenSteps 1, PreFlatten.FlattenAnyTransfer) p
          val p'' = (case res of
                       SOME p'' => p''
                     | NONE => (printFail "Test 61 failed: flattenOnce returned NONE"))
@@ -265,7 +265,7 @@ in
       val _ = let
          val _ = print "Running Test 62 (recursiveFlattenSteps 0)...\n"
          val _ = printProgram ("62 (before)", p)
-         val _ = (PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.recursiveFlattenSteps 0) p;
+         val _ = (PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.recursiveFlattenSteps 0, PreFlatten.FlattenAnyTransfer) p;
                   printFail "Test 62 failed: expected flattenOnce to return an error for recursiveFlattenSteps 0, but it returned normally")
                  handle _ => print "Test 62 passed (caught expected error)\n"
       in () end

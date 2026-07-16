@@ -424,7 +424,7 @@ in
       }
 
       val _ = print "Test 29a: DropAlias (should NOT flatten f)\n"
-      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p of
+      val pDrop = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p of
                       SOME p' => p'
                     | NONE => p)
       val Program.T {functions = funcsDrop, ...} = pDrop
@@ -443,7 +443,7 @@ in
       val _ = print "Test 29a passed\n"
 
       val _ = print "Test 29b: UnionAlias (SHOULD flatten f)\n"
-      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.UnionAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p of
+      val pUnion = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAnyUnpack, PreFlatten.UnionAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p of
                        SOME p' => p'
                      | NONE => printFail "Test 29b: expected SOME, got NONE")
       val Program.T {functions = funcsUnion, ...} = pUnion
@@ -555,7 +555,7 @@ in
 
       (* Case 31a: Only AsUnpacked consumer in f. Should flatten. *)
       val _ = print "Test 31a: Only AsUnpacked consumer (should flatten)\n"
-      val pFlat = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p of
+      val pFlat = (case PreFlatten.flattenOnce (PreFlatten.FlattenForAllUnpack, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p of
                       SOME p' => p'
                     | NONE => printFail "Test 31a: expected SOME, got NONE")
       val Program.T {functions = funcsFlat, ...} = pFlat
@@ -594,7 +594,8 @@ in
                                            PreFlatten.UnionAlias,
                                            PreFlatten.FlattenAnyType,
                                            PreFlatten.functionOnly,
-                                           PreFlatten.noRecursiveFlatten) p2 of
+                                           PreFlatten.noRecursiveFlatten,
+                                           PreFlatten.FlattenAnyTransfer) p2 of
                  SOME _ => printFail "Test 31b: expected NONE, got SOME"
                | NONE => ()
 

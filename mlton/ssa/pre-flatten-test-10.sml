@@ -121,6 +121,144 @@ in
    in
       if varChoiceEq (res, PreFlatten.PreserveVar) then ()
       else raise TestFail "FlattenOnlyTailCalls + Goto should downgrade choice to PreserveVar"
+    end)
+
+   fun makeTestProgram () = let
+      val fName = Func.fromString "f"
+      val tBool = Type.bool
+      val tTuple = Type.tuple (Vector.fromList [tBool, tBool])
+      
+      val fLf = Label.fromString "Lf"
+      val fFunction = Function.new {
+         args = Vector.fromList [(Var.fromString "arg1", tTuple)],
+         blocks = Vector.fromList [Block.T {
+            args = Vector.new0 (),
+            label = fLf,
+            statements = Vector.new0 (),
+            transfer = Transfer.Return (Vector.new0 ())
+         }],
+         inline = InlineAttr.Auto,
+         name = fName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = fLf
+      }
+
+      val mainName = Func.fromString "main"
+      val t1 = Var.fromString "t1"
+      val t2 = Var.fromString "t2"
+      val x = Var.fromString "x"
+      val s1 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t1}
+      val s2 = Statement.T {exp = Exp.unit, ty = tBool, var = SOME t2}
+      val s3 = Statement.T {exp = Exp.Tuple (Vector.fromList [t1, t2]), ty = tTuple, var = SOME x}
+      
+      val mainL = Label.fromString "Lmain"
+      val contL = Label.fromString "Lcont"
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = mainL,
+         statements = Vector.fromList [s1, s2, s3],
+         transfer = Transfer.Call {
+            args = Vector.fromList [x],
+            func = fName,
+            inline = InlineAttr.Auto,
+            return = Return.NonTail {
+               cont = contL,
+               handler = Handler.Caller
+            }
+         }
+      }
+      val contBlock = Block.T {
+         args = Vector.new0 (),
+         label = contL,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      val mainFunction = Function.new {
+         args = Vector.new0 (),
+         blocks = Vector.fromList [mainBlock, contBlock],
+         inline = InlineAttr.Auto,
+         name = mainName,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = mainL
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [fFunction, mainFunction],
+         globals = Vector.new0 (),
+         main = mainName
+      }
+   in
+      p
+   end
+
+   val _ = runTest ("flattenOnce - FlattenAnyTransfer + NonTailCall", fn () => let
+      val p = makeTestProgram ()
+      val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p
+   in
+      case res of
+          SOME _ => ()
+        | NONE => raise TestFail "FlattenAnyTransfer + NonTailCall should flatten and return SOME"
+   end)
+
+   val _ = runTest ("flattenOnce - FlattenOnlyTailCalls + NonTailCall", fn () => let
+      val p = makeTestProgram ()
+      val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenOnlyTailCalls) p
+   in
+      case res of
+          NONE => ()
+        | SOME _ => raise TestFail "FlattenOnlyTailCalls + NonTailCall should NOT flatten and return NONE"
+   end)
+
+   val _ = runTest ("flattenOnce - FlattenOnlyTailCalls + Goto (blockOnly)", fn () => let
+      val mainFunc = Func.fromString "main"
+      val L0 = Label.fromString "L0"
+      val L1 = Label.fromString "L1"
+      val a = Var.fromString "a"
+      val b = Var.fromString "b"
+      val v0 = Var.fromString "v0"
+      val x = Var.fromString "x"
+      
+      val boolTy = Type.bool
+      val tupleTy = Type.tuple (Vector.fromList [boolTy, boolTy])
+      
+      val mainBlock = Block.T {
+         args = Vector.new0 (),
+         label = L0,
+         statements = Vector.fromList [
+            Statement.T {exp = Exp.Tuple (Vector.fromList [a, b]), ty = tupleTy, var = SOME v0}
+         ],
+         transfer = Transfer.Goto {args = Vector.fromList [v0], dst = L1}
+      }
+      val L1Block = Block.T {
+         args = Vector.fromList [(x, tupleTy)],
+         label = L1,
+         statements = Vector.new0 (),
+         transfer = Transfer.Return (Vector.new0 ())
+      }
+      
+      val mainFunction = Function.new {
+         args = Vector.fromList [(a, boolTy), (b, boolTy)],
+         blocks = Vector.fromList [mainBlock, L1Block],
+         inline = InlineAttr.Auto,
+         name = mainFunc,
+         raises = NONE,
+         returns = SOME (Vector.new0 ()),
+         start = L0
+      }
+      val p = Program.T {
+         datatypes = Vector.new0 (),
+         functions = [mainFunction],
+         globals = Vector.new0 (),
+         main = mainFunc
+      }
+
+      val res = PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenAnyType, PreFlatten.blockOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenOnlyTailCalls) p
+   in
+      case res of
+          NONE => ()
+        | SOME _ => raise TestFail "FlattenOnlyTailCalls + Goto (blockOnly) should NOT flatten and return NONE"
    end)
 
    val _ = summarize ()

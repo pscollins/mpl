@@ -64,7 +64,7 @@ in
       }
 
       (* Should flatten ConApps when policy is FlattenOnlyConApp *)
-      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten) p of
+      val _ = case PreFlatten.flattenOnce (PreFlatten.FlattenAlways, PreFlatten.DropAlias, PreFlatten.FlattenOnlyConApp, PreFlatten.functionOnly, PreFlatten.noRecursiveFlatten, PreFlatten.FlattenAnyTransfer) p of
                  SOME _ => ()
                | NONE => printFail "Test 46: expected SOME (ConApps should not flatten under FlattenOnlyConApp), got SOME"
 
