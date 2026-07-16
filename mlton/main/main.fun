@@ -767,6 +767,11 @@ fun makeOptions {usage} =
                                case PreFlattenLevelStep.fromString s of
                                   SOME p => p
                                 | NONE => usage (concat ["invalid -pre-flatten-level-steps flag: ", s])))),
+       (Expert, "pre-flatten-phase", " {early|late}", "set pre-flattening phase (early)",
+        SpaceString (fn s =>
+                     case PreFlattenPhase.fromString s of
+                        SOME p => preFlattenPhase := p
+                      | NONE => usage (concat ["invalid -pre-flatten-phase flag: ", s]))),
        (Expert, "pi-style", " {default|npi|pic|pie}", "position-independent style",
 
         SpaceString (fn s =>
