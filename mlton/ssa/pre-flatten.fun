@@ -1179,7 +1179,12 @@ datatype transferFlatteningPolicy =
          FlattenAnyTransfer
        | FlattenOnlyTailCalls
 
-fun updateChoiceForTransferPolicy (policy, transfer) vc = vc
+fun updateChoiceForTransferPolicy (policy, transfer) vc =
+    case (policy, transfer) of
+        (FlattenAnyTransfer, _) => vc
+      | (FlattenOnlyTailCalls, Transfer.Call {args, func, inline,
+                                              return=Return.Tail}) => vc
+      | (FlattenOnlyTailCalls, _) => PreserveVar
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice = let
    fun extractTy (_, t) = t
