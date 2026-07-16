@@ -31,6 +31,11 @@ sig
        -pre-flatten-recursive-steps=$N
           sets the `recursiveFlattenPolicy` (below): 0 means
           `noRecursiveFlatten`
+
+       -pre-flatten-phase={early|late}
+          picks if this pass should run right before `flatten` (`early`) or
+          right after `flatten` (`late`)
+
     *)
    include SSA_TRANSFORM
 
