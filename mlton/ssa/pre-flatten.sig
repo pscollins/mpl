@@ -379,8 +379,7 @@ sig
 
    (* Updates the provided `varChoice` by evaluating the provided `Transfer.t`
    under the provided policy *)
-   val updateChoiceForTransferPolicy = (transferFlatteningPolicy *
-                                       Transfer.t)
+   val updateChoiceForTransferPolicy : transferFlatteningPolicy * Transfer.t ->
                                        varChoice -> varChoice
 
    (* Chooses which datatypes can be flattened through *)

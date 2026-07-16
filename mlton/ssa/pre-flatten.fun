@@ -1175,6 +1175,11 @@ fun updateChoiceForAllowedTypes policy vc =
      | (FlattenOnlyConApp, FlattenTupleVar _) => PreserveVar
      | _ => vc
 
+datatype transferFlatteningPolicy =
+         FlattenAnyTransfer
+       | FlattenOnlyTailCalls
+
+fun updateChoiceForTransferPolicy (policy, transfer) vc = vc
 
 fun varChoiceToArgChoice (vc: varChoice): argChoice = let
    fun extractTy (_, t) = t
