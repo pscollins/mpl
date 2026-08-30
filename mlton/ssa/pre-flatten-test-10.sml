@@ -274,5 +274,31 @@ in
       else raise TestFail "transform with preFlattenTransferPolicy = TailOnly should not flatten non-tail call"
    end)
 
+   val _ = runTest ("transform - preFlattenPostStepsOnly = false (flattens)", fn () => let
+      val p = makeTestProgram ()
+      val _ = Control.preFlattenMaxIters := 1
+      val oldOnly = !Control.preFlattenPostStepsOnly
+      val _ = Control.preFlattenPostStepsOnly := false
+      val p' = PreFlatten.transform p
+      val _ = Control.preFlattenPostStepsOnly := oldOnly
+      val Program.T {functions, ...} = p'
+   in
+      if List.length functions = 3 then ()
+      else raise TestFail "transform with preFlattenPostStepsOnly = false should flatten call and create new function"
+   end)
+
+   val _ = runTest ("transform - preFlattenPostStepsOnly = true (skips flatten, runs post steps)", fn () => let
+      val p = makeTestProgram ()
+      val _ = Control.preFlattenMaxIters := 1
+      val oldOnly = !Control.preFlattenPostStepsOnly
+      val _ = Control.preFlattenPostStepsOnly := true
+      val p' = PreFlatten.transform p
+      val _ = Control.preFlattenPostStepsOnly := oldOnly
+      val Program.T {functions, ...} = p'
+   in
+      if List.length functions = 2 then ()
+      else raise TestFail "transform with preFlattenPostStepsOnly = true should skip flattening and keep 2 functions"
+   end)
+
    val _ = summarize ()
 end

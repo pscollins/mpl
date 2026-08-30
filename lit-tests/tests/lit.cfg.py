@@ -8,9 +8,7 @@ config.name = 'MPL LIT Tests'
 # File extensions to treat as test files
 config.suffixes = ['.sml']
 
-# The test format to use. ShTest is the standard format that supports
-# RUN: lines in the test files.
-config.test_format = lit.formats.ShTest(True)
+config.test_format = lit.formats.ShTest()
 
 # The root path where tests are located
 config.test_source_root = os.path.dirname(__file__)
@@ -23,13 +21,13 @@ OUTPUT_ROOT = SOURCE_ROOT.parent / 'output'
 # Add a wrapper to run programs under MPL
 
 # Tool to compile+run under mpl
-MPL_RUN_TOOL = TOOLS_ROOT / 'mpl-run.sh'
+MPL_RUN_TOOL = str(TOOLS_ROOT / 'mpl-run.sh')
 config.substitutions.append(('mpl-run', MPL_RUN_TOOL))
 # Tool to print the generated C
-MPL_PRINT_C_TOOL = TOOLS_ROOT / 'mpl-print-c.sh'
+MPL_PRINT_C_TOOL = str(TOOLS_ROOT / 'mpl-print-c.sh')
 config.substitutions.append(('mpl-print-c', MPL_PRINT_C_TOOL))
 # Tool to compile under mpl and keep outputs in %t
-MPL_COMPILE_TOOL = TOOLS_ROOT / 'mpl-compile.sh'
+MPL_COMPILE_TOOL = str(TOOLS_ROOT / 'mpl-compile.sh')
 config.substitutions.append(('mpl-compile', MPL_COMPILE_TOOL))
 
 # Check if the user provided a custom build directory via --param
